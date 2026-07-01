@@ -62,7 +62,7 @@ uses its tools. "Registering" it just means telling your client how to start it.
 per client.
 
 **Claude Code — automatic, nothing to paste.** This library ships a `.mcp.json` at its root, so when
-you open the library folder in Claude Code it offers the `gpc-template-library` server on its own.
+you open the library folder in Claude Code it offers the `open-template-scaffolds` server on its own.
 Approve the one-time trust prompt (or type `/mcp` in a session and approve it there) and the tools are
 live. There's no path to enter.
 
@@ -70,10 +70,10 @@ live. There's no path to enter.
 manual entry. The easy way: run `setup.ps1` (above) and paste the block it prints — the real path is
 already filled in. By hand: open **Settings → Developer → Edit Config** (this opens
 `claude_desktop_config.json`; on Windows it's under `%APPDATA%\Claude\`), and add a
-`gpc-template-library` entry inside `mcpServers`, with `"command": "python"` and `"args"` set to the
+`open-template-scaffolds` entry inside `mcpServers`, with `"command": "python"` and `"args"` set to the
 full path of *this copy's* `server.py`. Save and restart Claude Desktop.
 
-**Any other MCP client** — the pattern is identical: a server named `gpc-template-library`, started
+**Any other MCP client** — the pattern is identical: a server named `open-template-scaffolds`, started
 with `python <full path>\server.py`. `setup.ps1` prints that exact path; check your client's own
 "MCP servers" documentation for where to register it — the model is always the same (the client runs
 the command; the tools appear).

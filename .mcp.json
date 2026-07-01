@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "gpc-template-library": {
+    "open-template-scaffolds": {
       "type": "stdio",
       "command": "python",
       "args": ["${CLAUDE_PROJECT_DIR:-.}/mcp-server/server.py"]

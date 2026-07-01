@@ -67,20 +67,20 @@ Write-Head "3. Register the server with your AI client"
 Write-Host ""
 Write-Host "-- Claude Code (easiest: nothing to paste) ---------------------------" -ForegroundColor White
 Write-Host "Just open this LIBRARY folder in Claude Code. It ships a .mcp.json, so"
-Write-Host "Claude Code offers the 'gpc-template-library' server automatically --"
+Write-Host "Claude Code offers the 'open-template-scaffolds' server automatically --"
 Write-Host "approve the one-time prompt (or run /mcp to approve it) and you're done."
 Write-Host "If you prefer the command line, run:"
 Write-Host ""
-Write-Host "    claude mcp add --scope user gpc-template-library -- python `"$ServerPyFwd`"" -ForegroundColor Green
+Write-Host "    claude mcp add --scope user open-template-scaffolds -- python `"$ServerPyFwd`"" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "-- Claude Desktop (paste this block) ---------------------------------" -ForegroundColor White
 Write-Host "Open  Settings -> Developer -> Edit Config  (this opens"
 Write-Host "claude_desktop_config.json, under %APPDATA%\Claude\), and add the"
-Write-Host "'gpc-template-library' entry inside the existing 'mcpServers' object:"
+Write-Host "'open-template-scaffolds' entry inside the existing 'mcpServers' object:"
 Write-Host ""
 $snippet = @"
-    "gpc-template-library": {
+    "open-template-scaffolds": {
       "command": "python",
       "args": ["$ServerPyFwd"]
     }
@@ -92,7 +92,7 @@ Write-Host "Save the file and restart Claude Desktop."
 
 Write-Host ""
 Write-Host "-- Any other MCP client ----------------------------------------------" -ForegroundColor White
-Write-Host "Same idea: a server named 'gpc-template-library', started with:"
+Write-Host "Same idea: a server named 'open-template-scaffolds', started with:"
 Write-Host "    python `"$ServerPyFwd`"" -ForegroundColor Green
 
 Write-Head "Done"

@@ -12,7 +12,7 @@ from mcp.server.fastmcp import FastMCP
 
 from library import iter_templates, read_standard, validate_library
 
-mcp = FastMCP("gpc-template-library")
+mcp = FastMCP("open-template-scaffolds")
 
 _META_KEYS = ("template", "title", "domain", "type", "status")
 
