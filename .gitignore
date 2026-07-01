@@ -1,0 +1,14 @@
+# Access databases are extraction sources, never deliverables
+*.accdb
+*.mdb
+*.laccdb
+
+# Packaging artifacts
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+
+# Per-machine AI-workspace config (not part of the library)
+.claude/

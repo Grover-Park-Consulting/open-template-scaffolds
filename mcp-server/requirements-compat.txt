@@ -1,0 +1,17 @@
+# Optional dependency for the check_compatibility tool only (B3-14).
+#
+# The core server runs on requirements.txt (mcp + pyyaml) alone. Install this
+# extra file only if you want check_compatibility to open a live Access
+# database and confirm its tables/fields match a template's requirements.
+#
+# Windows-only: also requires the Microsoft Access Database Engine (ACE)
+# redistributable, which provides the "Microsoft Access Driver (*.mdb, *.accdb)"
+# ODBC driver. Without it, check_compatibility reports available: false and the
+# rest of the server keeps working.
+#
+# Bitness must match: your Python must be the same bitness as your Office/ACE
+# install (32-bit Office -> 32-bit Python). A 64-bit Python cannot see a 32-bit
+# ACE driver — pyodbc will report no Access driver even though one is installed.
+# Do NOT install a second ACE bitness alongside Office to work around this;
+# install a matching Python instead.
+pyodbc>=5.0
