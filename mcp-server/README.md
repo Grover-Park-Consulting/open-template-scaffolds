@@ -1,9 +1,7 @@
-<!-- DRAFT — pre-release. Finalize at B4-17 before publishing. -->
+# Open Template Scaffolds — Reference MCP Server
 
-# GPC Template Library — Reference MCP Server
-
-A thin, dependency-light **Model Context Protocol (MCP)** server that exposes the GPC Template
-Library to MCP-capable AI clients. It reads the library's markdown (`templates/`, `standards/`) as the
+A thin, dependency-light **Model Context Protocol (MCP)** server that exposes the Open Template
+Scaffolds library to MCP-capable AI clients. It reads the library's markdown (`templates/`, `standards/`) as the
 single source of truth, and it ships *inside* the library itself — so when you make your own copy of
 the library, the server comes with it. There's nothing separate to download or keep up to date.
 

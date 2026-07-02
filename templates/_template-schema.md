@@ -1,13 +1,13 @@
 ---
 template: _template-schema
-title: GPC Template Library — Canonical Template Format
+title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
 version: 0.1.0
 status: draft
 ---
 
-# GPC Template Library — Canonical Template Format
+# Open Template Scaffolds — Canonical Template Format
 
 This is the **format specification** every template file in this library must follow.
 It is the contract the reference MCP server keys off: discovery (`list_templates`,

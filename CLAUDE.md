@@ -1,8 +1,6 @@
-<!-- DRAFT — pre-release. Finalize at B4-17 before publishing. -->
+# Open Template Scaffolds — Working Instructions for AI Assistants
 
-# GPC Template Library — Working Instructions for AI Assistants
-
-You are working inside the **GPC Template Library**: a set of standards-based, AI-readable templates
+You are working inside **Open Template Scaffolds**: a library of standards-based, AI-readable templates
 for building Microsoft Access and SQL Server artifacts. A template is **read context** — you read it
 together with the active standards layer and produce a **reviewable design** (a diagram plus field
 detail). The developer approves or redirects that design. **Once it's approved, the build happens one

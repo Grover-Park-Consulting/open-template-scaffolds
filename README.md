@@ -1,5 +1,3 @@
-<!-- DRAFT — pre-release. Finalize at B4-17 before publishing. -->
-
 # Open Template Scaffolds
 
 AI-readable templates for the tables behind common Access tasks — a stocktake, a library catalog, and more.

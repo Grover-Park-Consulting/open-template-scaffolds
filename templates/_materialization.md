@@ -1,6 +1,6 @@
 ---
 template: _materialization
-title: GPC Template Library — Materialization (table-schema + form-spec)
+title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
 version: 0.1.0

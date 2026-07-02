@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    One-time setup helper for the GPC Template Library reference MCP server.
+    One-time setup helper for the Open Template Scaffolds reference MCP server.
 
 .DESCRIPTION
     Checks for Python, installs the server's dependencies, and PRINTS the exact,

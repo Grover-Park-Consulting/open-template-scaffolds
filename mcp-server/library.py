@@ -1,4 +1,4 @@
-"""Read the GPC Template Library markdown from the repo.
+"""Read the Open Template Scaffolds library markdown from the repo.
 
 This module is the foundation the MCP tools build on: it locates the library's
 content directories and splits a template's YAML front-matter from its body.

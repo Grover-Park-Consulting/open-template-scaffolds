@@ -1,8 +1,4 @@
-# Contributing to the GPC Template Library
-
-> **Status: draft.** The library isn't published or accepting pull requests yet. This
-> policy is being written ahead of launch so the contribution model is settled before the
-> doors open — treat it as the intended terms, not a live process.
+# Contributing to Open Template Scaffolds
 
 ## How this works
 
@@ -137,7 +133,8 @@ library grows, but that's a future bonus, not a promise.
 
 ## Submitting
 
-- Open a **pull request** against the canonical repository.
+- Open a **pull request** against the canonical repository:
+  [`github.com/Grover-Park-Consulting/open-template-scaffolds`](https://github.com/Grover-Park-Consulting/open-template-scaffolds).
 - **Sign off your commits** with `git commit -s` — the [Developer Certificate of Origin](https://developercertificate.org/)
   sign-off, affirming you have the right to contribute the work.
 - By submitting, you agree your contribution is licensed under the project's **MIT license**
