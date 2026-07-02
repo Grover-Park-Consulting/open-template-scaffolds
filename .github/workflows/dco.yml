@@ -1,0 +1,23 @@
+# DCO gate (Q-003 / D3): every PR commit must carry a Developer Certificate
+# of Origin sign-off (git commit -s), per CONTRIBUTING.md.
+name: dco
+
+on:
+  pull_request:
+
+jobs:
+  dco:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Signed-off-by on every commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bad=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits" --paginate \
+            --jq '.[] | select(.commit.message | test("^Signed-off-by: .+ <.+@.+>"; "im") | not) | .sha[0:7] + "  " + (.commit.message | split("\n")[0])')
+          if [ -n "$bad" ]; then
+            echo "Commits missing a Signed-off-by line (use: git commit -s):"
+            echo "$bad"
+            exit 1
+          fi
+          echo "All commits carry a DCO sign-off."
