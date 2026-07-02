@@ -1,10 +1,5 @@
 # CI gate (Q-003): every template must pass the format-only validate() checks;
 # a red run blocks merge, then the maintainer's human review takes over.
-#
-# Dormant while the library lives as a subfolder of the DevPulsePro repo —
-# GitHub only executes workflows from a repo root's .github/ — and goes live
-# the moment B4-16 stands up the published standalone repo with this folder
-# as its root.
 name: validate-templates
 
 on:
@@ -15,8 +10,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install pyyaml
