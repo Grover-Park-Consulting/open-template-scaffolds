@@ -95,6 +95,21 @@ You only act on a few of these. The rest your AI reads for you, or you can ignor
 | `mcp-server/` | The optional, more-automated server path | Only if you choose it — has its own README; not needed to start |
 | `CONTRIBUTING.md`, `LICENSE` | For people adding templates; the license | No |
 
+### Reading these files
+
+Everything in the library is a Markdown (`.md`) file — plain text with simple formatting marks.
+GitHub renders them nicely in your browser, but opened on your desktop (say, in Notepad) they show
+the raw marks. If you'd like them to read just as nicely on your desktop, and you don't already
+have a Markdown app, two good free options:
+
+- **[MarkText](https://github.com/marktext/marktext/releases)** — a full Markdown editor that
+  shows formatted text as you read and write. Free, open source, and actively maintained.
+- **A viewer from the Microsoft Store** — search the Store for "markdown viewer" (for example,
+  [MarkdownView](https://apps.microsoft.com/detail/9n6pkz6fp1ml)). These are small, free, and open
+  a `.md` file with a double-click.
+
+Either way, this is optional — your AI assistant reads these files just fine as they are.
+
 ## Making it your own
 
 The default standards are good enough to use on day one — you don't have to change a thing to get
