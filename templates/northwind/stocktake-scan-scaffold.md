@@ -260,7 +260,7 @@ End Sub
   standard (aliasing, where querydefs live, formatting, safe criteria).
 - **Naming** — procedure, variable, and parameter names follow `naming-conventions.md`.
 
-## Supplementals
+## Extra Options
 
 *Empty in the base template. Filled per client engagement; the filled copy is saved to the
 developer's own library, not committed here.*

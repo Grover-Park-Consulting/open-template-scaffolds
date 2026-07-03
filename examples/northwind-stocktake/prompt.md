@@ -1,6 +1,6 @@
 # Worked Example — The Prompt (Northwind Stocktake)
 
-This is the prompt from [`prompts/build-table-schema.md`](../../prompts/build-table-schema.md),
+This is the prompt from [`prompts/BuildNewTables-StartHere.md`](../../prompts/BuildNewTables-StartHere.md),
 filled in for a real request: adding scan-driven stocktake to a Northwind-based inventory database.
 See [`output.md`](output.md) for exactly what the AI produced from it.
 

@@ -136,14 +136,14 @@ layout and the code-behind wired in — event handlers calling the framework hel
 part of this template type's proof; the actual generator is built in the MCP phase (B3). Alternatively,
 the form is built live via the Access MCP `create_form` / `create_control` tools.
 
-## Supplementals
+## Extra Options
 
 *Empty in the base template. Filled per engagement; the filled copy is saved to the developer's own
 library, not committed here.*
 
 - **Read-only card view** — a `frmPublication_View` variant for browsing without edit.
 - **Cover image from clipboard / file picker** — set `CoverImageLink` without hand-typing a path.
-- **Per-copy holdings subform** — only when the schema's per-copy `Holding` Supplemental is adopted.
+- **Per-copy holdings subform** — only when the schema's per-copy `Holding` extra option is adopted.
 
 ## Parked / future considerations (not in this design)
 

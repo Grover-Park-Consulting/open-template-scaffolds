@@ -41,8 +41,8 @@ install.** (A more automated "server" path is optional and comes later — see
     Don't worry about getting this perfect. If the assistant ever says it can't see a file, just
     paste that file's contents into the chat and carry on.
 3. **Open the prompt and fill in four lines.** In the folder you just unzipped, open
-   [`prompts/build-table-schema.md`](prompts/build-table-schema.md). Near the top is a small box —
-   **these four lines are the only thing you change:**
+   [`prompts/BuildNewTables-StartHere.md`](prompts/BuildNewTables-StartHere.md). Near the top is
+   the form — a small box; **these four lines are the only thing you change:**
 
    ```text
    - Build: <what you want to make, in plain words — e.g. "add stocktake scanning to an inventory app">
@@ -91,7 +91,7 @@ You only act on a few of these. The rest your AI reads for you, or you can ignor
 | In the folder | What it's for | Do you open it? |
 |---|---|---|
 | **`README.md`** (this file) | Where you start | **Yes — you're reading it** |
-| **`prompts/`** | The prompt you fill in and paste (`build-table-schema.md`) | **Yes — the one you use** |
+| **`prompts/`** | The prompt you fill in and paste (`BuildNewTables-StartHere.md`) | **Yes — the one you use** |
 | **`examples/`** | A finished example, to see it work first | Optional — read to learn |
 | `templates/` | The designs your AI builds from | No — the AI reads these |
 | `standards/` | The default conventions your AI applies | No — unless you swap your own (later) |

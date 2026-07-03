@@ -103,7 +103,7 @@ Section headings are canonical: use the exact `##` text below so `validate` and
 | `# <title>` | H1 matching `title` |
 | `## Intent` | What the template produces and why; the domain framing a reader needs before the detail |
 | `## Standards Layer` | What is **omitted** here and supplied by the developer's standards layer (see §6) |
-| `## Supplementals` | Engagement-specific stub (see §7) |
+| `## Extra Options` | Engagement-specific stub (see §7) |
 
 Optional-for-all:
 
@@ -177,17 +177,17 @@ same template produces house-conforming output for any practice. Front-matter
 
 A template **describes the boundary**; it does not embed the standards. Where a house-specific
 *modeling* assumption cannot be cleanly separated, resolve it by the lowest tier that fits: drop
-it from the published template (Private), park it in `## Supplementals` (Optional), or — if it is
+it from the published template (Private), park it in `## Extra Options` (Optional), or — if it is
 load-bearing — keep it and declare it in the `house_assumptions:` front-matter list (Declared), so
 it is machine-visible rather than buried in prose.
 
 ---
 
-## 7. Supplementals
+## 7. Extra Options
 
-Every template ends with a `## Supplementals` section: a **stub in the base library**,
+Every template ends with a `## Extra Options` section: a **stub in the base library**,
 listing named, optional extensions a developer fills per client engagement. The filled-in
-copy is saved to the developer's own library — never committed back here. Supplementals are
+copy is saved to the developer's own library — never committed back here. Extra Options are
 how a template absorbs natural depth without bloating the core (e.g. the stocktake template
 parks cloud/mobile migration and category-level shrinkage here).
 
@@ -387,7 +387,7 @@ Indexes: PK on `<TableA>ID`.
 - **Naming conventions** — <house style this template follows>.
 - **Error handling** — house pattern for any VBA generated alongside.
 
-## Supplementals
+## Extra Options
 *Empty in the base template. Filled per client engagement.*
 - <named optional extension>
 ```

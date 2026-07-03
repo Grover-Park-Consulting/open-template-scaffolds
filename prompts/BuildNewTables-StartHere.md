@@ -18,17 +18,17 @@ the README, it can.)*
 
 ---
 
-## Step 1 — Tell the AI what you want
+## Step 1 — Fill in the form
 
-Fill in the four lines in the box. Replace the text in `<angle brackets>`; leave the rest as it is.
-Then copy the box **and** the "Instructions to the AI" section below it, and paste both to your
-assistant.
+Right below is **the form** — the only part you edit. On GitHub or in a Markdown reader it shows
+as a shaded box; if you're reading this as plain text, it's everything between the two lines of
+three backticks (```). Replace the text in `<angle brackets>`; leave the rest as it is.
 
 ```text
 - Build: <what you want to create, in plain words — e.g. "add stocktake scanning to an inventory app">
-- Standards: default
+- Standards: <'default', or 'use my own standards'>
 - Who this is for: <describe your client — see below>
-- Extra options: none
+- Extra options: <'none' to start, or pick from the template's Extra Options — see below>
 ```
 
 **Build** — Just say what you're making. The AI matches your words to the right template; you don't
@@ -49,12 +49,23 @@ does not. The clearer and more specific your description, the closer the first r
 you just want to see the template at work, give the bare minimum here — you can always come back
 and expand this part later, when you want more customized output.
 
-**Extra options** — Most templates offer optional add-ons, and the template lists them by name.
-Leave this `none` to start, or name the ones you want.
+**Extra options** — Most templates offer optional add-ons, listed inside the template under a
+heading called **Extra Options**. For example, the Library Catalog template offers per-copy
+holdings, lending, and keyword tagging as extras. Leave this `none` to start, or name the ones
+you want.
 
 ---
 
-## Step 2 — Read back what you get
+## Step 2 — Copy and paste
+
+Copy **everything from the form above down to the end of this file** — your filled-in form *and*
+the "Instructions to the AI" section — and paste it all to your assistant in one go. The
+instructions are what make the result reliable; the assistant needs both. That's it — the AI
+takes it from here.
+
+---
+
+## Step 3 — Read back what you get
 
 The AI hands you the tables in two parts:
 
@@ -63,6 +74,11 @@ The AI hands you the tables in two parts:
 
 Look it over. If it fits, approve it. If something's off — a name, a missing piece, a rule that
 doesn't match your client — say so, and the AI revises. Nothing is final until you say it is.
+
+The diagram is drawn in a notation called **Mermaid** — it's designed for viewing on GitHub (and
+some Markdown readers, such as MarkText), and it may look unfamiliar at first. That's fine: **the
+diagram only shows the shape** — which tables exist and how they connect. **The field list is the
+authority** on exact data types and what's required or optional.
 
 ---
 
@@ -86,7 +102,7 @@ defines and what I've supplied under "Who this is for."
 4. **Surface every declared house assumption** the template carries. List each one and ask me to
    confirm or change it before finalizing — these are choices I should see, not inherit silently.
 5. **Fold in my specifics and any extra options** I asked for. If I named an option, pull it from
-   the template's options list into the live result.
+   the template's **Extra Options** section into the live result.
 6. **Ask, don't guess.** If the template and my notes leave something genuinely undecided, ask me —
    don't fill the gap with invented content.
 7. **No matching template? Don't stop.** Tell me which templates you considered and why each falls
@@ -102,7 +118,9 @@ defines and what I've supplied under "Who this is for."
 Then produce the result in two parts:
 
 1. **A diagram** — a fenced `mermaid` `erDiagram` showing the tables, their keys, how they relate
-   (one-to-many, etc.), and how they connect to any existing tables the template builds on.
+   (one-to-many, etc.), and how they connect to any existing tables the template builds on. Under
+   the diagram, add one line: "This diagram shows the shape only — exact types and
+   required/optional are in the field list below."
 2. **A field list** — one `| Field | Type | Key / Req | Purpose & rules |` table per table, plus
    each table's indexes, any derived (not stored) values, and the audit columns from the standards
    layer.

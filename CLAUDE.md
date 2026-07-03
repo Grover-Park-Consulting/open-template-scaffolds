@@ -20,8 +20,8 @@ You build only what's been approved, and only when directed.
 ## The core workflow — designing a table schema
 
 When the developer asks you to build or extend a set of tables, follow these steps **whether or not
-they paste a prompt**. (`prompts/build-table-schema.md` is the canonical copy-paste form of this same
-workflow.)
+they paste a prompt**. (`prompts/BuildNewTables-StartHere.md` is the canonical copy-paste form of
+this same workflow.)
 
 1. **Match a template.** Find the template in `templates/<domain>/` that fits the request and read it.
    **If no close match exists, say so and follow "When no template fits" below** — don't quietly bend
@@ -36,12 +36,12 @@ workflow.)
    already made. Carry them through unless the developer overrides a specific point.
 5. **Surface every `house_assumptions` entry** the template declares in its front-matter. List them
    and ask the developer to confirm or override before you finalize.
-6. **Fold in the developer's specifics** and any named Supplementals from the template's
-   `## Supplementals` section.
+6. **Fold in the developer's specifics** and any named extras from the template's
+   `## Extra Options` section.
 7. **Don't invent domain content** beyond the template and what the developer supplied. If something
    is genuinely undetermined, ask.
-8. **Present two parts for review:** a `mermaid` `erDiagram` (tables, keys, cardinality, and the graft
-   into any host tables), then field-table detail (`| Field | Type | Key / Req | Purpose & rules |`)
+8. **Present two parts for review:** a `mermaid` `erDiagram` (tables, keys, cardinality, and the
+   connections into any existing host tables), then field-table detail (`| Field | Type | Key / Req | Purpose & rules |`)
    with indexes, derived values, and the standards-supplied audit columns. It is never final until the
    developer says so.
 
@@ -117,7 +117,7 @@ the developer directs you to** — from-scratch work included.
 | `templates/_template-schema.md` | The canonical format every template follows |
 | `templates/<domain>/` | The templates, grouped by domain (e.g. `northwind/`, `library/`) |
 | `standards/` | The active standards layer — naming, audit columns, error handling |
-| `prompts/build-table-schema.md` | The copy-paste form of the workflow above |
+| `prompts/BuildNewTables-StartHere.md` | The copy-paste form of the workflow above |
 | `examples/northwind-stocktake/` | A complete worked example (filled prompt + generated output) |
 
 **Load only what the task needs** — the relevant template plus `standards/`. Don't read the whole

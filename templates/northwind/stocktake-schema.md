@@ -46,7 +46,7 @@ three-level structure that supports **two count methods over one schema**:
 - **Scanned count (Level 2):** a counter scans each product's barcode; individual scans roll
   up into the per-product count automatically.
 
-The schema grafts onto an existing Northwind `Products` table and is entirely PC-based
+The schema connects into (grafts onto) an existing Northwind `Products` table and is entirely PC-based
 (Access tables; a laptop plus an attached handheld scanner provides warehouse mobility).
 A mobile, browser-based interface is out of scope for this template.
 
@@ -55,9 +55,17 @@ A mobile, browser-based interface is out of scope for this template.
 This template does not stand alone; it extends an existing Northwind database. The generator
 must confirm these exist and wire the new tables to them:
 
+> **Out of the box, Northwind Dev doesn't have two of the fields this template relies on.**
+> `Products.SKUBarCode` and `Products.QuantityInPackage` exist only in modified copies of Northwind —
+> they were added for the scan workflow this template was shaped from. If your copy doesn't have
+> them, **they need to be added to `Products` as part of building this template** — unless you've
+> already added them yourself (possibly under different names, which the design should then use
+> instead). The `check_compatibility` tool reports exactly which required pieces your database
+> already has.
+
 | Existing object | Used as | Notes |
 |---|---|---|
-| `Products.ProductID` (AutoNumber PK) | Parent of every count line | The primary graft point |
+| `Products.ProductID` (AutoNumber PK) | Parent of every count line | The primary connection (graft) point |
 | `Products.SKUBarCode` (Memo) | Scan-resolution target | A scanned code is matched against this to resolve `ProductID`. **Standards/implementation note:** a Memo cannot be indexed; for production scan performance the standards layer may call for an indexed Text barcode field. The template depends on the field but does not alter `Products`. |
 | `Products.QuantityInPackage` (Long) | Package-scan multiplier | When a package barcode is scanned, units added = `QuantityInPackage` (see Business Rules) |
 | `Employees.EmployeeID` (AutoNumber PK) | Who conducted the session | `StockTakeSession.ConductedByEmployeeID` FK |
@@ -65,7 +73,7 @@ must confirm these exist and wire the new tables to them:
 
 ## Entities
 
-Naming follows the **Northwind house style (no `tbl`/`tlkp` prefixes)** to graft cleanly onto
+Naming follows the **Northwind house style (no `tbl`/`tlkp` prefixes)** to fit cleanly alongside
 the host database. GPC field-qualification rules still apply (no bare reserved/ambiguous nouns:
 `Status` → `StockTakeStatusID`/`ScanStatusID`, `Notes` → `SessionNotes`). Audit columns are
 supplied by the standards layer (see Standards Layer) and are intentionally absent from the
@@ -208,7 +216,7 @@ layer, so the same template produces house-conforming output for any practice:
 - **Error handling** — the generalized `errHandler` / `GlblErrMsg` pattern for any VBA produced
   alongside this schema.
 
-## Supplementals (engagement-specific — stub)
+## Extra Options (engagement-specific — stub)
 
 *Empty in the base template. Filled per client engagement; the filled copy is saved to the
 developer's own library, not committed here.*

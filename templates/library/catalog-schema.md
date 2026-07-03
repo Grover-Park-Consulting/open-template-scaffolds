@@ -20,7 +20,7 @@ new_tables:
   - tlkpBookcase
   - tlkpShelf
 house_assumptions:
-  - tblPublication — one record per title, not per physical copy. NumberOfVolumes counts duplicate copies (when MultiVolumeSet is false) or volumes in a set (when true); individual copies are not separately tracked or identified. A library that tracks individual physical copies would instead add a per-copy Holding entity — see Supplementals.
+  - tblPublication — one record per title, not per physical copy. NumberOfVolumes counts duplicate copies (when MultiVolumeSet is false) or volumes in a set (when true); individual copies are not separately tracked or identified. A library that tracks individual physical copies would instead add a per-copy Holding entity — see Extra Options.
 ---
 
 # Library Publication Catalog — Table Schema
@@ -29,14 +29,14 @@ house_assumptions:
 
 A **standalone catalog** for a non-circulating reference library: books and other publications,
 their creators and publishers, subject genres, and a physical shelf location. Unlike the Northwind
-stocktake template, this one **grafts onto nothing** — it is a complete, self-contained schema
+stocktake template, this one **builds on nothing existing** — it is a complete, self-contained schema
 (no `extends`, no host tables).
 
 The model is **title-centric**: one row per title, never per physical copy. Duplicate copies and
 multi-volume sets are both expressed through a count (`NumberOfVolumes`) disambiguated by a boolean
 (`MultiVolumeSet`), rather than by per-copy records. That is a deliberate **house assumption**
 (declared in front-matter) suited to a collection that does not sticker, barcode, or individually
-track its items; a library that needs per-copy identity adds the Holding extension in Supplementals.
+track its items; a library that needs per-copy identity adds the Holding extension in Extra Options.
 
 *(Shaped from a real reference collection and genericized; collection-specific provenance fields are
 documented under Parked, not carried into the template.)*
@@ -234,7 +234,7 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
   qualified-field rules (see `standards/naming-conventions.md`). A different practice regenerates the
   same entities under its own conventions without editing this template.
 
-## Supplementals (engagement-specific — stubs)
+## Extra Options (engagement-specific — stubs)
 
 *Empty in the base template. Filled per engagement; the filled copy is saved to the developer's own
 library, not committed here.*
@@ -262,4 +262,4 @@ library, not committed here.*
   capture date (`DateCaptured`) — all artifacts of that one-time, API-assisted build process. They
   are documented here but **excluded** from the generic template. (A general "external-source
   cataloging" extension — capturing match confidence and source provenance when a catalog is built
-  from a third-party bibliographic API — could be a future Supplemental if the pattern recurs.)
+  from a third-party bibliographic API — could be a future extra option if the pattern recurs.)

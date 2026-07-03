@@ -25,7 +25,8 @@ movement/change log gives a complete audit history independent of the host's row
 columns, and a barcode-scan inventory-verification flow supports periodic physical counts by
 site, reconciling what's on file against what's actually found.
 
-This is a greenfield schema — it does not extend or graft onto an existing host database.
+This schema is built entirely new — it needs no existing tables and doesn't connect into an
+existing database. (In database terms: a *greenfield* schema.)
 
 ## Entities
 
@@ -255,7 +256,7 @@ canonical format — each row is still its own discrete table.
 - A paired `vba-scaffold` for barcode-scan resolution and history-stamping, and a paired
   `form-spec` for asset entry/edit and inventory-audit data capture.
 
-## Supplementals
+## Extra Options
 
 *Empty in the base template. Filled per client engagement.*
 - District-specific capitalization threshold, if different from $500.

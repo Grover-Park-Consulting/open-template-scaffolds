@@ -192,7 +192,7 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
 
     # ---- Common core (spec section 3) ----
     sections = _h2_sections(body)
-    for sec in ("Intent", "Standards Layer", "Supplementals"):
+    for sec in ("Intent", "Standards Layer", "Extra Options"):
         if not _has_section(sections, sec):
             errors.append(f"CORE: missing required section '## {sec}'")
     h1 = next((l.strip()[2:].strip() for l in body.splitlines()

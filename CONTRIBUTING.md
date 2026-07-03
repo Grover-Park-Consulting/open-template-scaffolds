@@ -40,7 +40,7 @@ Every contributed template must:
   correct by definition.
 - **Live at `templates/<domain>/<name>.md`** — a kebab-case filename matching the template's
   `template` slug, under its domain folder.
-- **Include the required sections** the format calls for (Intent, Standards Layer, Supplementals,
+- **Include the required sections** the format calls for (Intent, Standards Layer, Extra Options,
   plus the table-schema sections: Prerequisites, Entities, Relationships, Business Rules).
 - **Be genericized** — no client-confidential or proprietary schema. Use a recognizable public
   domain or invented data. (Our own first template took a real engagement and recast it onto the
@@ -72,7 +72,7 @@ home, picking whichever of the following options keeps the shared template most 
 1. **Private** — if your template doesn't really need it, keep it in your own copy. No need to
    send it upstream; it reaches no adopter.
 2. **Optional** — if your variant needs it but the base template stands fine without it, park it in
-   `## Supplementals` as a named, opt-in extra. It travels with the template but stays dormant
+   `## Extra Options` as a named, opt-in extra. It travels with the template but stays dormant
    until a colleague wants it.
 3. **Declared** — if it's genuinely load-bearing and can't be lifted out, keep it and name it in
    the `house_assumptions:` front-matter list. It ships, and adopters see it coming and can keep it as is or
