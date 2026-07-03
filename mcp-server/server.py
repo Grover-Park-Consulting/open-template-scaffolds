@@ -10,7 +10,7 @@ import re
 
 from mcp.server.fastmcp import FastMCP
 
-from library import iter_templates, read_standard, validate_library
+from library import iter_standards, iter_templates, read_standard, validate_library
 
 mcp = FastMCP("open-template-scaffolds")
 
@@ -147,6 +147,38 @@ def get_template(template: str) -> dict:
         f"No template with id '{template}'. "
         "Use list_templates or search_templates to find valid ids."
     )
+
+
+@mcp.tool()
+def get_standards(standard: str = "") -> dict:
+    """Return the active standards layer on its own — no template required.
+
+    Plain version: this hands the AI the house rules by themselves. It exists
+    for the from-scratch path: when no template fits and the developer approves
+    a from-scratch design, that design must still follow the standards layer —
+    naming, audit columns, error handling, query style, form conventions. This
+    tool loads the layer without going through a template.
+
+    With no argument it returns every standards file; pass a `standard` name
+    (e.g. "naming-conventions") for just that one. Any README in `standards/`
+    is skipped — it maps the folder; it isn't a standard. Read-only: this
+    builds nothing and changes nothing; the never-build-before-approval
+    boundary is unaffected.
+
+    Returns `{standards: [{name, content}], count}`. Raises ValueError when a
+    given name matches no standards file (the message lists what exists).
+    """
+    name = standard.strip().lower()
+    entries = [{"name": n, "content": c} for n, c in iter_standards()]
+    if name:
+        matched = [e for e in entries if e["name"].lower() == name]
+        if not matched:
+            raise ValueError(
+                f"No standards file named '{standard}'. "
+                f"Available: {', '.join(e['name'] for e in entries)}."
+            )
+        entries = matched
+    return {"standards": entries, "count": len(entries)}
 
 
 @mcp.tool()

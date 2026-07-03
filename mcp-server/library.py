@@ -55,6 +55,18 @@ def read_standard(name: str) -> str | None:
     return None
 
 
+def iter_standards():
+    """Yield (name, content) for every standards-layer file, sorted by name.
+
+    Skips any README.md — that file maps the folder; it isn't a standard —
+    matching iter_templates' convention for infrastructure files.
+    """
+    for path in sorted(STANDARDS_DIR.glob("*.md")):
+        if path.name.lower() == "readme.md":
+            continue
+        yield path.stem, path.read_text(encoding="utf-8")
+
+
 # --- validate(): format-only rules from templates/_template-schema.md ---
 # Each check returns a short "RULE: message" string; an empty list means the
 # template is well-formed. No host database is ever opened here.

@@ -33,7 +33,10 @@ assistant.
 
 **Build** — Just say what you're making. The AI matches your words to the right template; you don't
 pick a file. *"Add stocktake scanning to an inventory application"* selects the Stocktake Scanning
-template. *"Set up a catalog for a library"* selects the Library Catalog template.
+template. *"Set up a catalog for a library"* selects the Library Catalog template. And if nothing in
+the library matches what you asked for, the AI won't force a fit — it will say so, and offer to
+design your tables from scratch under the same conventions, with the same review. You're covered
+either way.
 
 **Standards** — Leave this as `default` to use the library's built-in conventions as they are. Or,
 if you've already worked out your own conventions for your AI, say `use my own standards` instead.
@@ -86,6 +89,15 @@ defines and what I've supplied under "Who this is for."
    the template's options list into the live result.
 6. **Ask, don't guess.** If the template and my notes leave something genuinely undecided, ask me —
    don't fill the gap with invented content.
+7. **No matching template? Don't stop.** Tell me which templates you considered and why each falls
+   short. Then offer, as the default next step: with my approval, you'll design it from scratch
+   following the same standards layer, producing the same two-part result below for the same
+   review — and ask me for the go-ahead before you begin. (Mention the alternatives in passing:
+   adapting the nearest template despite the mismatch, or me refining the description.) In a
+   from-scratch design, list every assumption you had to invent as **proposed assumptions** for me
+   to confirm or change — I should see your choices, not inherit them silently. And once I approve
+   a from-scratch design, you may offer to shape it into a template for the library — it would be
+   added upon the curator's approval.
 
 Then produce the result in two parts:
 

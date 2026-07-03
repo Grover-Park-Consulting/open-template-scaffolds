@@ -10,9 +10,12 @@ standards applied throughout.
 
 ## Your role
 
-Produce the design from a template plus the standards layer — don't design from a blank page when a
-template exists. The developer **approves or redirects**; they resort to building by hand only if your
-output isn't acceptable after iteration. You build only what's been approved, and only when directed.
+Produce the design from a template plus the standards layer when a template fits — and from scratch
+under the same standards layer when none does. **The library's promise is the same either way: a
+template when one fits; a standards-grounded design when none does — the same standards, the same
+review flow.** Don't design from a blank page when a template exists. The developer **approves or
+redirects**; they resort to building by hand only if your output isn't acceptable after iteration.
+You build only what's been approved, and only when directed.
 
 ## The core workflow — designing a table schema
 
@@ -21,10 +24,9 @@ they paste a prompt**. (`prompts/build-table-schema.md` is the canonical copy-pa
 workflow.)
 
 1. **Match a template.** Find the template in `templates/<domain>/` that fits the request and read it.
-   **If no close match exists, say so and await direction** — within this workflow, don't quietly fill
-   the gap with a schema improvised from scratch in a template's place. (Working from scratch can be a
-   legitimate choice when the developer asks for it outright; it's simply outside what these templates
-   are for.)
+   **If no close match exists, say so and follow "When no template fits" below** — don't quietly bend
+   a template that doesn't fit, and don't improvise unbounded. The from-scratch path is a first-class
+   route with its own rules, not an exception.
 2. **Read the active standards layer** in `standards/`.
 3. **Apply the standards to everything you produce** — naming conventions, audit columns, and the
    error-handling pattern — plus the field-qualification rules (no bare reserved or ambiguous nouns;
@@ -76,6 +78,37 @@ Weigh the **domain** and the **shape** of the request against the templates avai
 fits when it covers the same kind of work, even if the names differ (the standards layer and the
 developer's specifics adjust those). When two templates could serve, or none clearly does, **don't
 force a fit**: say what you found, and let the developer choose or confirm before you proceed.
+
+## When no template fits
+
+A missing template does not end the workflow — the developer came with a real need, and the library
+serves it either way. When no template fits:
+
+1. **Name the templates you considered and why each falls short.** This is required — it shows your
+   matching judgment instead of hiding it.
+2. **Offer the standards-grounded from-scratch path as the default, and ask for the go-ahead:**
+
+   > "No template covers this, so, with your approval, I'll design it from scratch following your
+   > standards layer — same review: you'll get the diagram and field detail to approve or redirect
+   > before anything is built. Say the word and I'll begin."
+
+   In the same breath, name the alternatives without stopping for a menu: adapting the nearest
+   template despite the stated mismatch, or refining the description.
+3. **On the go-ahead, design under the full standards layer.** Read every file in `standards/` (or
+   call the MCP `get_standards` tool if available) and apply naming, audit columns, field
+   qualification, the junction-PK convention, and third-normal-form discipline exactly as you would
+   for a template-based design. Same two-part deliverable (diagram + field detail), same approval
+   gate.
+4. **Surface your invented assumptions.** A from-scratch design has no `house_assumptions`
+   front-matter, so recreate that transparency yourself: list every modeling assumption you had to
+   invent as **proposed assumptions** for the developer to confirm or override before the design is
+   final.
+5. **Close with the templatize offer.** Once the design is approved, offer — with the design already
+   in hand: *"If you agree, I can shape this into a template for the library — it would be added
+   upon the curator's approval."* (See `CONTRIBUTING.md` for how contributions work.)
+
+**Never build before the design is approved, and never create or alter objects in a database unless
+the developer directs you to** — from-scratch work included.
 
 ## Where things live
 
