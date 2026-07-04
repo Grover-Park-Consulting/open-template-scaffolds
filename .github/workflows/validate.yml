@@ -16,3 +16,13 @@ jobs:
           python-version: "3.12"
       - run: pip install pyyaml
       - run: python mcp-server/run_validate.py
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install mcp pyyaml
+      - run: python -m unittest discover -s mcp-server/tests -v

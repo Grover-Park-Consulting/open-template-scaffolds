@@ -5,15 +5,16 @@ Scaffolds library to MCP-capable AI clients. It reads the library's markdown (`t
 single source of truth, and it ships *inside* the library itself — so when you make your own copy of
 the library, the server comes with it. There's nothing separate to download or keep up to date.
 
-## Tools (built across phase B3)
+## Tools
 
-| Tool | Purpose | Status |
-|---|---|---|
-| `list_templates` | The library's templates + key metadata | scaffold |
-| `search_templates` | Find templates by keyword / domain / type | planned (B3-11) |
-| `get_template` | A template composed with the active standards layer | planned (B3-12) |
-| `validate` | Format-only validation per `templates/_template-schema.md` | planned (B3-13) |
-| `check_compatibility(template, db_path)` | Confirm a template's required tables/fields exist in a host Access DB | planned (B3-14, optional — see below) |
+| Tool | Purpose |
+|---|---|
+| `list_templates` | The library's templates + key metadata |
+| `search_templates` | Find templates by keyword / domain / type, with a relevance rating on every result |
+| `get_template` | A template composed with the active standards layer (kept separate for easy swapping) |
+| `get_standards` | The standards layer on its own — powers from-scratch designs when no template fits |
+| `validate` | Format-only validation per `templates/_template-schema.md` |
+| `check_compatibility(template, db_path)` | Confirm a template's required tables/fields exist in a host Access DB (optional — see below) |
 
 ---
 
