@@ -23,6 +23,8 @@ the README, it can.)*
 Right below is **the form** — the only part you edit. On GitHub or in a Markdown reader it shows
 as a shaded box; if you're reading this as plain text, it's everything between the two lines of
 three backticks (```). Replace the text in `<angle brackets>`; leave the rest as it is.
+*(Open this file in Notepad or any plain-text editor. Don't use a word processor like Word — it
+quietly changes some characters as you type, and the form may stop working.)*
 
 ```text
 - Build: <what you want to create, in plain words — e.g. "add stocktake scanning to an inventory app">
@@ -63,6 +65,10 @@ the "Instructions to the AI" section — and paste it all to your assistant in o
 instructions are what make the result reliable; the assistant needs both. That's it — the AI
 takes it from here.
 
+If your assistant can't see the library's files, it will ask for them by name — paste in each
+file's contents (or, if it can read your computer's files, give it the library folder's full
+location), and carry on.
+
 ---
 
 ## Step 3 — Read back what you get
@@ -93,7 +99,9 @@ the matched template and the standards layer — do not invent content beyond wh
 defines and what I've supplied under "Who this is for."
 
 1. **Match and read** the template that fits the "Build" line, and read the **standards** (the
-   library default unless I named my own).
+   library default unless I named my own). If you cannot see the library files, list the exact
+   files you need — the matched template and the standards — and ask for them before proceeding;
+   never guess at their contents.
 2. **Honor the template** — its tables, fields, relationships, and business rules are decisions
    already made. Carry them through unless my notes override a specific point.
 3. **Apply the standards** — naming, audit columns, and the error-handling pattern come from the

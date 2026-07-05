@@ -92,7 +92,9 @@ Cleanup:
     Exit Sub
 
 errHandler:
-    ' [STANDARDS — error-handling.md] house-specific central logger, shown as a demo
+    ' [STANDARDS — error-handling.md] house-specific central logger, shown as a demo.
+    '            GPC-private — you won't have it and shouldn't look for it; substitute your
+    '            own logger or the dependency-free MsgBox block in error-handling.md.
     Call codearchive.GlblErrMsg(iLn:=Erl, _
         sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
         sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), bLog:=True)

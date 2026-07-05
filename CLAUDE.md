@@ -132,9 +132,9 @@ them. This is what lets one template serve every shop.
 
 ## Boundaries
 
-- Only `type: table-schema` templates are proven today. `vba-scaffold` and `form-spec` are stubs in
-  `_template-schema.md` (§8, §9) — don't author or generate against them until those sections are
-  formalized.
+- All three template types are authoritative in `_template-schema.md` — `table-schema` (§4),
+  `vba-scaffold` (§8), `form-spec` (§9) — each with proven templates in the library. Generate
+  against those sections exactly as written.
 - Audit columns belong to `standards/`, never to a template's field list — flag them if you find them
   in a template body.
 - Don't carry one practice's house conventions into output generated for another.

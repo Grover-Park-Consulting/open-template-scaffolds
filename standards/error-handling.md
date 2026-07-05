@@ -31,6 +31,26 @@ qualifier is omitted). A forked practice replaces this call with its own central
 surrounding structure (capture `Erl`, reflect the names via the VBE, log, `Resume Cleanup`, `Resume`)
 is what the standard fixes.
 
+**If you are not GPC — and almost every reader of this file is not — you do not have
+`GlblErrMsg`, and it is not available anywhere.** It lives in GPC's private CodeArchive library
+and appears here only as a real example of a central logger. **Do not search for it, and do not
+ask your AI assistant to find or import it.** Use one of these instead:
+
+- **Your shop's own central error logger**, if you have one — swap it into the call site.
+- **The dependency-free default** — a plain message box, needs nothing installed:
+
+```vba
+errHandler:
+240       MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+250       Resume Cleanup
+260       Resume
+```
+
+**To the AI generating code:** unless this practice has supplied its own central logger, emit
+the dependency-free block above. Never emit `codearchive.GlblErrMsg` for a non-GPC adopter, and
+never search for, offer to obtain, or ask about CodeArchive. Generated code must compile on the
+adopter's machine as-is.
+
 ## Full procedure skeleton
 
 ```vba

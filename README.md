@@ -26,17 +26,30 @@ plain words, the AI builds it, and you look it over and approve or adjust.
 install.** (A more automated "server" path is optional and comes later — see
 [`mcp-server/`](mcp-server/README.md).)*
 
+*Never used an AI assistant, or not sure you have one? Read the short **"Before you start"**
+section in [`WELCOME.md`](WELCOME.md) first — it takes two minutes and gets you set up.*
+
 1. **Get your own copy of the library — it's just a folder of files.**
     - **Were you handed the library** (say, as a `.zip`)? Just **unzip it** somewhere you'll find
       again (your Documents folder is fine). That unzipped folder is your copy — everything's inside it.
     - **Getting it from GitHub?** Click the green **Code** button → **Download ZIP**, then unzip it —
       or, if you use Git, *fork* it (your own copy you can keep and update) and clone it.
 2. **Give your AI assistant the files.** Your assistant needs to be able to read the library's
-   files. How depends on which assistant you use:
+   files. How depends on which assistant you use — three common cases:
     - **An assistant built into a code editor** (such as Claude Code, or GitHub Copilot in
       VS Code): open the library folder in the editor. The assistant can then read everything in it.
-    - **A chat assistant in a browser or app** (such as Claude or ChatGPT): paste in the contents
-      of the files the prompt asks for — the template and the standards — before you run the prompt.
+    - **A chat assistant that can read files on your computer** (such as Claude Desktop with
+      folder access turned on): it can read files, but it doesn't know *where* the library is —
+      it won't go looking on its own. Start your chat by telling it the full location, in plain
+      words: *"My template library is in `C:\Users\<your name>\Documents\OpenTemplateScaffolds`
+      — read what you need from there."* After that, it finds everything itself.
+    - **A chat assistant in a browser** (such as Claude or ChatGPT on the web): don't worry about
+      giving it files yet. Skip ahead to **step 3 first** — fill in the form there, then copy that
+      whole file into the chat and send it. The assistant will then tell you, by name, which other
+      files it needs. For each one: open it, copy everything (the same select-all, copy, paste as
+      in "Before you start"), and paste it into the chat. *(If your assistant can read files on
+      your computer — the middle case above — you can skip the copying and just tell it the full
+      location of the library folder instead.)*
 
     Don't worry about getting this perfect. If the assistant ever says it can't see a file, just
     paste that file's contents into the chat and carry on.
