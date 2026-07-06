@@ -136,7 +136,8 @@ nothing connecting back to us that you have to maintain.
 
 ## Contributing and license
 
-Want to add a template or improve one? See [`CONTRIBUTING.md`](CONTRIBUTING.md). The library is
+Want to add a template or improve one? See [`CONTRIBUTING.md`](CONTRIBUTING.md) — and the developers
+who've already shared templates are credited in [`CONTRIBUTORS.md`](CONTRIBUTORS.md). The library is
 released under the [MIT license](LICENSE) — free to use, change, and build on.
 
 ## More to come
