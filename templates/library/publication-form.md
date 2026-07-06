@@ -29,7 +29,8 @@ this template **names** the framework pieces it relies on, it does not redefine 
 | `library-catalog-schema` (`implements`) | The tables this form edits |
 | `qryPublication_frm` | The form's record source over `tblPublication`; its `WHERE` is rewritten by the selector |
 | `form-conventions.md` | House design defaults **+** the named reusable patterns (layered selector, quick-add, validation highlights, audit display) |
-| Forms framework (deferred) | `RefreshSQLWhere`, the alpha-filter routine, `TempVars` wrappers, and the audit/image/validation helpers — supplied by the host, **named not redefined** here |
+| `library-record-finder-scaffold` (companion `vba-scaffold`) | The record-finder engine — pick-list build (`FinderRowSource`) + jump-to-record (`JumpFormToRecord`) — realized as a paired scaffold, not redefined here |
+| Forms framework (deferred) | The `TempVars` wrappers and the audit / image / validation helpers — supplied by the host, **named not redefined** here |
 
 ## Layout
 
@@ -89,8 +90,9 @@ materialization step's job (a default stacked layout, not pixel-placed).
 
 ## Features
 
-1. **Layered record selector ("All or One")** — *the headline; defers to the framework.* Three filter
-   inputs rebuild the selector's row source, and the selector's selection rewrites the form:
+1. **Layered record selector ("All or One")** — *the headline; the engine is the companion
+   `library-record-finder-scaffold` (`vba-scaffold`).* Three filter inputs rebuild the selector's row
+   source, and the selector's selection rewrites the form:
    - **(a) Genre + Alpha** — `cboFilterGenre` and `sfrmAlphaSelect` drive the genre/alpha row-source
      query. The chosen letter rides in a **`TempVar`** (`Alpha1stChar`), per `query-style.md`, so the
      filter is decoupled from any one control.
@@ -124,9 +126,9 @@ patterns; not baseline form features):*
   checkbox for Boolean, multi-line for Memo), default sizing, and the **named reusable patterns** the
   form invokes (layered selector, quick-add, validation highlights, audit display).
 - **Naming** (`naming-conventions.md`) — form / subform / record-source names.
-- **Forms framework** (host-supplied, named not redefined) — `RefreshSQLWhere`, the alpha-filter
-  routine, the `TempVars` wrappers, and the audit / image / validation helpers. *(The layered-selector
-  engine is a tracked future `vba-scaffold` candidate.)*
+- **Forms framework** (host-supplied, named not redefined) — the `TempVars` wrappers and the audit /
+  image / validation helpers. *(The record-finder engine — the pick-list build and the jump-to-record —
+  is realized by the companion `library-record-finder-scaffold`.)*
 
 ## Materialization
 
@@ -151,8 +153,5 @@ library, not committed here.*
   (enable/require `Volume` from the checkbox). **Deferred pending client feedback (~3–4 months); it is
   not in the production copy either.** The data-level validation remains the table's; only the form's
   enable/disable affordance is parked.
-- **Layered-selector `vba-scaffold`** — the selector engine (`RefreshSQLWhere`, `FilterPubTitles`, the
-  alpha subform, the row-source swap) is a reusable pattern that belongs in its own `vba-scaffold`. This
-  form-spec names it as a deferred dependency; building that scaffold is tracked as a future step.
 - **MRU "recently edited"** — a most-recently-used list of titles; a framework feature, off by default.
 - **Styling / polish** — out of scope by design (the adopter's pass).
