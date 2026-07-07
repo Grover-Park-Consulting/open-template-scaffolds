@@ -10,6 +10,7 @@ requires_tables:
   - tblPublication
   - tblPublicationGenre
 standards_layer:
+  - design-principles
   - error-handling
   - query-style
   - naming-conventions

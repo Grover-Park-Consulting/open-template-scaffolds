@@ -11,6 +11,7 @@ file(s) here and applies them.
 | [`audit-columns.md`](audit-columns.md) | `audit-columns` | The `CreatedDate` / `CreatedBy` / `ModifiedDate` / `ModifiedBy` / `AccessTS` set and how it's maintained |
 | [`error-handling.md`](error-handling.md) | `error-handling` | The VBA `errHandler` / central-logging pattern for any code generated alongside |
 | [`query-style.md`](query-style.md) | `query-style` | How VBA and saved queries write and run SQL — where SQL lives, aliasing/qualification, formatting, safe criteria |
+| [`design-principles.md`](design-principles.md) | `design-principles` | The reasoning behind the specific rules — one-job-per-procedure, separation of concerns, encapsulation, cohesion/coupling, DRY, strong contracts; what generated VBA is shaped by |
 | [`form-conventions.md`](form-conventions.md) | `form-conventions` | Form design defaults (control prefixes, control types, buttons, tab order, sizing) + named form patterns (selector, quick-add, validation highlights; audit display optional) |
 
 ## Forking
