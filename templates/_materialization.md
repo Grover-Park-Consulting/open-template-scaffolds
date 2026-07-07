@@ -225,12 +225,18 @@ into your columns and lines is your styling pass."*
 3. **Control row → control block** — name + type → `Begin <Type>`; `Bound to` → `ControlSource`; a
    lookup combo → `RowSource` (+ hidden bound column); Boolean → `CheckBox`; a subform → `SourceObject`
    + `LinkMasterFields` / `LinkChildFields`.
-4. **Default-layout rule** — single-field controls (textbox, combo, checkbox) stack vertically in
+4. **Matching label — every user-facing control gets one.** Each data control (textbox, combo,
+   checkbox, image, subform) is emitted with its own `Begin Label`, captioned from the field's friendly
+   name (the inventory's intent, not the raw field name). The `form-spec` inventory lists only the data
+   controls — the labels are **derived here, one per control, and must never be skipped.** A check box
+   may carry its own caption and hidden controls need none, but emit the label anyway by default:
+   deleting a spare beats hunting for a missing one.
+5. **Default-layout rule** — single-field controls (textbox, combo, checkbox) stack vertically in
    inventory order (label-left / control-right, fixed row pitch). **Subform controls are never
    interleaved into that stack — they are placed to the *right* of it, or *below* it when width doesn't
    allow.** That is the *one* layout judgment the default makes; beyond it, no 2D optimization is
    attempted (see Layout fidelity).
-5. **Code-behind** — event handlers wired to the named framework helpers, each with the standard
+6. **Code-behind** — event handlers wired to the named framework helpers, each with the standard
    `errHandler` block (`error-handling.md`; line numbering per the house policy). Helpers are **called,
    not defined**.
 
@@ -306,3 +312,8 @@ The same mapping drives the Access Explorer MCP `create_form` / `create_control`
 emitting text for import, the generator creates the form and its controls directly, applying the same
 default-layout rule and wiring the same code-behind. The `form-spec` markdown remains the source of
 truth; both paths are generated targets.
+
+**Create the label controls explicitly.** `create_control` makes only the control you name — it does
+**not** auto-create an attached label — so each data control needs a second `create_control` call for
+its `lbl…` label (Mapping rule 4). Skipping this is why a live-built form comes up with no captions on
+any control; every control the inventory lists must get its matching label.

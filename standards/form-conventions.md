@@ -62,6 +62,11 @@ Label-left / control-right (label-above for Memo), consistent control height, al
 the **default ("ugly but functional") layout** the materialization step emits from a `form-spec`; the
 adopter restyles. Positioning and sizing are defaults, not prescriptions.
 
+By default every user-facing data control is generated with its own matching caption label (`lbl…`). A
+few controls carry their own caption (a check box) and some are hidden and need none — the developer may
+delete a label they don't want, but the build must never silently omit one: better to remove a spare
+than to notice one is missing and add it.
+
 ---
 
 ## 6. Named reusable patterns
