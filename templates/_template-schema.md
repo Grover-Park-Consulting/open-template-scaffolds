@@ -174,6 +174,7 @@ same template produces house-conforming output for any practice. Front-matter
 | `error-handling` | The house `errHandler` / global-error pattern for any VBA generated alongside |
 | `query-style` | How VBA and saved queries write and run SQL — where SQL lives, aliasing/qualification, formatting, and safe criteria. Applies to any generated code that touches data (notably `vba-scaffold`) |
 | `form-conventions` | Form **design** defaults (control prefixes, control types, buttons, tab order, sizing) + the named reusable form patterns (selector, quick-add, validation highlights; audit display optional). Used by `form-spec` |
+| `design-principles` | The reasoning behind the specific rules — one-job-per-procedure, separation of concerns, encapsulation, cohesion/coupling, DRY, strong contracts — that any generated VBA is shaped by |
 
 A template **describes the boundary**; it does not embed the standards. Where a house-specific
 *modeling* assumption cannot be cleanly separated, resolve it by the lowest tier that fits: drop

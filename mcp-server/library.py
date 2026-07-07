@@ -74,7 +74,7 @@ def iter_standards():
 _TYPE_ENUM = {"table-schema", "vba-scaffold", "form-spec", "spec"}
 _STATUS_ENUM = {"draft", "review", "stable"}
 _STANDARDS_VALUES = {"audit-columns", "naming-conventions", "error-handling",
-                     "query-style", "form-conventions"}
+                     "query-style", "form-conventions", "design-principles"}
 _AUDIT_COLUMNS = {"addedby", "addedon", "modifiedby", "modifiedon"}
 _ACCESS_SCALAR_TYPES = {"autonumber", "long", "integer", "byte", "single", "double",
                         "currency", "memo", "date/time", "boolean", "guid"}
