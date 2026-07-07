@@ -173,7 +173,7 @@ Private Function TableExists(db As DAO.Database, ByVal sName As String) As Boole
 End Function
 ```
 
-**Four rules that make the generated Sub actually run** — each learned by running it against a real
+**Five rules that make the generated Sub actually run** — each learned by running it against a real
 database:
 
 1. **Trusted Location.** The Sub must run from an Access **Trusted Location**; outside one, Access
@@ -186,6 +186,15 @@ database:
    engine rejects the `DEFAULT` keyword outright (proven: even `DEFAULT 'literal'` fails with a syntax
    error). This is the exact trap that turns a generated ACE-DDL build into "Syntax error in CREATE
    TABLE statement."
+5. **VBA-only functions never go in engine-evaluated SQL or defaults.** A function the ACE
+   engine doesn't recognize — `Environ()`, and most VBA-runtime functions — fails with
+   **"Undefined function '…' in expression"** the moment it's embedded in an `INSERT` passed
+   to `db.Execute` or set as a field's `DefaultValue`; the engine's expression service, not
+   VBA, evaluates those. Resolve the value in VBA first and concatenate the literal. To stamp
+   `CreatedBy` on a seed row, for example: `Dim sUser As String: sUser = Environ$("USERNAME")`
+   then `db.Execute "INSERT INTO … (…, CreatedBy) VALUES (…, '" & sUser & "')", dbFailOnError`.
+   (`CurrentUser()` *is* engine-known, but returns `"Admin"` without workgroup security — the
+   resolved Windows user name is preferred.)
 
 Naming, audit columns, and types follow the active standards; the `errHandler` is the standards-layer
 one (the **dependency-free message-box default** unless `error-handling.md` specifies a central logger).
