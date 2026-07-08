@@ -199,6 +199,65 @@ database:
 Naming, audit columns, and types follow the active standards; the `errHandler` is the standards-layer
 one (the **dependency-free message-box default** unless `error-handling.md` specifies a central logger).
 
+### Audit-field stamping — the Before Change data macro
+
+The audit columns (`standards/audit-columns.md`) are **Required** but can't be filled by a default —
+`CreatedBy` needs the current user, and the engine can't evaluate `Environ()` in a default (rule 5),
+so a generated table with a `Required` `CreatedBy` and no macro **rejects every insert**. Access's
+answer is a **Before Change data macro**, which **cannot be built with DAO** — write it as a UTF-16
+XML file and load it. Proven by running it against a generated table:
+
+```vba
+' Run in the accdb that holds the tables (the BE for a split app).
+Public Sub BuildAuditStampMacro(ByVal sTable As String, ByVal sPK As String)
+    Dim xml As String, fso As Object, txt As Object, sPath As String
+    On Error GoTo errHandler
+    xml = "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>"
+    xml = xml & "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2009/11/application"">"
+    xml = xml & "<DataMacro Event=""BeforeChange""><Statements><ConditionalBlock>"
+    xml = xml & "<If><Condition>IsNull([Old].[" & sPK & "])</Condition><Statements>"
+    xml = xml & SetFieldXml("CreatedDate", "Now()") & SetFieldXml("CreatedBy", "AuditUser()")
+    xml = xml & "</Statements></If><Else><Statements>"
+    xml = xml & SetFieldXml("ModifiedDate", "Now()") & SetFieldXml("ModifiedBy", "AuditUser()")
+    xml = xml & "</Statements></Else></ConditionalBlock></Statements></DataMacro></DataMacros>"
+    sPath = Environ$("TEMP") & "\" & sTable & "_BeforeChange.xml"
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set txt = fso.CreateTextFile(sPath, True, True)   ' arg3 True = UTF-16 (required)
+    txt.Write xml: txt.Close
+    Application.LoadFromText acTableDataMacro, sTable, sPath
+    fso.DeleteFile sPath
+Cleanup:
+    On Error Resume Next
+    Set txt = Nothing: Set fso = Nothing: Exit Sub
+errHandler:
+    MsgBox "BuildAuditStampMacro failed on " & sTable & ": " & Err.Number & " - " & Err.Description, vbCritical
+    Resume Cleanup
+End Sub
+
+Private Function SetFieldXml(ByVal sField As String, ByVal sValue As String) As String
+    SetFieldXml = "<Action Name=""SetField""><Argument Name=""Field"">" & sField & _
+                  "</Argument><Argument Name=""Value"">" & sValue & "</Argument></Action>"
+End Function
+```
+
+The helper it calls lives in a standard module **in the same accdb** (a data macro can call a public
+function there — the only way to reach the Windows user, since `Environ()` is out of engine reach):
+
+```vba
+Public Function AuditUser() As String
+    AuditUser = Environ$("USERNAME")
+End Function
+```
+
+**Rules learned by running it:**
+1. **Before Change fires before Required validation** — so the macro satisfies a `Required` `CreatedBy`.
+2. **`IsNull([Old].[<PK>])`** is the INSERT-vs-UPDATE discriminator inside Before Change.
+3. **Before Change / Before Delete use the 2009 namespace; After Insert/Update/Delete use 2010** — they
+   **cannot share one XML file**. A self-stamp needs only the Before Change (2009) file.
+4. **Data macros cannot set Long Text (Memo) fields** — keep audit fields Short Text / Date-Time.
+5. `CurrentUser()` is engine-known but returns `"Admin"` without workgroup security; `AuditUser()` gets
+   the real Windows user.
+
 ---
 
 *The rest of this document covers **form-spec** materialization.*

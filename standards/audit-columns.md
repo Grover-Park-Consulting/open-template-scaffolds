@@ -23,9 +23,22 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
   `ModifiedDate` / `ModifiedBy` are stamped by an **AFTER UPDATE trigger** on every subsequent
   change — *never by application code*, so audit stamping cannot be bypassed through any interface.
   `AccessTS` is the SQL Server `TIMESTAMP` (rowversion).
-- **Access (local tables):** maintained by a **Before Change data macro** or the application's save
-  path. `AccessTS` does **not** apply — Access has no native rowversion type; that column appears
-  only on tables linked from SQL Server.
+- **Access (local tables):** stamped by a **Before Change data macro** on the table — the
+  interface-independent equivalent of the SQL Server trigger (it fires no matter how the row is
+  written: form, query, direct edit, VBA, import). A default alone can't do it: `CreatedBy` needs the
+  current user, and the ACE engine can't evaluate `Environ()` in a default (see `_materialization.md`
+  rule 5), so a `Required` `CreatedBy` with no macro **blocks every insert**. The macro:
+  - **INSERT** (`IsNull([Old].[<PK>])`) → `CreatedDate = Now()`, `CreatedBy = AuditUser()`.
+  - **UPDATE** (else) → `ModifiedDate = Now()`, `ModifiedBy = AuditUser()`; `Created*` stay frozen.
+  - Before Change runs **before** Required validation, so it satisfies a `Required` `CreatedBy`.
+  - **User identity:** a Public VBA function `AuditUser()` returning `Environ$("USERNAME")`, which the
+    macro calls as `=AuditUser()`. A data macro *can* call a public function in the same accdb. Prefer
+    this to `CurrentUser()`, which returns `"Admin"` without workgroup security.
+  - **Never make an audit field Long Text (Memo)** — data macros can't set Long Text at all; the audit
+    set is Short Text / Date-Time by design.
+  `AccessTS` does **not** apply — Access has no native rowversion type; it appears only on tables
+  linked from SQL Server. *(How the macro is built — DAO can't create data macros — is in
+  `templates/_materialization.md`.)*
 
 ## Notes
 
