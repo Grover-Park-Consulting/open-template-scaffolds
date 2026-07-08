@@ -175,6 +175,7 @@ same template produces house-conforming output for any practice. Front-matter
 | `query-style` | How VBA and saved queries write and run SQL — where SQL lives, aliasing/qualification, formatting, and safe criteria. Applies to any generated code that touches data (notably `vba-scaffold`) |
 | `form-conventions` | Form **design** defaults (control prefixes, control types, buttons, tab order, sizing) + the named reusable form patterns (selector, quick-add, validation highlights; audit display optional). Used by `form-spec` |
 | `design-principles` | The reasoning behind the specific rules — one-job-per-procedure, separation of concerns, encapsulation, cohesion/coupling, DRY, strong contracts — that any generated VBA is shaped by |
+| `startup-conventions` | How a generated Access application initializes on open — the `AutoExec` → `Startup()` convention, the idempotent `EnsureAppFolders()` slot, and reliable external-file-asset folders. Used by a `form-spec` that materializes a full application |
 
 A template **describes the boundary**; it does not embed the standards. Where a house-specific
 *modeling* assumption cannot be cleanly separated, resolve it by the lowest tier that fits: drop

@@ -258,6 +258,50 @@ End Function
 5. `CurrentUser()` is engine-known but returns `"Admin"` without workgroup security; `AuditUser()` gets
    the real Windows user.
 
+### Application startup — AutoExec, Startup(), and external file assets
+
+Per `standards/startup-conventions.md`, a generated Access **application** opens through one entry
+point: an **`AutoExec` macro** whose only action is `RunCode Startup()`, and a `Public Function
+Startup()` that runs open-time initialization. Build both whenever you materialize an app (not for a
+bare table-schema or a single form in isolation). Typical `Startup()` entries include ensuring the
+app's working folders (`EnsureAppFolders()`) and opening the app's startup form —
+e.g. `DoCmd.OpenForm "AppStartupForm"`.
+
+**External file assets — create the folder *and* copy the file in.** When a template stores a
+*relative reference* to an external asset (a file **name** in a table plus a folder from a settings
+row — e.g. `tblOfficial.PhotoFileName` + `tblAppSetting.OfficialPhotoFolder`), the build must do two
+things the reference alone does not imply:
+
+1. **Ensure the folder** — create it at instantiation and re-ensure it idempotently at startup, via
+   `EnsureAppFolders()` (`startup-conventions.md`). A relative reference is worthless if the folder
+   never gets made.
+2. **Copy the chosen file in** — the selection UI (a file-dialog picker) must **copy the picked file
+   into the managed folder** under a controlled name, then store *that* name. Capturing the picked
+   file's original name only points the record at a file outside the app, which blanks on retrieval.
+   A collision-free convention such as `Official_<OfficialID>.<ext>` keeps one asset per record and
+   lets a re-select overwrite cleanly. (This means the record must be saved first, so its key exists.)
+
+**The AutoExec build gotcha** (sits beside the data-macro and DDL-`DEFAULT` gotchas above). DAO
+**cannot** create a macro. `Application.LoadFromText acMacro` on modern Access **rejects both** the
+modern `SaveAsText` XML **and** the `Version =20` classic text format — either throws runtime **2128
+"errors while importing."** The accepted form is **classic macro text with `Version =196611`**:
+
+```text
+Version =196611
+PublishOption =1
+ColumnsShown =0
+Begin
+    Action ="RunCode"
+    Argument ="Startup()"
+End
+Begin
+    Action ="StopMacro"
+End
+```
+
+Once you have that text, the Access Explorer MCP `access_set_code` (object type `macro`) round-trips
+it directly — no FSO / UTF-16 file dance (unlike the data macros above).
+
 ---
 
 *The rest of this document covers **form-spec** materialization.*

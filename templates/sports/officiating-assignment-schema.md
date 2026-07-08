@@ -247,8 +247,9 @@ control — configuration belongs in data, not in controls.)*
 8. **Age is derived.** Never store an age; compute it from `BirthDate` when needed.
 9. **Photos are file names plus one folder setting.** `tblOfficial.PhotoFileName` holds only
    the file name; the folder comes from the `OfficialPhotoFolder` row of `tblAppSetting`
-   (relative to the application folder unless absolute). No paths are ever hardcoded in
-   controls or code.
+   (relative to the application folder unless absolute). The folder is created and ensured at
+   startup, and the photo picker copies the chosen file into it — so the stored name always
+   resolves. No paths are ever hardcoded in controls or code.
 
 ## Standards Layer
 

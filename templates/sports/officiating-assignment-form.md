@@ -7,7 +7,7 @@ version: 0.1.0
 status: draft
 implements: sports-officiating-assignment-schema
 record_source: qryGame_frm
-standards_layer: [form-conventions, naming-conventions]
+standards_layer: [form-conventions, naming-conventions, startup-conventions]
 new_forms: [frmGame_Assignment, sfrmGame_Crew]
 ---
 
@@ -109,9 +109,11 @@ truth; see `_materialization.md` for the mapping rules.
 own library, not committed here.*
 
 - **Photo loader** — a `cmdLoadPhoto` file-dialog picker on the Official manage form that
-  stores the chosen file's **name** into `PhotoFileName` (the folder stays a
-  `tblAppSetting` concern). *(The contributed source's one keeper procedure is this pattern's
-  ancestor.)*
+  **copies the chosen file into the managed photo folder** (as `Official_<OfficialID>.<ext>`) and
+  stores that name into `PhotoFileName` — the folder comes from `tblAppSetting`, created and ensured
+  at startup (see `_materialization.md`, external file assets). Capturing only the picked file's name
+  would point the record at a file outside the app. *(The contributed source's one keeper procedure
+  is this pattern's ancestor.)*
 - **Schedule view** — a read-only continuous games list with crew-completeness flags.
 - **Official manage form** — a full entry/edit form for `tblOfficial` (mirror the library's
   publication-form pattern).
