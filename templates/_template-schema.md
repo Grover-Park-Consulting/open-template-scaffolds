@@ -68,6 +68,7 @@ present on every template; conditional keys are required when their condition ho
 | `new_forms` | conditional | list[string] | Required for `type: form-spec`; the forms/subforms defined — each subform appears as a `Subform` control in `## Layout` |
 | `seeds` | optional | list[string] | Seed data the template expects, as `Table.RowKey` |
 | `house_assumptions` | optional | list[string] | House-particular modeling assumptions deliberately kept in the template body (the "Declared" tier) because they can't be moved to the standards layer or dropped. Each entry is `Target — rationale`, where `Target` names the entity, field, or rule carrying the assumption. Makes embedded house bias machine-visible to adopters and discovery tools. |
+| `warnings` | optional | list[string] | Hard **platform caveats** the AI builder must surface to the developer *before* building — engine limits, not house bias (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"). Surfaced alongside `house_assumptions` in the review step; each entry states the limit and what the developer must confirm or the build must branch on. |
 
 **Rules the `validate` tool enforces on front-matter:**
 

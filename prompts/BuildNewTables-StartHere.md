@@ -109,6 +109,9 @@ defines and what I've supplied under "Who this is for."
    or ambiguous words — `Status` becomes `<Entity>StatusID`).
 4. **Surface every declared house assumption** the template carries. List each one and ask me to
    confirm or change it before finalizing — these are choices I should see, not inherit silently.
+   **Surface every declared warning the same way** — those are hard platform limits (for example,
+   Access Data Macros cannot audit Long Text fields): state each one, get my answer to whatever it
+   says must be checked, and branch the build accordingly.
 5. **Fold in my specifics and any extra options** I asked for. If I named an option, pull it from
    the template's **Extra Options** section into the live result.
 6. **Ask, don't guess.** If the template and my notes leave something genuinely undecided, ask me —
