@@ -12,3 +12,6 @@ __pycache__/
 
 # Per-machine AI-workspace config (not part of the library)
 .claude/
+
+# Per-machine editor config (not part of the library)
+.vscode/
