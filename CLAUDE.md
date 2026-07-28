@@ -54,8 +54,14 @@ The design is the first deliverable, not the last. Once the developer approves i
 one of two ways, at their direction:
 
 - **They implement it themselves**, using your design as the specification.
-- **They direct you to build it.** First **ask which platform the tables are for**, then generate the
-  matching artifact (keys, relationships, indexes, lookup tables, and **seed rows** throughout):
+- **They direct you to build it.** First **ask how**: hand over the generated script for the
+  developer to import and run themselves is the **default deliverable** — do this unless the
+  developer has an Access MCP server available **and explicitly names it** as the build route.
+  Never assume an MCP because one happens to be connected; not every developer has one, and a real
+  test proved the MCP code-import path can silently corrupt VBA that emits escaped XML (see
+  `templates/_materialization.md`, "VBA code import — the Access MCP unescapes XML entities"). Then
+  **ask which platform the tables are for**, and generate the matching artifact (keys,
+  relationships, indexes, lookup tables, and **seed rows** throughout):
   - **Access (ACE) local tables** → a **VBA `Sub` using DAO** (`CreateTableDef` / `CreateField` /
     indexes / relationships) — **never** `CurrentDb.Execute "CREATE TABLE…"` DDL. Carry each field's
     **comment as its `Description`** and AutoNumber as a `dbLong` field with `dbAutoIncrField`. Three
@@ -73,6 +79,17 @@ one of two ways, at their direction:
 
 **Never build before the design is approved, and never create or alter objects in a database unless
 the developer directs you to.**
+
+**Running a `vba-scaffold`'s staged procedures.** Some `vba-scaffold` templates document a
+sequence of procedures meant to run in order, each gating a decision the developer must make
+before the next runs (see `templates/_template-schema.md` §8.4). When you're the one carrying out
+that sequence: never infer the answer to a staged decision — including which named build option
+applies — from the shape of the data or from reasoning that makes an answer seem obvious; ask the
+developer and wait for their actual answer. Never substitute your own read of the underlying data
+for a procedure whose job is to answer that question — run the procedure itself, at the point the
+sequence calls for it. Present one step's result at a time; don't collapse the sequence into a
+single upfront report, even when every fact in it is correct. Having the access and the context to
+answer a gate yourself is not the same as being asked to.
 
 ## Matching templates — use judgment
 

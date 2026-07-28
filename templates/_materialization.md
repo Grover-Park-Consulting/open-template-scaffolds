@@ -258,6 +258,31 @@ End Function
 5. `CurrentUser()` is engine-known but returns `"Admin"` without workgroup security; `AuditUser()` gets
    the real Windows user.
 
+### VBA code import — the Access MCP unescapes XML entities
+
+Proven by a real failure: a `vba-scaffold` module whose Data Macro builder emits **escaped XML
+entities** (`&lt;`, `&gt;`, `&amp;`) as literal string content compiled and ran fine as a
+standalone import, then threw error **3870** ("Microsoft Access cannot interpret the text you are
+pasting as a data macro") on every table when the *same* source was imported through the **Access
+MCP's code-import tools** (`access_set_code` / `access_vbe_append`). The import path **HTML-
+unescapes entities on the way in** — a literal `&lt;&gt;` in the source becomes a raw `<>` once
+stored, and that raw `<` is then read as an opening tag inside `<Condition>…</Condition>`,
+malforming the macro XML `LoadFromText` is asked to load.
+
+**The rule this proves:** any scaffold whose VBA assembles XML (or HTML) containing escaped
+entities must build those entities from character codes at runtime — `Chr(38) & "lt;" & Chr(38) &
+"gt;"` for `&lt;&gt;`, for example — never write the escape sequence as literal text in the
+module's source. A `Chr(38)`-built entity exists only in memory as the string `&lt;&gt;`; it is
+never present as literal text for an importer to re-interpret. See
+`templates/audit/audit-logging-lite-scaffold.md`'s `GetComparisonExpression` for the worked fix.
+
+This is also why the MCP must never be the **default** build route (`CLAUDE.md` → "After approval
+— building it"): the corruption above only happens on the MCP import path. The default deliverable
+— handing the developer a script to import and run themselves the ordinary way (VBE import/paste)
+— doesn't touch this failure mode at all, because that path preserves literal text untouched. Build
+via MCP only when the developer has one and names it, and even then, scaffolds that emit escaped
+XML should still assemble entities from `Chr()` codes as a second line of defense.
+
 ### Application startup — AutoExec, Startup(), and external file assets
 
 Per `standards/startup-conventions.md`, a generated Access **application** opens through one entry

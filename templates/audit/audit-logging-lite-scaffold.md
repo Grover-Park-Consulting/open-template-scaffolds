@@ -17,8 +17,10 @@ standards_layer:
   - design-principles
 target_module: modAddDataMacros
 new_procedures:
+  - Zero_CreateSampleTables
   - One_CreateAuditTables
   - Two_PopulateConfigTable
+  - CheckAuditReadiness
   - Three_GenerateAllAuditDataMacros
   - CreateAllDataMacros
   - BuildAfterInsertMacro
@@ -29,6 +31,11 @@ new_procedures:
   - GetComparisonExpression
   - BackupLongTextFieldsDM
   - BackupAndRemoveAllDataMacros
+build_paths:
+  - "Path A — Demo build: try the system out on three made-up tables the generator creates for
+    you (Zero_CreateSampleTables). Nothing real is touched."
+  - "Path B — Add it to a real database you already have: skip Zero_CreateSampleTables and point
+    the generator at your own existing tables instead. Back up the file first (see warnings)."
 warnings:
   - Data Macros cannot audit Long Text (Memo) fields on their own. Before building, list every
     Long Text field in the tables to be audited and confirm the list with the developer — any
@@ -42,7 +49,19 @@ warnings:
   - Every audited table is expected to have a single-column AutoNumber primary key. If any table
     to be audited has a different key design (composite, text, no PK), stop and tell the
     developer this template will not work for that table out of the box — they are free to adapt
-    it, but the adaptation is theirs.
+    it, but the adaptation is theirs. CheckAuditReadiness checks for this automatically.
+  - Path B (an existing accdb with real tables and real data) is much less forgiving than the
+    demo. Make a copy of the .accdb file before running any of these steps against it — Data
+    Macros get attached directly to your live tables, and this is not a step to redo casually.
+  - If a table already carries its own Data Macros before this generator runs on it (for example,
+    the standards/audit-columns.md Before Change stamping macro), they are silently replaced —
+    Application.LoadFromText replaces a table's entire macro set, it does not merge. The generator
+    backs up any table's existing macros automatically before replacing them, but nothing restores
+    that stamping logic afterward — that is the developer's call.
+  - If any importer un-escapes HTML/XML entities in VBA source on the way in (this repo's own
+    Access Explorer MCP code-import tools do), a literal &lt;&gt; in GetComparisonExpression
+    becomes a raw <> and breaks the generated macro XML (error 3870). The function builds the
+    entity from Chr(38) at runtime for exactly this reason — don't revert it to a literal.
 ---
 
 # Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
@@ -59,14 +78,62 @@ every candidate field to the config table and you flip `IsAuditable` flags — t
 LOGIC]` markers land on that review step and on the one code filter (which table prefix to
 scan); `[STANDARDS]` markers cover the usual deferred house style.
 
-Setup is three numbered steps, run once in the back end, in order:
+### Two ways to use this — pick one before you start
+
+**Path A — Try it out first.** This creates three made-up tables (a client list, a support
+ticket list, and a short pick-list of ticket priorities) so you can watch the audit trail work
+before you touch anything real. Nothing in your own database is affected. Good for a first
+look, a demo, or learning what this system does.
+
+**Path B — Add this to a database you already use.** This turns on auditing for your own,
+already-existing tables. It does **not** create the three made-up tables — it works directly
+against the tables you already have. Because it changes a real database, **make a backup copy
+of the .accdb file before you start**, the same way you'd back up before any change you can't
+easily undo.
+
+Both paths use the same three numbered steps below — only the middle step is set up slightly
+differently, and Path B adds one extra safety check.
+
+> **If an AI assistant is running these steps for someone:** the developer picks the path — don't
+> infer it from what the database looks like, even if the answer seems obvious (e.g. "it already
+> has real data, so it must be Path B"). Ask, then wait for their answer. Likewise, don't work out
+> `CheckAuditReadiness`'s answer yourself by reading the tables directly — run the actual
+> procedure at the point these steps call for it, show the developer what it says, and stop there.
+> Each numbered step (and the review pause after it) is a separate decision point: present one,
+> get the developer's go-ahead for that step specifically, then move to the next. Don't collapse
+> the whole sequence into a single upfront report — that skips the review this template is built
+> around, even if every fact in the report turns out correct.
 
 ```vba
-One_CreateAuditTables            ' 1. create tblAuditLog / tblLongTextBackup / tblAuditLogConfig
-Two_PopulateConfigTable          ' 2. scan the schema into config
-'    ... then review tblAuditLogConfig and flip IsAuditable flags ...
-Three_GenerateAllAuditDataMacros ' 3. build + attach 3 or 5 macros per audited table
+' ---------- Path A — try it out first (nothing real is touched) ----------
+Zero_CreateSampleTables          ' 0. create the two made-up tables and a short pick-list
+One_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
+Two_PopulateConfigTable          ' 2. make a list of every field in every table that could be
+                                  '    audited, switched ON to start
+'    ... open the list (tblAuditLogConfig) and switch OFF anything you don't want tracked ...
+Three_GenerateAllAuditDataMacros ' 3. turn on tracking for everything still switched ON
+
+' ---------- Path B — add this to a database you already use ----------
+' >>> back up the .accdb file first — this step changes real, live tables <<<
+One_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
+Two_PopulateConfigTable False    ' 2. make a list of every field in every table that could be
+                                  '    audited, switched OFF to start
+CheckAuditReadiness              '    a safety check: tells you if any of your tables can't be
+                                  '    tracked as-is (see Business Rule 4 below), before anything
+                                  '    is changed
+'    ... open the list (tblAuditLogConfig) and switch ON tracking, table by table, for whatever
+'        you actually want a history of ...
+Three_GenerateAllAuditDataMacros ' 3. turn on tracking for everything switched ON
 ```
+
+`CheckAuditReadiness` and `Three_GenerateAllAuditDataMacros` are called above as bare statements
+(the ordinary, interactive way — each pops its own `MsgBox`). Both also take an optional
+`bSilent` argument: call them as `sResult = CheckAuditReadiness(True)` /
+`sResult = Three_GenerateAllAuditDataMacros(True)` to read the same report back as a `String`
+with no dialog at all — the way a script, test harness, or an AI assistant facilitating the build
+should read the result, rather than adding a throwaway diagnostic just to see what happened.
+**Passing `True` is what suppresses the dialog**, not assigning the return value: VBA gives a
+procedure no way to detect whether it was called as a function or as a statement.
 
 Then link the three system tables into the front end and import the Long Text helper module
 there (see `BackupLongTextFieldsDM`).
@@ -75,7 +142,7 @@ there (see `BackupLongTextFieldsDM`).
 
 | Module | Procedures | Lives in |
 |---|---|---|
-| `modAddDataMacros` | the numbered steps + the five `Build*` XML builders + `GetComparisonExpression` | Back end only |
+| `modAddDataMacros` | `Zero_CreateSampleTables`, the numbered steps, `CheckAuditReadiness`, the five `Build*` XML builders + `GetComparisonExpression` | Back end only |
 | `modAuditLongText` | `BackupLongTextFieldsDM` | **Back end AND every front end** |
 | `modAuditAdmin` | `BackupAndRemoveAllDataMacros` | Back end only |
 
@@ -99,6 +166,221 @@ Three layers, kept distinct throughout:
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
 
 ## Procedures
+
+### Zero_CreateSampleTables — `Public Sub` (Path A only — setup step 0)
+
+**Skip this procedure entirely if you're doing Path B** (adding audit tracking to a database
+you already use) — it only exists to build the made-up tables for trying the system out.
+
+Creates the two made-up tables (`tblClient`, `tblSupportTicket`) and a short pick-list
+(`tlkpTicketPriority`) described in the paired schema template, with the four starter pick-list
+rows (Low, Normal, High, Urgent) and the two links between the tables. Same idempotent style as
+`One_CreateAuditTables` — an existing table is reported and skipped, so it's safe to re-run.
+
+```vba
+Public Sub Zero_CreateSampleTables()
+    ' [SCAFFOLD] Creates tblClient, tlkpTicketPriority, tblSupportTicket (schema template
+    '            entities) and seeds tlkpTicketPriority. Path A (try-it-out build) only —
+    '            skip this Sub for Path B (an existing accdb's own tables). Idempotent: each
+    '            block is skipped if its table already exists.
+    Dim db As DAO.Database
+    Dim tdf As DAO.TableDef
+    Dim fld As DAO.Field
+    Dim idx As DAO.Index
+    Dim rel As DAO.Relation
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+
+    ' ========== tblClient ==========
+    On Error Resume Next
+    Set tdf = db.TableDefs("tblClient")
+    If Not tdf Is Nothing Then
+        Debug.Print "tblClient already exists"
+        GoTo CreateTicketPriority
+    End If
+    On Error GoTo errHandler
+
+    Set tdf = db.CreateTableDef("tblClient")
+
+    Set fld = tdf.CreateField("ClientID", dbLong)
+    fld.Attributes = dbAutoIncrField
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("ClientName", dbText, 100)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("EmailAddress", dbText, 100)
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("CellPhone", dbText, 25)
+    tdf.Fields.Append fld
+
+    db.TableDefs.Append tdf
+
+    Set idx = tdf.CreateIndex("PrimaryKey")
+    idx.Primary = True
+    idx.Required = True
+    Set fld = idx.CreateField("ClientID")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Set idx = tdf.CreateIndex("ClientName")
+    idx.Unique = True
+    Set fld = idx.CreateField("ClientName")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Debug.Print "tblClient created"
+
+CreateTicketPriority:
+    ' ========== tlkpTicketPriority ==========
+    Set tdf = Nothing
+    On Error Resume Next
+    Set tdf = db.TableDefs("tlkpTicketPriority")
+    If Not tdf Is Nothing Then
+        Debug.Print "tlkpTicketPriority already exists"
+        GoTo CreateSupportTicket
+    End If
+    On Error GoTo errHandler
+
+    Set tdf = db.CreateTableDef("tlkpTicketPriority")
+
+    Set fld = tdf.CreateField("TicketPriorityID", dbLong)
+    fld.Attributes = dbAutoIncrField
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("TicketPriorityName", dbText, 30)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("SortOrder", dbLong)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    db.TableDefs.Append tdf
+
+    Set idx = tdf.CreateIndex("PrimaryKey")
+    idx.Primary = True
+    idx.Required = True
+    Set fld = idx.CreateField("TicketPriorityID")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Set idx = tdf.CreateIndex("TicketPriorityName")
+    idx.Unique = True
+    Set fld = idx.CreateField("TicketPriorityName")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    db.TableDefs.Refresh
+
+    ' Starter pick-list rows (schema: Low/Normal/High/Urgent)
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('Low', 10)", dbFailOnError
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('Normal', 20)", dbFailOnError
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('High', 30)", dbFailOnError
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('Urgent', 40)", dbFailOnError
+
+    Debug.Print "tlkpTicketPriority created and seeded"
+
+CreateSupportTicket:
+    ' ========== tblSupportTicket ==========
+    Set tdf = Nothing
+    On Error Resume Next
+    Set tdf = db.TableDefs("tblSupportTicket")
+    If Not tdf Is Nothing Then
+        Debug.Print "tblSupportTicket already exists"
+        GoTo CreateRelationships
+    End If
+    On Error GoTo errHandler
+
+    Set tdf = db.CreateTableDef("tblSupportTicket")
+
+    Set fld = tdf.CreateField("SupportTicketID", dbLong)
+    fld.Attributes = dbAutoIncrField
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("ClientID", dbLong)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("TicketPriorityID", dbLong)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("TicketSubject", dbText, 255)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("TicketDetail", dbMemo)
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("TicketOpenedDate", dbDate)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField("TicketClosedDate", dbDate)
+    tdf.Fields.Append fld
+
+    db.TableDefs.Append tdf
+
+    Set idx = tdf.CreateIndex("PrimaryKey")
+    idx.Primary = True
+    idx.Required = True
+    Set fld = idx.CreateField("SupportTicketID")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Set idx = tdf.CreateIndex("ClientID")
+    Set fld = idx.CreateField("ClientID")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Set idx = tdf.CreateIndex("TicketPriorityID")
+    Set fld = idx.CreateField("TicketPriorityID")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Debug.Print "tblSupportTicket created"
+
+CreateRelationships:
+    ' ========== Relationships (schema: enforced, no cascade) ==========
+    On Error Resume Next
+    db.Relations.Delete "tblClient_tblSupportTicket"
+    db.Relations.Delete "tlkpTicketPriority_tblSupportTicket"
+    On Error GoTo errHandler
+
+    Set rel = db.CreateRelation("tblClient_tblSupportTicket", "tblClient", "tblSupportTicket", 0)
+    Set fld = rel.CreateField("ClientID")
+    fld.ForeignName = "ClientID"
+    rel.Fields.Append fld
+    db.Relations.Append rel
+
+    Set rel = db.CreateRelation("tlkpTicketPriority_tblSupportTicket", "tlkpTicketPriority", "tblSupportTicket", 0)
+    Set fld = rel.CreateField("TicketPriorityID")
+    fld.ForeignName = "TicketPriorityID"
+    rel.Fields.Append fld
+    db.Relations.Append rel
+
+    Debug.Print "Relationships created"
+
+Cleanup:
+    Set fld = Nothing
+    Set idx = Nothing
+    Set rel = Nothing
+    Set tdf = Nothing
+    Set db = Nothing
+    MsgBox "Sample tables created. You're on Path A (try-it-out build) — nothing in your " & _
+        "own database was touched.", vbInformation
+    Exit Sub
+
+errHandler:
+    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    MsgBox "Error creating sample tables: " & Err.Number & " - " & Err.Description, vbCritical
+    Resume Cleanup
+End Sub
+```
 
 ### One_CreateAuditTables — `Public Sub` (setup step 1)
 
@@ -298,15 +580,33 @@ End Sub
 
 Scans the schema into `tblAuditLogConfig`: **every field of every candidate table**, with its
 ordinal position, DAO type code, a flag on the table's PK field, and `IsAuditable`. Nothing is
-silently dropped — exclusions are *seeded* as `IsAuditable = False` rows (the three system
-tables; noisy always-changing fields), and everything else defaults True. **After running, open
-the config table and review the flags** — that review, in data, is where the audit net is drawn
-(schema Business Rule 5).
+silently dropped — exclusions are *seeded* as `IsAuditable = False` rows: the three system
+tables, plus fields that would just add noise — this repo's house audit columns
+(`CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy`/`AccessTS`, per `standards/audit-columns.md`)
+and a few other always-changing system columns (`SSMA_TimeStamp`, `ValidFrom`, `ValidTo`). **After
+running, open the config table and review the flags** — that review, in data, is where the audit
+net is drawn (schema Business Rule 5).
+
+Takes one optional Yes/No setting that decides the starting point for everything else:
+
+- **Path A (try-it-out build):** run `Two_PopulateConfigTable` with nothing after it. Every
+  field starts switched ON, and you switch OFF the few you don't want tracked.
+- **Path B (a database you already use):** run `Two_PopulateConfigTable False`. Every field
+  starts switched OFF, and you switch ON — table by table — only what you actually want a
+  history of. This is the safer starting point on tables this system wasn't designed around,
+  where "track everything" could sweep in more than you meant.
 
 ```vba
-Public Sub Two_PopulateConfigTable()
+Public Sub Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True)
     ' [SCAFFOLD] Rebuild the audit configuration from the live schema. Scope decisions
     '            live in the IsAuditable flags afterward, not in this code.
+    '            bDefaultAuditable sets the starting point for ordinary fields only:
+    '            True  (default; Path A) — everything starts switched ON, you switch OFF
+    '                  what you don't want tracked.
+    '            False (Path B — call as Two_PopulateConfigTable(False)) — everything
+    '                  starts switched OFF, you switch ON what you do want tracked.
+    '            The three system tables and the noisy always-changing fields below are
+    '            always switched OFF, no matter which way this is called.
     Dim db As DAO.Database
     Dim tdef As DAO.TableDef
     Dim fld As DAO.Field
@@ -325,11 +625,14 @@ Public Sub Two_PopulateConfigTable()
 
     For Each tdef In db.TableDefs
         ' [BUSINESS LOGIC — scan boundary] Which tables are candidates at all. This default
-        ' scans tables prefixed tbl (your data tables under naming-conventions.md); system
-        ' (MSys) and temporary tables never match it. On another prefix policy, change this
-        ' one test — every finer-grained decision is a flag in the config table, not code.
+        ' scans tables prefixed tbl or tlkp (your data and lookup tables under
+        ' naming-conventions.md) but never tmp (temporary/working tables); system (MSys)
+        ' tables never match either prefix. On another naming policy, change this one test —
+        ' every finer-grained decision is a flag in the config table, not code. Keep
+        ' CheckAuditReadiness's copy of this test in sync if you change it here.
         ' >>> adjust the prefix test to your naming convention <<<
-        If Left(tdef.Name, 3) = "tbl" Then
+        If (Left(tdef.Name, 3) = "tbl" Or Left(tdef.Name, 4) = "tlkp") _
+            And Left(tdef.Name, 3) <> "tmp" Then
 
             ' Get the primary key field name for this table
             pkFieldName = ""
@@ -348,18 +651,30 @@ Public Sub Two_PopulateConfigTable()
 
                 ' [SCAFFOLD] Seed IsAuditable: False for the system tables themselves
                 '            (schema Business Rule 5 — never audit the audit trail) and for
-                '            noisy always-changing fields; True for everything else. Review
-                '            and flip flags in tblAuditLogConfig after the scan.
+                '            noisy always-changing fields; the starting point set by
+                '            bDefaultAuditable for everything else. Review and flip flags in
+                '            tblAuditLogConfig after the scan.
+                ' [STANDARDS — audit-columns.md] CreatedDate/CreatedBy/ModifiedDate/ModifiedBy/
+                '            AccessTS are this repo's house audit columns as of the standards
+                '            layer in use when this list was written. If your standards/
+                '            audit-columns.md names different columns, update this list to
+                '            match — it is a VBA-side mirror of that file, not a live read of it.
+                '            SSMA_TimeStamp/ValidFrom/ValidTo are not house audit columns; they
+                '            are left here because a table carrying them already has its own
+                '            change-tracking mechanism (e.g. SQL Server temporal system-versioning)
+                '            that this scan would otherwise log as noisy, always-changing values.
                 Select Case True
                     Case tdef.Name = "tblAuditLog", _
                          tdef.Name = "tblLongTextBackup", _
                          tdef.Name = "tblAuditLogConfig"
                         isAuditable = False
-                    Case fld.Name = "AccessTS", fld.Name = "SSMA_TimeStamp", _
+                    Case fld.Name = "CreatedDate", fld.Name = "CreatedBy", _
+                         fld.Name = "ModifiedDate", fld.Name = "ModifiedBy", _
+                         fld.Name = "AccessTS", fld.Name = "SSMA_TimeStamp", _
                          fld.Name = "ValidFrom", fld.Name = "ValidTo"
                         isAuditable = False
                     Case Else
-                        isAuditable = True
+                        isAuditable = bDefaultAuditable
                 End Select
 
                 ' [STANDARDS — query-style.md] inline INSERT kept from the working source
@@ -372,8 +687,8 @@ Public Sub Two_PopulateConfigTable()
         End If
     Next tdef
 
-    MsgBox "Configuration table populated. Review IsAuditable in tblAuditLogConfig " & _
-        "before generating macros.", vbInformation
+    MsgBox "Table list built. Open tblAuditLogConfig and check the IsAuditable switches " & _
+        "before you run the next step.", vbInformation
 
 Cleanup:
     Set pkField = Nothing
@@ -390,14 +705,137 @@ errHandler:
 End Sub
 ```
 
-### Three_GenerateAllAuditDataMacros — `Public Sub` (setup step 3)
+### CheckAuditReadiness — `Public Function` → `String` (safety check — run before step 3, required for Path B)
+
+A read-only check you can run any time, at no risk — it doesn't change anything. It looks at each
+table you might track and tells you whether this system will actually work on it: **every table
+needs one, single number field as its primary key, set to auto-number** (schema Business Rule 4).
+Most tables you design yourself already look like this. Older or borrowed tables sometimes
+don't — a table with no primary key set, one that uses two or more fields together as its key,
+or one that uses a text code instead of a number, will not work with this system as-is.
+
+Run this after `Two_PopulateConfigTable` and before `Three_GenerateAllAuditDataMacros`. This
+step is **required for Path B**, since a database you didn't design the audit system around is
+far more likely to have a table shaped this way. It's optional on Path A, where the sample
+tables are already known to be shaped correctly.
+
+If a table isn't ready, you have two choices: fix that table's primary key, or leave it out —
+open `tblAuditLogConfig` and switch `IsAuditable` to No for every row belonging to that table.
+
+**Returns the same report it shows in the message box, as text.** Called as a bare statement
+(`CheckAuditReadiness`) it behaves exactly as before — it pops the `MsgBox` for a person sitting
+at the keyboard. Called as `sResult = CheckAuditReadiness(True)`, the same text comes back as a
+`String` and no dialog is shown — for a script, a test harness, or an AI assistant facilitating a
+build to read directly, rather than needing to add its own throwaway diagnostic to see the
+verdict. **The `True` is what suppresses the dialog**, not the assignment: VBA cannot tell whether
+a procedure was called as a function or as a statement.
+
+```vba
+Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As String
+    ' [SCAFFOLD] Read-only pre-flight check. Looks at the real table definitions (not the
+    '            config table) so a multi-field primary key is never missed. Run after
+    '            Two_PopulateConfigTable and before Three_GenerateAllAuditDataMacros —
+    '            required on Path B, where tables were not designed around this system.
+    '            Returns the report as a String. Pass bSilent:=True to suppress the MsgBox so
+    '            an automated caller is never left waiting on a dialog nobody can dismiss.
+    Dim db As DAO.Database
+    Dim tdef As DAO.TableDef
+    Dim idx As DAO.Index
+    Dim lPkFieldCount As Long
+    Dim lPkFieldType As Long
+    Dim lProblemCount As Long
+    Dim sMsg As String
+    Dim sReport As String
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+    lProblemCount = 0
+    sMsg = ""
+
+    For Each tdef In db.TableDefs
+        ' [BUSINESS LOGIC — scan boundary] Same tbl-or-tlkp-but-not-tmp test as
+        ' Two_PopulateConfigTable; keep the two in sync if you change one.
+        If (Left(tdef.Name, 3) = "tbl" Or Left(tdef.Name, 4) = "tlkp") _
+            And Left(tdef.Name, 3) <> "tmp" _
+            And tdef.Name <> "tblAuditLog" _
+            And tdef.Name <> "tblLongTextBackup" _
+            And tdef.Name <> "tblAuditLogConfig" Then
+
+            lPkFieldCount = 0
+            lPkFieldType = -1
+            For Each idx In tdef.Indexes
+                If idx.Primary Then
+                    lPkFieldCount = idx.Fields.Count
+                    If lPkFieldCount = 1 Then
+                        lPkFieldType = tdef.Fields(idx.Fields(0).Name).Type
+                    End If
+                End If
+            Next idx
+
+            If lPkFieldCount = 0 Then
+                lProblemCount = lProblemCount + 1
+                sMsg = sMsg & tdef.Name & " — no primary key is set" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — no primary key"
+            ElseIf lPkFieldCount > 1 Then
+                lProblemCount = lProblemCount + 1
+                sMsg = sMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — primary key has " & lPkFieldCount & " fields"
+            ElseIf lPkFieldType <> dbLong Then
+                lProblemCount = lProblemCount + 1
+                sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber/Long Number field" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — primary key type is " & lPkFieldType
+            Else
+                Debug.Print tdef.Name & ": ready"
+            End If
+        End If
+    Next tdef
+
+    If lProblemCount = 0 Then
+        sReport = "Every table checked is ready — each has one auto-number primary key. " & _
+            "Safe to run Three_GenerateAllAuditDataMacros."
+    Else
+        sReport = lProblemCount & " table(s) are NOT ready yet:" & vbCrLf & vbCrLf & sMsg & vbCrLf & _
+            "This system only works on tables with one auto-number (or plain number) " & _
+            "primary key field. Either fix that table's primary key, or leave it out — set " & _
+            "IsAuditable to No for all of that table's rows in tblAuditLogConfig — before you " & _
+            "run Three_GenerateAllAuditDataMacros."
+    End If
+
+    If Not bSilent Then MsgBox sReport, IIf(lProblemCount = 0, vbInformation, vbExclamation)
+    CheckAuditReadiness = sReport
+
+Cleanup:
+    Set idx = Nothing
+    Set tdef = Nothing
+    Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block
+    CheckAuditReadiness = "Error checking audit readiness: " & Err.Number & " - " & Err.Description
+    If Not bSilent Then MsgBox CheckAuditReadiness, vbCritical
+    Resume Cleanup
+End Function
+```
+
+### Three_GenerateAllAuditDataMacros — `Public Function` → `String` (setup step 3)
 
 Reads the (reviewed) config, groups fields by table, and calls `CreateAllDataMacros` for each.
 Re-runnable: reloading a table's macro XML replaces what was there (schema Business Rule 7).
 
+**Returns a per-table report as text**, in addition to the summary `MsgBox` — one line per table
+(`OK`, `SKIPPED`, or `ERROR: ...`), the same detail `CreateAllDataMacros` used to only send to
+`Debug.Print`. Call it as `sResult = Three_GenerateAllAuditDataMacros(True)` to read that report
+directly with no dialog — a script or an AI assistant facilitating the build no longer has to add
+its own diagnostic wrapper to see which tables actually succeeded. `bSilent` is passed down into
+`CreateAllDataMacros`, so a per-table error can't strand an automated caller either.
+
 ```vba
-Public Sub Three_GenerateAllAuditDataMacros()
+Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Generate and attach audit Data Macros for every configured table.
+    '            Returns a per-table report so a caller — human or automated — can see exactly
+    '            what happened to each table. Pass bSilent:=True to suppress every MsgBox,
+    '            including the per-table ones raised inside CreateAllDataMacros.
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
     Dim dictTables As Object          ' Scripting.Dictionary, late-bound
@@ -411,10 +849,13 @@ Public Sub Three_GenerateAllAuditDataMacros()
     Dim sTempPath As String
     Dim lTableCount As Long
     Dim vCurrentTable As Variant
+    Dim sTableResult As String
+    Dim sReport As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
     Set dictTables = CreateObject("Scripting.Dictionary")
+    sReport = ""
 
     ' Read configuration and group fields by table, in field order. All rows come along —
     ' the PK row is needed for plumbing even if its IsAuditable flag was flipped; the
@@ -457,35 +898,53 @@ Public Sub Three_GenerateAllAuditDataMacros()
     For Each vCurrentTable In dictTables.Keys
         sTableName = CStr(vCurrentTable)
         Set fieldList = dictTables(sTableName)
-        Debug.Print "Processing: " & sTableName & " (" & fieldList.Count & " fields)"
-        Call CreateAllDataMacros(sTableName, fieldList, sTempPath)
+        sTableResult = CreateAllDataMacros(sTableName, fieldList, sTempPath, bSilent)
+        sReport = sReport & sTableName & ": " & sTableResult & vbCrLf
         lTableCount = lTableCount + 1
     Next vCurrentTable
 
-    MsgBox "Successfully generated audit data macros for " & lTableCount & " tables!", vbInformation
+    If Not bSilent Then MsgBox "Generated audit data macros for " & lTableCount & " table(s). " & _
+        "See the returned report for the per-table result.", vbInformation
+    Three_GenerateAllAuditDataMacros = sReport
 
 Cleanup:
     Set rs = Nothing
     Set db = Nothing
     Set dictTables = Nothing
-    Exit Sub
+    Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
-    MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
+    Three_GenerateAllAuditDataMacros = sReport & "ERROR: " & Err.Number & " - " & Err.Description
+    If Not bSilent Then MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
-End Sub
+End Function
 ```
 
-### CreateAllDataMacros — `Private Sub`
+### CreateAllDataMacros — `Private Function` → `String`
 
 Builds one table's macro XML — the three After macros always, plus BeforeChange/BeforeDelete when
 the field list contains a Long Text field (schema Business Rule 2) — writes it UTF-16, and loads
 it with `LoadFromText acTableDataMacro`.
 
+**Backs up a table's existing macros before replacing them.** `LoadFromText` replaces a table's
+entire Data Macro set — it does not merge. On Path B a table may already carry its own macros
+(most notably the `standards/audit-columns.md` Before Change stamping macro for `CreatedBy`/
+`ModifiedBy`), and overwriting that silently would be a real, undocumented loss. Before loading
+the new macros, this checks `MSysObjects` for an existing macro set on the table and, if one is
+found, exports it to a timestamped backup file first — the same technique
+`BackupAndRemoveAllDataMacros` already uses to detect a table's macros. This does **not** merge
+the old logic into the new macros; it only makes sure nothing is destroyed without a copy and a
+plain-language warning first. Restoring or re-implementing any lost stamping logic afterward is
+the developer's call.
+
 ```vba
-Private Sub CreateAllDataMacros(sTableName As String, fieldList As Collection, sTempPath As String)
-    ' [SCAFFOLD] Generate the 3 (or 5, with Long Text) Data Macros for one table.
+Private Function CreateAllDataMacros(sTableName As String, fieldList As Collection, sTempPath As String, Optional bSilent As Boolean = False) As String
+    ' [SCAFFOLD] Generate the 3 (or 5, with Long Text) Data Macros for one table. Returns a
+    '            one-line status ("OK ...", "SKIPPED ...", or "ERROR: ...") so the caller can
+    '            report per-table results without relying on Debug.Print alone.
+    Dim db As DAO.Database
+    Dim rsCheck As DAO.Recordset
     Dim sXmlContent As String
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
     Dim txtFile As Object
@@ -494,8 +953,13 @@ Private Sub CreateAllDataMacros(sTableName As String, fieldList As Collection, s
     Dim fieldInfo As Variant
     Dim bHasLongText As Boolean
     Dim lAuditableCount As Long
+    Dim bHadExistingMacros As Boolean
+    Dim sBackupFolder As String
+    Dim sBackupFile As String
+    Dim sBackupNote As String
 
     On Error GoTo errHandler
+    Set db = CurrentDb
 
     ' Find the PK field, count auditable fields, and detect auditable Long Text
     ' (schema Business Rules 2, 4, 5)
@@ -512,7 +976,29 @@ Private Sub CreateAllDataMacros(sTableName As String, fieldList As Collection, s
     ' A table with nothing auditable gets no macros at all
     If lAuditableCount = 0 Then
         Debug.Print "  - Skipped (no auditable fields)"
-        Exit Sub
+        CreateAllDataMacros = "SKIPPED (no auditable fields)"
+        Exit Function
+    End If
+
+    ' [SCAFFOLD] Safety net for Path B: LoadFromText replaces a table's WHOLE macro set. If
+    '            this table already has one (e.g. the house audit-column stamping macro),
+    '            back it up before it's overwritten — see the note above this code block.
+    bHadExistingMacros = False
+    Set rsCheck = db.OpenRecordset( _
+        "SELECT Name FROM MSysObjects WHERE Name='" & sTableName & "' AND Type=1 AND Not IsNull(LvExtra)", _
+        dbOpenSnapshot)
+    bHadExistingMacros = Not rsCheck.EOF
+    rsCheck.Close
+    Set rsCheck = Nothing
+
+    sBackupNote = ""
+    If bHadExistingMacros Then
+        sBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
+        If Dir(sBackupFolder, vbDirectory) = "" Then MkDir sBackupFolder
+        sBackupFile = sBackupFolder & sTableName & "_PreAuditBackup_" & Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+        Application.SaveAsText acTableDataMacro, sTableName, sBackupFile
+        sBackupNote = " (existing macros backed up to " & sBackupFile & " before replacing)"
+        Debug.Print "  - " & sTableName & " already had Data Macros — backed up to " & sBackupFile
     End If
 
     ' One XML document carrying all of this table's macros
@@ -547,20 +1033,25 @@ Private Sub CreateAllDataMacros(sTableName As String, fieldList As Collection, s
 
     If bHasLongText Then
         Debug.Print "  - All 5 data macros created (3 After + BeforeChange/BeforeDelete)"
+        CreateAllDataMacros = "OK — 5 data macros created (3 After + BeforeChange/BeforeDelete)" & sBackupNote
     Else
         Debug.Print "  - All 3 data macros created (AfterInsert, AfterUpdate, AfterDelete)"
+        CreateAllDataMacros = "OK — 3 data macros created (AfterInsert, AfterUpdate, AfterDelete)" & sBackupNote
     End If
 
 Cleanup:
+    Set rsCheck = Nothing
     Set txtFile = Nothing
     Set fso = Nothing
-    Exit Sub
+    Set db = Nothing
+    Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
-    MsgBox "Error creating macros for " & sTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
+    CreateAllDataMacros = "ERROR: " & Err.Number & " - " & Err.Description
+    If Not bSilent Then MsgBox "Error creating macros for " & sTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
-End Sub
+End Function
 ```
 
 ### BuildAfterInsertMacro — `Private Function` → `String`
@@ -1037,16 +1528,28 @@ The change test the AfterUpdate macro embeds per field. Ordinary fields compare 
 `StrComp` over `Nz`-wrapped values; Long Text returns `True` — always log — because the macro
 cannot read the old value to compare (schema Business Rule 6).
 
+**The not-equal operator is built from `Chr(38)`, not typed as a literal `&lt;&gt;`.** A real
+build hit error 3870 ("Microsoft Access cannot interpret the text you are pasting as a data
+macro") on every table because the VBA source was imported through a tool that **un-escapes HTML
+entities on the way in** — a literal `&lt;&gt;` in this function's source became a raw `<>` once
+imported, which breaks the macro XML the moment it's loaded (the `<` is read as an opening tag).
+Assembling the entity from character codes at runtime means no literal `&`-entity ever exists in
+the source for an importer to touch — the string is only ever `&lt;&gt;` in memory, never in text
+anyone's tool re-reads. See `templates/_materialization.md` for the general rule this follows.
+
 ```vba
 Private Function GetComparisonExpression(sTableName As String, sFieldName As String, lFldType As Long) As String
     ' [SCAFFOLD] Per-type change test for the AfterUpdate conditional block.
+    Dim sNotEqual As String
     Select Case lFldType
         Case dbMemo
             ' Long Text: always log (cannot compare the old value in-macro)
             GetComparisonExpression = "True"
         Case Else
-            ' Note &lt;&gt; — the expression lives inside XML, so <> must be escaped
-            GetComparisonExpression = "StrComp(NZ([" & sTableName & "].[" & sFieldName & "],""""),NZ([Old].[" & sFieldName & "],""""),0)&lt;&gt;0"
+            ' Built from Chr(38), not typed as a literal &lt;&gt; — see the note above this
+            ' block. This is XML for "<>"; the expression lives inside <Condition>...</Condition>.
+            sNotEqual = Chr(38) & "lt;" & Chr(38) & "gt;"
+            GetComparisonExpression = "StrComp(NZ([" & sTableName & "].[" & sFieldName & "],""""),NZ([Old].[" & sFieldName & "],""""),0)" & sNotEqual & "0"
     End Select
 End Function
 ```
@@ -1211,10 +1714,12 @@ End Function
   `BackupAndRemoveAllDataMacros` skips error 2950 by design.
 - **Query style** — the inline SQL kept here is from the proven source; rewrite per
   `query-style.md` if your house centralizes SQL differently.
-- **Naming conventions** — the config scan's `tbl` prefix filter is the naming convention made
-  executable; adjust it with your prefix policy.
-- **Design principles** — one job per procedure throughout: three numbered entry points, five
-  single-macro builders, one comparison helper, one staging function, one admin reset.
+- **Naming conventions** — the config scan's `tbl`/`tlkp` (excluding `tmp`) prefix filter is the
+  naming convention made executable, and `CheckAuditReadiness` repeats the same filter so the two
+  stay in step; adjust both with your prefix policy.
+- **Design principles** — one job per procedure throughout: one sample-data setup (Path A only),
+  three numbered entry points, one safety check, five single-macro builders, one comparison
+  helper, one staging function, one admin reset.
 
 ## Extra Options
 
@@ -1231,5 +1736,6 @@ End Function
 
 - **Restore/undo tooling** — reconstructing a record from its `tblAuditLog` trail; the full
   (non-Lite) system's headline feature.
-- **Composite/text primary keys** — the staging plumbing and macro XML assume one numeric PK
-  (schema Business Rule 4).
+- **Composite/text primary keys** — `CheckAuditReadiness` detects these and tells you to fix or
+  exclude the table; the staging plumbing and macro XML themselves still assume one numeric PK
+  and don't support them (schema Business Rule 4).

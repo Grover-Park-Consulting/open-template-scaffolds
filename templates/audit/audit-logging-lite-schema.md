@@ -18,6 +18,11 @@ seeds:
   - tlkpTicketPriority.Normal
   - tlkpTicketPriority.High
   - tlkpTicketPriority.Urgent
+build_paths:
+  - "Path A — Demo build: try the system out on made-up tables the generator creates for you.
+    Nothing real is touched."
+  - "Path B — Add it to a database you already have: point the generator at your own existing
+    tables instead of the made-up ones. Back up the file first (see warnings)."
 warnings:
   - Data Macros cannot audit Long Text (Memo) fields on their own. Before building, list every
     Long Text field in the tables to be audited and confirm the list with the developer — any
@@ -29,7 +34,16 @@ warnings:
   - Every audited table is expected to have a single-column AutoNumber primary key. If any table
     to be audited has a different key design (composite, text, no PK), stop and tell the
     developer this template will not work for that table out of the box — they are free to adapt
-    it, but the adaptation is theirs.
+    it, but the adaptation is theirs. The paired scaffold's CheckAuditReadiness procedure checks
+    for this automatically.
+  - Path B (adding this to a database you already use) is much less forgiving than the demo.
+    Make a copy of the .accdb file before running any of the setup steps against it — Data
+    Macros get attached directly to your live tables.
+  - If a table already carries its own Data Macros before this system is added to it (for example,
+    the standards/audit-columns.md Before Change stamping macro), they are silently replaced —
+    loading a table's macros from text replaces the whole set, it does not merge. The paired
+    scaffold backs up a table's existing macros automatically before replacing them, but does not
+    restore that stamping logic afterward — that is the developer's call.
 house_assumptions:
   - tblAuditLogConfig.IsPrimaryKey — every audited table is assumed to have a single-column
     numeric (AutoNumber/Long) primary key; the Long Text backup plumbing and the generated macro
@@ -37,8 +51,9 @@ house_assumptions:
   - tblAuditLog — audited rows are referenced by name and key value (TableName + PrimaryKey),
     deliberately without enforced relationships, so audit history survives deletion of the rows
     it describes
-  - tblAuditLogConfig — the schema scan selects candidate tables by the tbl prefix naming
-    convention (one code filter in the paired scaffold); everything finer-grained is decided in
+  - tblAuditLogConfig — the schema scan selects candidate tables by the tbl/tlkp prefix naming
+    convention, excluding tmp (one code filter in the paired scaffold, kept in sync between
+    Two_PopulateConfigTable and CheckAuditReadiness); everything finer-grained is decided in
     data via IsAuditable. Adopters on other naming conventions adjust that one filter
   - tblClient — the sample tables (tblClient, tblSupportTicket, tlkpTicketPriority) are
     demonstration stand-ins showing both macro paths; a real build applies the system to the
@@ -70,10 +85,20 @@ including captured old values of Long Text fields — validates the mechanism en
 attempt restore tooling, retention automation, or a review UI — those are named in
 `## Parked / future considerations`.
 
-Two sample business tables and one lookup are included so a generated build demonstrates both
-macro paths immediately: `tblClient` (no Long Text — three macros) and `tblSupportTicket` (a Long
-Text field — five macros), with `tlkpTicketPriority` showing what the default scan boundary
-leaves *out* of auditing. Replace them with — or simply apply the system to — your real tables.
+### Two ways to build this
+
+**Path A — try it out first.** The paired scaffold can create two made-up tables (`tblClient`,
+`tblSupportTicket`) plus a short pick-list (`tlkpTicketPriority`) so you can watch the audit
+trail work before you touch anything real: one table with no Long Text field (three macros) and
+one with a Long Text field (five macros), so both kinds of tracking show up right away.
+
+**Path B — add this to a database you already use.** The same three system tables and the same
+scan-and-generate steps apply directly to your own existing tables — the made-up tables above
+are never created; they exist only to make Path A a complete, working demo on their own. Because
+this changes real tables, back up the .accdb file first (see Warnings).
+
+Either way, the three system tables and the generator steps are identical — only whether the two
+made-up tables get created differs.
 
 ## Entities
 
@@ -177,10 +202,12 @@ Indexes: PK on `TicketPriorityID`; unique on `TicketPriorityName`.
 
 Seed rows: Low (10), Normal (20), High (30), Urgent (40).
 
-**Deliberate teaching point:** the paired scaffold's schema scan takes `tbl…` tables only, so
-this `tlkp…` lookup never even reaches the config table unless the adopter widens that one
-prefix test — the outer boundary of the audit net is a visible, editable decision, not an
-accident (everything inside the boundary is then decided by `IsAuditable` flags, as data).
+**Deliberate teaching point:** the paired scaffold's schema scan takes `tbl…` **and** `tlkp…`
+tables (never `tmp…`), so this lookup reaches the config table right alongside the business
+tables — a real Path B build against a live schema turned up a table shaped like this one and
+confirmed lookups belong in scope by default, not outside it. The boundary is still a visible,
+editable one-line test, not an accident; it's just wider than an earlier draft of this template
+drew it (everything inside the boundary is then decided by `IsAuditable` flags, as data).
 
 ## Relationships
 
@@ -208,21 +235,33 @@ accident (everything inside the boundary is then decided by `IsAuditable` flags,
 4. **Single AutoNumber PK, always.** Every audited table is expected to have a single-column
    AutoNumber primary key, recorded in `tblAuditLogConfig.IsPrimaryKey`. A table with any other
    key design (composite, text, no PK) is called out at build time: the template will not work
-   for it out of the box, and adapting it is the adopter's own project.
+   for it out of the box, and adapting it is the adopter's own project. The paired scaffold's
+   `CheckAuditReadiness` procedure checks every candidate table against this rule and lists any
+   that fail it, before macros are generated.
 5. **Audit scope is data, not code.** The config scan writes every field of every candidate
-   table with `IsAuditable` defaulting True; excluding a field or a whole table means flipping
-   its flags, not editing code. Two hard exceptions live above the flags: the three system
+   table; excluding a field or a whole table means flipping its `IsAuditable` flag, not editing
+   code. What the flag starts as depends on which of the two build paths you're on: **Path A**
+   (try-it-out build) starts every field switched ON, so you switch OFF what you don't want;
+   **Path B** (a database you already use) starts every field switched OFF, so you switch ON —
+   table by table — only what you actually want tracked, which is the safer default on tables
+   this system wasn't designed around. Two hard exceptions apply either way: the three system
    tables are **never** given macros (auditing the audit trail would loop — their config rows,
-   if present, stay False), and noisy always-changing fields (row-version/timestamp columns,
-   house audit columns) are seeded False by the scan.
+   if present, stay OFF), and noisy always-changing fields (row-version/timestamp columns, house
+   audit columns) are always seeded OFF by the scan.
 6. **Every log row names its operation; only real changes are logged on update.** The macro
    stamps `OperationType` (`Insert` / `Update` / `Delete`); an insert row leaves `OldValue`
    Null and a delete row leaves `NewValue` Null. On update, the macro compares old and new
    values (`StrComp` on `Nz`-wrapped values) and logs only fields that actually changed. Long
    Text fields are always logged on update — the comparison cannot be done in the macro.
-7. **Regenerate after schema change.** Adding a table or field, or changing a field's type to
-   or from Long Text, requires re-running the config scan and regenerating the macros. The
-   macros are point-in-time artifacts of the schema.
+7. **Regenerate after schema change — and regeneration replaces, it never merges.** Adding a
+   table or field, or changing a field's type to or from Long Text, requires re-running the
+   config scan and regenerating the macros. The macros are point-in-time artifacts of the
+   schema. This cuts both ways: generating for a table **replaces its entire Data Macro set**,
+   including any macros the table already had for reasons unrelated to this system (most
+   notably the house audit-column stamping macro in `standards/audit-columns.md`). The paired
+   scaffold detects an existing macro set before overwriting it and backs it up automatically,
+   but it does not merge the old logic into the new macros — re-adding any lost stamping logic
+   is the developer's call, and worth checking for specifically on Path B.
 8. **The backup table is staging, not history.** `tblLongTextBackup` may be cleared at any time;
    the durable record is `tblAuditLog`, which is append-only. Retention/archival policy for the
    log is the adopter's call.
@@ -232,9 +271,11 @@ accident (everything inside the boundary is then decided by `IsAuditable` flags,
    end) is a named Extra Option; it trades a VBA dependency for a real name. The production
    system this template is drawn from runs the upgrade — its trail shows real Windows
    usernames — so the option is proven, not speculative.
-10. **Samples are stand-ins.** `tblClient`, `tblSupportTicket`, and `tlkpTicketPriority` exist
-    to prove both macro paths in a fresh build. Real deployments apply the system to the
-    adopter's own tables and may omit the samples entirely.
+10. **Samples are stand-ins, Path A only.** `tblClient`, `tblSupportTicket`, and
+    `tlkpTicketPriority` exist only to prove both macro paths in a try-it-out build — the
+    paired scaffold's `Zero_CreateSampleTables` procedure creates them, and that procedure is
+    skipped entirely on Path B. A build against a database you already use (Path B) never
+    creates these three tables; it applies the system directly to your own.
 
 ## Standards Layer
 
@@ -243,10 +284,19 @@ accident (everything inside the boundary is then decided by `IsAuditable` flags,
   convention — an append-only log needs no self-stamp). The **sample/business tables** follow
   the house audit-columns convention as usual; note that self-stamp and timestamp fields
   (e.g. a row-version column) are seeded `IsAuditable = False` by the config scan so they don't
-  drown the log (Business Rule 5).
+  drown the log (Business Rule 5). The paired scaffold's exclusion list names this repo's actual
+  house columns (`CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy`/`AccessTS`, per
+  `standards/audit-columns.md`); a fork with different audit-column names updates that list to
+  match, or the fork's own columns will sweep in as tracked fields instead of being excluded.
+  **Worth flagging, not deciding for you:** once a table has this Lite audit system turned on,
+  its own `CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy` columns tell you less than they
+  used to — `tblAuditLog` now holds a full history of who changed what and when, for every field,
+  which is strictly more than a single "last modified by/when" pair can show. Some adopters keep
+  the house columns anyway, for a quick single-row answer without a join to the log; others drop
+  them once the log is in place. This template doesn't remove them for you — that's your call.
 - **Naming conventions** — this template is written in `tbl`/`tlkp` prefix style, and the paired
-  scaffold's config scan keys on the `tbl` prefix; a practice on another convention regenerates
-  under its own names and adjusts that one filter.
+  scaffold's config scan keys on the `tbl`/`tlkp` prefixes (excluding `tmp`); a practice on
+  another convention regenerates under its own names and adjusts that one filter.
 - **Error handling** — the house errHandler pattern for the paired scaffold's VBA.
 
 ## Extra Options

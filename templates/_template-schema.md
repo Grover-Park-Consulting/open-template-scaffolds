@@ -253,7 +253,32 @@ annotation:
 - **Scope is explicit.** Each procedure is `Public` or `Private` as its usage requires; a sub
   performs an action, a function returns a value.
 
-### 8.4 `validate` rules for `vba-scaffold`
+### 8.4 Staged execution and facilitation
+
+Some `vba-scaffold` templates document procedures meant to run in a specific order, where each
+step gates a decision the developer must make before the next one runs — picking among named
+build options, reviewing a generated list before the next procedure acts on it, and the like.
+When a template documents this kind of sequence, it must also state, alongside the sequence, a
+facilitation rule for any assistant carrying out the steps on the developer's behalf:
+
+- **Never infer the answer to a staged decision.** Not from the shape of the data, not from
+  domain reasoning that makes an answer seem obvious — ask the developer, and wait for their
+  actual answer, even when it looks predictable.
+- **Never substitute your own analysis for a procedure whose job is to answer the question.** If
+  the sequence includes a check or scan procedure, run *that procedure*, at the point the
+  sequence calls for it — don't read the underlying data directly and report a conclusion in its
+  place.
+- **Present one step at a time.** Don't collapse a staged sequence into a single upfront report,
+  even where every fact in it turns out correct — the sequence exists so the developer reviews
+  and approves each gate, not just the end state.
+
+This is in addition to — not a substitute for — a project's own standing rule that no edit happens
+without explicit approval. It addresses a different failure mode: an assistant that has enough
+context and initiative to *answer* a gate the developer was meant to answer, even where it never
+touches a file. (See `templates/audit/audit-logging-lite-scaffold.md` for a worked example of this
+note in place, next to its own numbered setup steps.)
+
+### 8.5 `validate` rules for `vba-scaffold`
 
 1. `target_module` is present and non-empty.
 2. Every entry in `new_procedures` has a matching `### <ProcedureName>` heading under
