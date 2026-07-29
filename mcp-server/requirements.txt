@@ -1,2 +1,7 @@
-mcp>=1.0
+# FastMCP is the server framework server.py is written against. It shipped
+# inside the mcp package as mcp.server.fastmcp until mcp 2.0 removed it; from
+# FastMCP 2 on it is its own package, and it brings mcp along with it.
+# server.py imports whichever of the two is present, so an install predating
+# the split keeps working — but a fresh install should take this one.
+fastmcp>=3.0
 pyyaml>=6.0

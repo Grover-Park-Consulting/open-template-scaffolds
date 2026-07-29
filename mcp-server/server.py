@@ -8,7 +8,13 @@ proof of life.
 
 import re
 
-from mcp.server.fastmcp import FastMCP
+try:
+    # FastMCP ships as its own package from version 2 on.
+    from fastmcp import FastMCP
+except ImportError:
+    # mcp 1.x bundled it; mcp 2.0 removed it. Kept so an existing install
+    # that predates the split keeps working without a reinstall.
+    from mcp.server.fastmcp import FastMCP
 
 from library import iter_standards, iter_templates, read_standard, validate_library
 
