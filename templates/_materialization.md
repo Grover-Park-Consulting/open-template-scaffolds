@@ -245,7 +245,12 @@ function there — the only way to reach the Windows user, since `Environ()` is 
 
 ```vba
 Public Function AuditUser() As String
+    ' The fallback is not decoration: Environ$ returns an empty string in some contexts
+    ' (a scheduled task, a service account, a locked-down profile), and CreatedBy is
+    ' Required — an empty string would block the write outright, which is the one thing a
+    ' stamping helper must never do.
     AuditUser = Environ$("USERNAME")
+    If Len(AuditUser) = 0 Then AuditUser = "Unknown"
 End Function
 ```
 
@@ -282,6 +287,25 @@ This is also why the MCP must never be the **default** build route (`CLAUDE.md` 
 — doesn't touch this failure mode at all, because that path preserves literal text untouched. Build
 via MCP only when the developer has one and names it, and even then, scaffolds that emit escaped
 XML should still assemble entities from `Chr()` codes as a second line of defense.
+
+### Running a procedure through an MCP — use the bare procedure name
+
+`Application.Run "modAddDataMacros.One_CreateAuditTables"` fails with "cannot find the procedure."
+`Application.Run` reads a dotted name as *project*.*procedure*, not *module*.*procedure*, so a
+module-qualified name is never found. Pass the procedure name on its own —
+`One_CreateAuditTables` — which resolves as long as that name is unique in the project. Observed
+twice, in separate sessions, driving a `vba-scaffold`'s staged procedures through
+`access_run_vba`.
+
+### After an MCP-driven build, confirm the file was actually released
+
+A successful close reported by the MCP is **not** proof the database is free. An `MSACCESS`
+process can survive that close and keep the .accdb exclusively locked, leaving a `.laccdb` file
+beside it. Before telling the developer to open the database and look at what was built — the
+natural next step after any build — check for the leftover `.laccdb` and test an exclusive open;
+if the file is still held, the surviving process has to be ended manually. This is intermittent:
+it happened on one build and not on the next one in the same database, so test for it rather than
+assuming it either way.
 
 ### Application startup — AutoExec, Startup(), and external file assets
 

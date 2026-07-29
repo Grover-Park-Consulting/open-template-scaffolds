@@ -244,15 +244,25 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
    (try-it-out build) starts every field switched ON, so you switch OFF what you don't want;
    **Path B** (a database you already use) starts every field switched OFF, so you switch ON —
    table by table — only what you actually want tracked, which is the safer default on tables
-   this system wasn't designed around. Two hard exceptions apply either way: the three system
+   this system wasn't designed around. Three hard exceptions apply either way: the three system
    tables are **never** given macros (auditing the audit trail would loop — their config rows,
-   if present, stay OFF), and noisy always-changing fields (row-version/timestamp columns, house
-   audit columns) are always seeded OFF by the scan.
+   if present, stay OFF); noisy always-changing fields (row-version/timestamp columns, house
+   audit columns) are always seeded OFF by the scan; and the audited table's own primary-key
+   field is seeded OFF as well. Its value is not lost — every log row carries it in
+   `tblAuditLog.PrimaryKey`, which is what identifies the record and what gap analysis reads;
+   a field row for the key would only store the same value a second time, once per insert and
+   once per delete.
 6. **Every log row names its operation; only real changes are logged on update.** The macro
    stamps `OperationType` (`Insert` / `Update` / `Delete`); an insert row leaves `OldValue`
    Null and a delete row leaves `NewValue` Null. On update, the macro compares old and new
    values (`StrComp` on `Nz`-wrapped values) and logs only fields that actually changed. Long
    Text fields are always logged on update — the comparison cannot be done in the macro.
+   **Practical effect, so this doesn't read as a bug:** every update to a row that contains a
+   Long Text field writes an audit row for that field, even when the field did not change — the
+   macro cannot compare Long Text values, so it logs the value as it stands. Change one ordinary
+   field and expect two rows: the field you changed, and the Long Text field with the same
+   content in `OldValue` and `NewValue` (both empty if the field is empty). Those rows are
+   correct, not an error.
 7. **Regenerate after schema change — and regeneration replaces, it never merges.** Adding a
    table or field, or changing a field's type to or from Long Text, requires re-running the
    config scan and regenerating the macros. The macros are point-in-time artifacts of the
@@ -261,7 +271,15 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
    notably the house audit-column stamping macro in `standards/audit-columns.md`). The paired
    scaffold detects an existing macro set before overwriting it and backs it up automatically,
    but it does not merge the old logic into the new macros — re-adding any lost stamping logic
-   is the developer's call, and worth checking for specifically on Path B.
+   is the developer's call, and worth checking for specifically on Path B. The risk also runs
+   the other way, which is what a real Path B target actually looked like: every table carried
+   the house audit columns but **no** table had a stamping macro yet. Adding the stamping macro
+   *after* the audit macros are in place replaces them, exactly as generating audit macros
+   replaces a stamping macro — `LoadFromText` swaps a table's whole macro set in either
+   direction, and there is no partial or merge path. Where a table needs both, generate them
+   together. If a table doesn't need the house audit columns at all, leaving them off removes
+   this collision entirely: the table then needs one macro set, written once, with nothing for a
+   later regeneration to overwrite.
 8. **The backup table is staging, not history.** `tblLongTextBackup` may be cleared at any time;
    the durable record is `tblAuditLog`, which is append-only. Retention/archival policy for the
    log is the adopter's call.
@@ -303,9 +321,11 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
 
 *Empty in the base template. Filled per client engagement.*
 
-- **Real-username identity** — a public `AuditUser()` helper (`Environ("USERNAME")`) in both back
-  end and front end, replacing `CurrentUser()` in the generated macros and the Long Text helper
-  (Business Rule 9). Running in the production system this template is drawn from.
+- **Real-username identity** — a public `AuditUser()` helper in both back end and front end,
+  replacing `CurrentUser()` in the generated macros and the Long Text helper (Business Rule 9).
+  Take the helper as written in `standards/audit-columns.md` and `templates/_materialization.md`
+  — including its fallback for an empty `Environ$` — rather than writing a one-liner here.
+  Running in the production system this template is drawn from.
 - **Audit trail viewer** — a read-only form/report over `tblAuditLog` filtered by table, record,
   date range, or user.
 - **Log retention** — a periodic archival job moving aged `tblAuditLog` rows to an archive table
@@ -315,5 +335,9 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
 
 - **Full audit system** — config-driven restore/undo from the trail, retention automation, and a
   managed review UI are the "grown-up" version this Lite template deliberately stops short of.
+  A note for whoever builds the restore half: it reads each `OldValue` back into its own field
+  and addresses the row by `tblAuditLog.PrimaryKey`. The key field is deliberately not logged as
+  a field row of its own (Business Rule 5), which keeps it where a restore needs it — in the
+  `WHERE`, never in the `SET`.
 - **Composite/text primary keys** — would require reworking the backup plumbing and macro XML
   (Business Rule 4).

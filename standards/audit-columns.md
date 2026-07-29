@@ -34,6 +34,11 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
   - **User identity:** a Public VBA function `AuditUser()` returning `Environ$("USERNAME")`, which the
     macro calls as `=AuditUser()`. A data macro *can* call a public function in the same accdb. Prefer
     this to `CurrentUser()`, which returns `"Admin"` without workgroup security.
+  - **`AuditUser()` must never return an empty string.** `Environ$("USERNAME")` comes back empty in
+    some contexts — a scheduled task, a service account, a locked-down profile — and because
+    `CreatedBy` is `Required`, an empty result blocks the insert outright. The helper falls back to
+    `"Unknown"` when the environment gives it nothing: a stamped row naming an unknown user is a
+    record; a refused write is not. (Implementation in `templates/_materialization.md`.)
   - **Never make an audit field Long Text (Memo)** — data macros can't set Long Text at all; the audit
     set is Short Text / Date-Time by design.
   `AccessTS` does **not** apply — Access has no native rowversion type; it appears only on tables

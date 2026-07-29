@@ -120,7 +120,7 @@ without a qualifier (several are SQL Server future keywords): `Status`, `Categor
 `Subject`.
 
 Qualify with entity or purpose: `ProjectStatus`, `ProductCategory`, `RecordLabel`,
-`StreetAddress`, `CancellationReason`, `SortSequence`.
+`StreetAddress`, `CancellationReason`, `SortOrder`.
 
 > **Test:** *Would a reader in a query result know what this field refers to without seeing the
 > table name?* If no, qualify it.

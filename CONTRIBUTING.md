@@ -45,6 +45,13 @@ Every contributed template must:
 - **Be genericized** — no client-confidential or proprietary schema. Use a recognizable public
   domain or invented data. (Our own first template took a real engagement and recast it onto the
   public Northwind sample; that's the discipline.)
+- **Be written for a reader who has never seen the system it describes.** Every term is defined
+  where it first appears, or it isn't used — no undefined jargon, no coined label the reader has
+  to look up. Prefer the plain name for a thing over the internal one. Where a rule has a visible
+  consequence, state the consequence too: what the reader will actually see happen, not only the
+  rule. If a sentence would send a first-time reader to a search engine or to another file, rewrite
+  it. This is a review criterion, not a preference — real testing has repeatedly shown that where a
+  template states a rule without its consequence, the reader concludes the system is broken.
 
 `validate()` is **format-only**: it checks that a template is internally well-formed. It does not
 open any database, and it does not judge whether a template *fits* a given application — that

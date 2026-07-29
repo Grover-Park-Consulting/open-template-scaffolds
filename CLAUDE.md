@@ -91,6 +91,22 @@ sequence calls for it. Present one step's result at a time; don't collapse the s
 single upfront report, even when every fact in it is correct. Having the access and the context to
 answer a gate yourself is not the same as being asked to.
 
+**Restate the decision in full at each gate.** Ask the question where the developer can answer it
+without reconstructing anything from earlier in the session: what the setting means, what it
+produces at run time, and what changes if they choose the other way — at the point of asking, not
+on request. Never use one number for two quantities in the same message: if 11 fields are auditable
+and 11 macros will be generated, say which is which, or the reader will take them for the same 11.
+
+## Write for someone who has never seen this before
+
+Everything you produce for the developer — designs, gate questions, generated comments, and any
+template you draft — follows one rule: **every term is defined where it first appears, or it isn't
+used.** Prefer the plain name for a thing over the internal one. Where a rule has a visible
+consequence, state the consequence as well — what they will actually see happen — not only the rule
+that governs it. If a sentence would send a first-time reader to a search engine or to another file
+to understand it, rewrite it. This applies to the whole library, not to beginner-facing sections
+alone.
+
 ## Matching templates — use judgment
 
 The developer describes what they need in their own words; deciding which template fits is your call.

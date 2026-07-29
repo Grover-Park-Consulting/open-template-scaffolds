@@ -167,7 +167,7 @@ Three layers, kept distinct throughout:
 
 ## Procedures
 
-### Zero_CreateSampleTables — `Public Sub` (Path A only — setup step 0)
+### Zero_CreateSampleTables — `Public Function` → `String` (Path A only — setup step 0)
 
 **Skip this procedure entirely if you're doing Path B** (adding audit tracking to a database
 you already use) — it only exists to build the made-up tables for trying the system out.
@@ -177,17 +177,26 @@ Creates the two made-up tables (`tblClient`, `tblSupportTicket`) and a short pic
 rows (Low, Normal, High, Urgent) and the two links between the tables. Same idempotent style as
 `One_CreateAuditTables` — an existing table is reported and skipped, so it's safe to re-run.
 
+It returns the same wording it shows on screen. Run it from the Immediate window as
+`Zero_CreateSampleTables` and you get the message box; call it as
+`sResult = Zero_CreateSampleTables(True)` and you get the text back with **no** message box —
+which is what an automated caller needs, because nothing is there to click a dialog away.
+
 ```vba
-Public Sub Zero_CreateSampleTables()
+Public Function Zero_CreateSampleTables(Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Creates tblClient, tlkpTicketPriority, tblSupportTicket (schema template
     '            entities) and seeds tlkpTicketPriority. Path A (try-it-out build) only —
-    '            skip this Sub for Path B (an existing accdb's own tables). Idempotent: each
-    '            block is skipped if its table already exists.
+    '            skip this procedure for Path B (an existing accdb's own tables). Idempotent:
+    '            each block is skipped if its table already exists.
+    '            Passing bSilent:=True suppresses the message box and returns the same text,
+    '            so a caller with no one at the keyboard does not hang on a dialog.
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.Field
     Dim idx As DAO.Index
     Dim rel As DAO.Relation
+    Dim sReport As String
+    Dim bFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -365,40 +374,62 @@ CreateRelationships:
 
     Debug.Print "Relationships created"
 
+    sReport = "Sample tables created. You're on Path A (try-it-out build) — nothing in your " & _
+        "own database was touched."
+
 Cleanup:
     Set fld = Nothing
     Set idx = Nothing
     Set rel = Nothing
     Set tdf = Nothing
     Set db = Nothing
-    MsgBox "Sample tables created. You're on Path A (try-it-out build) — nothing in your " & _
-        "own database was touched.", vbInformation
-    Exit Sub
+    Zero_CreateSampleTables = sReport
+    ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
+    '            both. Building the report first and showing it here is what prevents that.
+    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
-    MsgBox "Error creating sample tables: " & Err.Number & " - " & Err.Description, vbCritical
+    bFailed = True
+    sReport = "ERROR creating sample tables: " & Err.Number & " - " & Err.Description
     Resume Cleanup
-End Sub
+    Resume
+End Function
 ```
 
-### One_CreateAuditTables — `Public Sub` (setup step 1)
+### One_CreateAuditTables — `Public Function` → `String` (setup step 1)
 
 Creates the three system tables via DAO, idempotently — an existing table is reported and
-skipped, so the Sub is safe to re-run. Field-by-field DAO `CreateField` (never `CREATE TABLE`
-DDL — see `templates/_materialization.md`).
+skipped, so it is safe to re-run. Field-by-field DAO `CreateField` (never `CREATE TABLE`
+DDL — see `templates/_materialization.md`). Each table is built with the indexes the schema
+template declares for it, not the primary key alone.
+
+**The skip is whole-table.** A table that already exists is left exactly as it is, indexes
+included — re-running this procedure will not add a missing index to a table built by an earlier
+version of this scaffold. If you have such a build, add the secondary and unique indexes by
+hand, or start fresh in a copy.
 
 ```vba
-Public Sub One_CreateAuditTables()
+Public Function One_CreateAuditTables(Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Creates tblAuditLog, tblLongTextBackup, tblAuditLogConfig (schema template
     '            entities). Idempotent: each block is skipped if its table already exists.
+    '            Passing bSilent:=True suppresses the message box and returns the same text,
+    '            so a caller with no one at the keyboard does not hang on a dialog.
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.Field
     Dim idx As DAO.Index
+    Dim sReport As String
+    Dim bFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
+
+    ' [SCAFFOLD] The outcome text is set here, not at the end, because an "already exists"
+    '            branch jumps straight to Cleanup. The errHandler replaces it on failure.
+    sReport = "Audit tables are in place. Any that already existed were left exactly as " & _
+        "they are, indexes included."
 
     ' ========== tblAuditLog ==========
     On Error Resume Next
@@ -454,6 +485,22 @@ Public Sub One_CreateAuditTables()
     idx.Fields.Append fld
     tdf.Indexes.Append idx
 
+    ' [SCHEMA] Secondary indexes the schema template declares: trail queries by table and
+    '          date, per-record history by table and key value.
+    Set idx = tdf.CreateIndex("TableNameDateChanged")
+    Set fld = idx.CreateField("TableName")
+    idx.Fields.Append fld
+    Set fld = idx.CreateField("DateChanged")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    Set idx = tdf.CreateIndex("TableNamePrimaryKey")
+    Set fld = idx.CreateField("TableName")
+    idx.Fields.Append fld
+    Set fld = idx.CreateField("PrimaryKey")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
     Debug.Print "tblAuditLog created"
 
 CreateLongTextBackup:
@@ -502,6 +549,18 @@ CreateLongTextBackup:
     idx.Primary = True
     idx.Required = True
     Set fld = idx.CreateField("BackupID")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
+    ' [SCHEMA] Unique per table/record/field — BackupLongTextFieldsDM replaces any earlier
+    '          backup for the same field of the same row, and this enforces that one-row rule.
+    Set idx = tdf.CreateIndex("TableNamePrimaryKeyFieldName")
+    idx.Unique = True
+    Set fld = idx.CreateField("TableName")
+    idx.Fields.Append fld
+    Set fld = idx.CreateField("PrimaryKey")
+    idx.Fields.Append fld
+    Set fld = idx.CreateField("FieldName")
     idx.Fields.Append fld
     tdf.Indexes.Append idx
 
@@ -559,6 +618,16 @@ CreateConfig:
     idx.Fields.Append fld
     tdf.Indexes.Append idx
 
+    ' [SCHEMA] Unique per table/field — one config row per scanned field, so a re-scan or a
+    '          hand edit cannot leave two rows disagreeing about the same field.
+    Set idx = tdf.CreateIndex("TableNameFieldName")
+    idx.Unique = True
+    Set fld = idx.CreateField("TableName")
+    idx.Fields.Append fld
+    Set fld = idx.CreateField("FieldName")
+    idx.Fields.Append fld
+    tdf.Indexes.Append idx
+
     Debug.Print "tblAuditLogConfig created"
 
 Cleanup:
@@ -566,26 +635,39 @@ Cleanup:
     Set idx = Nothing
     Set tdf = Nothing
     Set db = Nothing
-    MsgBox "Audit tables created successfully!", vbInformation
-    Exit Sub
+    One_CreateAuditTables = sReport
+    ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
+    '            both. Building the report first and showing it here is what prevents that.
+    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
-    MsgBox "Error creating tables: " & Err.Number & " - " & Err.Description, vbCritical
+    bFailed = True
+    sReport = "ERROR creating tables: " & Err.Number & " - " & Err.Description
     Resume Cleanup
-End Sub
+    Resume
+End Function
 ```
 
-### Two_PopulateConfigTable — `Public Sub` (setup step 2)
+### Two_PopulateConfigTable — `Public Function` → `String` (setup step 2)
 
 Scans the schema into `tblAuditLogConfig`: **every field of every candidate table**, with its
 ordinal position, DAO type code, a flag on the table's PK field, and `IsAuditable`. Nothing is
 silently dropped — exclusions are *seeded* as `IsAuditable = False` rows: the three system
-tables, plus fields that would just add noise — this repo's house audit columns
+tables, the audited table's own primary-key field (its value is already on every log row, in
+`tblAuditLog.PrimaryKey`), plus fields that would just add noise — this repo's house audit columns
 (`CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy`/`AccessTS`, per `standards/audit-columns.md`)
 and a few other always-changing system columns (`SSMA_TimeStamp`, `ValidFrom`, `ValidTo`). **After
 running, open the config table and review the flags** — that review, in data, is where the audit
 net is drawn (schema Business Rule 5).
+
+**What you will see, so it doesn't look wrong:** most of the rows belong to the three system
+tables — `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig` — and on a small database that
+can be well over half of them. They are all switched OFF and must stay OFF; auditing the audit
+trail would loop. Sort by `TableName` and review only the rows for tables you recognise as your
+own. The system rows are shown rather than hidden on purpose — nothing the scan did is invisible
+to you.
 
 Takes one optional Yes/No setting that decides the starting point for everything else:
 
@@ -597,9 +679,12 @@ Takes one optional Yes/No setting that decides the starting point for everything
   where "track everything" could sweep in more than you meant.
 
 ```vba
-Public Sub Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True)
+Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True, _
+                                        Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Rebuild the audit configuration from the live schema. Scope decisions
     '            live in the IsAuditable flags afterward, not in this code.
+    '            Passing bSilent:=True suppresses the message box and returns the same text,
+    '            so a caller with no one at the keyboard does not hang on a dialog.
     '            bDefaultAuditable sets the starting point for ordinary fields only:
     '            True  (default; Path A) — everything starts switched ON, you switch OFF
     '                  what you don't want tracked.
@@ -616,9 +701,13 @@ Public Sub Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True)
     Dim isPK As Boolean
     Dim isAuditable As Boolean
     Dim pkFieldName As String
+    Dim lRowCount As Long
+    Dim sReport As String
+    Dim bFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
+    lRowCount = 0
 
     ' Clear existing config
     db.Execute "DELETE * FROM tblAuditLogConfig", dbFailOnError
@@ -673,6 +762,13 @@ Public Sub Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True)
                          fld.Name = "AccessTS", fld.Name = "SSMA_TimeStamp", _
                          fld.Name = "ValidFrom", fld.Name = "ValidTo"
                         isAuditable = False
+                    ' [SCAFFOLD] The table's own primary key. Its value is already on every
+                    '            log row in tblAuditLog.PrimaryKey, which is what identifies
+                    '            the record; a field row here would store the same value a
+                    '            second time (schema Business Rule 5). A developer can flip
+                    '            it on afterward if they want that.
+                    Case isPK
+                        isAuditable = False
                     Case Else
                         isAuditable = bDefaultAuditable
                 End Select
@@ -683,12 +779,14 @@ Public Sub Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True)
                     "VALUES ('" & tdef.Name & "', '" & fld.Name & "', " & fld.OrdinalPosition & _
                     ", " & fld.Type & ", " & isPK & ", " & isAuditable & ")"
                 db.Execute sSql, dbFailOnError
+                lRowCount = lRowCount + 1
             Next fld
         End If
     Next tdef
 
-    MsgBox "Table list built. Open tblAuditLogConfig and check the IsAuditable switches " & _
-        "before you run the next step.", vbInformation
+    sReport = "Table list built: " & lRowCount & " field row(s) written to tblAuditLogConfig." & _
+        vbCrLf & "Open tblAuditLogConfig and check the IsAuditable switches before you run " & _
+        "the next step."
 
 Cleanup:
     Set pkField = Nothing
@@ -696,13 +794,19 @@ Cleanup:
     Set fld = Nothing
     Set tdef = Nothing
     Set db = Nothing
-    Exit Sub
+    Two_PopulateConfigTable = sReport
+    ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
+    '            both. Building the report first and showing it here is what prevents that.
+    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
-    MsgBox "Error populating config: " & Err.Number & " - " & Err.Description, vbCritical
+    bFailed = True
+    sReport = "ERROR populating config: " & Err.Number & " - " & Err.Description
     Resume Cleanup
-End Sub
+    Resume
+End Function
 ```
 
 ### CheckAuditReadiness — `Public Function` → `String` (safety check — run before step 3, required for Path B)
@@ -815,6 +919,7 @@ errHandler:
     CheckAuditReadiness = "Error checking audit readiness: " & Err.Number & " - " & Err.Description
     If Not bSilent Then MsgBox CheckAuditReadiness, vbCritical
     Resume Cleanup
+    Resume
 End Function
 ```
 
@@ -918,6 +1023,7 @@ errHandler:
     Three_GenerateAllAuditDataMacros = sReport & "ERROR: " & Err.Number & " - " & Err.Description
     If Not bSilent Then MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
+    Resume
 End Function
 ```
 
@@ -1051,6 +1157,7 @@ errHandler:
     CreateAllDataMacros = "ERROR: " & Err.Number & " - " & Err.Description
     If Not bSilent Then MsgBox "Error creating macros for " & sTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
+    Resume
 End Function
 ```
 
@@ -1620,6 +1727,7 @@ errHandler:
     '            a MsgBox here would interrupt every user's save. Log if your house pattern
     '            has a silent logger; never block.
     Resume Cleanup
+    Resume
 End Function
 ```
 
@@ -1631,8 +1739,11 @@ before re-running `Three_GenerateAllAuditDataMacros` when the audit scope change
 double as your archive of prior macro states.
 
 ```vba
-Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = "") As Boolean
+Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = "", _
+                                             Optional bSilent As Boolean = False) As Boolean
     ' [SCAFFOLD] Back up, then remove, the data macros on every table that has them.
+    '            Passing bSilent:=True suppresses both message boxes, so a caller with no one
+    '            at the keyboard does not hang on a dialog. The Boolean return is the result.
     Dim db As DAO.Database
     Dim rst As DAO.Recordset
     Dim strSQL As String
@@ -1683,7 +1794,8 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
     Set rst = Nothing
     Kill strTempFile
 
-    MsgBox "Successfully backed up and removed data macros from " & intMacrosRemoved & " tables." & vbCrLf & _
+    If Not bSilent Then MsgBox "Successfully backed up and removed data macros from " & _
+           intMacrosRemoved & " tables." & vbCrLf & _
            "Backups saved to: " & strBackupPath, vbInformation, "Data Macros Removed"
 
     BackupAndRemoveAllDataMacros = True
@@ -1695,14 +1807,16 @@ errHandler:
     ' [STANDARDS — error-handling.md] error 2950 = a table with no data macros to export;
     '            skip it and continue. Anything else: report and stop.
     If Err.Number <> 2950 Then
-        MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
+        If Not bSilent Then MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
         On Error Resume Next
         If Not rst Is Nothing Then rst.Close
         If Dir(strTempFile) <> "" Then Kill strTempFile
         BackupAndRemoveAllDataMacros = False
+        Resume Cleanup
     Else
         Resume Cleanup
     End If
+    Resume
 End Function
 ```
 
@@ -1725,10 +1839,13 @@ End Function
 
 *Empty in the base template. Filled per client engagement.*
 
-- **Real-username identity** — add a public `AuditUser()` function (`Environ("USERNAME")`) to
-  both back end and front ends, and substitute it for `CurrentUser()` in the builders and in
-  `BackupLongTextFieldsDM` (schema Business Rule 9 and its Extra Option). The production system
-  this template is drawn from runs this upgrade — its trail stamps real Windows usernames.
+- **Real-username identity** — add a public `AuditUser()` function to both back end and front
+  ends, and substitute it for `CurrentUser()` in the builders and in `BackupLongTextFieldsDM`
+  (schema Business Rule 9 and its Extra Option). Copy the helper from
+  `templates/_materialization.md` rather than writing your own: it carries a fallback for the
+  case where `Environ$("USERNAME")` comes back empty, which would otherwise block the write
+  outright on a `Required` `ChangedBy`. The production system this template is drawn from runs
+  this upgrade — its trail stamps real Windows usernames.
 - **Scheduled backup-table cleanup** — a maintenance routine clearing aged `tblLongTextBackup`
   rows (schema Business Rule 8).
 

@@ -40,6 +40,14 @@ engagement is always the adopter's judgment.
 - **One template per file.** A template defines one cohesive artifact set for one domain.
 - **Single source of truth:** the file *is* the template. CLAUDE.md and the MCP are readers
   of it, never separate copies.
+- **Write for a reader who has never seen this system.** Every term is defined where it first
+  appears, or it isn't used — no undefined jargon, no coined label the reader has to look up, no
+  concept assumed from another file. Prefer the plain name for a thing over the internal one.
+  Where a rule has a visible consequence, state the consequence as well — what the reader will
+  actually see happen — not only the rule that governs it. If a sentence would send a first-time
+  reader to a search engine or to another file to understand it, rewrite it. This applies to the
+  whole template, not to its introductory sections alone: field tables and Business Rules stay
+  precise, but precision and plain language are not in tension.
 
 ---
 
@@ -271,6 +279,12 @@ facilitation rule for any assistant carrying out the steps on the developer's be
 - **Present one step at a time.** Don't collapse a staged sequence into a single upfront report,
   even where every fact in it turns out correct — the sequence exists so the developer reviews
   and approves each gate, not just the end state.
+- **Restate the decision in full at the gate.** Ask where the developer can answer without
+  reconstructing anything from earlier in the session: what the setting means, what it produces
+  at run time, and what changes if they choose the other way — at the point of asking, not on
+  request. And never use one number for two quantities in the same message: if 11 fields are
+  auditable and 11 macros will be generated, say which is which, because a reader will otherwise
+  take them for the same 11.
 
 This is in addition to — not a substitute for — a project's own standing rule that no edit happens
 without explicit approval. It addresses a different failure mode: an assistant that has enough
