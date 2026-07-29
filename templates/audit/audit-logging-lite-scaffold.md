@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.1.0
+version: 0.2.0
 status: draft
 implements: audit-logging-lite-schema
 requires_tables:
@@ -15,9 +15,11 @@ standards_layer:
   - query-style
   - naming-conventions
   - design-principles
+  - audit-columns
 target_module: modAddDataMacros
 new_procedures:
   - Zero_CreateSampleTables
+  - AddAuditColumns
   - One_CreateAuditTables
   - Two_PopulateConfigTable
   - CheckAuditReadiness
@@ -28,9 +30,12 @@ new_procedures:
   - BuildAfterDeleteMacro
   - BuildBeforeChangeMacro
   - BuildBeforeDeleteMacro
+  - AuditSetField
   - GetComparisonExpression
   - BackupLongTextFieldsDM
   - BackupAndRemoveAllDataMacros
+  - DumpTableMacros
+  - ListMacroEvents
 build_paths:
   - "Path A — Demo build: try the system out on three made-up tables the generator creates for
     you (Zero_CreateSampleTables). Nothing real is touched."
@@ -42,8 +47,14 @@ warnings:
     table carrying one takes the hybrid VBA path (BeforeChange/BeforeDelete backing values up
     through BackupLongTextFieldsDM); a table without one needs only the three After macros.
   - This module must run in the same accdb as the audited tables — the back end of a split
-    design. BackupLongTextFieldsDM must additionally exist in every front end, because a data
-    macro fired by a front-end edit resolves the function there.
+    design. modAuditLongText (BOTH AuditUser and BackupLongTextFieldsDM) must additionally exist in
+    every front end, because a data macro fired by a front-end edit resolves the function there.
+    AuditUser is needed on every build, Long Text or not, because the stamping macro calls it on
+    every table — without it in the front end, front-end inserts fail outright. The copies must be
+    kept identical by hand; nothing enforces that.
+  - Close every copy of the database before generating. Step 3 opens each table in design view, and
+    a table held open by another Access instance stops the run part-way, leaving some tables done
+    and some not. Re-running is safe, so a partial run is fixed by closing everything and repeating.
   - DAO cannot create Data Macros. The only build path is writing UTF-16 XML to a file and
     loading it with Application.LoadFromText acTableDataMacro — exactly what this module does.
   - Every audited table is expected to have a single-column AutoNumber primary key. If any table
@@ -53,11 +64,13 @@ warnings:
   - Path B (an existing accdb with real tables and real data) is much less forgiving than the
     demo. Make a copy of the .accdb file before running any of these steps against it — Data
     Macros get attached directly to your live tables, and this is not a step to redo casually.
-  - If a table already carries its own Data Macros before this generator runs on it (for example,
-    the standards/audit-columns.md Before Change stamping macro), they are silently replaced —
-    Application.LoadFromText replaces a table's entire macro set, it does not merge. The generator
-    backs up any table's existing macros automatically before replacing them, but nothing restores
-    that stamping logic afterward — that is the developer's call.
+  - Application.LoadFromText replaces a table's ENTIRE macro set — it never merges. This generator
+    therefore emits the house audit-column stamping (standards/audit-columns.md) and the change
+    auditing TOGETHER, in one Before Change macro, so the two no longer destroy each other. Any
+    OTHER Data Macro a table already carries — business logic of your own, written for reasons
+    unrelated to this system — is still replaced. The generator backs up a table's existing macros
+    automatically before replacing them, but nothing restores that logic afterward; re-adding it is
+    the developer's call. Check for this specifically on Path B.
   - If any importer un-escapes HTML/XML entities in VBA source on the way in (this repo's own
     Access Explorer MCP code-import tools do), a literal &lt;&gt; in GetComparisonExpression
     becomes a raw <> and breaks the generated macro XML (error 3870). The function builds the
@@ -164,6 +177,65 @@ Three layers, kept distinct throughout:
 | The audited tables | Each with a single-column numeric PK (schema Business Rule 4) |
 | A Trusted Location | The generator and the macros' VBA calls run only with code enabled |
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
+| **Every copy of the database closed** | Step 3 opens each table in **design view** to attach its macros. Another Access instance holding one of those tables breaks the run part-way through, leaving some tables done and some not. In a split design that means the back end *and* every front end — see below. |
+
+### Where each module goes in a split database
+
+A **split database** is the normal shape for a multi-user Access application: one file holds the
+tables (the **back end**, usually on a shared drive), and each person gets their own copy of a
+second file holding the forms, reports, and code (the **front end**), whose tables are *links*
+pointing at the back end. These templates are designed for that shape. A single-file database — one
+.accdb holding everything — is still a legitimate choice for one user, and everything here works
+there too; put every module in that one file and ignore the column below.
+
+| Module | Back end | Front end | Why |
+|---|---|---|---|
+| `modAddDataMacros` (this generator) | **Yes** | No | Data Macros attach to tables in the file the tables actually live in. Run the generator where the tables are. |
+| `modAuditLongText` (`AuditUser`, `BackupLongTextFieldsDM`) | **Yes** | **Yes — both** | A Data Macro that fires because someone edited through a *linked* table looks for the function in **that person's front end**. If it isn't there, the save fails. This is the one placement mistake a single-file test can never catch. |
+| `modAuditAdmin` (`BackupAndRemoveAllDataMacros`) | **Yes** | No | Maintenance on the tables themselves. |
+| `modAuditVerify` (`DumpTableMacros`, `ListMacroEvents`) | **Yes** | No | Reads the macros attached to the tables. |
+
+The three system tables live in the back end and are **linked** into each front end — the audit log
+so it can be viewed, the backup table because a front-end-triggered macro has to reach it.
+
+> **`modAuditLongText` is required on every build, not only where there is Long Text.** Its name
+> undersells it: it also holds `AuditUser()`, which the stamping macro calls on **every** table. A
+> database with no Long Text field anywhere still needs this module in the back end and in every
+> front end, or nothing can be inserted at all.
+>
+> **The copies must stay identical, and nothing enforces that.** It is the same source in two or more
+> files, kept in step by hand. Edit it once and you have to apply that edit everywhere — a front end
+> running an older copy fails only on the edits that reach the changed line, which is the kind of bug
+> that takes a day to find. Treat the back end's copy as the original and re-import it to each front
+> end after any change.
+
+### Before you run the generator
+
+Close **every** copy of the database — the back end and each front end. Step 3 opens each table in
+design view to attach its macros, and a table held open elsewhere stops the run part-way, leaving
+some tables generated and others not. Re-running is safe (generation replaces), so the fix for a
+partial run is simply to close everything and run it again.
+
+## Module-level declarations
+
+Put these at the top of `modAddDataMacros`, below `Option Explicit`.
+
+```vba
+Option Compare Database
+Option Explicit
+
+' [STANDARDS — audit-columns.md] The house audit column names, in ONE place.
+' Three procedures below use them: Two_PopulateConfigTable (to seed them
+' not-auditable), BuildBeforeChangeMacro (to stamp them), and
+' Zero_CreateSampleTables (to create them on the sample tables).
+' A shop that forks this library and renames its audit columns changes these
+' four lines and nothing else. AccessTS is deliberately absent — it is a SQL
+' Server rowversion and does not apply to a local Access table.
+Private Const AUDIT_CREATED_DATE  As String = "CreatedDate"
+Private Const AUDIT_CREATED_BY    As String = "CreatedBy"
+Private Const AUDIT_MODIFIED_DATE As String = "ModifiedDate"
+Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
+```
 
 ## Procedures
 
@@ -176,6 +248,14 @@ Creates the two made-up tables (`tblClient`, `tblSupportTicket`) and a short pic
 (`tlkpTicketPriority`) described in the paired schema template, with the four starter pick-list
 rows (Low, Normal, High, Urgent) and the two links between the tables. Same idempotent style as
 `One_CreateAuditTables` — an existing table is reported and skipped, so it's safe to re-run.
+
+**All three carry the house audit columns** (`standards/audit-columns.md`), because a demo that
+leaves them off doesn't demonstrate the thing most likely to bite on real tables: stamping and
+change-auditing both wanting the Before Change macro. With them present, the Path A build shows the
+two being generated together, which is what a real table needs. It also means the four seed rows
+have to supply `CreatedDate` and `CreatedBy` themselves — they're inserted at step 0, before any
+stamping macro exists, and those columns are `Required`. See the comment on the `INSERT` statements
+below, and `templates/_materialization.md` rule 5 for why the values must be resolved in VBA first.
 
 It returns the same wording it shows on screen. Run it from the Immediate window as
 `Zero_CreateSampleTables` and you get the message box; call it as
@@ -197,6 +277,8 @@ Public Function Zero_CreateSampleTables(Optional bSilent As Boolean = False) As 
     Dim rel As DAO.Relation
     Dim sReport As String
     Dim bFailed As Boolean
+    Dim sAuditUser As String
+    Dim sAuditNow As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -225,6 +307,8 @@ Public Function Zero_CreateSampleTables(Optional bSilent As Boolean = False) As 
 
     Set fld = tdf.CreateField("CellPhone", dbText, 25)
     tdf.Fields.Append fld
+
+    AddAuditColumns tdf
 
     db.TableDefs.Append tdf
 
@@ -268,6 +352,8 @@ CreateTicketPriority:
     fld.Required = True
     tdf.Fields.Append fld
 
+    AddAuditColumns tdf
+
     db.TableDefs.Append tdf
 
     Set idx = tdf.CreateIndex("PrimaryKey")
@@ -285,11 +371,29 @@ CreateTicketPriority:
 
     db.TableDefs.Refresh
 
-    ' Starter pick-list rows (schema: Low/Normal/High/Urgent)
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('Low', 10)", dbFailOnError
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('Normal', 20)", dbFailOnError
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('High', 30)", dbFailOnError
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder) VALUES ('Urgent', 40)", dbFailOnError
+    ' [SCAFFOLD + _materialization.md rule 5] Starter pick-list rows (schema:
+    '            Low/Normal/High/Urgent). These are inserted at step 0, BEFORE any
+    '            stamping macro exists — and CreatedDate/CreatedBy are Required, so the
+    '            values have to be supplied here. They cannot be supplied as functions:
+    '            the ACE engine, not VBA, evaluates the text of a db.Execute INSERT, and
+    '            Environ() and AuditUser() are unknown to it ("Undefined function").
+    '            Resolve each value in VBA first, then concatenate it in as a literal.
+    sAuditUser = Environ$("USERNAME")
+    If Len(sAuditUser) = 0 Then sAuditUser = "Unknown"
+    sAuditNow = "#" & Format(Now(), "yyyy-mm-dd hh:nn:ss") & "#"
+
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
+        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('Low', 10, " & _
+        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
+        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('Normal', 20, " & _
+        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
+        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('High', 30, " & _
+        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
+    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
+        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('Urgent', 40, " & _
+        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
 
     Debug.Print "tlkpTicketPriority created and seeded"
 
@@ -331,6 +435,8 @@ CreateSupportTicket:
 
     Set fld = tdf.CreateField("TicketClosedDate", dbDate)
     tdf.Fields.Append fld
+
+    AddAuditColumns tdf
 
     db.TableDefs.Append tdf
 
@@ -396,6 +502,47 @@ errHandler:
     Resume Cleanup
     Resume
 End Function
+```
+
+### AddAuditColumns — `Private Sub` (Path A only — helper to step 0)
+
+Appends the house audit set to a table being built, always last in column order (per
+`standards/naming-conventions.md` §5.4). Called once per sample table by
+`Zero_CreateSampleTables`, before the table is appended to the database.
+
+`AccessTS` from the standards file is deliberately **not** created: it's a SQL Server rowversion
+column, and a local Access table has no equivalent. None of the four is Long Text — a Data Macro
+cannot write a Long Text field at all, which is why the audit set is Short Text and Date/Time by
+design.
+
+**On Path B this procedure is not used.** Your own tables already have whatever audit columns your
+standards give them; the generator reads what's there rather than adding anything.
+
+```vba
+Private Sub AddAuditColumns(tdf As DAO.TableDef)
+    ' [STANDARDS — audit-columns.md] The house audit set, always last in column order.
+    '            Filled at run time by the Before Change stamping macro that
+    '            BuildBeforeChangeMacro emits together with the audit macros.
+    '            Column NAMES come from the constants at the top of this module — change
+    '            them there, not here, if your house uses different names.
+    Dim fld As DAO.Field
+
+    Set fld = tdf.CreateField(AUDIT_CREATED_DATE, dbDate)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField(AUDIT_CREATED_BY, dbText, 100)
+    fld.Required = True
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField(AUDIT_MODIFIED_DATE, dbDate)
+    tdf.Fields.Append fld
+
+    Set fld = tdf.CreateField(AUDIT_MODIFIED_BY, dbText, 100)
+    tdf.Fields.Append fld
+
+    Set fld = Nothing
+End Sub
 ```
 
 ### One_CreateAuditTables — `Public Function` → `String` (setup step 1)
@@ -743,11 +890,13 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
                 '            noisy always-changing fields; the starting point set by
                 '            bDefaultAuditable for everything else. Review and flip flags in
                 '            tblAuditLogConfig after the scan.
-                ' [STANDARDS — audit-columns.md] CreatedDate/CreatedBy/ModifiedDate/ModifiedBy/
-                '            AccessTS are this repo's house audit columns as of the standards
-                '            layer in use when this list was written. If your standards/
-                '            audit-columns.md names different columns, update this list to
-                '            match — it is a VBA-side mirror of that file, not a live read of it.
+                ' [STANDARDS — audit-columns.md] The four house audit columns come from the
+                '            constants at the top of this module — one place to change if your
+                '            standards/audit-columns.md names them differently. They are a
+                '            VBA-side mirror of that file, not a live read of it.
+                '            AccessTS is named here as a literal because it is a SQL Server
+                '            rowversion that only appears on linked tables, so it is never one
+                '            of the columns this generator creates or stamps.
                 '            SSMA_TimeStamp/ValidFrom/ValidTo are not house audit columns; they
                 '            are left here because a table carrying them already has its own
                 '            change-tracking mechanism (e.g. SQL Server temporal system-versioning)
@@ -757,8 +906,8 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
                          tdef.Name = "tblLongTextBackup", _
                          tdef.Name = "tblAuditLogConfig"
                         isAuditable = False
-                    Case fld.Name = "CreatedDate", fld.Name = "CreatedBy", _
-                         fld.Name = "ModifiedDate", fld.Name = "ModifiedBy", _
+                    Case fld.Name = AUDIT_CREATED_DATE, fld.Name = AUDIT_CREATED_BY, _
+                         fld.Name = AUDIT_MODIFIED_DATE, fld.Name = AUDIT_MODIFIED_BY, _
                          fld.Name = "AccessTS", fld.Name = "SSMA_TimeStamp", _
                          fld.Name = "ValidFrom", fld.Name = "ValidTo"
                         isAuditable = False
@@ -1029,29 +1178,51 @@ End Function
 
 ### CreateAllDataMacros — `Private Function` → `String`
 
-Builds one table's macro XML — the three After macros always, plus BeforeChange/BeforeDelete when
-the field list contains a Long Text field (schema Business Rule 2) — writes it UTF-16, and loads
-it with `LoadFromText acTableDataMacro`.
+Builds one table's macro XML into a single document, writes it UTF-16, and loads it with
+`LoadFromText acTableDataMacro`. **How many macros a table gets varies** (schema Business Rule 2) —
+the three After macros whenever anything is being audited, BeforeChange whenever the table carries
+the house audit columns or an auditable Long Text field, BeforeDelete only for Long Text.
+
+**The insert-blocking trap this guards against.** Before this revision, a table with no auditable
+fields was skipped entirely, which was harmless when the generator only ever wrote audit macros —
+the table simply had no audit trail. Now that the same pass also writes the **audit-column stamping**
+macro, skipping the table would leave it with no stamping macro at all. `CreatedDate` and `CreatedBy`
+are `Required`, and no column default can reach the Windows username, so **that table would reject
+every insert** — nobody could add a record to it through any interface. Switching auditing off for a
+table is the ordinary Path B workflow, so it must never break writing to that table. The audit
+actions are skipped; the stamping macro is still written. Only a table needing neither is skipped.
 
 **Backs up a table's existing macros before replacing them.** `LoadFromText` replaces a table's
-entire Data Macro set — it does not merge. On Path B a table may already carry its own macros
-(most notably the `standards/audit-columns.md` Before Change stamping macro for `CreatedBy`/
-`ModifiedBy`), and overwriting that silently would be a real, undocumented loss. Before loading
-the new macros, this checks `MSysObjects` for an existing macro set on the table and, if one is
-found, exports it to a timestamped backup file first — the same technique
-`BackupAndRemoveAllDataMacros` already uses to detect a table's macros. This does **not** merge
-the old logic into the new macros; it only makes sure nothing is destroyed without a copy and a
-plain-language warning first. Restoring or re-implementing any lost stamping logic afterward is
-the developer's call.
+entire Data Macro set — it does not merge. The commonest case of that used to be this generator
+destroying the house stamping macro, which is exactly why the two are now generated together. What
+remains is any **other** Data Macro a table carries — business logic written for reasons unrelated to
+this system, which a Path B table may well have. Before loading, this checks `MSysObjects` for an
+existing macro set and, if it finds one, exports it to a timestamped backup file first — the same
+technique `BackupAndRemoveAllDataMacros` uses to detect a table's macros. It does **not** merge the
+old logic into the new macros; it only makes sure nothing is destroyed without a copy and a
+plain-language warning first. Re-implementing anything lost is the developer's call.
+
+**`DataMacroBackups\` grows every time you regenerate, and nothing prunes it.** Once a table carries
+macros, *every* subsequent run backs it up again — so a schema you regenerate ten times leaves ten
+files per table beside the database. That is deliberate: throwing away the only copy of a macro set
+to save a few kilobytes is the wrong trade. But it does mean the folder is yours to clear out, and
+the newest file for a table is the one that matters.
 
 ```vba
 Private Function CreateAllDataMacros(sTableName As String, fieldList As Collection, sTempPath As String, Optional bSilent As Boolean = False) As String
-    ' [SCAFFOLD] Generate the 3 (or 5, with Long Text) Data Macros for one table. Returns a
-    '            one-line status ("OK ...", "SKIPPED ...", or "ERROR: ...") so the caller can
-    '            report per-table results without relying on Debug.Print alone.
+    ' [SCAFFOLD] Generate one table's Data Macros as a SINGLE XML document and attach it.
+    '            How many macros that is depends on two independent things (schema
+    '            Business Rule 2):
+    '              - the 3 After macros, whenever the table has any auditable field;
+    '              - BeforeChange, whenever the table carries the house audit columns OR
+    '                has an auditable Long Text field (that one macro does both jobs);
+    '              - BeforeDelete, only for an auditable Long Text field.
+    '            Returns a one-line status ("OK ...", "SKIPPED ...", or "ERROR: ...") so the
+    '            caller can report per-table results without relying on Debug.Print alone.
     Dim db As DAO.Database
     Dim rsCheck As DAO.Recordset
     Dim sXmlContent As String
+    Dim sBeforeChange As String
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
     Dim txtFile As Object
     Dim sFilePath As String
@@ -1059,6 +1230,8 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     Dim fieldInfo As Variant
     Dim bHasLongText As Boolean
     Dim lAuditableCount As Long
+    Dim lMacroCount As Long
+    Dim sWhatWasBuilt As String
     Dim bHadExistingMacros As Boolean
     Dim sBackupFolder As String
     Dim sBackupFile As String
@@ -1079,10 +1252,22 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
         End If
     Next fieldInfo
 
-    ' A table with nothing auditable gets no macros at all
-    If lAuditableCount = 0 Then
-        Debug.Print "  - Skipped (no auditable fields)"
-        CreateAllDataMacros = "SKIPPED (no auditable fields)"
+    ' BeforeChange carries the audit-column stamping as well as Long Text staging, so it is
+    ' built for every table; it comes back "" only when neither job applies to this one.
+    sBeforeChange = BuildBeforeChangeMacro(sTableName, fieldList, sPrimaryKeyField)
+
+    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. A table with nothing auditable used to be
+    '            skipped outright, which was harmless when this generator only wrote audit
+    '            macros. Now that the same pass also writes the audit-column stamping,
+    '            skipping the table would leave it with NO stamping macro — and CreatedDate
+    '            and CreatedBy are Required, with no default able to reach the username. That
+    '            table would then reject EVERY insert. Turning auditing off for a table is the
+    '            normal Path B workflow, so it must never break writing to that table: the
+    '            audit actions are skipped, the stamping macro is still emitted. Only a table
+    '            that needs neither is skipped entirely.
+    If lAuditableCount = 0 And Len(sBeforeChange) = 0 Then
+        Debug.Print "  - Skipped (nothing to audit, and no audit columns to stamp)"
+        CreateAllDataMacros = "SKIPPED (nothing to audit, no audit columns to stamp)"
         Exit Function
     End If
 
@@ -1111,13 +1296,25 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     sXmlContent = "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>"
     sXmlContent = sXmlContent & "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application"">"
 
-    sXmlContent = sXmlContent & BuildAfterInsertMacro(sTableName, fieldList, sPrimaryKeyField)
-    sXmlContent = sXmlContent & BuildAfterUpdateMacro(sTableName, fieldList, sPrimaryKeyField)
-    sXmlContent = sXmlContent & BuildAfterDeleteMacro(sTableName, fieldList, sPrimaryKeyField)
+    ' The three After macros are the audit trail itself — no auditable fields, none needed.
+    lMacroCount = 0
+    If lAuditableCount > 0 Then
+        sXmlContent = sXmlContent & BuildAfterInsertMacro(sTableName, fieldList, sPrimaryKeyField)
+        sXmlContent = sXmlContent & BuildAfterUpdateMacro(sTableName, fieldList, sPrimaryKeyField)
+        sXmlContent = sXmlContent & BuildAfterDeleteMacro(sTableName, fieldList, sPrimaryKeyField)
+        lMacroCount = 3
+    End If
 
+    If Len(sBeforeChange) > 0 Then
+        sXmlContent = sXmlContent & sBeforeChange
+        lMacroCount = lMacroCount + 1
+    End If
+
+    ' BeforeDelete stages Long Text values for the AfterDelete log row, so it is only
+    ' wanted when that log row is actually going to be written.
     If bHasLongText Then
-        sXmlContent = sXmlContent & BuildBeforeChangeMacro(sTableName, fieldList, sPrimaryKeyField)
         sXmlContent = sXmlContent & BuildBeforeDeleteMacro(sTableName, fieldList, sPrimaryKeyField)
+        lMacroCount = lMacroCount + 1
     End If
 
     sXmlContent = sXmlContent & "</DataMacros>"
@@ -1137,13 +1334,21 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
 
     fso.DeleteFile sFilePath
 
-    If bHasLongText Then
-        Debug.Print "  - All 5 data macros created (3 After + BeforeChange/BeforeDelete)"
-        CreateAllDataMacros = "OK — 5 data macros created (3 After + BeforeChange/BeforeDelete)" & sBackupNote
+    ' [SCAFFOLD] Report what was actually built rather than a fixed count — the count varies
+    '            by table now, and a reader comparing tables needs to see why.
+    If lAuditableCount = 0 Then
+        sWhatWasBuilt = "BeforeChange only — audit-column stamping, no audit trail " & _
+            "(this table has no auditable fields; inserts still work)"
+    ElseIf bHasLongText Then
+        sWhatWasBuilt = "3 After + BeforeChange (stamping and Long Text staging) + BeforeDelete"
+    ElseIf Len(sBeforeChange) > 0 Then
+        sWhatWasBuilt = "3 After + BeforeChange (stamping)"
     Else
-        Debug.Print "  - All 3 data macros created (AfterInsert, AfterUpdate, AfterDelete)"
-        CreateAllDataMacros = "OK — 3 data macros created (AfterInsert, AfterUpdate, AfterDelete)" & sBackupNote
+        sWhatWasBuilt = "3 After (this table carries no house audit columns, so nothing to stamp)"
     End If
+
+    Debug.Print "  - " & lMacroCount & " data macro(s) created: " & sWhatWasBuilt
+    CreateAllDataMacros = "OK — " & lMacroCount & " macro(s): " & sWhatWasBuilt & sBackupNote
 
 Cleanup:
     Set rsCheck = Nothing
@@ -1216,11 +1421,16 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
         sXml = sXml & "<Argument Name=""Value"">Now()</Argument>"
         sXml = sXml & "</Action>"
 
-        ' [STANDARDS / schema Business Rule 9] CurrentUser() is the dependency-free default;
-        ' the real-username Extra Option substitutes a public AuditUser() helper here.
+        ' [STANDARDS / schema Business Rule 9] Identity — AuditUser() is the DEFAULT.
+        '            The BeforeChange stamping macro calls it because audit-columns.md does,
+        '            so the log names the same person the stamped row does.
+        '            CurrentUser() is a named Extra Option: switch this and the three other
+        '            ChangedBy sites together (AfterUpdate, AfterDelete, and
+        '            BackupLongTextFieldsDM), and switch the stamping in your standards
+        '            layer too — half a change puts two names on one edit.
         sXml = sXml & "<Action Name=""SetField"">"
         sXml = sXml & "<Argument Name=""Field"">NewAudit.ChangedBy</Argument>"
-        sXml = sXml & "<Argument Name=""Value"">CurrentUser()</Argument>"
+        sXml = sXml & "<Argument Name=""Value"">AuditUser()</Argument>"
         sXml = sXml & "</Action>"
 
         sXml = sXml & "</Statements></CreateRecord>"
@@ -1353,13 +1563,16 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
             sXml = sXml & "</Action>"
 
             ' [STANDARDS / schema Business Rule 9] identity — see BuildAfterInsertMacro
+            ' [STANDARDS / schema Business Rule 9] AuditUser() default — same person as the
+            '            stamp. CurrentUser() is an Extra Option; change all four ChangedBy
+            '            sites together, never just one.
             sXml = sXml & "<Action Name=""SetField"">"
             If bIsLongText Then
                 sXml = sXml & "<Argument Name=""Field"">tblAuditLog.ChangedBy</Argument>"
             Else
                 sXml = sXml & "<Argument Name=""Field"">NewAudit.ChangedBy</Argument>"
             End If
-            sXml = sXml & "<Argument Name=""Value"">CurrentUser()</Argument>"
+            sXml = sXml & "<Argument Name=""Value"">AuditUser()</Argument>"
             sXml = sXml & "</Action>"
 
             sXml = sXml & "</Statements></CreateRecord>"
@@ -1486,7 +1699,8 @@ Private Function BuildAfterDeleteMacro(sTableName As String, fieldList As Collec
         Else
             sXml = sXml & "<Argument Name=""Field"">NewAudit.ChangedBy</Argument>"
         End If
-        sXml = sXml & "<Argument Name=""Value"">CurrentUser()</Argument>"
+        ' [STANDARDS / schema Business Rule 9] AuditUser() — same person as the stamp.
+        sXml = sXml & "<Argument Name=""Value"">AuditUser()</Argument>"
         sXml = sXml & "</Action>"
 
         sXml = sXml & "</Statements></CreateRecord>"
@@ -1504,71 +1718,127 @@ End Function
 
 ### BuildBeforeChangeMacro — `Private Function` → `String`
 
-Emits the BeforeChange fragment for a Long Text table. Distinguishes insert from update with
-`IsNull([Old].[PK])` — on an insert there is nothing to back up; on an update it calls
-`BackupLongTextFieldsDM` for each Long Text field. Returns an empty string when the table has no
-Long Text fields.
+**This one macro does two jobs, and it has to.** `LoadFromText` replaces a table's *entire* Data
+Macro set rather than adding to it, so the two things that both need to happen on a Before Change —
+stamping the house audit columns, and staging Long Text values before they're overwritten — cannot
+be loaded as separate macros. The second load would silently delete the first. They are generated
+together instead:
+
+1. **Stamp the house audit columns** (`standards/audit-columns.md`), on any table that carries them.
+   Without this, a `Required` `CreatedBy` with nothing able to fill it **rejects every insert**.
+2. **Stage Long Text old values** ahead of an update, by calling `BackupLongTextFieldsDM` for each
+   Long Text field — the workaround for a Data Macro being unable to read `[Old].[LongTextField]`.
+
+Both key on the same test, `IsNull([Old].[PK])` — true on an insert, false on an update — so they
+merge into one conditional block with no conflict.
+
+The function looks at what the table actually has and emits only what applies. A table carrying
+neither the audit columns nor a Long Text field gets an **empty string back**, meaning no Before
+Change macro at all — that table's set is just the three After macros.
+
+**Why the branches are assembled before the XML:** a branch with no actions in it would produce an
+empty `<Statements></Statements>` block, and we have no evidence Access accepts one. Rather than find
+out on someone's live table, each branch's actions are built first; a branch with nothing to do is
+left out, and if only the update branch has work the condition is inverted (`Not IsNull(...)`) so an
+ordinary If-without-Else is emitted instead.
 
 ```vba
 Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Collection, sPrimaryKeyField As String) As String
-    ' [SCAFFOLD] BeforeChange: stage Long Text old values ahead of an update
-    '            (schema Business Rules 2-3).
+    ' [SCAFFOLD + STANDARDS — audit-columns.md] BeforeChange carries TWO jobs, because
+    '            LoadFromText replaces a table's whole macro set and they cannot be
+    '            loaded separately without one destroying the other:
+    '              1. Stamp the house audit columns (any table that carries them).
+    '              2. Stage Long Text old values ahead of an update (Long Text tables).
+    '            Both key on the same discriminator, IsNull([Old].[PK]).
+    '            Returns "" when the table needs neither — no BeforeChange macro at all.
     Dim sXml As String
+    Dim sInsertActions As String
+    Dim sUpdateActions As String
     Dim fieldInfo As Variant
     Dim sFieldName As String
     Dim bHasLongText As Boolean
+    Dim bHasCreatedDate As Boolean
+    Dim bHasCreatedBy As Boolean
+    Dim bHasModifiedDate As Boolean
+    Dim bHasModifiedBy As Boolean
 
-    ' Emit nothing for a table without Long Text
+    ' What does this table actually carry? The audit columns arrive with IsAuditable
+    ' False (they are always seeded off) — presence is what decides stamping, not the flag.
     bHasLongText = False
     For Each fieldInfo In fieldList
-        If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then
-            bHasLongText = True
-            Exit For
-        End If
+        sFieldName = fieldInfo(0)
+        If StrComp(sFieldName, AUDIT_CREATED_DATE, vbTextCompare) = 0 Then bHasCreatedDate = True
+        If StrComp(sFieldName, AUDIT_CREATED_BY, vbTextCompare) = 0 Then bHasCreatedBy = True
+        If StrComp(sFieldName, AUDIT_MODIFIED_DATE, vbTextCompare) = 0 Then bHasModifiedDate = True
+        If StrComp(sFieldName, AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasModifiedBy = True
+        If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then bHasLongText = True
     Next fieldInfo
-    If Not bHasLongText Then
+
+    ' ---- INSERT branch: stamp Created*, never touch Modified* ----
+    If bHasCreatedDate Then sInsertActions = sInsertActions & AuditSetField(AUDIT_CREATED_DATE, "Now()")
+    If bHasCreatedBy Then sInsertActions = sInsertActions & AuditSetField(AUDIT_CREATED_BY, "AuditUser()")
+
+    If bHasLongText Then
+        ' Nothing to back up on an insert — there is no prior value. The marker is set
+        ' anyway so lngPKValue is defined on both paths.
+        sInsertActions = sInsertActions & "<Action Name=""SetLocalVar"">"
+        sInsertActions = sInsertActions & "<Argument Name=""Name"">lngPKValue</Argument>"
+        sInsertActions = sInsertActions & "<Argument Name=""Value"">0</Argument>"
+        sInsertActions = sInsertActions & "</Action>"
+    End If
+
+    ' ---- UPDATE branch: stamp Modified*, leave Created* frozen ----
+    If bHasModifiedDate Then sUpdateActions = sUpdateActions & AuditSetField(AUDIT_MODIFIED_DATE, "Now()")
+    If bHasModifiedBy Then sUpdateActions = sUpdateActions & AuditSetField(AUDIT_MODIFIED_BY, "AuditUser()")
+
+    If bHasLongText Then
+        sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
+        sUpdateActions = sUpdateActions & "<Argument Name=""Name"">lngPKValue</Argument>"
+        sUpdateActions = sUpdateActions & "<Argument Name=""Value"">=[" & sPrimaryKeyField & "]</Argument>"
+        sUpdateActions = sUpdateActions & "</Action>"
+
+        sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
+        sUpdateActions = sUpdateActions & "<Argument Name=""Name"">strTableName</Argument>"
+        sUpdateActions = sUpdateActions & "<Argument Name=""Value"">""" & sTableName & """</Argument>"
+        sUpdateActions = sUpdateActions & "</Action>"
+
+        ' One backup call per Long Text field — a data macro CAN call a public VBA
+        ' function in the same accdb; that is the hinge of the whole hybrid method.
+        For Each fieldInfo In fieldList
+            sFieldName = fieldInfo(0)
+            If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then
+                sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
+                sUpdateActions = sUpdateActions & "<Argument Name=""Name"">varLongTextBackup</Argument>"
+                sUpdateActions = sUpdateActions & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & sFieldName & """)</Argument>"
+                sUpdateActions = sUpdateActions & "</Action>"
+            End If
+        Next fieldInfo
+    End If
+
+    ' Neither job applies to this table
+    If Len(sInsertActions) = 0 And Len(sUpdateActions) = 0 Then
         BuildBeforeChangeMacro = ""
         Exit Function
     End If
 
-    sXml = "<DataMacro Event=""BeforeChange""><Statements>"
+    ' [SCAFFOLD] Emit only branches that have actions. An empty <Statements></Statements>
+    '            is untested against Access, and a live table is the wrong place to find
+    '            out — so when only the update branch has work, invert the condition and
+    '            emit a plain If with no Else.
+    sXml = "<DataMacro Event=""BeforeChange""><Statements><ConditionalBlock>"
 
-    ' Insert (PK is Null in [Old]) vs update
-    sXml = sXml & "<ConditionalBlock><If>"
-    sXml = sXml & "<Condition>IsNull([Old].[" & sPrimaryKeyField & "])</Condition>"
-    sXml = sXml & "<Statements>"
-    sXml = sXml & "<Action Name=""SetLocalVar"">"
-    sXml = sXml & "<Argument Name=""Name"">lngPKValue</Argument>"
-    sXml = sXml & "<Argument Name=""Value"">0</Argument>"
-    sXml = sXml & "</Action>"
-    sXml = sXml & "</Statements></If>"
-
-    sXml = sXml & "<Else><Statements>"
-
-    sXml = sXml & "<Action Name=""SetLocalVar"">"
-    sXml = sXml & "<Argument Name=""Name"">lngPKValue</Argument>"
-    sXml = sXml & "<Argument Name=""Value"">=[" & sPrimaryKeyField & "]</Argument>"
-    sXml = sXml & "</Action>"
-
-    sXml = sXml & "<Action Name=""SetLocalVar"">"
-    sXml = sXml & "<Argument Name=""Name"">strTableName</Argument>"
-    sXml = sXml & "<Argument Name=""Value"">""" & sTableName & """</Argument>"
-    sXml = sXml & "</Action>"
-
-    ' One backup call per Long Text field — a data macro CAN call a public VBA
-    ' function in the same accdb; that is the hinge of the whole hybrid method.
-    For Each fieldInfo In fieldList
-        sFieldName = fieldInfo(0)
-        If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then
-            sXml = sXml & "<Action Name=""SetLocalVar"">"
-            sXml = sXml & "<Argument Name=""Name"">varLongTextBackup</Argument>"
-            sXml = sXml & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & sFieldName & """)</Argument>"
-            sXml = sXml & "</Action>"
+    If Len(sInsertActions) > 0 Then
+        sXml = sXml & "<If><Condition>IsNull([Old].[" & sPrimaryKeyField & "])</Condition>"
+        sXml = sXml & "<Statements>" & sInsertActions & "</Statements></If>"
+        If Len(sUpdateActions) > 0 Then
+            sXml = sXml & "<Else><Statements>" & sUpdateActions & "</Statements></Else>"
         End If
-    Next fieldInfo
+    Else
+        sXml = sXml & "<If><Condition>Not IsNull([Old].[" & sPrimaryKeyField & "])</Condition>"
+        sXml = sXml & "<Statements>" & sUpdateActions & "</Statements></If>"
+    End If
 
-    sXml = sXml & "</Statements></Else></ConditionalBlock>"
-    sXml = sXml & "</Statements></DataMacro>"
+    sXml = sXml & "</ConditionalBlock></Statements></DataMacro>"
 
     BuildBeforeChangeMacro = sXml
 End Function
@@ -1626,6 +1896,21 @@ Private Function BuildBeforeDeleteMacro(sTableName As String, fieldList As Colle
     sXml = sXml & "</Statements></DataMacro>"
 
     BuildBeforeDeleteMacro = sXml
+End Function
+```
+
+### AuditSetField — `Private Function` → `String`
+
+One `SetField` action, in macro XML. `BuildBeforeChangeMacro` calls it four times — twice on the
+insert branch and twice on the update branch — to stamp the house audit columns. It exists so the
+XML for a stamp appears once rather than four times, which is what makes the stamping easy to read
+against `standards/audit-columns.md`.
+
+```vba
+Private Function AuditSetField(ByVal sField As String, ByVal sValue As String) As String
+    ' [STANDARDS — audit-columns.md] One SetField action for a stamped audit column.
+    AuditSetField = "<Action Name=""SetField""><Argument Name=""Field"">" & sField & _
+        "</Argument><Argument Name=""Value"">" & sValue & "</Argument></Action>"
 End Function
 ```
 
@@ -1708,9 +1993,11 @@ Public Function BackupLongTextFieldsDM(strTableName As String, lngPKValue As Lon
         rs!FieldName = strFieldName
         rs!OldValue = strOldValue
         rs!DateChanged = Now()
-        ' [STANDARDS / schema Business Rule 9] identity — CurrentUser() default; the
-        ' real-username Extra Option substitutes AuditUser() here too.
-        rs!ChangedBy = CurrentUser()
+        ' [STANDARDS / schema Business Rule 9] AuditUser() default, same as the macros. This
+        '            row is the one the After macro reads back, so it is the easiest of the
+        '            four sites to miss when applying the CurrentUser() Extra Option — and
+        '            missing it puts two names on one edit.
+        rs!ChangedBy = AuditUser()
         rs.Update
         rs.Close
     End If
@@ -1818,6 +2105,114 @@ errHandler:
 End Function
 ```
 
+### DumpTableMacros — `Public Function` → `String` (module `modAuditVerify` — back end only)
+
+**Check the artifact, not the report.** Every procedure above returns a status line saying what it
+did. That line is the generator's own account of itself — if the generator is wrong, the line is
+wrong in exactly the same way, and everything still looks fine. This function and `ListMacroEvents`
+below read the macros back **off the table**, and show what is actually attached. That is the only
+answer capable of contradicting the generator.
+
+`? DumpTableMacros("tblSupportTicket")` in the Immediate window returns the full macro XML — use it
+when you need to see the actions *inside* a macro rather than just which macros exist.
+
+It is read-only: it exports the macro set to a temporary file, reads it, and deletes the file.
+Nothing is changed. `SaveAsText` writes UTF-16, which is why the file is opened with the `-1`
+(TristateTrue) argument — reading it as ANSI returns unusable text.
+
+```vba
+Option Compare Database
+Option Explicit
+
+Public Function DumpTableMacros(ByVal sTable As String) As String
+    ' [SCAFFOLD] Read a table's attached Data Macro set back out, so a build can be
+    '            verified against the table itself rather than the generator's own report.
+    Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
+    Dim txt As Object
+    Dim sPath As String
+    Dim sOut As String
+
+    On Error GoTo errHandler
+
+    sPath = Environ$("TEMP") & "\" & sTable & "_verify.xml"
+    If Dir(sPath) <> "" Then Kill sPath
+
+    Application.SaveAsText acTableDataMacro, sTable, sPath
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set txt = fso.OpenTextFile(sPath, 1, False, -1)   ' -1 = TristateTrue, i.e. UTF-16
+    sOut = txt.ReadAll
+    txt.Close
+
+    fso.DeleteFile sPath
+    DumpTableMacros = sOut
+
+Cleanup:
+    On Error Resume Next
+    Set txt = Nothing
+    Set fso = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    DumpTableMacros = "ERROR: " & Err.Number & " - " & Err.Description
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### ListMacroEvents — `Public Function` → `String` (module `modAuditVerify` — back end only)
+
+The compact check, and the one to run first. It lists just the macro events attached to a table, in
+order, with the size of the set:
+
+```text
+? ListMacroEvents("tblSupportTicket")
+tblSupportTicket: AfterInsert | AfterUpdate | AfterDelete | BeforeChange | BeforeDelete | (24063 chars)
+```
+
+Read it against Business Rule 2 — four macros on an ordinary table carrying the house audit columns,
+five when it also has an audited Long Text field. **A missing event means the generator did not do
+what its status line said it did**, and that is exactly the discrepancy worth catching before anyone
+trusts the audit trail.
+
+```vba
+Public Function ListMacroEvents(ByVal sTable As String) As String
+    ' [SCAFFOLD] Just the Event= names, in order — a one-line structural check that a table
+    '            carries the macros the generator said it created.
+    Dim sXml As String
+    Dim lPos As Long
+    Dim lEnd As Long
+    Dim sOut As String
+
+    On Error GoTo errHandler
+
+    sXml = DumpTableMacros(sTable)
+    If Left(sXml, 6) = "ERROR:" Then
+        ListMacroEvents = sXml
+        Exit Function
+    End If
+
+    lPos = InStr(1, sXml, "Event=", vbTextCompare)
+    Do While lPos > 0
+        lEnd = InStr(lPos + 7, sXml, Chr(34))
+        sOut = sOut & Mid(sXml, lPos + 7, lEnd - lPos - 7) & " | "
+        lPos = InStr(lEnd, sXml, "Event=", vbTextCompare)
+    Loop
+
+    ListMacroEvents = sTable & ": " & sOut & "(" & Len(sXml) & " chars)"
+
+Cleanup:
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    ListMacroEvents = "ERROR: " & Err.Number & " - " & Err.Description
+    Resume Cleanup
+    Resume
+End Function
+```
+
 ## Standards Layer
 
 - **Error handling** — the blocks above ship the dependency-free `MsgBox` default; substitute
@@ -1837,15 +2232,39 @@ End Function
 
 *Empty in the base template. Filled per client engagement.*
 
-- **Real-username identity** — add a public `AuditUser()` function to both back end and front
-  ends, and substitute it for `CurrentUser()` in the builders and in `BackupLongTextFieldsDM`
-  (schema Business Rule 9 and its Extra Option). Copy the helper from
-  `templates/_materialization.md` rather than writing your own: it carries a fallback for the
-  case where `Environ$("USERNAME")` comes back empty, which would otherwise block the write
-  outright on a `Required` `ChangedBy`. The production system this template is drawn from runs
-  this upgrade — its trail stamps real Windows usernames.
+- **`CurrentUser()` identity instead of `AuditUser()`** — the Access-session user rather than the
+  Windows user, and no VBA dependency for identity. `AuditUser()` is the **default** (schema Business
+  Rule 9); this option swaps it back. Choose it if your shop wants the Access user, or wants no VBA
+  in the identity path at all.
+
+  **Four sites to change**, all of them in this scaffold:
+
+  | Module | Procedure | What to change |
+  |---|---|---|
+  | `modAddDataMacros` | `BuildAfterInsertMacro` | the `NewAudit.ChangedBy` value |
+  | `modAddDataMacros` | `BuildAfterUpdateMacro` | the `ChangedBy` value (both branches) |
+  | `modAddDataMacros` | `BuildAfterDeleteMacro` | the `ChangedBy` value (both branches) |
+  | `modAuditLongText` | `BackupLongTextFieldsDM` | `rs!ChangedBy` |
+
+  **Change all four or none.** Each writes to the same `tblAuditLog.ChangedBy`, and the Long Text
+  path writes a row the After macro later reads back — so a partial change puts two different names
+  on one edit.
+
+  **One thing to decide with it.** The house `standards/audit-columns.md` calls `AuditUser()` for the
+  stamped `CreatedBy`/`ModifiedBy`, and this scaffold's stamping macro follows that file. If you
+  change the four sites above and leave the standards layer alone, the **log** will say `Admin` while
+  the **record** says the real user, for the same change — a trail that disagrees with the row it
+  describes. A live trial hit exactly that. Two coherent ways to hold it:
+
+  - **`CurrentUser()` everywhere** — also point your forked `audit-columns.md` at `CurrentUser()`, so
+    stamping and logging agree. Fully dependency-free for identity.
+  - **`AuditUser()` everywhere** — the default; change nothing.
+
+  Mixed is the one to avoid, and it's the one you get by editing only half.
 - **Scheduled backup-table cleanup** — a maintenance routine clearing aged `tblLongTextBackup`
   rows (schema Business Rule 8).
+- **Audit trail viewer** — a read-only form or report over `tblAuditLog`, filtered by table and
+  date. Nothing in this template surfaces the trail to a user; it only writes it.
 
 ## Parked / future considerations
 

@@ -257,11 +257,23 @@ End Function
 **Rules learned by running it:**
 1. **Before Change fires before Required validation** — so the macro satisfies a `Required` `CreatedBy`.
 2. **`IsNull([Old].[<PK>])`** is the INSERT-vs-UPDATE discriminator inside Before Change.
-3. **Before Change / Before Delete use the 2009 namespace; After Insert/Update/Delete use 2010** — they
-   **cannot share one XML file**. A self-stamp needs only the Before Change (2009) file.
+3. **A table's whole Data Macro set lives in one document** — `SaveAsText` exports it that way and
+   `LoadFromText` replaces it that way. The **2010/12** namespace carries all five events
+   (AfterInsert, AfterUpdate, AfterDelete, BeforeChange, BeforeDelete) together, and that is the form
+   to generate. If you are emitting Before and After events for the same table, they share one
+   document — there is no other way to attach both.
 4. **Data macros cannot set Long Text (Memo) fields** — keep audit fields Short Text / Date-Time.
 5. `CurrentUser()` is engine-known but returns `"Admin"` without workgroup security; `AuditUser()` gets
    the real Windows user.
+
+**Stamping on its own vs. stamping alongside change-auditing.** The `BuildAuditStampMacro` above is the
+proven form for a table that needs **only** the audit-column stamping — it emits one Before Change
+event and nothing else. The moment a table also needs After Insert/Update/Delete macros (for example
+`templates/audit/audit-logging-lite-scaffold.md`, which logs every field change), you cannot load the
+two separately: per rule 3 the second `LoadFromText` replaces the whole set, taking the first with it.
+Generate both jobs **together**, into one 2010/12 document, with the stamping actions and the
+change-auditing actions sharing the same `IsNull([Old].[<PK>])` branch. The audit-logging scaffold's
+`BuildBeforeChangeMacro` is the worked example.
 
 ### VBA code import — the Access MCP unescapes XML entities
 
@@ -288,14 +300,44 @@ This is also why the MCP must never be the **default** build route (`CLAUDE.md` 
 via MCP only when the developer has one and names it, and even then, scaffolds that emit escaped
 XML should still assemble entities from `Chr()` codes as a second line of defense.
 
-### Running a procedure through an MCP — use the bare procedure name
+### Running a procedure through an MCP — bare name, and use eval for arguments
 
-`Application.Run "modAddDataMacros.One_CreateAuditTables"` fails with "cannot find the procedure."
-`Application.Run` reads a dotted name as *project*.*procedure*, not *module*.*procedure*, so a
-module-qualified name is never found. Pass the procedure name on its own —
-`One_CreateAuditTables` — which resolves as long as that name is unique in the project. Observed
-twice, in separate sessions, driving a `vba-scaffold`'s staged procedures through
-`access_run_vba`.
+Two separate failures, both observed more than once while driving a `vba-scaffold`'s staged
+procedures.
+
+**1. Never module-qualify the name.** `Application.Run "modAddDataMacros.One_CreateAuditTables"`
+fails with "cannot find the procedure." `Application.Run` reads a dotted name as
+*project*.*procedure*, not *module*.*procedure*, so a module-qualified name is never found. Pass the
+procedure name on its own — `One_CreateAuditTables` — which resolves as long as that name is unique
+in the project.
+
+**2. To pass an argument, evaluate an expression instead of running a procedure.** A run-style tool
+that marshals arguments separately can fail to pass a VBA `Boolean` at all, and a failed marshal has
+been seen to kill the COM session outright — leaving the database held and the next call dead. Use
+the MCP's **expression-evaluation** tool and write the call as ordinary VBA:
+
+```vba
+Three_GenerateAllAuditDataMacros(True)    ' works — evaluated as an expression
+```
+
+This matters more than it looks. Staged procedures take an optional `bSilent` argument precisely so
+an automated caller can suppress the message box and read the returned text instead; a caller that
+cannot pass `True` gets the dialog, and with nobody at the keyboard it waits forever. **A scaffold
+whose procedures accept arguments should say which tool to call them with**, or the first automated
+run hangs.
+
+### Code imported through an MCP arrives without line numbers
+
+A shop that numbers its VBA lines does it with a tool that runs on the ordinary VBE import path —
+MZ-Tools, in this house. An MCP's code-import tools bypass that path, so **every procedure built
+through an MCP arrives unnumbered**, and `Erl` in an error handler returns **0** instead of the line
+that failed. Nothing breaks; the handler still fires and still reports the error number and
+description. What is lost is the one thing line numbers buy: knowing *where* it failed.
+
+Whether that matters is a house decision, not a rule this library sets — `standards/error-handling.md`
+owns it. Say it out loud when handing over an MCP-built module, because a shop that relies on `Erl`
+for diagnostics will otherwise lose it silently. Running the numbering tool over the modules
+afterward restores it.
 
 ### After an MCP-driven build, confirm the file was actually released
 

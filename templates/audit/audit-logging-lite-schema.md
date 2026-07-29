@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.1.0
+version: 0.2.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -159,8 +159,8 @@ Indexes: PK on `ConfigID`; unique on (`TableName`, `FieldName`).
 
 ### tblClient *(sample)*
 
-Grain: one row per client. **No Long Text field — this table gets the standard three After
-macros.**
+Grain: one row per client. **No Long Text field — this table gets four macros:** the three After
+macros, plus the Before Change macro that stamps its house audit columns (Business Rule 2).
 
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
@@ -202,6 +202,15 @@ Indexes: PK on `TicketPriorityID`; unique on `TicketPriorityName`.
 
 Seed rows: Low (10), Normal (20), High (30), Urgent (40).
 
+**These seed rows have to supply their own audit values — see `templates/_materialization.md`
+rule 5.** They are inserted at step 0, before any stamping macro exists, and `CreatedDate` /
+`CreatedBy` are `Required`, so the values cannot simply be left out. They also cannot be written as
+functions in the `INSERT` statement: the **ACE database engine**, not VBA, evaluates the text of a
+`db.Execute` INSERT, and VBA-runtime functions like `Environ()` and the `AuditUser()` helper are
+unknown to it — the insert fails with *"Undefined function."* Resolve each value in VBA first and
+concatenate it in as a literal. The cross-reference is spelled out here because the problem only
+appears once audit columns are in play, which is exactly when someone is least expecting it.
+
 **Deliberate teaching point:** the paired scaffold's schema scan takes `tbl…` **and** `tlkp…`
 tables (never `tmp…`), so this lookup reaches the config table right alongside the business
 tables — a real Path B build against a live schema turned up a table shaped like this one and
@@ -221,13 +230,41 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
 
 ## Business Rules
 
-1. **Same-accdb rule.** Data Macros attach to tables in the accdb they live in, so the generator
-   and the three system tables belong in the **back end** of a split design. All three system
-   tables are linked to the front end (the audit log for viewing; the backup table because
-   front-end-triggered macros must reach it).
-2. **Three-or-five branch.** A table with **no** Long Text fields gets three macros —
-   AfterInsert, AfterUpdate, AfterDelete. A table **with** at least one Long Text field also
-   gets BeforeChange and BeforeDelete, which back the Long Text values up before the change.
+1. **Same-accdb rule.** These templates are designed for a **split database** — the normal shape
+   for a multi-user Access application: one file holds the tables (the **back end**, on a shared
+   drive), and each person runs their own copy of a second file holding the forms, reports, and
+   code (the **front end**), whose tables are *links* pointing at the back end. A single-file
+   database is still fine for one user; everything here works there too.
+
+   Data Macros attach to tables in the file the tables actually live in, so the generator and the
+   three system tables belong in the **back end**. All three system tables are then linked into
+   each front end — the audit log so it can be viewed, the backup table because a macro triggered
+   by a front-end edit has to reach it. **The `BackupLongTextFieldsDM` helper must exist in the
+   front end as well as the back end**: a Data Macro that fires because someone edited through a
+   linked table looks for the function in *that person's* front end, and a missing copy shows up
+   as a failed save. This is the one placement mistake a single-file test can never catch.
+2. **How many macros a table gets — three, four, or five.** Two independent things decide it,
+   so read them as two questions rather than one branch:
+   - **The three After macros** (AfterInsert, AfterUpdate, AfterDelete) are the audit trail
+     itself. A table gets them whenever any of its fields is being audited.
+   - **BeforeChange** is added when the table carries the house audit columns
+     (`standards/audit-columns.md`) **or** has an audited Long Text field — because that one
+     macro does both jobs: stamping the audit columns, and staging Long Text values before an
+     update overwrites them. It has to be one macro, not two: attaching a Data Macro set
+     **replaces** whatever the table had, so a second one would delete the first.
+   - **BeforeDelete** is added only for an audited Long Text field, to capture its value before
+     the row goes.
+
+   In practice, on a schema that follows this library's standards layer, **every** `tbl` and
+   `tlkp` table carries the audit columns — so you will see **four** macros on an ordinary table
+   and **five** on one with a Long Text field. Three appears only on a table with no audit
+   columns, which under these standards means a table that has opted out of them.
+
+   **One more case, and it is the important one:** a table with auditing switched off entirely
+   (no auditable fields) still gets its **BeforeChange stamping macro** — one macro, no audit
+   trail. This is not a nicety. `CreatedDate` and `CreatedBy` are `Required`, and nothing but that
+   macro can fill them, so a table left without one **rejects every insert**. Switching auditing
+   off must never make a table unwritable.
 3. **Long Text flow.** BeforeChange/BeforeDelete call the `BackupLongTextFieldsDM` VBA helper →
    old value lands in `tblLongTextBackup` → the After macro retrieves it with `LookupRecord`
    and writes it to `tblAuditLog.OldValue`. This is the workaround for the platform limit: a
@@ -265,35 +302,63 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
    correct, not an error.
 7. **Regenerate after schema change — and regeneration replaces, it never merges.** Adding a
    table or field, or changing a field's type to or from Long Text, requires re-running the
-   config scan and regenerating the macros. The macros are point-in-time artifacts of the
-   schema. This cuts both ways: generating for a table **replaces its entire Data Macro set**,
-   including any macros the table already had for reasons unrelated to this system (most
-   notably the house audit-column stamping macro in `standards/audit-columns.md`). The paired
-   scaffold detects an existing macro set before overwriting it and backs it up automatically,
-   but it does not merge the old logic into the new macros — re-adding any lost stamping logic
-   is the developer's call, and worth checking for specifically on Path B. The risk also runs
-   the other way, which is what a real Path B target actually looked like: every table carried
-   the house audit columns but **no** table had a stamping macro yet. Adding the stamping macro
-   *after* the audit macros are in place replaces them, exactly as generating audit macros
-   replaces a stamping macro — `LoadFromText` swaps a table's whole macro set in either
-   direction, and there is no partial or merge path. Where a table needs both, generate them
-   together. If a table doesn't need the house audit columns at all, leaving them off removes
-   this collision entirely: the table then needs one macro set, written once, with nothing for a
-   later regeneration to overwrite.
+   config scan and regenerating the macros. The macros are point-in-time artifacts of the schema.
+
+   **Why this used to be dangerous, and what changed.** Attaching a macro set to a table
+   **replaces everything that table had** — there is no merge, and no partial update. The
+   commonest victim of that was the house audit-column stamping macro
+   (`standards/audit-columns.md`): generate the audit macros, and the stamping was gone; add the
+   stamping afterwards, and the audit macros were gone. The collision ran in both directions,
+   and a real Path B target showed exactly the setup where it bites — every table carrying the
+   house audit columns, no table yet carrying a stamping macro.
+
+   **The paired scaffold now generates both jobs together**, in one Before Change macro, so this
+   particular collision no longer occurs: there is no second load to destroy the first. Where a
+   table needs both, they arrive together by default.
+
+   **What still gets replaced.** Any *other* Data Macro on the table — business logic of your own,
+   written for reasons that have nothing to do with this system. The scaffold detects an existing
+   macro set before overwriting it and exports a timestamped backup automatically, but it does not
+   merge that logic into the new macros. Re-implementing anything lost is the developer's call,
+   and is worth checking for specifically on Path B, where the tables have a history.
 8. **The backup table is staging, not history.** `tblLongTextBackup` may be cleared at any time;
    the durable record is `tblAuditLog`, which is append-only. Retention/archival policy for the
    log is the adopter's call.
-9. **`ChangedBy` identity.** The macros stamp `CurrentUser()` — dependency-free, fires from any
-   client, but returns `Admin` unless workgroup security is in use. A real-username upgrade
-   (a public VBA helper returning `Environ("USERNAME")`, present in both back end and front
-   end) is a named Extra Option; it trades a VBA dependency for a real name. The production
-   system this template is drawn from runs the upgrade — its trail shows real Windows
-   usernames — so the option is proven, not speculative.
+9. **`ChangedBy` identity — one person per edit.** Every identity in this system comes from the same
+   place: a public VBA function `AuditUser()`, returning `Environ$("USERNAME")`, present in the back
+   end **and** in every front end. The log's `ChangedBy` and the stamped `CreatedBy`/`ModifiedBy` all
+   call it, so one edit records one name.
+
+   **Why `AuditUser()` is the default.** The alternative, `CurrentUser()`, is the Access-session user:
+   it needs nothing installed, but returns `"Admin"` unless workgroup security is in use — which
+   almost nobody runs. It was this template's default until audit-column stamping joined the same
+   generator. `standards/audit-columns.md` calls `AuditUser()` for the stamped `CreatedBy`, so a build
+   using `CurrentUser()` for the log alone put **two different users on one edit** —
+   `CreatedBy = "georg"` on the record, `ChangedBy = "Admin"` in the log entry describing that very
+   change. A trail that contradicts the row it describes is worse than either name on its own. Since
+   the helper has to exist for stamping anyway, its dependency is already paid for — which is what
+   makes `AuditUser()` the better default, not the only permitted answer.
+
+   **`CurrentUser()` remains available**, as a named Extra Option in the paired scaffold. What it asks
+   of you is consistency rather than acceptance: change it in the log **and** in your forked
+   `audit-columns.md`, so stamping and logging name the same person. Done that way it is a perfectly
+   coherent build with no VBA in the identity path at all. Done halfway it is the two-name problem
+   above. The scaffold's Extra Option lists all four sites and says so.
+
+   **It must never return an empty string.** `Environ$("USERNAME")` comes back empty in some contexts
+   — a scheduled task, a service account, a locked-down profile — and `CreatedBy` is `Required`, so an
+   empty result blocks the write outright. The helper falls back to `"Unknown"`: a row naming an
+   unknown user is a record; a refused write is not.
 10. **Samples are stand-ins, Path A only.** `tblClient`, `tblSupportTicket`, and
     `tlkpTicketPriority` exist only to prove both macro paths in a try-it-out build — the
     paired scaffold's `Zero_CreateSampleTables` procedure creates them, and that procedure is
     skipped entirely on Path B. A build against a database you already use (Path B) never
     creates these three tables; it applies the system directly to your own.
+
+    **All three carry the house audit columns**, so the demo shows stamping and change-auditing
+    being generated together — the interaction most likely to cause trouble on real tables
+    (Business Rules 2 and 7). A demo that left them off would work perfectly and teach nothing
+    about the one thing worth learning before pointing this at live data.
 
 ## Standards Layer
 
@@ -302,10 +367,19 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
   convention — an append-only log needs no self-stamp). The **sample/business tables** follow
   the house audit-columns convention as usual; note that self-stamp and timestamp fields
   (e.g. a row-version column) are seeded `IsAuditable = False` by the config scan so they don't
-  drown the log (Business Rule 5). The paired scaffold's exclusion list names this repo's actual
-  house columns (`CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy`/`AccessTS`, per
-  `standards/audit-columns.md`); a fork with different audit-column names updates that list to
-  match, or the fork's own columns will sweep in as tracked fields instead of being excluded.
+  drown the log (Business Rule 5).
+
+  The columns themselves are **not listed in the field tables above** — audit columns belong to the
+  standards layer, never to a template body, so that swapping `standards/audit-columns.md` swaps
+  them everywhere at once. Whatever that file specifies is what the three sample tables get, and
+  what the Before Change macro stamps.
+
+  **Where the names are mirrored in code.** The paired scaffold cannot read the standards file at
+  run time, so it carries the four names as **constants at the top of `modAddDataMacros`** — one
+  place, used by the config scan (to seed them not-auditable), the macro builder (to stamp them),
+  and the sample-table builder (to create them). A fork that renames its audit columns changes
+  those four constants; miss them and the fork's own columns sweep in as tracked fields instead of
+  being excluded, and nothing stamps them.
   **Worth flagging, not deciding for you:** once a table has this Lite audit system turned on,
   its own `CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy` columns tell you less than they
   used to — `tblAuditLog` now holds a full history of who changed what and when, for every field,
@@ -321,13 +395,13 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
 
 *Empty in the base template. Filled per client engagement.*
 
-- **Real-username identity** — a public `AuditUser()` helper in both back end and front end,
-  replacing `CurrentUser()` in the generated macros and the Long Text helper (Business Rule 9).
-  Take the helper as written in `standards/audit-columns.md` and `templates/_materialization.md`
-  — including its fallback for an empty `Environ$` — rather than writing a one-liner here.
-  Running in the production system this template is drawn from.
+- **`CurrentUser()` identity instead of `AuditUser()`** — the Access-session user, and no VBA in the
+  identity path. `AuditUser()` is the default (Business Rule 9); this swaps it back. Coherent only if
+  applied to the log **and** to your forked `audit-columns.md` stamping, so both name the same person
+  — the paired scaffold's matching Extra Option lists the four call sites and the consequence of
+  changing only some of them.
 - **Audit trail viewer** — a read-only form/report over `tblAuditLog` filtered by table, record,
-  date range, or user.
+  date range, or user. Nothing in this template set shows the trail to a user; it only writes it.
 - **Log retention** — a periodic archival job moving aged `tblAuditLog` rows to an archive table
   or file.
 
