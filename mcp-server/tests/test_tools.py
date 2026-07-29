@@ -62,6 +62,27 @@ class TestSearchTemplates(unittest.TestCase):
         self.assertEqual(server._relevance("hous", front, body)[0], "Unlikely")
         self.assertIsNone(server._relevance("zebra", front, body))
 
+    def test_words_match_when_the_whole_phrase_does_not(self):
+        """A need described in the caller's own words still finds the template."""
+        front = {"template": "a-b", "title": "Title", "domain": "dom"}
+        body = "## Intent\n\nAbout warehouse counting.\n\n## Entities\n"
+        rated = server._relevance("counting warehouse stock", front, body)
+        self.assertIsNotNone(rated, "individual words must match when the phrase cannot")
+        self.assertEqual(rated[0], "Possible")
+        self.assertIn("2 of 3 words", rated[1])
+
+    def test_word_match_anchors_at_the_start_of_a_word(self):
+        """"log" must not match "catalog", nor "old" match "scaffold"."""
+        front = {"template": "catalog-schema", "title": "Catalog", "domain": "library"}
+        body = "## Intent\n\nA scaffold for catalogs.\n\n## Entities\n"
+        self.assertIsNone(server._relevance("log old", front, body))
+
+    def test_plural_query_finds_the_singular(self):
+        front = {"template": "a-b", "title": "Title", "domain": "dom"}
+        body = "## Intent\n\nRecords every change to a row.\n\n## Entities\n"
+        rated = server._relevance("changes", front, body)
+        self.assertIsNotNone(rated, "'changes' must find 'change'")
+
 
 class TestGetTemplate(unittest.TestCase):
     def test_composes_template_with_standards(self):

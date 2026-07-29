@@ -5,6 +5,22 @@
 > standard; the specific central-handler function is house-specific — a forked practice substitutes
 > its own central logger.
 
+## One pattern, adopted whole
+
+This file describes a complete error-handling pattern, and a forked practice substitutes a
+complete one of its own. Either way it is a **single unit** — the labels, the reporting call, and
+the Resume chain belong together and are used together. Choose one for a body of code and use all
+of it.
+
+Do not assemble a handler at the point of use from whichever parts seem convenient, and do not
+introduce an exit the pattern doesn't have — `Resume Next`, a bare `Exit Function`, or simply
+falling off the end — into a handler built on the Resume chain. "Continue past this one item" is a
+different idiom with its own rules (see *On Error Resume Next* below), and it belongs in the code
+that raised the error, never in the handler.
+
+The failure this prevents is a quiet one: a handler that looks like it follows the standard while
+behaving in a way the standard never describes, so nobody reading it thinks to check.
+
 ## Labels
 
 Always these exact spellings: `errHandler:` and `Cleanup:` (never `ErrorHandler`, `err_handler`).

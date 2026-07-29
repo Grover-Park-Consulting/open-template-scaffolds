@@ -53,24 +53,93 @@ def list_templates() -> list[dict]:
 
 _RANK = {"Likely": 0, "Possible": 1, "Unlikely": 2}
 
+# A whole-phrase hit outranks any word-level hit inside the same tier.
+_PHRASE = 1000
+
+# Filler words carry no signal about what a template is for, and matching on them
+# would rate every template against every sentence.
+_STOPWORDS = frozenset(
+    """a about all also an and any anything are as at be been being by can do does each every
+    everything for from get got has have help how i in into is it its just like made make me
+    more most much my need none nothing of on only or over please so some something that the
+    their them then there these thing things this to up use using very want was what when
+    where which who why will with would you your""".split()
+)
+
+
+def _terms(q: str) -> list[str]:
+    """The searchable words of a query: three characters or more, no filler, no repeats.
+
+    A trailing "s" is dropped so a plural finds its singular — "changes" becomes
+    "change", which then matches "changed" as well.
+    """
+    seen, out = set(), []
+    for w in re.findall(r"[a-z0-9]+", q):
+        if len(w) < 3 or w in _STOPWORDS:
+            continue
+        if len(w) > 3 and w.endswith("s"):
+            w = w[:-1]
+        if w not in seen:
+            seen.add(w)
+            out.append(w)
+    return out
+
+
+def _word_hits(terms: list[str], haystack: str) -> list[str]:
+    """Which terms start a word in `haystack`.
+
+    Anchored at the start of a word, open at the end: "log" finds "logging" but
+    not "catalog", and "old" does not find "scaffold". Matching an unanchored
+    substring rates templates highly on accidental fragments.
+    """
+    return [t for t in terms if re.search(r"\b" + re.escape(t), haystack)]
+
 
 def _relevance(q: str, front: dict, body: str):
     """Rate how query `q` (already lowercased) matches a template.
 
-    Returns (relevance, matched_in), or None when `q` matches nowhere:
-      - Likely   -> `q` is in the template's identity (name / title / domain).
-      - Possible -> a whole-word hit in the Intent (the template is about it).
-      - Unlikely -> only an incidental substring in the Intent (e.g. a
-                    cross-reference to another template).
+    The whole query is tried first, as a phrase. When that finds nothing, the
+    query's individual words are tried, so a caller who describes a need in
+    their own words is not told the library has nothing.
+
+    Returns (relevance, matched_in, strength), or None when `q` matches nowhere.
+    `strength` orders results inside a tier; it is not reported to the caller.
+
+      - Likely   -> the phrase is in the template's identity (name / title /
+                    domain), or every word of the query was found and at least
+                    one of them in the identity.
+      - Possible -> a whole-word phrase hit in the Intent, or at least half the
+                    query's words found (the template is about it).
+      - Unlikely -> an incidental substring of the phrase in the Intent (e.g. a
+                    cross-reference to another template), or a minority of the
+                    query's words.
     """
     identity = " ".join(str(front.get(k, "")) for k in ("template", "title", "domain")).lower()
     if q in identity:
-        return "Likely", "name/title/domain"
+        return "Likely", "name/title/domain", _PHRASE
     intent = _intent(body).lower()
     if re.search(r"\b" + re.escape(q) + r"\b", intent):
-        return "Possible", "intent"
+        return "Possible", "intent", _PHRASE
+
+    # Word-level pass, so a caller who describes the need in their own words is
+    # not told the library has nothing.
+    terms = _terms(q)
+    if terms:
+        in_id = _word_hits(terms, identity)
+        in_intent = _word_hits(terms, intent)
+        matched = set(in_id) | set(in_intent)
+        if matched:
+            where = "name/title/domain + intent" if (in_id and in_intent) else (
+                "name/title/domain" if in_id else "intent")
+            note = f"{where} ({len(matched)} of {len(terms)} words)"
+            if len(matched) == len(terms) and in_id:
+                return "Likely", note, len(matched)
+            if len(matched) * 2 >= len(terms):
+                return "Possible", note, len(matched)
+            return "Unlikely", note, len(matched)
+
     if q in intent:
-        return "Unlikely", "intent (incidental)"
+        return "Unlikely", "intent (incidental)", 0
     return None
 
 
@@ -105,12 +174,16 @@ def search_templates(query: str = "", domain: str = "", type: str = "") -> list[
             rated = _relevance(q, front, body)
             if rated is None:
                 continue
-            relevance, matched_in = rated
+            relevance, matched_in, strength = rated
         else:
-            relevance, matched_in = "Likely", ("filter" if (dom or typ) else "all")
-        results.append({**_meta(front), "relevance": relevance, "matched_in": matched_in})
-    results.sort(key=lambda r: _RANK[r["relevance"]])
-    return results
+            relevance, matched_in, strength = "Likely", ("filter" if (dom or typ) else "all"), _PHRASE
+        results.append(
+            (_RANK[relevance], -strength,
+             {**_meta(front), "relevance": relevance, "matched_in": matched_in})
+        )
+    # Strongest tier first, and inside a tier the entry that matched most of the query.
+    results.sort(key=lambda r: (r[0], r[1]))
+    return [r[2] for r in results]
 
 
 @mcp.tool()

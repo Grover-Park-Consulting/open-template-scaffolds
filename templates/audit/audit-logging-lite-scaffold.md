@@ -1804,18 +1804,16 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] error 2950 = a table with no data macros to export;
-    '            skip it and continue. Anything else: report and stop.
-    If Err.Number <> 2950 Then
-        If Not bSilent Then MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
-        On Error Resume Next
-        If Not rst Is Nothing Then rst.Close
-        If Dir(strTempFile) <> "" Then Kill strTempFile
-        BackupAndRemoveAllDataMacros = False
-        Resume Cleanup
-    Else
-        Resume Cleanup
-    End If
+    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    '            One exit for every error: the recordset above already selects only tables
+    '            that have data macros, so there is no "nothing to export" case to skip past,
+    '            and skipping one item mid-loop is not something this pattern does.
+    If Not bSilent Then MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
+    On Error Resume Next
+    If Not rst Is Nothing Then rst.Close
+    If Dir(strTempFile) <> "" Then Kill strTempFile
+    BackupAndRemoveAllDataMacros = False
+    Resume Cleanup
     Resume
 End Function
 ```
