@@ -45,6 +45,7 @@ the wrong file fails in ways that are hard to see:
 | **VBA functions a data macro calls** (e.g. `AuditUser()`) | **Back end *and* every front end** | The macro fires where the edit happened and looks for the function *there*. Missing in a front end, the stamp fails — and because the audit columns are `Required`, that front end cannot insert a row at all. |
 | Forms, reports, queries, ordinary modules | **Front end** | — |
 | `AutoExec` / `Startup()` | **Front end** — it runs when a person opens the application | Nothing runs at all: a back end is opened by the engine, not by a person. |
+| A local settings table holding **where the back end is** (e.g. `USysLocalSetting`) | **Front end**, as a real local table — **never** a link | Put it in the back end and it is unreadable at exactly the moment it is needed: the application cannot find the back end, and the answer is inside the file it cannot find. |
 
 The copies of a shared module are kept in step **by hand**; nothing enforces it. Treat the back
 end's copy as the original and re-import it to each front end after any change.
@@ -402,6 +403,18 @@ e.g. `DoCmd.OpenForm "AppStartupForm"`.
 **Both belong in the front end**, along with everything else a person interacts with. `AutoExec` runs
 when someone *opens* a file; a back end is opened by the database engine on behalf of a front end, not
 by a person, so an `AutoExec` placed there never runs.
+
+**Build the front end's own settings table at the same time.** A split application's `Startup()` also
+confirms it can reach its data and reconnects the links if the back end has moved
+(`standards/startup-conventions.md` §5) — and it remembers where the back end is in a **local table
+in the front end**, `USysLocalSetting` by default. Create that table with the same DAO build Sub used
+for any other table, but run it **in the front end**, and leave it unlinked. Four fields
+(`LocalSettingID` AutoNumber PK, `SettingName` Text(50) unique, `SettingValue` Text(255),
+`SettingDescription` Text(255)); no seed row is needed, because the first open that succeeds records
+the path itself. `USys` is the naming-conventions prefix for a configuration table, and it has a
+visible effect worth expecting: **Access hides objects whose names begin with `USys` from the
+navigation pane** until *Show System Objects* is turned on. The runnable code that uses it is
+`templates/startup/app-startup-scaffold.md`.
 
 **External file assets — create the folder *and* copy the file in.** When a template stores a
 **two-part reference** to an external asset — a file **name** in a table plus a folder from a
