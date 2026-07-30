@@ -3,7 +3,7 @@ template: school-district-asset-tracking-schema
 title: School District Capital Asset Tracking
 domain: school-district
 type: table-schema
-version: 0.2.0
+version: 0.2.1
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
@@ -283,6 +283,13 @@ canonical format — each row is still its own discrete table.
 - **Query style** — SQL behind any reporting queries or VBA recordsets follows the house
   aliasing/qualification and formatting conventions.
 
+## Extra Options
+
+*Empty in the base template. Filled per client engagement.*
+
+- District-specific capitalization threshold, if different from $500.
+- GASB 34 / state-reporting field extensions, if the district requires fields beyond this core set.
+
 ## Parked / future considerations
 
 - Vendor master-data table (replacing the plain-text `VendorName`/`PurchaseOrderNumber` fields).
@@ -292,9 +299,3 @@ canonical format — each row is still its own discrete table.
   district-wide.
 - A paired `vba-scaffold` for barcode-scan resolution and history-stamping, and a paired
   `form-spec` for asset entry/edit and inventory-audit data capture.
-
-## Extra Options
-
-*Empty in the base template. Filled per client engagement.*
-- District-specific capitalization threshold, if different from $500.
-- GASB 34 / state-reporting field extensions, if the district requires fields beyond this core set.
