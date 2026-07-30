@@ -62,7 +62,7 @@ present on every template; conditional keys are required when their condition ho
 | `title` | required | string | Human-readable title |
 | `domain` | required | string | Domain folder name (e.g. `northwind`, `sales`, `hr`); `_meta` reserved for infra |
 | `type` | required | enum | `table-schema` \| `vba-scaffold` \| `form-spec` \| `spec` |
-| `version` | required | semver string | Template version, independent of library version |
+| `version` | required | semver string | Template version, counted per template and independent of any library version. **Bump it in the same commit as any change to what the template produces** — patch for a correction an adopter needn't act on, minor for anything they would (a new or renamed field, a changed default, an added rule or section), major for a redesign an existing build can't absorb. It is the only thing that distinguishes a copy someone took earlier from the current file; see `CONTRIBUTING.md` → *Versioning a change* for why this is a rule and not a nicety |
 | `status` | required | enum | `draft` \| `review` \| `stable` |
 | `extends` | conditional | string | Required when the template grafts onto an existing database; names the host (e.g. `Northwind (Access Developer Edition)`) |
 | `requires_tables` | conditional | list[string] | Existing tables the template hooks into. Required when `extends` is present |

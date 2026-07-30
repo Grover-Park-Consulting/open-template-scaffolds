@@ -57,6 +57,34 @@ Every contributed template must:
 open any database, and it does not judge whether a template *fits* a given application — that
 always stays the adopter's call.
 
+## Versioning a change
+
+Every template carries a `version` in its front matter — a [semantic version](https://semver.org)
+(`major.minor.patch`), counted per template and unrelated to any version number the library as a
+whole might have.
+
+**Change what a template produces, and bump its `version` in the same commit.**
+
+- **Patch** (`0.1.0` → `0.1.1`) — a correction that doesn't change what an adopter has to do: a
+  fixed typo in generated code, a clarified rule, a warning made plainer.
+- **Minor** (`0.1.0` → `0.2.0`) — anything an adopter would want to know about: a new or renamed
+  field, a changed default, an added business rule, a new required build step, a new section.
+- **Major** (`0.1.0` → `1.0.0`) — a redesign that an existing build can't simply absorb.
+
+Changes that alter nothing an adopter does — reflowing a paragraph, fixing punctuation — need no
+bump. When you're unsure, bump the patch; an unnecessary bump costs nothing, and a missing one costs
+somebody an afternoon.
+
+**Why we ask for this.** A template is copied out of this library and lived with. Once it has been,
+the `version` line is the *only* thing distinguishing the copy somebody is holding from the current
+one — the file otherwise looks identical. This library has already paid for that twice: two separate
+rounds of testing re-reported a bug that had been fixed weeks earlier, because the stale copy under
+test and the corrected one in the repository both read `version: 0.1.0, status: draft`, and nothing
+on either page said otherwise. The bump is one line and it is the whole defense.
+
+The `status` field (`draft` / `review` / `stable`) is about maturity, not change, and moves on its
+own schedule. It is not a substitute for a version bump.
+
 ## Handling house-specific bits
 
 A little care with *house-specific* assumptions pays off: the more neutral each published template,
