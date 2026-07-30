@@ -3,7 +3,7 @@ template: library-catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
-version: 0.1.0
+version: 0.2.0
 status: draft
 standards_layer:
   - audit-columns
@@ -40,6 +40,25 @@ track its items; a library that needs per-copy identity adds the Holding extensi
 
 *(Shaped from a real reference collection and genericized; collection-specific provenance fields are
 documented under Parked, not carried into the template.)*
+
+## Prerequisites
+
+This template hooks into no existing tables — it builds its whole schema from nothing. What does
+have to be settled before you build is **which file the tables go in**.
+
+**Where these tables live.** These templates are designed for a **split database** — the normal
+shape for Access applications, especially those in multi-user environments: one file holds the
+tables (the **back end**, usually on a shared network drive — never on OneDrive, Dropbox, or any
+other file-syncing cloud folder, which corrupts a shared Access back end), and each person runs
+their own copy of a second file holding the forms, reports, and code (the **front end**), whose
+tables are *links* pointing at the back end. A single-file database — one .accdb holding
+everything — is an acceptable choice for one user, and everything here works there too: create
+everything in that one file and ignore the distinction.
+
+All ten tables below — three entities, two junctions, and five lookups — are created in the **back
+end** and linked into each front end. The paired entry form (`library-catalog-publication-form`)
+and the record-finder code (`library-record-finder-scaffold`) live in the **front end** and reach
+these tables through those links.
 
 ## Entities
 
@@ -212,6 +231,14 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
    it is system-maintained, not user-entered. *(The derivation mechanism is platform-specific — an
    Access data macro, a SQL Server trigger, or compute-on-write — and is supplied by the
    implementation / standards layer, not specified here.)*
+
+   **In a split database the mechanism you pick changes what gets covered**, so pick deliberately.
+   A **data macro** attaches to `tblPublication` itself, in the back end, and therefore fires no
+   matter how the title was changed — the form, a query, an import, or someone typing straight into
+   the table. **Form or VBA code** lives in the front end and fires only for edits made through that
+   form; a title changed any other way silently keeps its old sort title, and the catalog quietly
+   sorts that row in the wrong place. The data macro is the safer choice for this reason; if you use
+   front-end code instead, know that its coverage stops at the form.
 3. **Volume / set validation** *(record-level validation rule — Access table `Validation Rule` or a
    SQL `CHECK` constraint):*
    - `NumberOfVolumes` is always required and defaults to **1**.

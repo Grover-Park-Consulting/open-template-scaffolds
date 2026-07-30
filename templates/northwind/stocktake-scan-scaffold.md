@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.1.0
+version: 0.2.0
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -56,6 +56,40 @@ Three layers, kept distinct throughout:
 | `Products.SKUBarCode`, `Products.QuantityInPackage` | Scan resolution + package quantity |
 | `SystemSettings.DefaultAllowableShrinkageRate` | Fallback shrinkage rate |
 | A central error logger | `error-handling.md` (GPC default: `codearchive.GlblErrMsg`) |
+
+### Where this module goes in a split database
+
+A **split database** is the normal shape for Access applications, especially those in multi-user
+environments: one file holds the tables (the **back end**, usually on a shared network drive — never
+on OneDrive, Dropbox, or any other file-syncing cloud folder, which corrupts a shared Access back
+end), and each person runs their own copy of a second file holding the forms, reports, and code (the
+**front end**), whose tables are *links* pointing at the back end. A single-file database — one
+.accdb holding everything — is an acceptable choice for one user, and everything here works there
+too; put everything in that one file and ignore the distinction.
+
+| Module | Back end | Front end | Why |
+|---|---|---|---|
+| `modStockTakeScan` (this scaffold) | No | **Yes** | `ProcessScan` is called by whatever the counter is using to scan — a form on a laptop in the warehouse. The code belongs beside that form, in each counting station's own front end. |
+
+**A stocktake is the multi-user case, not the exception.** Several people counting different aisles
+at once is the ordinary way this gets used, and each of them is running a separate front end writing
+into the one shared back end. Two consequences worth knowing before you fill in the business logic:
+
+1. **Every scan is a round trip.** `ProcessScan` runs four operations against the back end for one
+   barcode — resolve the code, find or create the count line, insert the scan row, update the
+   rollup. On a single-file database that is invisible. Across a network link, at scanning speed, it
+   is the thing that decides whether the app feels instant or laggy. Keep the work in SQL that the
+   back end can do in one pass rather than opening recordsets and stepping through them.
+2. **`EnsureCountLine` can race.** Two counters scanning the same product at the same moment can
+   both find no count line and both create one — and the schema's unique index on
+   (`StockTakeSessionID`, `ProductID`) will refuse the second insert with an engine error. Checking
+   first does not prevent this; it only makes it rare. Trap the duplicate-key error and re-read the
+   line that the other person just created, rather than assuming the check is sufficient.
+
+**If you prefer a data macro for the rollup instead**, it attaches to `StockTakeCount` in the back
+end and maintains `CountedQuantity` there — closer to the data, and it fires no matter which front
+end (or which other tool) inserted the scan. That is a legitimate alternative to
+`RefreshCountRollup`; the schema template's Business Rule 3 permits either.
 
 ## Procedures
 

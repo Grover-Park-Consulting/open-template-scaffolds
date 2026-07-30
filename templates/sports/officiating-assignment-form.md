@@ -3,7 +3,7 @@ template: sports-officiating-assignment-form
 title: Sports Officiating Assignment — Game Assignment Form
 domain: sports
 type: form-spec
-version: 0.1.0
+version: 0.2.0
 status: draft
 implements: sports-officiating-assignment-schema
 record_source: qryGame_frm
@@ -31,6 +31,26 @@ not redefines**.
 | `qryGame_frm` | The form's record source over `tblGame` |
 | `sports-officiating-assignment-scaffold` | The paired scaffold; the subform's validation calls its `ValidateAssignment`, the optional features call `GetAppSetting` / `GetApplicablePayRate` |
 | `form-conventions.md` | House design defaults + the named reusable patterns (validation highlights, quick-add, audit display) |
+
+### Which file this form lives in
+
+A **split database** is the normal shape for Access applications, especially those in multi-user
+environments: one file holds the tables (the **back end**, usually on a shared network drive — never
+on OneDrive, Dropbox, or any other file-syncing cloud folder, which corrupts a shared Access back
+end), and each person runs their own copy of a second file holding the forms, reports, and code (the
+**front end**), whose tables are *links* pointing at the back end. A single-file database — one
+.accdb holding everything — is an acceptable choice for one user, and everything here works there
+too; put everything in that one file and ignore the distinction.
+
+`frmGame_Assignment`, `sfrmGame_Crew`, the `qryGame_frm` record source, and all code-behind live in
+the **front end**. `tblGame`, `tblGameOfficial`, `tblOfficial` and the lookups live in the **back
+end** and appear here as links.
+
+**One thing to expect when more than one person is assigning at once:** the crew subform's
+validation runs a moment before its insert, so two assignors filling the same position on the same
+game can both pass validation and the second insert is refused by the database itself. The paired
+scaffold covers how to turn that into the same plain message the user would have got anyway — see
+its `ValidateAssignment` notes.
 
 ## Layout
 
@@ -82,7 +102,10 @@ subform rows).
 
 - **Official photo** — `imgOfficialPhoto` shows the selected crew member's photo on the
   subform's row change: folder from `GetAppSetting("OfficialPhotoFolder")` + the official's
-  `PhotoFileName` (Business Rule 9). Skip it and nothing else changes.
+  `PhotoFileName` (Business Rule 9). Skip it and nothing else changes. **On a split application
+  that folder setting must name a shared network location**, or each person sees only the photos
+  they added themselves — the schema's Business Rule 9 explains what that looks like and why it
+  never raises an error.
 - **Applicable rate display** — `txtApplicableRate` shows the selected crew row's pay via
   `GetApplicablePayRate` (Business Rule 6): read-only, the scaffold working visibly in the UI.
 
@@ -112,8 +135,10 @@ own library, not committed here.*
   **copies the chosen file into the managed photo folder** (as `Official_<OfficialID>.<ext>`) and
   stores that name into `PhotoFileName` — the folder comes from `tblAppSetting`, created and ensured
   at startup (see `_materialization.md`, external file assets). Capturing only the picked file's name
-  would point the record at a file outside the app. *(The contributed source's one keeper procedure
-  is this pattern's ancestor.)*
+  would point the record at a file outside the app. On a split application the copy has to land in
+  the **shared** folder every front end reads, not in a folder beside the front end doing the
+  copying; `startup-conventions.md` covers ensuring a shared folder rather than making a local one.
+  *(The contributed source's one keeper procedure is this pattern's ancestor.)*
 - **Schedule view** — a read-only continuous games list with crew-completeness flags.
 - **Official manage form** — a full entry/edit form for `tblOfficial` (mirror the library's
   publication-form pattern).

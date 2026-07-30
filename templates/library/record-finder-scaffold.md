@@ -3,7 +3,7 @@ template: library-record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.1.0
+version: 0.2.0
 status: draft
 implements: library-catalog-schema
 requires_tables:
@@ -55,6 +55,36 @@ Three layers, kept distinct throughout:
 | The form's base record source | A saved query (or its SQL) whose `WHERE` `JumpFormToRecord` rewrites to land on one record |
 | A sort-title column (e.g. `PubSort`) | The finder list and the jumped form order on it |
 | A central error logger | `error-handling.md` (GPC default: `codearchive.GlblErrMsg`) |
+
+### Where this module goes in a split database
+
+A **split database** is the normal shape for Access applications, especially those in multi-user
+environments: one file holds the tables (the **back end**, usually on a shared network drive — never
+on OneDrive, Dropbox, or any other file-syncing cloud folder, which corrupts a shared Access back
+end), and each person runs their own copy of a second file holding the forms, reports, and code (the
+**front end**), whose tables are *links* pointing at the back end. A single-file database — one
+.accdb holding everything — is an acceptable choice for one user, and everything here works there
+too; put everything in that one file and ignore the distinction.
+
+| Module | Back end | Front end | Why |
+|---|---|---|---|
+| `modRecordFinder` (this scaffold) | No | **Yes** | Every one of these procedures serves the form: it reads the form's filter controls, builds a row source for a combo box on that form, and rewrites that form's record source. All of that is front-end work, so the code belongs beside the form. |
+
+`tblPublication` and `tblPublicationGenre` are in the back end; this module reaches them through the
+front end's links, which is why the SQL these procedures build matters more than it would locally —
+see the two notes below.
+
+**Both filter paths run across the link, so let the back end do the work.** Each rebuild of the
+pick list sends a query to the back end and pulls the results back. Filtering in the SQL — which is
+what `FinderRowSource` is for — means only the matching rows travel. Pulling the whole table and
+filtering it in VBA would work identically on a single-file database and get slower and slower on a
+shared one as the catalog grows. This is the practical reason the row source is built as a string
+rather than filtered after the fact.
+
+**`JumpFormToRecord` refetches one row on purpose.** Rewriting the record source's `WHERE` means the
+back end returns a single record instead of the whole catalog. The alternative — loading everything
+and setting the form's `Filter` — is fine on a small local table and increasingly wasteful across a
+link. See Parked for the trade-off.
 
 ## Procedures
 

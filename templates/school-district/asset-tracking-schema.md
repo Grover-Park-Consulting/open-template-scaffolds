@@ -3,7 +3,7 @@ template: school-district-asset-tracking-schema
 title: School District Capital Asset Tracking
 domain: school-district
 type: table-schema
-version: 0.1.0
+version: 0.2.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
@@ -27,6 +27,25 @@ site, reconciling what's on file against what's actually found.
 
 This schema is built entirely new — it needs no existing tables and doesn't connect into an
 existing database. (In database terms: a *greenfield* schema.)
+
+## Prerequisites
+
+This template hooks into no existing tables — it builds its whole schema from nothing. What does
+have to be settled before you build is **which file the tables go in**.
+
+**Where these tables live.** These templates are designed for a **split database** — the normal
+shape for Access applications, especially those in multi-user environments: one file holds the
+tables (the **back end**, usually on a shared network drive — never on OneDrive, Dropbox, or any
+other file-syncing cloud folder, which corrupts a shared Access back end), and each person runs
+their own copy of a second file holding the forms, reports, and code (the **front end**), whose
+tables are *links* pointing at the back end. A single-file database — one .accdb holding
+everything — is an acceptable choice for one user, and everything here works there too: create
+everything in that one file and ignore the distinction.
+
+All fourteen tables below — eight entities and six lookups — are created in the **back end** and
+linked into each front end. A district running inventory counts at several sites at once is a
+multi-user application by definition: each site's counting station is its own front end, all
+writing scans into the one shared back end.
 
 ## Entities
 
@@ -212,6 +231,24 @@ canonical format — each row is still its own discrete table.
    `FundingSourceID`, or `AssetStatusID` writes a row to `tblAssetHistory` capturing the prior and
    new values and the change type. This is independent of, and in addition to, the row-level
    audit columns deferred to the standards layer (§6).
+
+   **This template does not decide *how* that row gets written, and in a split database the two
+   ways differ in what they catch.** Choose deliberately:
+
+   - **A Before Change data macro** attaches to `tblAsset` itself, in the back end. It fires for
+     every change to the table however it was made — a form, a query, an import, a bulk update,
+     someone typing directly into the table. **If that macro calls a VBA function** (to get the
+     current user's name, for instance), that function must exist in **every front end** as well as
+     the back end, because a macro fired by an edit made through a link looks for the function in
+     *that person's* front end. A missing copy shows up as a failed save, not a missing history
+     row. This is the one placement mistake that testing on a single file can never reveal.
+   - **Form or VBA code in the front end** fires only for changes made through the form that
+     carries it. Anything else — an import, a query, a direct table edit, a second form somebody
+     writes later — changes the asset and writes no history row. The trail is silently incomplete,
+     and it looks correct until someone audits it.
+
+   For a district asset register, where the point of the trail is accountability, the data macro is
+   the stronger choice. If you use front-end code instead, know that its coverage stops at the form.
 4. **Depreciation, computed not stored** — `CurrentBookValue` is derived at query time from
    `AcquisitionDate`, `UsefulLifeYears`, and `SalvageValue` using the method named by
    `DepreciationMethodID`; it is floored at `SalvageValue` and frozen once `UsefulLifeYears` has

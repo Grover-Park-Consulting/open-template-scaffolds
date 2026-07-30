@@ -3,7 +3,7 @@ template: sports-officiating-assignment-schema
 title: Sports Officiating Assignment — Table Schema
 domain: sports
 type: table-schema
-version: 0.1.0
+version: 0.2.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -43,6 +43,24 @@ then needed a UNION query to un-pivot them back into rows — the clearest possi
 a data decision, and the un-pivot query becomes a plain SELECT.
 
 This is a greenfield template — it creates its whole schema and hooks into no host tables.
+
+## Prerequisites
+
+This template hooks into no existing tables — it builds its whole schema from nothing. What does
+have to be settled before you build is **which file the tables go in**.
+
+**Where these tables live.** These templates are designed for a **split database** — the normal
+shape for Access applications, especially those in multi-user environments: one file holds the
+tables (the **back end**, usually on a shared network drive — never on OneDrive, Dropbox, or any
+other file-syncing cloud folder, which corrupts a shared Access back end), and each person runs
+their own copy of a second file holding the forms, reports, and code (the **front end**), whose
+tables are *links* pointing at the back end. A single-file database — one .accdb holding
+everything — is an acceptable choice for one user, and everything here works there too: create
+everything in that one file and ignore the distinction.
+
+All ten tables below — two lookups and eight entities — are created in the **back end** and linked
+into each front end. `tblAppSetting` in particular belongs in the back end: it is what lets one
+setting, changed once, reach everybody (Business Rule 9).
 
 ## Entities
 
@@ -206,10 +224,15 @@ Grain: one row per named application setting. Standalone by design — no relati
 
 Indexes: PK on `AppSettingID`; unique on `SettingName`.
 
-Seed row: `OfficialPhotoFolder` = `Images\` — the folder holding official photos, relative to
-the application folder unless given as an absolute path (Business Rule 9). *(This table exists
-because the source displayed photos through a hardcoded local file path baked into a form
+Seed row: `OfficialPhotoFolder` = `Images\` — the folder holding official photos. The seeded value
+is relative, which suits a single-file database; **a split application must change it to an
+absolute shared path** so every front end resolves the same photo (Business Rule 9). *(This table
+exists because the source displayed photos through a hardcoded local file path baked into a form
 control — configuration belongs in data, not in controls.)*
+
+Because `tblAppSetting` itself lives in the back end, changing that one row changes it for
+everybody at once — which is the whole reason the folder is a setting rather than a constant in
+code.
 
 ## Relationships
 
@@ -246,10 +269,27 @@ control — configuration belongs in data, not in controls.)*
 7. **Game times are ordered.** When `GameEnd` is present, it is later than `GameStart`.
 8. **Age is derived.** Never store an age; compute it from `BirthDate` when needed.
 9. **Photos are file names plus one folder setting.** `tblOfficial.PhotoFileName` holds only
-   the file name; the folder comes from the `OfficialPhotoFolder` row of `tblAppSetting`
-   (relative to the application folder unless absolute). The folder is created and ensured at
-   startup, and the photo picker copies the chosen file into it — so the stored name always
-   resolves. No paths are ever hardcoded in controls or code.
+   the file name; the folder comes from the `OfficialPhotoFolder` row of `tblAppSetting`. The
+   folder is created and ensured at startup, and the photo picker copies the chosen file into it —
+   so the stored name always resolves. No paths are ever hardcoded in controls or code.
+
+   **In a split database that folder has to be one shared location, and this is the setting to get
+   right.** `PhotoFileName` lives in `tblOfficial`, which everybody shares; the photo file it names
+   has to be somewhere everybody can reach. Set `OfficialPhotoFolder` to an **absolute shared
+   path** — a network location such as `\\server\share\OfficialPhotos\`, sensibly the same server
+   the back end sits on.
+
+   **What goes wrong if you leave it relative.** A relative path is resolved against the file that
+   is running, which in a split application is *each person's own front end*. Every front end
+   dutifully makes its own local `Images\` folder. Ann adds a photo: the picker copies the file into
+   **Ann's** folder and stores `Official_17.jpg` in the shared table. Bob opens the same official —
+   his front end looks in **Bob's** folder, finds nothing, and shows a blank. The record is correct,
+   every front end did exactly what it was told, and the photo is invisible to everyone but Ann.
+   Nothing raises an error, which is what makes this one expensive to find.
+
+   A relative path is the right answer for a **single-file database**, where there is only one file
+   and only one person — which is why it is the seeded default. Splitting the application is the
+   moment to change it.
 
 ## Standards Layer
 

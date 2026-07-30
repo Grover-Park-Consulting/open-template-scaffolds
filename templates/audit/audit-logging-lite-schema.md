@@ -100,6 +100,25 @@ this changes real tables, back up the .accdb file first (see Warnings).
 Either way, the three system tables and the generator steps are identical — only whether the two
 made-up tables get created differs.
 
+## Prerequisites
+
+**Where these tables live.** These templates are designed for a **split database** — the normal
+shape for Access applications, especially those in multi-user environments: one file holds the
+tables (the **back end**, usually on a shared network drive — never on OneDrive, Dropbox, or any
+other file-syncing cloud folder, which corrupts a shared Access back end), and each person runs
+their own copy of a second file holding the forms, reports, and code (the **front end**), whose
+tables are *links* pointing at the back end. A single-file database — one .accdb holding
+everything — is an acceptable choice for one user, and everything here works there too: create
+everything in that one file and ignore the distinction.
+
+The three system tables are created in the **back end**, alongside the tables being audited, and
+linked into each front end. The three sample tables (Path A only) are created there too.
+
+**This template has more to say about the split than most, and it is not optional reading** —
+Business Rule 1 below covers where the macro generator runs and, in particular, the one VBA helper
+that must exist in **every front end** as well as the back end. Miss that and front-end inserts
+fail outright.
+
 ## Entities
 
 ### tblAuditLog

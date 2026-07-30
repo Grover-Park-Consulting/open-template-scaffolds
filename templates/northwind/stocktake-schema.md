@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.1.0
+version: 0.2.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -52,6 +52,22 @@ A mobile, browser-based interface is out of scope for this template.
 
 ## Prerequisites — hooks into the existing schema
 
+**Where these tables live.** These templates are designed for a **split database** — the normal
+shape for Access applications, especially those in multi-user environments: one file holds the
+tables (the **back end**, usually on a shared network drive — never on OneDrive, Dropbox, or any
+other file-syncing cloud folder, which corrupts a shared Access back end), and each person runs
+their own copy of a second file holding the forms, reports, and code (the **front end**), whose
+tables are *links* pointing at the back end. A single-file database — one .accdb holding
+everything — is an acceptable choice for one user, and everything here works there too: create
+everything in that one file and ignore the distinction.
+
+Unlike the greenfield templates in this library, this one grafts onto a database that already
+exists, so the placement is decided for you: **the new tables go in whichever file already holds
+`Products`** — the back end, if the host is split. This is not a preference. Access cannot enforce
+a relationship between tables in two different files, and `StockTakeCount` takes an enforced
+relationship to `Products` (see Relationships). Split them across files and the relationship simply
+cannot be created.
+
 This template does not stand alone; it extends an existing Northwind database. The generator
 must confirm these exist and wire the new tables to them:
 
@@ -62,6 +78,12 @@ must confirm these exist and wire the new tables to them:
 > already added them yourself (possibly under different names, which the design should then use
 > instead). The `check_compatibility` tool reports exactly which required pieces your database
 > already has.
+>
+> **If the host is split, adding those fields is a back-end change**, made once in the file that
+> holds `Products`. A front end does not pick up a new field on its own — its link still describes
+> the table as it was. Refresh the links in every front end (Access's Linked Table Manager) or the
+> new fields simply won't appear there, and code referring to them fails with "item not found in
+> this collection."
 
 | Existing object | Used as | Notes |
 |---|---|---|

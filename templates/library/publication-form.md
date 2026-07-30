@@ -3,7 +3,7 @@ template: library-catalog-publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.1.0
+version: 0.2.0
 status: draft
 implements: library-catalog-schema
 record_source: qryPublication_frm
@@ -31,6 +31,23 @@ this template **names** the framework pieces it relies on, it does not redefine 
 | `form-conventions.md` | House design defaults **+** the named reusable patterns (layered selector, quick-add, validation highlights, audit display) |
 | `library-record-finder-scaffold` (companion `vba-scaffold`) | The record-finder engine — pick-list build (`FinderRowSource`) + jump-to-record (`JumpFormToRecord`) — realized as a paired scaffold, not redefined here |
 | Forms framework (deferred) | The `TempVars` wrappers and the audit / image / validation helpers — supplied by the host, **named not redefined** here |
+
+### Which file this form lives in
+
+A **split database** is the normal shape for Access applications, especially those in multi-user
+environments: one file holds the tables (the **back end**, usually on a shared network drive — never
+on OneDrive, Dropbox, or any other file-syncing cloud folder, which corrupts a shared Access back
+end), and each person runs their own copy of a second file holding the forms, reports, and code (the
+**front end**), whose tables are *links* pointing at the back end. A single-file database — one
+.accdb holding everything — is an acceptable choice for one user, and everything here works there
+too; put everything in that one file and ignore the distinction.
+
+Everything this template defines lives in the **front end**: `frmPublication_Edit`, both subforms,
+the `qryPublication_frm` record source, and all code-behind. The tables they are bound to
+(`tblPublication`, `tblPublicationCreator`, `tblPublicationGenre`, and the lookups) live in the
+**back end** and appear in the front end as links. Because every front end is a separate copy of the
+same file, a change you make to this form reaches other users only when they get an updated copy of
+the front end — which is the normal way an Access application is updated.
 
 ## Layout
 

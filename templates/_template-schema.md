@@ -128,10 +128,23 @@ In addition to the common core, a `table-schema` template **must** contain, in t
 
 | Section | Purpose | Required |
 |---|---|---|
-| `## Prerequisites` | The hooks into the existing schema — a table of existing objects the new tables wire into. Required when `extends` is set | conditional |
+| `## Prerequisites` | What must be settled before the tables are built: **which file they go in** (see below), and — when the template grafts onto an existing database — the hooks into it, as a table of existing objects the new tables wire into. Required when `extends` is set; otherwise optional, but expected wherever the deployment note applies | conditional |
 | `## Entities` | One `### <TableName>` per new table — grain statement, field table (§5), `Indexes:` line. **Trivial, uniform lookups** (`<name>ID` + a descriptor + optional `SortOrder`, nothing more) may instead be **grouped** in a single sub-table of name + seed rows — documentation shorthand only; each row is still its own discrete table (this is *not* a shared/MUCK lookup table). Any lookup carrying extra structure (more fields, an FK, a description) takes its own `### <name>` heading like an entity. | required |
 | `## Relationships` | New relationships and hooks into the host schema, as a bulleted list naming parent → child, the join field(s), and cascade behavior | required |
 | `## Business Rules` | Numbered list of the logic the generated objects must honor (grain constraints, rollups, derivations, deferred-logic notes) | required |
+
+**The deployment note.** Every `table-schema` states, in `## Prerequisites`, which file its tables
+are built into. This library's templates are oriented toward a **split database** — the normal shape
+for Access applications, especially those in multi-user environments: one file holds the tables (the
+**back end**), and each person runs their own copy of a second file holding the forms, reports, and
+code (the **front end**), whose tables are links to the back end. Tables go in the back end. A
+single-file database — one .accdb holding everything — is an acceptable choice for one user and
+works the same way, so the note always says so rather than implying that splitting is required.
+
+Say it even when it seems obvious: a schema designed as though there were only ever one file can be
+built as one, but going the other way later costs a rebuild. Templates that carry a behavior
+sensitive to the split — a data macro, a VBA function a macro calls, an external file folder — say so
+where that behavior is defined, not only here.
 
 ### 4.1 `validate` rules for `table-schema`
 

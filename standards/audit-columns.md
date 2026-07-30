@@ -32,8 +32,18 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
   - **UPDATE** (else) → `ModifiedDate = Now()`, `ModifiedBy = AuditUser()`; `Created*` stay frozen.
   - Before Change runs **before** Required validation, so it satisfies a `Required` `CreatedBy`.
   - **User identity:** a Public VBA function `AuditUser()` returning `Environ$("USERNAME")`, which the
-    macro calls as `=AuditUser()`. A data macro *can* call a public function in the same accdb. Prefer
-    this to `CurrentUser()`, which returns `"Admin"` without workgroup security.
+    macro calls as `=AuditUser()`. A data macro *can* call a public function in the accdb the edit is
+    happening in. Prefer this to `CurrentUser()`, which returns `"Admin"` without workgroup security.
+  - **In a split database, `AuditUser()` must exist in every front end as well as the back end.** A
+    split database is the normal shape for a multi-user Access application: the tables live in one
+    file (the **back end**) and each person runs their own copy of a second file holding the forms and
+    code (the **front end**), whose tables are links to the back end. The stamping macro is attached to
+    the table, in the back end — but when it fires because someone edited through a *link*, it looks
+    for `AuditUser()` in **that person's front end**. If the function isn't there, the macro can't
+    stamp `CreatedBy`, and since `CreatedBy` is `Required` the save fails outright: that front end
+    cannot insert a row at all. Put the same module in the back end and in every front end, and
+    re-import it everywhere whenever it changes — nothing keeps the copies in step for you. On a
+    single-file database there is only one place for it, and this does not arise.
   - **`AuditUser()` must never return an empty string.** `Environ$("USERNAME")` comes back empty in
     some contexts — a scheduled task, a service account, a locked-down profile — and because
     `CreatedBy` is `Required`, an empty result blocks the insert outright. The helper falls back to

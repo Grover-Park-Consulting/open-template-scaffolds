@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: sports
 type: vba-scaffold
-version: 0.1.0
+version: 0.2.0
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -58,6 +58,35 @@ Three layers, kept distinct throughout:
 | `sports-officiating-assignment-schema` tables | The scaffold runs against the tables that template creates (`tblGame`/`tblOfficial`/`tblGameOfficial`, the lookups, `tblPositionRate`, `tblAppSetting`) |
 | `tblAppSetting.OfficialPhotoFolder` seed row | Read by `GetAppSetting` for the photo feature (schema Business Rule 9) |
 | A central error logger | `error-handling.md` (GPC default: `codearchive.GlblErrMsg`) |
+
+### Where this module goes in a split database
+
+A **split database** is the normal shape for Access applications, especially those in multi-user
+environments: one file holds the tables (the **back end**, usually on a shared network drive — never
+on OneDrive, Dropbox, or any other file-syncing cloud folder, which corrupts a shared Access back
+end), and each person runs their own copy of a second file holding the forms, reports, and code (the
+**front end**), whose tables are *links* pointing at the back end. A single-file database — one
+.accdb holding everything — is an acceptable choice for one user, and everything here works there
+too; put everything in that one file and ignore the distinction.
+
+| Module | Back end | Front end | Why |
+|---|---|---|---|
+| `modOfficiatingAssignment` (this scaffold) | No | **Yes** | Every procedure here is called by the assignment form — it validates what the user picked, resolves a rate to display, and reads a setting the form needs. That is front-end work, so the code belongs beside the form. |
+
+**Assigning officials is a shared job.** An assignor at the desk and a second person working from
+home are both making assignments into the one back end, and that changes two things in this module:
+
+1. **`ValidateAssignment` cannot be relied on alone.** It checks that the position is free, then
+   `AssignOfficial` inserts. Between those two moments somebody else can insert the same position
+   for the same game — both people's checks passed, and the junction's unique index on
+   (`GameID`, `PositionID`) refuses the second insert with an engine error. Checking first does not
+   remove the race; it makes it rare and keeps the *ordinary* refusal friendly, which is its real
+   job. `AssignOfficial` must still trap the duplicate-key error and turn it into the same plain
+   message, or the second assignor sees a raw Access error instead of "that position is already
+   filled."
+2. **`GetAppSetting` reads a shared table.** `tblAppSetting` lives in the back end, so a setting
+   changed once reaches everyone — which is exactly why the photo folder is a setting (schema
+   Business Rule 9) rather than a constant compiled into each front end.
 
 ## Procedures
 

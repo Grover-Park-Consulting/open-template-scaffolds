@@ -25,6 +25,30 @@ After a `table-schema` design is approved and the developer asks you to build it
 and generate the matching artifact. Both carry the tables, fields (with their **comments**), keys,
 indexes, relationships, and lookup **seed rows**.
 
+### First, know which file you are building into
+
+A **split database** is the normal shape for Access applications, especially those in multi-user
+environments: one file holds the tables (the **back end**, usually on a shared network drive — never
+on OneDrive, Dropbox, or any other file-syncing cloud folder, which corrupts a shared Access back
+end), and each person runs their own copy of a second file holding the forms, reports, and code (the
+**front end**), whose tables are *links* pointing at the back end. A single-file database — one
+.accdb holding everything — is an acceptable choice for one user; everything below works there too,
+and the distinction simply collapses.
+
+When you build for a split application, every artifact on this page has a home, and putting one in
+the wrong file fails in ways that are hard to see:
+
+| Artifact | Where it goes | What happens if it's in the wrong file |
+|---|---|---|
+| Tables, indexes, relationships (the DAO build Sub below) | **Back end** — run the Sub in the file that holds, or will hold, the tables | Tables built in a front end are local to that one person and invisible to everybody else. Relationships cannot be enforced between tables in two different files at all. |
+| Data macros (the audit-stamping macro below) | **Back end** — they attach to the table, so they attach where the table is | You cannot attach one to a linked table; the attempt is against the link, not the table. |
+| **VBA functions a data macro calls** (e.g. `AuditUser()`) | **Back end *and* every front end** | The macro fires where the edit happened and looks for the function *there*. Missing in a front end, the stamp fails — and because the audit columns are `Required`, that front end cannot insert a row at all. |
+| Forms, reports, queries, ordinary modules | **Front end** | — |
+| `AutoExec` / `Startup()` | **Front end** — it runs when a person opens the application | Nothing runs at all: a back end is opened by the engine, not by a person. |
+
+The copies of a shared module are kept in step **by hand**; nothing enforces it. Treat the back
+end's copy as the original and re-import it to each front end after any change.
+
 ### SQL Server → DDL
 
 `CREATE TABLE` statements with primary keys, foreign keys, indexes, the lookup tables, and `INSERT` seed
@@ -42,6 +66,10 @@ Option Compare Database
 Option Explicit
 
 ' Build the <domain> tables in the current database, using DAO.
+'
+' RUN THIS IN THE FILE THAT HOLDS THE TABLES — the back end, if the application
+' is split. Run in a front end, the tables are created there instead: local to
+' one person, invisible to everyone else.
 '
 ' RUN THIS FROM A TRUSTED LOCATION. Outside one, Access silently disables VBA
 ' and nothing is created.
@@ -178,6 +206,11 @@ database:
 
 1. **Trusted Location.** The Sub must run from an Access **Trusted Location**; outside one, Access
    silently disables VBA and nothing is created (a description-less failure). Always tell the developer.
+   **In a split application this applies to every file that runs code, on every machine** — each
+   person's front end as well as the back end you built the tables in. Trusted Locations are a
+   per-machine Access setting, not a property of the file, so a front end copied to a new machine and
+   dropped somewhere untrusted has its VBA disabled there and nowhere else. The symptom is an
+   application that works for everyone except one person, for no visible reason.
 2. **Descriptions after append.** Setting a field's `Description` during field-build throws **error
    3219**; create the `Description` property in a **second pass, after `db.TableDefs.Append`**.
 3. **AutoNumber** is a `dbLong` field with `Attributes = dbAutoIncrField` (and no explicit `Required`).
@@ -240,8 +273,13 @@ Private Function SetFieldXml(ByVal sField As String, ByVal sValue As String) As 
 End Function
 ```
 
-The helper it calls lives in a standard module **in the same accdb** (a data macro can call a public
-function there — the only way to reach the Windows user, since `Environ()` is out of engine reach):
+The helper it calls lives in a standard module in the accdb **where the edit happens** (a data macro
+can call a public function there — the only way to reach the Windows user, since `Environ()` is out
+of engine reach). **In a split application that means the back end *and* every front end**: the macro
+is attached to the table in the back end, but when it fires because someone edited through a *link*,
+it looks for `AuditUser()` in **that person's front end**. Missing there, the stamp fails — and since
+`CreatedBy` is `Required`, that front end cannot insert a row at all. This is the placement mistake a
+single-file test can never catch, because in one file there is only one place for the function to be.
 
 ```vba
 Public Function AuditUser() As String
@@ -341,13 +379,16 @@ afterward restores it.
 
 ### After an MCP-driven build, confirm the file was actually released
 
-A successful close reported by the MCP is **not** proof the database is free. An `MSACCESS`
-process can survive that close and keep the .accdb exclusively locked, leaving a `.laccdb` file
-beside it. Before telling the developer to open the database and look at what was built — the
-natural next step after any build — check for the leftover `.laccdb` and test an exclusive open;
-if the file is still held, the surviving process has to be ended manually. This is intermittent:
-it happened on one build and not on the next one in the same database, so test for it rather than
-assuming it either way.
+A successful close reported by the MCP is **not** proof the file is free. An `MSACCESS` process can
+survive that close and keep the .accdb exclusively locked, leaving a `.laccdb` file beside it.
+Before telling the developer to open the file and look at what was built — the natural next step
+after any build — check for the leftover `.laccdb` and test an exclusive open; if the file is still
+held, the surviving process has to be ended manually. This is intermittent: it happened on one build
+and not on the next one against the same file, so test for it rather than assuming it either way.
+
+**Check the file you actually built into** — for a split application that is the back end, not the
+front end the developer usually opens. A held back end is worse than a held front end: it blocks
+*everybody*, and the person who reports it is rarely the person whose machine is holding it.
 
 ### Application startup — AutoExec, Startup(), and external file assets
 
@@ -358,14 +399,26 @@ bare table-schema or a single form in isolation). Typical `Startup()` entries in
 app's working folders (`EnsureAppFolders()`) and opening the app's startup form —
 e.g. `DoCmd.OpenForm "AppStartupForm"`.
 
+**Both belong in the front end**, along with everything else a person interacts with. `AutoExec` runs
+when someone *opens* a file; a back end is opened by the database engine on behalf of a front end, not
+by a person, so an `AutoExec` placed there never runs.
+
 **External file assets — create the folder *and* copy the file in.** When a template stores a
-*relative reference* to an external asset (a file **name** in a table plus a folder from a settings
-row — e.g. `tblOfficial.PhotoFileName` + `tblAppSetting.OfficialPhotoFolder`), the build must do two
-things the reference alone does not imply:
+**two-part reference** to an external asset — a file **name** in a table plus a folder from a
+settings row, e.g. `tblOfficial.PhotoFileName` + `tblAppSetting.OfficialPhotoFolder` — the build must
+do two things the reference alone does not imply:
 
 1. **Ensure the folder** — create it at instantiation and re-ensure it idempotently at startup, via
-   `EnsureAppFolders()` (`startup-conventions.md`). A relative reference is worthless if the folder
-   never gets made.
+   `EnsureAppFolders()` (`startup-conventions.md`). The reference is worthless if the folder never
+   gets made.
+
+   **In a split application, ask first whether the folder is shared or per-user**, because the two
+   are ensured differently (`startup-conventions.md` §4). A folder holding files that a **shared
+   table points at** — photos, scans, attachments — must be **one absolute network path** for
+   everybody, and `EnsureAppFolders()` **verifies** it rather than creating a local one. Get this
+   wrong and every front end obediently makes its own folder: the person who added a photo sees it,
+   nobody else does, and **nothing raises an error**. A folder holding one person's temporary output
+   is genuinely per-user and a relative path is correct for it.
 2. **Copy the chosen file in** — the selection UI (a file-dialog picker) must **copy the picked file
    into the managed folder** under a controlled name, then store *that* name. Capturing the picked
    file's original name only points the record at a file outside the app, which blanks on retrieval.
