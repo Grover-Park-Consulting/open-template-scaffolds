@@ -1,10 +1,10 @@
-# Audit Columns — GPC Default Standards Layer
+# Audit Columns — OTS Default Standards Layer
 
-> **GPC default; fork-and-replace.** Templates defer audit columns to this file — audit columns
+> **OTS default; fork-and-replace.** Templates defer audit columns to this file — audit columns
 > never appear in a template body (per `templates/_template-schema.md` §6). Applies to Microsoft
 > Access and SQL Server.
 
-## The GPC audit set
+## The OTS audit set
 
 Every `tbl` and `tlkp` table carries these five columns, **always last** in column order
 (see `naming-conventions.md` §5.4):

@@ -1,6 +1,6 @@
-# Naming Conventions — GPC Default Standards Layer
+# Naming Conventions — OTS Default Standards Layer
 
-> **This is the GPC default standards layer.** When you fork the library, replace this file
+> **This is the OTS default standards layer.** When you fork the library, replace this file
 > with your own house naming rules; the templates regenerate the same entities under whatever
 > conventions you put here. Nothing in a template body depends on these specific names — that's
 > the point of the standards/template split.
@@ -142,9 +142,9 @@ Use the Access type vocabulary: `AutoNumber`, `Long`, `Integer`, `Byte`, `Single
 
 - **Strings:** `NVARCHAR` universally. Use a defined maximum (`NVARCHAR(100)`, `NVARCHAR(500)`)
   where a practical bound exists; `NVARCHAR(MAX)` for indeterminate free text (notes, descriptions).
-- **Dates:** `DATE` (date only); `DATETIME` (the GPC default for date+time — Access-safe);
+- **Dates:** `DATE` (date only); `DATETIME` (the default here for date+time — Access-safe);
   `DATETIME2` only when Access will never touch the table.
-- **Identity PK:** `INT` (GPC databases don't approach the `BIGINT` threshold).
+- **Identity PK:** `INT` (raise to `BIGINT` only where the row count genuinely requires it).
 
 ### 5.3 Index & constraint naming (SQL Server)
 

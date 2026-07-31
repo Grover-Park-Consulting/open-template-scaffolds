@@ -3,7 +3,7 @@ template: library-catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
-version: 0.2.0
+version: 0.2.1
 status: draft
 standards_layer:
   - audit-columns
@@ -62,7 +62,7 @@ these tables through those links.
 
 ## Entities
 
-Naming follows the **GPC house style** (`tbl` for entity/junction tables, `tlkp` for lookups); a
+Naming follows the **OTS default style** (`tbl` for entity/junction tables, `tlkp` for lookups); a
 different practice regenerates the same entities under its own conventions (see Standards Layer).
 Audit columns are supplied by the standards layer and are intentionally absent below.
 
@@ -257,7 +257,7 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
 - **Audit columns** — `CreatedDate`, `CreatedBy`, `ModifiedDate`, `ModifiedBy`, `AccessTS` on every
   table, supplied by the standards layer (see `standards/audit-columns.md`). *The source collection
   had no audit columns; the standards layer supplies them — a clean demonstration of the split.*
-- **Naming conventions** — this template follows the GPC `tbl`/`tlkp` house style and the
+- **Naming conventions** — this template follows the OTS `tbl`/`tlkp` style and the
   qualified-field rules (see `standards/naming-conventions.md`). A different practice regenerates the
   same entities under its own conventions without editing this template.
 

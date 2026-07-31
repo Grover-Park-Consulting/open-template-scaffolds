@@ -554,7 +554,7 @@ Private Sub cboSelectPublication_AfterUpdate()
 Cleanup:
 140   Exit Sub
 errHandler:
-150   Call GlblErrMsg(sFrm:=Application.VBE.ActiveCodePane.CodeModule, sCtl:="cboSelectPublication_AfterUpdate")
+150   MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
 160   Resume Cleanup
 End Sub
 ```

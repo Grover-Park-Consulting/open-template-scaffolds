@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: sports
 type: vba-scaffold
-version: 0.2.0
+version: 0.2.1
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -57,7 +57,7 @@ Three layers, kept distinct throughout:
 |---|---|
 | `sports-officiating-assignment-schema` tables | The scaffold runs against the tables that template creates (`tblGame`/`tblOfficial`/`tblGameOfficial`, the lookups, `tblPositionRate`, `tblAppSetting`) |
 | `tblAppSetting.OfficialPhotoFolder` seed row | Read by `GetAppSetting` for the photo feature (schema Business Rule 9) |
-| A central error logger | `error-handling.md` (GPC default: `codearchive.GlblErrMsg`) |
+| A central error logger | `error-handling.md` |
 
 ### Where this module goes in a split database
 
@@ -121,12 +121,8 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] house-specific central logger, shown as a demo.
-    '            GPC-private — you won't have it and shouldn't look for it; substitute your
-    '            own logger or the dependency-free MsgBox block in error-handling.md.
-    Call codearchive.GlblErrMsg(iLn:=Erl, _
-        sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
-        sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), bLog:=True)
+    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer.
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
     Resume Cleanup
     Resume
 End Function
@@ -246,10 +242,10 @@ End Function
 
 ## Standards Layer
 
-- **Error handling** — the `errHandler`/`Cleanup` structure plus the central logger and
-  line-number policy come from `error-handling.md`. The `GlblErrMsg` call shown is the GPC
-  default (house-specific); a forked practice substitutes its own logger — or the
-  dependency-free message-box default — and may number lines or not.
+- **Error handling** — the `errHandler`/`Cleanup` structure plus the error-reporting call and
+  line-number policy come from `error-handling.md`, which ranks three options and says when each
+  fits. The `MsgBox` block shown is option 3, which needs nothing installed; a practice with its
+  own logger substitutes it at the call site, and may number lines or not.
 - **Query style** — every `>>> ... per query-style.md <<<` marker is SQL written to the house
   query standard (aliasing, where querydefs live, formatting, safe criteria).
 - **Naming** — procedure, variable, and parameter names follow `naming-conventions.md`.

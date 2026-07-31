@@ -1,6 +1,6 @@
-# Standards Layer — GPC Defaults
+# Standards Layer — OTS Defaults
 
-This folder holds the **GPC default standards layer**: the house rules a template defers to, so the
+This folder holds the **OTS default standards layer**: the house rules a template defers to, so the
 same template produces house-conforming output for any practice. A template names what it defers in
 its `standards_layer` front-matter; when the generator builds artifacts, it reads the matching
 file(s) here and applies them.

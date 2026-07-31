@@ -1,6 +1,6 @@
-# Startup Conventions — GPC Default Standards Layer
+# Startup Conventions — OTS Default Standards Layer
 
-> **GPC default; fork-and-replace.** Governs how a generated Access application initializes when it
+> **OTS default; fork-and-replace.** Governs how a generated Access application initializes when it
 > opens — the `AutoExec` → `Startup()` convention and the single extensible open-time slot. A forked
 > practice that uses a different startup mechanism swaps this file for its own.
 

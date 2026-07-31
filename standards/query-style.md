@@ -1,6 +1,6 @@
-# Query Style — GPC Default Standards Layer
+# Query Style — OTS Default Standards Layer
 
-> **GPC default; fork-and-replace.** How VBA and saved queries write and run SQL — the house style a
+> **OTS default; fork-and-replace.** How VBA and saved queries write and run SQL — the house style a
 > `vba-scaffold` (or any generated code that touches data) defers to via `standards_layer: [query-style]`.
 > A forked practice swaps this file for its own query conventions. Naming of the query *objects* lives
 > in `naming-conventions.md`; this file governs how the SQL *inside* them reads. Applies to Microsoft
@@ -48,12 +48,12 @@ The rule of thumb: **parameterize or safely delimit values; concatenate only str
 - **When only the values vary** (the query's shape is fixed): prefer a **saved parameter query**, with
   the parameters driven by **`TempVars`** set at the form level.
 
-  > **House divergence — `TempVars`, not form control references.** GPC drives these parameters from
+  > **House divergence — `TempVars`, not form control references.** This layer drives these parameters from
   > `TempVars`, *not* from `Forms!frm!ctl` references (see the "All or One" combo/list-box selection
   > pattern). Setting the value in a `TempVar` **decouples the query from the form**: the query opens
   > and runs correctly whether or not the form is open. Mainstream Access practice reaches first for the
   > form control reference — a perfectly common approach, and one many prefer; a forked practice that
-  > wants it simply swaps this rule. GPC defaults the other way *because* of the decoupling.
+  > wants it simply swaps this rule. This layer defaults the other way *because* of the decoupling.
 
 - **When the shape of the query varies** — optional criteria, a variable `IN (…)` list, dynamic columns
   or sort — **build the string**. Then:
@@ -63,5 +63,5 @@ The rule of thumb: **parameterize or safely delimit values; concatenate only str
     pass user free-text as an identifier.
 
 - **Pass-through** can't use Jet parameters — build the server SQL string with the same delimiting
-  discipline. A genuinely *parameterized* server call needs **ADO**, which GPC reserves for rare,
-  advanced cases.
+  discipline. A genuinely *parameterized* server call needs **ADO**, which this standards layer
+  reserves for rare, advanced cases.

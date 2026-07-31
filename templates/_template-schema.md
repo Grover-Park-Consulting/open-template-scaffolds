@@ -167,7 +167,7 @@ Each entity's fields are a Markdown table with exactly these columns:
 | Field | Type | Key / Req | Purpose & rules |
 ```
 
-- **Field** — backtick-wrapped field name. GPC field-qualification rules apply (no bare
+- **Field** — backtick-wrapped field name. OTS field-qualification rules apply (no bare
   reserved/ambiguous nouns: `Status` → `<Entity>StatusID`, `Notes` → `<Entity>Notes`).
 - **Type** — from the Access type vocabulary: `AutoNumber`, `Long`, `Integer`, `Byte`,
   `Single`, `Double`, `Currency`, `Text(n)`, `Memo`, `Date/Time`, `Boolean`. `GUID` is
@@ -192,7 +192,7 @@ same template produces house-conforming output for any practice. Front-matter
 | Value | What it covers |
 |---|---|
 | `audit-columns` | `AddedBy` / `AddedOn` / `ModifiedBy` / `ModifiedOn` on new tables, supplied by the host's audit convention — never in the template body |
-| `naming-conventions` | Table/field prefix policy (e.g. Northwind no-prefix vs GPC `tbl`/`tlkp`). The template states which house style it follows; a different practice regenerates the same entities under its own conventions without editing the template |
+| `naming-conventions` | Table/field prefix policy (e.g. Northwind no-prefix vs the OTS `tbl`/`tlkp`). The template states which house style it follows; a different practice regenerates the same entities under its own conventions without editing the template |
 | `error-handling` | The house `errHandler` / global-error pattern for any VBA generated alongside |
 | `query-style` | How VBA and saved queries write and run SQL — where SQL lives, aliasing/qualification, formatting, and safe criteria. Applies to any generated code that touches data (notably `vba-scaffold`) |
 | `form-conventions` | Form **design** defaults (control prefixes, control types, buttons, tab order, sizing) + the named reusable form patterns (selector, quick-add, validation highlights; audit display optional). Used by `form-spec` |

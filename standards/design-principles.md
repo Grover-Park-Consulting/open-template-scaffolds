@@ -1,6 +1,6 @@
-# Design Principles — GPC Default Standards Layer
+# Design Principles — OTS Default Standards Layer
 
-> **GPC default; fork-and-replace.** The reasoning behind the specific rules in this standards
+> **OTS default; fork-and-replace.** The reasoning behind the specific rules in this standards
 > layer — the principles that decide how generated VBA is shaped. A `vba-scaffold` (or any code
 > generated alongside a template) defers to these via `standards_layer: [design-principles]`. The
 > concrete rules in the sibling files (`query-style.md`, `error-handling.md`, `form-conventions.md`,

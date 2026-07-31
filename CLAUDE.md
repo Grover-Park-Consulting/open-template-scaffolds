@@ -163,7 +163,7 @@ library into context every session.
 
 The standards layer is authoritative for naming, audit columns, and error handling. An adopter who
 forks this library **replaces `standards/` with their own** — so use whatever is in `standards/` now,
-and never assume the GPC defaults. Never bake standards into a template body, and never skip applying
+and never assume the OTS defaults. Never bake standards into a template body, and never skip applying
 them. This is what lets one template serve every shop.
 
 ## Boundaries

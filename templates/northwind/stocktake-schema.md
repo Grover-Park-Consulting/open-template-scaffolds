@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.2.0
+version: 0.2.1
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -96,7 +96,7 @@ must confirm these exist and wire the new tables to them:
 ## Entities
 
 Naming follows the **Northwind house style (no `tbl`/`tlkp` prefixes)** to fit cleanly alongside
-the host database. GPC field-qualification rules still apply (no bare reserved/ambiguous nouns:
+the host database. OTS field-qualification rules still apply (no bare reserved/ambiguous nouns:
 `Status` → `StockTakeStatusID`/`ScanStatusID`, `Notes` → `SessionNotes`). Audit columns are
 supplied by the standards layer (see Standards Layer) and are intentionally absent from the
 field lists below.
@@ -231,11 +231,11 @@ layer, so the same template produces house-conforming output for any practice:
 - **Audit columns** — `AddedBy`, `AddedOn`, `ModifiedBy`, `ModifiedOn` on every new table,
   maintained by the Northwind data-macro audit pattern (NorthwindFeatures #30).
 - **Naming conventions** — table/field prefix policy. *This template honors Northwind's
-  no-prefix house style; a GPC-standard practice would instead apply `tbl`/`tlkp`.* **Northwind
+  no-prefix house style; the OTS default would instead apply `tbl`/`tlkp`.* **Northwind
   is itself the worked illustration of why standards must be user-customizable: the team developing the
   Northwind Templates agreed to a generic naming convention — a different practice would
   regenerate these same entities under its own conventions without touching this template.**
-- **Error handling** — the generalized `errHandler` / `GlblErrMsg` pattern for any VBA produced
+- **Error handling** — the `errHandler` / `Cleanup` pattern for any VBA produced
   alongside this schema.
 
 ## Extra Options (engagement-specific — stub)

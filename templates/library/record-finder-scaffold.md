@@ -3,7 +3,7 @@ template: library-record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.2.0
+version: 0.2.1
 status: draft
 implements: library-catalog-schema
 requires_tables:
@@ -54,7 +54,7 @@ Three layers, kept distinct throughout:
 | `library-catalog-publication-form` | The paired form-spec; supplies the finder controls this engine drives (`cboCategory`, the A–Z sub-picker, `txtKeyword` + `cmdKeywordGo`, `cboFinder`) |
 | The form's base record source | A saved query (or its SQL) whose `WHERE` `JumpFormToRecord` rewrites to land on one record |
 | A sort-title column (e.g. `PubSort`) | The finder list and the jumped form order on it |
-| A central error logger | `error-handling.md` (GPC default: `codearchive.GlblErrMsg`) |
+| A central error logger | `error-handling.md` |
 
 ### Where this module goes in a split database
 
@@ -132,12 +132,8 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] house-specific central logger, shown as a demo.
-    '            GPC-private — you won't have it and shouldn't look for it; substitute your
-    '            own logger or the dependency-free MsgBox block in error-handling.md.
-    Call codearchive.GlblErrMsg(iLn:=Erl, _
-        sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
-        sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), bLog:=True)
+    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer.
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
     Resume Cleanup
     Resume
 End Function
@@ -247,10 +243,11 @@ End Sub
 
 ## Standards Layer
 
-- **Error handling** — the `errHandler`/`Cleanup` structure, the central logger, and the
-  line-number policy come from `error-handling.md`. The `GlblErrMsg` call shown is the GPC default
-  (house-specific); a forked practice substitutes its own logger (or the dependency-free MsgBox
-  block) and may number lines or not. The two pure helpers carry no handler by the same standard.
+- **Error handling** — the `errHandler`/`Cleanup` structure, the error-reporting call, and the
+  line-number policy come from `error-handling.md`, which ranks three options and says when each
+  fits. The `MsgBox` block shown is option 3, which needs nothing installed; a practice with its own
+  logger substitutes it at the call site, and may number lines or not. The two pure helpers carry no
+  handler by the same standard.
 - **Query style** — every `>>> ... per query-style.md <<<` marker is SQL written to the house query
   standard: the `LIKE` keyword search and its term escaping, the `SELECT DISTINCT (RecordID,
   DisplayText, SortIndex)` shape, the `<All ...>` union, and the WHERE-trim in `RewriteWhere`.

@@ -1,9 +1,8 @@
-# Error Handling — GPC Default Standards Layer
+# Error Handling — OTS Default Standards Layer
 
-> **GPC default; fork-and-replace.** The house pattern for any VBA generated alongside a schema or
+> **OTS default; fork-and-replace.** The pattern for any VBA generated alongside a schema or
 > scaffold (templates that declare `standards_layer: [error-handling]`). The *structure* is the
-> standard; the specific central-handler function is house-specific — a forked practice substitutes
-> its own central logger.
+> standard; the logger it calls is replaceable — a forked practice substitutes its own.
 
 ## One pattern, adopted whole
 
@@ -25,35 +24,62 @@ behaving in a way the standard never describes, so nobody reading it thinks to c
 
 Always these exact spellings: `errHandler:` and `Cleanup:` (never `ErrorHandler`, `err_handler`).
 
-## The errHandler pattern — VBE reflection, never hardcode names
+## Three ways to report an error — pick one and use all of it
+
+Options 1 and 2 both call the same logger, `LogError`, and differ only in how the handler learns
+which module and procedure it sits in. Option 3 doesn't log at all.
+
+> **`LogError` itself ships in a following change.** Until it lands, generated code uses option 3,
+> which needs nothing installed. The call shape shown below is settled and won't change.
+
+### Option 1 — named constants *(default)*
+
+```vba
+' at the top of the module
+Private Const MODULE_NAME As String = "modInventory"
+
+Public Sub RecountShelf(ByVal lShelfID As Long)
+      Const PROC_NAME As String = "RecountShelf"
+100       On Error GoTo errHandler
+          ' ... main logic ...
+
+Cleanup:
+210       Exit Sub
+
+errHandler:
+240       LogError MODULE_NAME, PROC_NAME, Erl
+250       Resume Cleanup
+260       Resume
+End Sub
+```
+
+**Why this is the default: a template writes the names at the same moment it writes the
+procedure**, so they are right by construction — there is no step at which a generator could get
+them wrong. It needs nothing installed, nothing enabled, and nothing configured on the machine it
+runs on, so it behaves the same way for every adopter. The constants are useful outside the handler
+too: any `Debug.Print` or status message can reference them.
+
+If someone later renames a procedure, `PROC_NAME` is one line directly above the thing they renamed.
+
+### Option 2 — VBE reflection
 
 ```vba
 errHandler:
-240       Call codearchive.GlblErrMsg(iLn:=Erl, _
-              sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
-              sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), _
-              bLog:=True)
+240       LogError Application.VBE.ActiveCodePane.CodeModule, _
+              Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), Erl
 250       Resume Cleanup
 260       Resume
 ```
 
-The VBE-reflection form derives the module and procedure names at runtime, so they need not be
-hardcoded and never go stale on a rename or copy. The hardcoded form (`sFrm:="ModuleName"`,
-`sCtl:="ProcedureName"`) is **deprecated** — convert on sight.
+Rather than storing the names, this asks the Visual Basic Editor which module and procedure the
+failing line belongs to, so there is nothing to keep current.
 
-**House-specific note:** `GlblErrMsg` is GPC's central handler, living in the CodeArchive library
-(call it qualified — `codearchive.GlblErrMsg(...)` — except inside CodeArchive itself, where the
-qualifier is omitted). A forked practice replaces this call with its own central error logger; the
-surrounding structure (capture `Erl`, reflect the names via the VBE, log, `Resume Cleanup`, `Resume`)
-is what the standard fixes.
+**This option depends on a development environment that supports it.** Whether yours does is worth
+establishing for yourself before you adopt it, and worth reading up on beyond what's here — this
+library offers no guarantees on that point. If you'd rather not take that on, use option 1. Nothing
+else about your code changes: both options call the same logger, and only the call site differs.
 
-**If you are not GPC — and almost every reader of this file is not — you do not have
-`GlblErrMsg`, and it is not available anywhere.** It lives in GPC's private CodeArchive library
-and appears here only as a real example of a central logger. **Do not search for it, and do not
-ask your AI assistant to find or import it.** Use one of these instead:
-
-- **Your shop's own central error logger**, if you have one — swap it into the call site.
-- **The dependency-free default** — a plain message box, needs nothing installed:
+### Option 3 — message box, no logging
 
 ```vba
 errHandler:
@@ -62,15 +88,28 @@ errHandler:
 260       Resume
 ```
 
-**To the AI generating code:** unless this practice has supplied its own central logger, emit
-the dependency-free block above. Never emit `codearchive.GlblErrMsg` for a non-GPC adopter, and
-never search for, offer to obtain, or ask about CodeArchive. Generated code must compile on the
-adopter's machine as-is.
+Tells the person something went wrong and **records nothing** — once they close the box there is no
+trace it happened. Reasonable for a one-off utility or a demonstration, where a log file would be
+clutter. Not reasonable for anything someone else will rely on.
+
+### Substituting your own logger
+
+If your practice already has a central error logger, swap it into the call site of whichever option
+you picked and keep the rest. What this file fixes is the surrounding structure: capture `Erl`,
+report, `Resume Cleanup`, `Resume`.
+
+**To the AI generating code:** emit option 1 once `LogError` is available, and option 3 until then.
+Generated code must compile on the adopter's machine as-is — never emit a call to a logger that
+isn't in this library and that the developer hasn't supplied.
 
 ## Full procedure skeleton
 
 ```vba
+' at the top of the module
+Private Const MODULE_NAME As String = "modExample"
+
 Public Sub ProcedureName(ByVal param1 As Type)
+      Const PROC_NAME As String = "ProcedureName"
 100       On Error GoTo errHandler
 
       Dim db     As DAO.Database
@@ -86,10 +125,7 @@ Cleanup:
 230       Exit Sub
 
 errHandler:
-240       Call codearchive.GlblErrMsg(iLn:=Erl, _
-              sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
-              sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), _
-              bLog:=True)
+240       LogError MODULE_NAME, PROC_NAME, Erl
 250       Resume Cleanup
 260       Resume
 End Sub
@@ -110,8 +146,8 @@ End Sub
   useful value). Procedures with no `errHandler` have **no** line numbers.
 - Increment by 10 from 100; restart at a round number for `Cleanup:` and `errHandler:`.
 - **Do not manually renumber** after edits — MZ-Tools normalizes on import.
-- **Line numbering is itself a house-specific choice.** The GPC pattern relies on `Erl`, which needs
-  numbered lines, and GPC applies them with MZ-Tools on import. Other practices number manually, or
+- **Line numbering is itself a house-specific choice.** This default relies on `Erl`, which needs
+  numbered lines, applied with a tool such as MZ-Tools on import. Other practices number manually, or
   reject line numbers entirely — in which case `Erl` returns 0 and the central handler simply logs
   without a line number. Templates and scaffolds **never hard-code line numbers**; they defer to
   whatever this file specifies, so a forked practice that doesn't number swaps this file and the
@@ -137,10 +173,7 @@ bInTrans = False
 ...
 errHandler:
       If bInTrans Then ws.Rollback
-      Call codearchive.GlblErrMsg(iLn:=Erl, _
-          sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
-          sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), _
-          bLog:=True)
+      LogError MODULE_NAME, PROC_NAME, Erl
       Resume Cleanup
       Resume
 ```

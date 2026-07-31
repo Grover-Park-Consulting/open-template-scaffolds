@@ -3,7 +3,7 @@ template: school-district-asset-tracking-schema
 title: School District Capital Asset Tracking
 domain: school-district
 type: table-schema
-version: 0.2.1
+version: 0.2.2
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
@@ -274,7 +274,7 @@ canonical format — each row is still its own discrete table.
   table, supplied by the host's audit convention. Not present in the field tables above; see
   Business Rule 3 for the separate, template-defined movement/change history, which is not a
   substitute for these.
-- **Naming conventions** — this template follows GPC's `tbl`/`tlkp` prefix policy and
+- **Naming conventions** — this template follows the OTS `tbl`/`tlkp` prefix policy and
   field-qualification rules (`Status` → `<Entity>StatusID`, `Notes` → `<Entity>Notes`). A
   practice on a different naming convention regenerates the same entities under its own policy
   without editing this file.

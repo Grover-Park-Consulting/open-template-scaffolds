@@ -3,7 +3,7 @@ template: sports-officiating-assignment-schema
 title: Sports Officiating Assignment — Table Schema
 domain: sports
 type: table-schema
-version: 0.2.0
+version: 0.2.1
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -296,7 +296,7 @@ code.
 - **Audit columns** — every table above additionally carries the audit set supplied by the
   active `audit-columns.md`; audit fields never appear in this template's field tables. (The
   source's per-table timestamp columns are retired in the audit set's favor.)
-- **Naming conventions** — this template is written in the GPC house style (`tbl`/`tlkp`
+- **Naming conventions** — this template is written in the OTS default style (`tbl`/`tlkp`
   prefixes, `[Entity]ID` keys, qualified field names). A practice with different conventions
   regenerates the same entities under its own `naming-conventions.md` without editing this
   template.

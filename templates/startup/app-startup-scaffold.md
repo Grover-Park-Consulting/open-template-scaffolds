@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: startup
 type: vba-scaffold
-version: 0.1.0
+version: 0.1.1
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -74,7 +74,7 @@ Three layers, kept distinct throughout:
 | An `AutoExec` macro | Its only action is `RunCode Startup()`. Built per `templates/_materialization.md` → *The AutoExec build gotcha*. |
 | One table the back end must contain | Named by you; `BackEndIsReachable` looks for it to prove a chosen file really is this application's data file. |
 | A startup form | The switchboard, menu, or home form `Startup()` opens once everything checks out. |
-| A central error logger | `error-handling.md` (GPC default: `codearchive.GlblErrMsg`). **It must not write to the back end** — see *Standards Layer*. |
+| A central error logger | `error-handling.md`. **It must not write to the back end** — see *Standards Layer*. |
 
 ### `USysLocalSetting` — the front end's own memory
 
@@ -197,12 +197,8 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] house-specific central logger, shown as a demo.
-    '            GPC-private - you won't have it and shouldn't look for it; substitute your
-    '            own logger or the dependency-free MsgBox block in error-handling.md.
-    Call codearchive.GlblErrMsg(iLn:=Erl, _
-        sFrm:=Application.VBE.ActiveCodePane.CodeModule, _
-        sCtl:=Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), bLog:=True)
+    ' [STANDARDS - error-handling.md] error reporting comes from the standards layer.
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
     Resume Cleanup
     Resume
 End Function
@@ -616,10 +612,10 @@ End Sub
   the two kinds of folder all come from `startup-conventions.md`. A practice that starts its
   applications differently swaps that file and rewrites `Startup()` accordingly; the other eight
   procedures are unaffected.
-- **Error handling** — the `errHandler`/`Cleanup` structure, the central logger, and the line-number
-  policy come from `error-handling.md`. The `GlblErrMsg` call shown is the GPC default
-  (house-specific); a forked practice substitutes its own logger, or the dependency-free `MsgBox`
-  block, and may number lines or not.
+- **Error handling** — the `errHandler`/`Cleanup` structure, the error-reporting call, and the
+  line-number policy come from `error-handling.md`, which ranks three options and says when each
+  fits. The `MsgBox` block shown is option 3, which needs nothing installed; a practice with its own
+  logger substitutes it at the call site, and may number lines or not.
 
   **One requirement this scaffold adds, and it is not optional: the logger used here must not write
   to the back end.** Every procedure in this module can run at a moment when the back end is

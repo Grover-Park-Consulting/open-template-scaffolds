@@ -158,7 +158,7 @@ row inherit the default.
 
 ---
 
-> **Want GPC house style instead?** Swap the standards layer for the GPC default and regenerate —
+> **Want the OTS house style instead?** Swap the standards layer for the OTS default and regenerate —
 > the same tables come back as `tblStockTakeCount`, `tlkpScanStatus`, and so on, with
 > `CreatedDate / CreatedBy` audit columns. Nothing in the template changes; only the standards layer
 > does. That's the split that lets one template serve every shop.

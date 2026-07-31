@@ -1,6 +1,6 @@
-# Form Conventions — GPC Default Standards Layer
+# Form Conventions — OTS Default Standards Layer
 
-> **GPC default; fork-and-replace.** Covers form **design** — control prefixes, default control types,
+> **OTS default; fork-and-replace.** Covers form **design** — control prefixes, default control types,
 > the standard button set, tab order, sizing — **plus the named reusable patterns** a `form-spec`
 > defers to via `standards_layer: [form-conventions]`. Form / subform / record-source *naming* lives in
 > `naming-conventions.md`; this file governs *design*. A forked practice swaps this file for its own
