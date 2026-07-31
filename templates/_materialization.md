@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.1.0
+version: 0.1.1
 status: draft
 ---
 
@@ -556,12 +556,13 @@ Cleanup:
 errHandler:
 150   MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
 160   Resume Cleanup
+170   Resume
 End Sub
 ```
 
 *(The generator also emits the boilerplate `SaveAsText` headers — `Version` / `Checksum` / `NameMap` /
 `PrtMip`. This fragment shows the meaningful mapping — control blocks, default positions, the
-subform-to-the-right rule, and one framework-wired handler — which is what the hand-validation
+subform-to-the-right rule, and one standards-layer handler — which is what the hand-validation
 confirms. A byte-perfect importable file is the generator's job in B3.)*
 
 ---
