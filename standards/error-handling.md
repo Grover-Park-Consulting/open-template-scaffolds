@@ -183,9 +183,10 @@ End Sub
 - Add line numbers **only** in procedures that have an `errHandler:` block (so `Erl` returns a
   useful value). Procedures with no `errHandler` have **no** line numbers.
 - Increment by 10 from 100; restart at a round number for `Cleanup:` and `errHandler:`.
-- **Do not manually renumber** after edits — MZ-Tools normalizes on import.
+- **Renumber a procedure you edit, or strip its numbers entirely.** Numbers that no longer match the
+  lines are worse than none — `Erl` reports a line where nothing failed.
 - **Line numbering is itself a house-specific choice.** This standard relies on `Erl`, which needs
-  numbered lines, applied with a tool such as MZ-Tools on import. Other practices number manually, or
+  numbered lines, applied with a line-numbering tool on import. Other practices number manually, or
   reject line numbers entirely — in which case `Erl` returns 0 and the central handler simply logs
   without a line number. Templates and scaffolds **never hard-code line numbers**; they defer to
   whatever this file specifies, so a forked practice that doesn't number swaps this file and the

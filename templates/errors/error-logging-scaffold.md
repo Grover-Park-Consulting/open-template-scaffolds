@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — Set-up Wizard and Logger
 domain: errors
 type: vba-scaffold
-version: 0.5.0
+version: 0.6.0
 status: draft
 implements: error-log-schema
 requires_tables:
@@ -323,6 +323,13 @@ you are not going to re-normalize after editing, choose No — an honest gap bea
 Line numbering is itself a house choice, and `standards/error-handling.md` says so. A practice that
 rejects line numbers replaces that file; `Erl` returns 0, the logger records the module and
 procedure, and nothing else changes.
+
+**Either answer works.** With line numbers, the log names the line that failed; without them, it
+names the procedure only. The logger is built for both.
+
+Line numbers can be added to your code by hand or by a tool you run over the code in the VBA editor.
+If I put the code into your database directly, you can add line numbers yourself, or use a tool to
+add them later.
 
 </details>
 

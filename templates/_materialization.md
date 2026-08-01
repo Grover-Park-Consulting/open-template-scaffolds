@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.1.1
+version: 0.2.0
 status: draft
 ---
 
@@ -230,6 +230,12 @@ database:
    (`CurrentUser()` *is* engine-known, but returns `"Admin"` without workgroup security — the
    resolved Windows user name is preferred.)
 
+**Both index orders are valid.** The sample above appends indexes to `tdf.Indexes` *before*
+`db.TableDefs.Append`; `templates/errors/error-logging-scaffold.md` appends the table first and builds
+its indexes after. Both are proven by running them. Neither corrects the other — **don't rewrite
+working code to match whichever you saw first.** Only field `Description`s are order-bound, and only
+for the reason rule 2 gives.
+
 Naming, audit columns, and types follow the active standards; the `errHandler` is the standards-layer
 one (the **dependency-free message-box default** unless `error-handling.md` specifies a central logger).
 
@@ -341,8 +347,7 @@ XML should still assemble entities from `Chr()` codes as a second line of defens
 
 ### Running a procedure through an MCP — bare name, and use eval for arguments
 
-Two separate failures, both observed more than once while driving a `vba-scaffold`'s staged
-procedures.
+Three separate failures, each observed while driving a `vba-scaffold`'s staged procedures.
 
 **1. Never module-qualify the name.** `Application.Run "modAddDataMacros.One_CreateAuditTables"`
 fails with "cannot find the procedure." `Application.Run` reads a dotted name as
@@ -365,18 +370,24 @@ cannot pass `True` gets the dialog, and with nobody at the keyboard it waits for
 whose procedures accept arguments should say which tool to call them with**, or the first automated
 run hangs.
 
+**3. Expression-evaluation is not a general substitute for running a procedure.** Point 2 is narrow:
+reach for it *when you need to pass an argument*. A bare zero-argument call through the same
+evaluation tool has failed with **"Subscript out of range"** where the ordinary run tool handled the
+identical call without complaint. Use the run tool by default; the evaluation tool is the exception,
+not the upgrade.
+
 ### Code imported through an MCP arrives without line numbers
 
-A shop that numbers its VBA lines does it with a tool that runs on the ordinary VBE import path —
-MZ-Tools, in this house. An MCP's code-import tools bypass that path, so **every procedure built
-through an MCP arrives unnumbered**, and `Erl` in an error handler returns **0** instead of the line
-that failed. Nothing breaks; the handler still fires and still reports the error number and
-description. What is lost is the one thing line numbers buy: knowing *where* it failed.
+Line numbers are added to VBA code by hand, or by a tool run over it in the editor. Neither happens
+when an MCP writes code straight into a database, so **every procedure built that way arrives
+unnumbered**, and `Erl` in an error handler returns **0** instead of the line that failed. Nothing
+breaks; the handler still fires and still reports the error number and description. What is lost is
+the one thing line numbers buy: knowing *where* it failed.
 
 Whether that matters is a house decision, not a rule this library sets — `standards/error-handling.md`
 owns it. Say it out loud when handing over an MCP-built module, because a shop that relies on `Erl`
-for diagnostics will otherwise lose it silently. Running the numbering tool over the modules
-afterward restores it.
+for diagnostics will otherwise lose it silently — and tell them the numbers can be added afterwards,
+by hand or with a tool.
 
 ### After an MCP-driven build, confirm the file was actually released
 

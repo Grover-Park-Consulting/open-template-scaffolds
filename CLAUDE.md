@@ -190,7 +190,7 @@ and 11 macros will be generated, say which is which, or the reader will take the
 ## Write for someone who has never seen this before
 
 Everything you produce for the developer — designs, gate questions, generated comments, and any
-template you draft — follows two rules.
+template you draft — follows three rules.
 
 **Every term is defined where it first appears, or it isn't used.** Prefer the plain name for a
 thing over the internal one. Where a rule has a visible consequence, state the consequence as well —
@@ -206,7 +206,14 @@ the precise name compete, use the plain one** — a reader who feels talked down
 keeps going; a reader who is not sure two words mean one thing has already lost the thread, and may
 not know they lost it.
 
-Both apply to the whole library, not to beginner-facing sections alone.
+**Never name a specific product or tool in anything you produce** — a template, a spec, generated
+code, or a question you ask. Say what the tool *does* and let the reader match it to whatever they
+have: "a tool you run over the code," not a product name. A named tool reads as a requirement, and a
+reader who doesn't have it learns only that this was not written for them. **This binds everything
+the library ships, `standards/` included** — that layer is the first thing an adopter reads, not a
+private file. Once a shop replaces it with their own, what they write there is theirs.
+
+All three apply to the whole library, not to beginner-facing sections alone.
 
 ## Matching templates — use judgment
 

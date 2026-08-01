@@ -128,6 +128,14 @@ they adopt a template:
 Reaching for the lowest tier that fits keeps every published template as close to house-neutral as
 it can be. Our goal is that someone else's template feels like it was written for *your* shop.
 
+**A named tool is a house-specific bit too.** The add-in you run over your code, the utility that
+does the tedious part — naming any of them turns a convenience into what reads as a requirement, and
+a colleague who doesn't have it reads a door closed to them. Describe what it does instead: "a tool
+that adds line numbers to your code", not the name of the one on your machine. This covers everything
+that ships, including the standards layer in this repo; the copy you keep for your own shop is yours
+and may name whatever you like. Easy to miss and easy to fix — if it slips through, we'll catch it
+together in review.
+
 ## Sibling templates, and the right to consolidate
 
 As the library grows, more than one of us will encounter the same kind of task — exporting Access
