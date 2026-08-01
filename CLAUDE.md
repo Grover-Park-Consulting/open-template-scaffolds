@@ -121,19 +121,19 @@ single upfront report, even when every fact in it is correct. Having the access 
 answer a gate yourself is not the same as being asked to.
 
 **Running a template's wizard.** Some templates declare `wizard: true` and carry a `## Wizard`
-section: a short run of one-question steps, each with a plainly named default and a *Tell me more*
-block holding the reasoning and the warnings (`templates/_template-schema.md` §10). It is a
+section: a short run of one-question steps, each with a plainly named preferred choice and a
+*Tell me more* block holding the reasoning and the warnings (`templates/_template-schema.md` §10). It is a
 **presentation device, not a second build path** — the same decisions and the same result, met one
 at a time instead of all at once. It is **not** an Access wizard: build no form, install nothing in
 the database to run it, and leave no artifact behind. Ask the steps yourself, in conversation.
 
-**A wizard of more than three steps opens with the entry question** (§10.5): *"This takes n
+**A wizard of more than three steps opens with the entry question** (§10.6): *"This takes n
 questions. Do you want to answer them, or shall I just build it?"* Ask it **even when the
 developer's instruction was imperative** — "find a template and run it" is exactly the case it
 exists for, and it costs them one click instead of seven questions. `Just build it` still stops at
 every step that has no preferred choice, and you state the preferred choices before acting on them.
 
-**Every step names a preferred choice, and this library never calls it a "default"** (§10.6). The
+**Every step names a preferred choice, and this library never calls it a "default"** (§10.7). The
 word means two things — *the one we'd point at first*, and *what happens when nobody chooses* — and
 in a file you are reading in order to act, the second meaning wins and the question stops being
 asked. **A preferred choice becomes the answer only when the developer declines to choose or tells
@@ -154,6 +154,22 @@ substantive answers plus *Tell me more*.
 Otherwise: name the preferred choice plainly — **never by emphasis, and never with a recommendation
 attached** — and **when the developer changes an earlier answer, discard every answer after it**
 and resume forward from there.
+
+**What you say between the steps is governed too** (§10.4), and it is not a rule about being brief.
+**Between two steps, name what was recorded and what is being asked next** — *"Errors will go to a
+table, with a text file as the fallback. Step 4 asks where that table lives"*, not *"Step 4."* A step
+number says where a question sits in a list, not what it is, and it gives the developer no
+confirmation that the answer they clicked registered. **Before the first question and before the
+build, say only what they must act on** — what they must answer, what changes what they do next, and
+nothing else. Everything you checked and found goes to **the build record**, a file you always write
+and hand over alongside the artifact. The design you present for approval is the deliverable, not
+narration: it is never shortened.
+
+**A house assumption is asked, never assumed.** Surfacing one is not asking about it. *"I'll take
+that as confirmed unless you say otherwise"* answers on the developer's behalf — it ignores their
+input rather than requiring it, and someone who says nothing has agreed to nothing. Put it through
+the selection control like any other decision and wait. **Never tell the developer they may skim:**
+an expert skims and loses nothing, a newcomer skims and misses the one line that mattered.
 
 **Write every question in the developer's world, not the system's.** "Which tables should be
 audited?" — not "Which of your tables should the scan consider?" Words like *the scan*, *the

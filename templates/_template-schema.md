@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.5.0
+version: 0.6.0
 status: draft
 ---
 
@@ -400,7 +400,7 @@ the full mapping rules and a hand-validated fragment.
 ## 10. Wizard steps (any template type)
 
 A template may present its set-up decisions as an **OTS wizard**: a short run of one-question
-steps, asked one at a time, each naming a **preferred choice** (§10.6 — deliberately not called a
+steps, asked one at a time, each naming a **preferred choice** (§10.7 — deliberately not called a
 "default") and carrying an explanation that stays closed until the reader opens it.
 
 **It is a presentation device, not a second build path.** The decisions and the artifact they
@@ -484,7 +484,76 @@ Four rules follow from it:
   decisions, or has two answers that should be one — resolve it in the template. Never resolve it
   by dropping *Tell me more*, and never by silently cutting an option (rule 8).
 
-### 10.4 Rules
+### 10.4 What the assistant says outside a step
+
+§10.3 governs the step itself. Everything else said during a wizard — before the first question,
+between two steps, and before the build begins — has no specified shape, and unspecified space is
+where ordinary explaining habits reassert themselves. Three rules govern it. **The first two fix
+opposite problems, and neither is a rule about being brief.**
+
+Nothing here is written in a template file. These are run-time rules: what the assistant says as the
+wizard runs, composed in the conversation and never authored anywhere.
+
+**1. Between two steps, name what was recorded and what is being asked next.**
+
+One line for each, in the developer's words:
+
+> *"Errors will go to a table, with a text file as the fallback. Step 4 asks where that table lives."*
+
+Not:
+
+> *"Step 4."*
+
+A step number says where a question sits in a list, not what it is. A developer four questions in has
+no other confirmation that the answer they clicked registered. **This rule makes what is said between
+steps longer, not shorter** — that is what it is for. Where the wizard branches, or a step is asked
+twice, this is where that is said.
+
+**2. Before the first question, and before the build, say only what the developer must act on.**
+
+These are the two moments with the most to report — the template that was matched and why, the
+build-wide warnings, the house assumptions, what was found on opening the files — and the least use
+for it. At the first, the developer has chosen nothing yet. At the second, they have chosen
+everything and are waiting. Three things are said at these moments and nothing else:
+
+- Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
+- Anything that changes what they do next.
+- The disclosure line below, before the first question only.
+
+Everything else — what was checked, what was found, what it meant — goes to **the build record**.
+
+**This rule does not govern the design presented for approval.** The diagram and field detail are the
+deliverable the whole workflow exists to produce; they are not narration, and they are not shortened.
+The rule governs the prose around them.
+
+**The build record is always written**, and delivered as a file alongside the artifact. Without it
+this rule deletes the detail rather than routing it, and the disclosure line promises something the
+format does not keep.
+
+**3. A house assumption is asked, never assumed.**
+
+A template's `house_assumptions` entries are surfaced before the first question. **Surfacing is not
+asking.** *"I'll take that as confirmed unless you say otherwise"* states the assumption and then
+answers it on the developer's behalf — it **ignores their input rather than requiring it**, and the
+developer who says nothing has not agreed to anything. It is put through the selection control like
+any other decision, and the build waits for the answer.
+
+This is the §10.7 trap one level up, and worse: a preferred choice at least appears in a question the
+developer is looking at. A self-confirmed assumption appears in prose they were free to skim — and an
+expert skims and loses nothing, while a newcomer skims and misses the one line that mattered.
+
+**The disclosure line**, said once, immediately before the entry question (§10.6):
+
+> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
+> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
+> record of how it was built, not just the thing. Anything you need to decide is in a question I ask
+> you. Nothing you have to act on will be buried in what I say in between."*
+
+**Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
+experience buys: an expert skims and loses nothing, a newcomer skims and misses the one line that
+mattered. The disclosure line gives an anchor instead — everything you must act on is in a question.
+
+### 10.5 Rules
 
 1. **One decision per step.** A step that asks two things is two steps.
 2. **The `Ask:` line is one short question, in the developer's words.** No clause explaining why it
@@ -513,7 +582,7 @@ Four rules follow from it:
    me more*.** Someone who meets "error 3870", "VBE reflection", or "`Application.LoadFromText`" in
    a question they are being asked to answer learns one thing: this was not written for them. Put
    it one click away, where the person who wants it will find it and nobody else has to.
-6. **Every step names a preferred choice — never a "default".** See §10.6. The `**Preferred:**`
+6. **Every step names a preferred choice — never a "default".** See §10.7. The `**Preferred:**`
    line is the only signal a reader gets about which option the library would point at first, and
    it is enough: no bolding, no "(Recommended)", no argument. Where the standards layer answers the
    question, the preferred choice is that answer and the line names the file it came from; where
@@ -539,7 +608,7 @@ Four rules follow from it:
     name any earlier step at any time. **Changing an answer discards every answer after it** and the
     wizard resumes forward from the changed step — so a revised decision can never leave a stale one
     standing behind it.
-13. **A wizard of more than three steps opens with the entry question** (§10.5), which is where the
+13. **A wizard of more than three steps opens with the entry question** (§10.6), which is where the
     developer chooses whether to answer every step or have the preferred choices used. It is never
     an option inside Step 1.
 14. **Ending early ends one wizard, not the run.** Where a step-1 answer declines the whole feature,
@@ -548,7 +617,7 @@ Four rules follow from it:
     at a time, and restate the decision at the gate so it can be answered without reconstructing
     anything from earlier in the session.
 
-### 10.5 The entry question
+### 10.6 The entry question
 
 **A wizard of more than three steps opens with one question before Step 1**, asked through the same
 selection control as every other step:
@@ -579,7 +648,7 @@ Four rules govern it:
 - **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
   is what this question is for, and answering it takes one click.
 
-### 10.6 "Preferred choice", not "default" — and why the word matters
+### 10.7 "Preferred choice", not "default" — and why the word matters
 
 **A wizard step names a *preferred choice*. This library does not use the word "default" for it,
 anywhere, deliberately.**
@@ -599,7 +668,7 @@ a developer who had never been asked.
 developer:**
 
 1. They decline to choose — "you pick", "whatever you think".
-2. They ask to get on with it — the entry question's *"just build it"* answer (§10.5).
+2. They ask to get on with it — the entry question's *"just build it"* answer (§10.6).
 
 **It never becomes the answer on the assistant's initiative.** No amount of obviousness, data
 shape, or convenience converts a preferred choice into a decision nobody made.
@@ -611,9 +680,18 @@ shape, or convenience converts a preferred choice into a decision nobody made.
 > because acting is what the reader is there to do. When in doubt, name the act you want and the
 > act you don't.
 
-`validate` does not yet check §10 — the format is proven by hand first, exactly as the three
+`validate` does not check §10 at all — the format is proven by hand first, exactly as the three
 template types were (see the scope note at the top of this file). `templates/errors/error-logging-scaffold.md`
 is the worked example.
+
+**Two different gaps sit inside that, and only one of them closes.** §10.2 and §10.5 describe things
+that are in the file — a `### Step n —` heading, an `**Ask:**` line, a `**Preferred:**` line, a
+two-column option table, a `<details>` block per step — and a checker could assert every one of them.
+**§10.4 cannot be checked here at any point**, because nothing it governs is in a file: the line
+between two steps is composed in the conversation, the disclosure line is spoken, and the build
+record is written into the adopter's own folder. A green `validate` run says nothing about §10.4
+either way, and would look identical if the rules were never followed. Until a checker exists, the
+only thing enforcing §10 is the assistant reading it and a person noticing afterwards.
 
 ---
 

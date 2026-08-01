@@ -109,7 +109,7 @@ report, `Resume Cleanup`, `Resume`.
 
 **Option 1 is the preferred choice.** "Preferred" means the one to put first when offering the
 three; it does **not** mean the one to use without asking (see
-`templates/_template-schema.md` §10.6).
+`templates/_template-schema.md` §10.7).
 
 **To the AI generating code: this is a question for the developer, not a rule you apply.** Ask
 which of the three they want, offer all three, and say which is preferred and why. Ask it even when

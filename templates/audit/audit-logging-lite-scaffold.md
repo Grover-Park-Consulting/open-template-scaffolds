@@ -213,7 +213,7 @@ partial run is simply to close everything and run it again.
 ## Wizard
 
 Nine questions, asked one at a time, preceded by the entry question
-(`templates/_template-schema.md` §10.5) that asks whether you want to answer them at all.
+(`templates/_template-schema.md` §10.6) that asks whether you want to answer them at all.
 
 **One of the nine — Step 3 — is only asked where you are adding auditing to a database you already
 use**, so the try-it-out build asks eight and the other asks all nine.

@@ -108,7 +108,7 @@ person — there is one file and one copy, and this does not arise.
 
 ## Wizard
 
-Six questions, preceded by the entry question (`templates/_template-schema.md` §10.5) that asks
+Six questions, preceded by the entry question (`templates/_template-schema.md` §10.6) that asks
 whether you want to answer them at all. Each one changes what the generated code does.
 
 **If the entry question is answered `Just build it`:** every step here has a preferred choice, so
