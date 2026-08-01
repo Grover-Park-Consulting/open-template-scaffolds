@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.1.1
+version: 0.4.0
 status: draft
 ---
 
@@ -77,6 +77,7 @@ present on every template; conditional keys are required when their condition ho
 | `seeds` | optional | list[string] | Seed data the template expects, as `Table.RowKey` |
 | `house_assumptions` | optional | list[string] | House-particular modeling assumptions deliberately kept in the template body (the "Declared" tier) because they can't be moved to the standards layer or dropped. Each entry is `Target — rationale`, where `Target` names the entity, field, or rule carrying the assumption. Makes embedded house bias machine-visible to adopters and discovery tools. |
 | `warnings` | optional | list[string] | Hard **platform caveats** the AI builder must surface to the developer *before* building — engine limits, not house bias (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"). Surfaced alongside `house_assumptions` in the review step; each entry states the limit and what the developer must confirm or the build must branch on. |
+| `wizard` | optional | boolean | `true` when the template's set-up decisions are presented as an OTS wizard (§10). A wizard template surfaces its `warnings` and `house_assumptions` **at the step each one belongs to** rather than all at once before the first question |
 
 **Rules the `validate` tool enforces on front-matter:**
 
@@ -302,8 +303,10 @@ facilitation rule for any assistant carrying out the steps on the developer's be
 This is in addition to — not a substitute for — a project's own standing rule that no edit happens
 without explicit approval. It addresses a different failure mode: an assistant that has enough
 context and initiative to *answer* a gate the developer was meant to answer, even where it never
-touches a file. (See `templates/audit/audit-logging-lite-scaffold.md` for a worked example of this
-note in place, next to its own numbered setup steps.)
+touches a file. (See the `## Wizard` section of `templates/audit/audit-logging-lite-scaffold.md`
+for a worked example of this note in place, next to the steps it governs. §10 is how a template
+presents such a sequence to the developer; this section is the rule the assistant follows while
+running it.)
 
 ### 8.5 `validate` rules for `vba-scaffold`
 
@@ -394,7 +397,217 @@ the full mapping rules and a hand-validated fragment.
 
 ---
 
-## 10. Minimal skeleton (`type: table-schema`)
+## 10. Wizard steps (any template type)
+
+A template may present its set-up decisions as an **OTS wizard**: a short run of one-question
+steps, asked one at a time, each naming a **preferred choice** (§10.6 — deliberately not called a
+"default") and carrying an explanation that stays closed until the reader opens it.
+
+**It is a presentation device, not a second build path.** The decisions and the artifact they
+produce are exactly what they would have been without it. What changes is the order the developer
+meets things in: one question at a time, with the reasoning and the warnings available on request
+instead of fired at them before they have chosen anything.
+
+**It is not an Access wizard.** Nothing is installed in the developer's database to run it, and no
+form is left behind. The assistant asks the questions in conversation; this file is where the
+questions, the options, and the explanations are written down. The resemblance to an Access wizard
+is one of shape only.
+
+### 10.1 Front-matter
+
+`wizard: true` (§2) marks a template whose set-up runs this way.
+
+### 10.2 The `## Wizard` section
+
+A wizard template carries a `## Wizard` section immediately **before** the first section that
+produces the artifact — `## Entities` for a `table-schema`, `## Procedures` for a `vba-scaffold`,
+`## Layout` for a `form-spec`, or any declarations preamble that precedes one of those. The
+developer decides, then sees what their decisions produce. Inside it, one `### Step <n> —
+<question>` heading per step, in the order they are asked, each laid out like this:
+
+```markdown
+### Step 2 — Where should errors be recorded?
+
+**Ask:** Where should errors be recorded?
+
+| Option | Short description |
+|---|---|
+| `A table in this database` | Errors go to a table you can open, sort, and filter. |
+| `A text file` | Errors are appended as lines of text to a file. |
+
+**Preferred:** `A table in this database` — this template's own; the standards layer does not
+speak to this choice.
+
+**Skip when:** Step 1 was answered "No".
+
+<details>
+<summary>Tell me more about where errors are recorded</summary>
+
+One or two facts that might tip the choice, plus any warning that belongs to this decision.
+
+</details>
+```
+
+The `<details>` block is how the *file* stores the explanation — collapsed on GitHub, so a person
+reading the template sees the same shape the wizard has. **It is not how the explanation reaches
+the developer at run time.** There is no collapsed block in a conversation, and simulating one by
+writing "say *tell me more* if you want…" is exactly the failure §10.3 forbids: it turns a click
+into typing. At run time *Tell me more* is an option in the selection control, and this block is
+what that option shows.
+
+Option rows list only the **substantive** answers. `Tell me more about <topic>` and
+`Go back to the previous question` are added by the mechanism on every step (§10.3) and are never
+written into the table.
+
+### 10.3 How a step is asked — the mechanism
+
+**Every step is put to the developer through the interactive selection control** — the one that
+renders each option as something they click. **A step rendered as prose, a markdown table, or a
+list the developer has to answer by typing is a failed step**, however good its content: it asks
+them to compose an answer where they were promised a choice.
+
+What this file holds is the **source** for that control, not the thing shown. The `**Ask:**` line
+becomes the question, each option row becomes a clickable option with its short description
+underneath, and the `**Preferred:**` line is stated with them.
+
+Four rules follow from it:
+
+- **One step per ask.** Never two steps in one control, even where the second seems to follow.
+- **`Tell me more about <topic>` is always the last option**, on every step. There is no other way
+  for the developer to reach it — they must be able to click it. Choosing it shows the
+  *Tell me more* text and then **asks the same step again, unchanged**, so the explanation costs
+  them nothing but a click.
+- **`Go back to the previous question` is an option on every step after the first**, wherever there
+  is room for it alongside the substantive options and *Tell me more*.
+- **The control takes at most four options.** A step therefore carries **at most three substantive
+  answers plus *Tell me more***. A decision with more than three natural answers is either two
+  decisions, or has two answers that should be one — resolve it in the template. Never resolve it
+  by dropping *Tell me more*, and never by silently cutting an option (rule 7).
+
+### 10.4 Rules
+
+1. **One decision per step.** A step that asks two things is two steps.
+2. **The `Ask:` line is one short question, in the developer's words.** No clause explaining why it
+   is being asked, no naming of the machinery behind it. "Which tables should be audited?" — not
+   "Which of your tables should the scan consider for auditing? This is the one boundary decided in
+   code, and everything finer-grained is a switch you flip in a table afterwards." Words like *the
+   scan*, *the generator*, *the config table*, *the boundary* mean nothing to someone meeting this
+   for the first time; what they convey is that they are out of their depth, and the likeliest
+   response is to stop using it. **If the question needs a second sentence, that sentence belongs in
+   *Tell me more*.**
+3. **A short description says what the option *is*, in one line — never why it is better.** No
+   bolding, no ordering by preference, no "recommended". Every comparison lives in *Tell me more*.
+   A description may carry a consequence the developer needs *at the moment of choosing* ("any Data
+   Macros those tables already have are replaced"), but never the reasoning behind it.
+4. **Error numbers, engine limits, version caveats, and internal names never appear outside *Tell
+   me more*.** Someone who meets "error 3870", "VBE reflection", or "`Application.LoadFromText`" in
+   a question they are being asked to answer learns one thing: this was not written for them. Put
+   it one click away, where the person who wants it will find it and nobody else has to.
+5. **Every step names a preferred choice — never a "default".** See §10.6. The `**Preferred:**`
+   line is the only signal a reader gets about which option the library would point at first, and
+   it is enough: no bolding, no "(Recommended)", no argument. Where the standards layer answers the
+   question, the preferred choice is that answer and the line names the file it came from; where
+   the standards layer is silent, it is the template's own and the line says so. It may follow an
+   earlier answer, in which case the line says which step it follows.
+6. **A confirmation step has no preferred choice.** Where a step asks the developer to attest to
+   something rather than to prefer something — that they have a backup, that a list the build will
+   act on is correct — write `**Preferred:** none` and say why: nothing the library picks can stand
+   in for the developer's own word.
+7. **Options are re-ranked, never removed.** A choice the library ranks last is still offered, in
+   the same plain form as the others.
+8. ***Tell me more* stays closed until asked for** and gives one or two facts that might tip the
+   choice — drawn from the standards files and the template's own description, not restated from
+   them, and not exhaustive.
+9. **Warnings live at the step they belong to.** A front-matter `warnings` entry that governs one
+   decision is surfaced inside that step's *Tell me more*; one that governs the whole build is
+   surfaced before step 1. This is the point of the format: the warnings are not less visible, they
+   are visible where they are actionable.
+10. **A choice made against the standards layer holds for that run** — carried forward to every
+    later step, never quietly reverted, and never written back to the standards files. The next run
+    starts from the standards again. Flexibility within limits.
+11. **Going back is always available.** Every step after the first offers it, and the developer may
+    name any earlier step at any time. **Changing an answer discards every answer after it** and the
+    wizard resumes forward from the changed step — so a revised decision can never leave a stale one
+    standing behind it.
+12. **A wizard of more than three steps opens with the entry question** (§10.5), which is where the
+    developer chooses whether to answer every step or have the preferred choices used. It is never
+    an option inside Step 1.
+13. **Ending early ends one wizard, not the run.** Where a step-1 answer declines the whole feature,
+    that wizard stops; any other wizard in the same template is asked independently.
+14. **§8.4's facilitation rules apply in full.** Never infer the answer to a step, present one step
+    at a time, and restate the decision at the gate so it can be answered without reconstructing
+    anything from earlier in the session.
+
+### 10.6 "Preferred choice", not "default" — and why the word matters
+
+**A wizard step names a *preferred choice*. This library does not use the word "default" for it,
+anywhere, deliberately.**
+
+"Default" carries two meanings and nothing in the word says which is meant:
+
+- **the choice we would point at first** — a recommendation, which still has to be offered; and
+- **what happens when nobody chooses** — a fallback that fires on its own.
+
+Written into a file that an AI reads and acts on, the second meaning wins. A step labelled
+`Default:` reads as standing permission to skip the question, and the question stops being asked.
+That is not a hypothetical: it is how `standards/error-handling.md` came to say *"emit option 3…
+and say so"* and how a build came to pick its own error-handling option and announce the result to
+a developer who had never been asked.
+
+**The preferred choice becomes the answer in exactly two situations, and both are an act by the
+developer:**
+
+1. They decline to choose — "you pick", "whatever you think".
+2. They ask to get on with it — the entry question's *"just build it"* answer (§10.5).
+
+**It never becomes the answer on the assistant's initiative.** No amount of obviousness, data
+shape, or convenience converts a preferred choice into a decision nobody made.
+
+> **A note for anyone writing a template.** This distinction does not arise when you write code:
+> a default parameter value simply *is* the fallback, and no reader expects otherwise. It arises
+> the moment your reader is an agent that will act on what you wrote. Words that are precise in a
+> function signature turn ambiguous in an instruction, and the ambiguity resolves toward *action*,
+> because acting is what the reader is there to do. When in doubt, name the act you want and the
+> act you don't.
+
+### 10.5 The entry question
+
+**A wizard of more than three steps opens with one question before Step 1**, asked through the same
+selection control as every other step:
+
+> **Ask:** This takes *n* questions. Do you want to answer them, or shall I just build it?
+
+| Option | Short description |
+|---|---|
+| `Ask me the questions` | Go through them one at a time. |
+| `Just build it` | I use the preferred choice at each step, and only stop where a step needs something from you. |
+
+**Preferred:** `Ask me the questions`.
+
+It exists because an instruction to proceed — "find a template and run it" — is not permission to
+put seven questions in front of someone. The entry question costs them one, and it is the only
+place the wizard interposes itself between the instruction and the build.
+
+Four rules govern it:
+
+- **Asked once, before Step 1, and never again.** It is not an option inside Step 1, and no later
+  step re-opens it.
+- **`Just build it` cannot skip a confirmation step** (rule 6). A step with no preferred choice has
+  nothing to fall back on, and passing one silently would answer for the developer on exactly the
+  questions they were meant to answer. Say up front how many of those remain.
+- **State the preferred choices before acting on them** — the answer being used at each skipped
+  step, in a short list. `Just build it` authorizes known answers; it is not consent to be
+  surprised.
+- **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
+  is what this question is for, and answering it takes one click.
+
+`validate` does not yet check §10 — the format is proven by hand first, exactly as the three
+template types were (see the scope note at the top of this file). `templates/errors/error-logging-scaffold.md`
+is the worked example.
+
+---
+
+## 11. Minimal skeleton (`type: table-schema`)
 
 ```markdown
 ---

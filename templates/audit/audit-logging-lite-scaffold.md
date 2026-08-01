@@ -3,8 +3,9 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.2.0
+version: 0.5.0
 status: draft
+wizard: true
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -32,6 +33,7 @@ new_procedures:
   - BuildBeforeDeleteMacro
   - AuditSetField
   - GetComparisonExpression
+  - AuditUser
   - BackupLongTextFieldsDM
   - BackupAndRemoveAllDataMacros
   - DumpTableMacros
@@ -52,7 +54,8 @@ warnings:
     AuditUser is needed on every build, Long Text or not, because the stamping macro calls it on
     every table — without it in the front end, front-end inserts fail outright. The copies must be
     kept identical by hand; nothing enforces that.
-  - Close every copy of the database before generating. Step 3 opens each table in design view, and
+  - Close every copy of the database before generating. Three_GenerateAllAuditDataMacros opens each
+    table in design view, and
     a table held open by another Access instance stops the run part-way, leaving some tables done
     and some not. Re-running is safe, so a partial run is fixed by closing everything and repeating.
   - DAO cannot create Data Macros. The only build path is writing UTF-16 XML to a file and
@@ -91,31 +94,16 @@ every candidate field to the config table and you flip `IsAuditable` flags — t
 LOGIC]` markers land on that review step and on the one code filter (which table prefix to
 scan); `[STANDARDS]` markers cover the usual deferred house style.
 
-### Two ways to use this — pick one before you start
+### Two ways to use this
 
-**Path A — Try it out first.** This creates three made-up tables (a client list, a support
-ticket list, and a short pick-list of ticket priorities) so you can watch the audit trail work
-before you touch anything real. Nothing in your own database is affected. Good for a first
-look, a demo, or learning what this system does.
+**Path A** builds three made-up tables and switches auditing on for them, so you can watch the
+audit trail work without touching anything real. **Path B** switches auditing on for tables you
+already have.
 
-**Path B — Add this to a database you already use.** This turns on auditing for your own,
-already-existing tables. It does **not** create the three made-up tables — it works directly
-against the tables you already have. Because it changes a real database, **make a backup copy
-of the .accdb file before you start**, the same way you'd back up before any change you can't
-easily undo.
-
-Both paths use the same three numbered steps below — only the middle step is set up slightly
-differently, and Path B adds one extra safety check.
-
-> **If an AI assistant is running these steps for someone:** the developer picks the path — don't
-> infer it from what the database looks like, even if the answer seems obvious (e.g. "it already
-> has real data, so it must be Path B"). Ask, then wait for their answer. Likewise, don't work out
-> `CheckAuditReadiness`'s answer yourself by reading the tables directly — run the actual
-> procedure at the point these steps call for it, show the developer what it says, and stop there.
-> Each numbered step (and the review pause after it) is a separate decision point: present one,
-> get the developer's go-ahead for that step specifically, then move to the next. Don't collapse
-> the whole sequence into a single upfront report — that skips the review this template is built
-> around, even if every fact in the report turns out correct.
+**Which one you are doing, and every other decision this build involves, is asked by the wizard
+below** — one question at a time, with the reasoning and the warnings available at the step each
+belongs to rather than all at once here. The sequence that follows shows what those answers
+produce.
 
 ```vba
 ' ---------- Path A — try it out first (nothing real is touched) ----------
@@ -151,13 +139,18 @@ procedure no way to detect whether it was called as a function or as a statement
 Then link the three system tables into the front end and import the Long Text helper module
 there (see `BackupLongTextFieldsDM`).
 
-**Module homes** (three modules, one job each):
+**Module homes** (four modules, one job each):
 
 | Module | Procedures | Lives in |
 |---|---|---|
-| `modAddDataMacros` | `Zero_CreateSampleTables`, the numbered steps, `CheckAuditReadiness`, the five `Build*` XML builders + `GetComparisonExpression` | Back end only |
-| `modAuditLongText` | `BackupLongTextFieldsDM` | **Back end AND every front end** |
+| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the numbered procedures, `CheckAuditReadiness`, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression` | Back end only |
+| `modAuditLongText` | `AuditUser`, `BackupLongTextFieldsDM` | **Back end AND every front end** |
 | `modAuditAdmin` | `BackupAndRemoveAllDataMacros` | Back end only |
+| `modAuditVerify` | `DumpTableMacros`, `ListMacroEvents` | Back end only |
+
+**Front-matter `target_module` names `modAddDataMacros` because the format allows only one, and
+that is where the build itself runs. This table is the authoritative placement** — four modules,
+one job each. `modAuditLongText` is the one that must exist in more than one file.
 
 Three layers, kept distinct throughout:
 
@@ -177,7 +170,7 @@ Three layers, kept distinct throughout:
 | The audited tables | Each with a single-column numeric PK (schema Business Rule 4) |
 | A Trusted Location | The generator and the macros' VBA calls run only with code enabled |
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
-| **Every copy of the database closed** | Step 3 opens each table in **design view** to attach its macros. Another Access instance holding one of those tables breaks the run part-way through, leaving some tables done and some not. In a split design that means the back end *and* every front end — see below. |
+| **Every copy of the database closed** | `Three_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros. Another Access instance holding one of those tables breaks the run part-way through, leaving some tables done and some not. In a split design that means the back end *and* every front end — see below. |
 
 ### Where each module goes in a split database
 
@@ -211,10 +204,358 @@ so it can be viewed, the backup table because a front-end-triggered macro has to
 
 ### Before you run the generator
 
-Close **every** copy of the database — the back end and each front end. Step 3 opens each table in
+Close **every** copy of the database — the back end and each front end.
+`Three_GenerateAllAuditDataMacros` opens each table in
 design view to attach its macros, and a table held open elsewhere stops the run part-way, leaving
 some tables generated and others not. Re-running is safe (generation replaces), so the fix for a
 partial run is simply to close everything and run it again.
+
+## Wizard
+
+Nine questions, asked one at a time, preceded by the entry question
+(`templates/_template-schema.md` §10.5) that asks whether you want to answer them at all.
+
+**One of the nine — Step 3 — is only asked where you are adding auditing to a database you already
+use**, so the try-it-out build asks eight and the other asks all nine.
+
+**If the entry question is answered `Just build it`:** Steps 1, 4, 5 and 6 use their preferred
+choices, and **Steps 2, 7, 8 and 9 are still asked** — those four have no preferred choice, because
+each needs something only you can supply: which file the tables are in, whether a list is right,
+whether the switches say what you meant, and permission to change your tables. So the demo build
+becomes four questions instead of eight. State the preferred choices being used before acting on
+them.
+
+This is a **presentation device, not a second build path** — the same decisions, the same
+generated result, met one at a time instead of all at once. Nothing is installed to run it and no
+form is built; the assistant asks the questions in conversation. See
+`templates/_template-schema.md` §10.
+
+> **If an AI assistant is running this for someone:** ask each step and wait for the answer. Never
+> infer one — not from what the database looks like, not from reasoning that makes an answer seem
+> obvious ("it already has real data, so it must be Path B"). Never work out a check procedure's
+> answer yourself by reading the tables: run the procedure at the step that calls for it, show what
+> it said, and stop there. Don't collapse the sequence into a single upfront report, even where
+> every fact in it turns out correct. Offer to go back at every step after the first, and when an
+> earlier answer changes, discard the answers after it and resume forward from there.
+
+**Before step 1**, three things that apply to the whole build whatever the answers are, and that
+you can act on right now:
+
+- **Close every copy of the database** — the back end and every front end. The last step opens each
+  table in design view, and a table held open by another Access instance stops the run part-way,
+  leaving some tables done and some not. Re-running is safe, so the fix for a partial run is to
+  close everything and repeat.
+- **This module runs in the same file as the tables it audits** — the back end of a split design.
+  Data Macros attach to tables in the file the tables actually live in.
+- **`modAuditLongText` goes in every front end as well**, because it holds `AuditUser()`, which the
+  stamping macro calls on every table. Without it there, a front end cannot insert a row at all.
+
+Nothing else is said here. Every other warning this template carries is raised at the step where
+you can do something about it.
+
+### Step 1 — Which database are you building this into?
+
+**Ask:** Are you trying this out on made-up tables, or adding it to a database you already use?
+
+| Option | Short description |
+|---|---|
+| `A try-it-out demo` | Three made-up tables are created and audited. Nothing you already have is touched. |
+| `A database you already use` | Auditing is switched on for your own tables. No tables are created for you. |
+
+**Preferred:** `A try-it-out demo` — this template's own. The standards layer does not speak to
+this choice.
+
+**Skip when:** never. This is the first question after the entry question.
+
+<details>
+<summary>Tell me more about the two builds</summary>
+
+**The try-it-out demo** creates three made-up tables — a client list, a support ticket list, and a
+short pick-list of ticket priorities — and switches auditing on for them, so you can watch the
+audit trail work before you touch anything real. Good for a first look, a demo, or learning what
+this system does. Nothing in your own database is affected, because your own tables are not
+involved at all.
+
+**A database you already use** works directly against the tables you have. It does not create the
+made-up tables. Because it changes something real, it is much less forgiving: Data Macros get
+attached to your live tables, and that is not a step to redo casually.
+
+Both run the same numbered procedures. What differs is `Zero_CreateSampleTables` (demo only), the
+starting point for the tracking flags, and two safety steps that only the second path needs.
+
+</details>
+
+### Step 2 — Which file holds the tables?
+
+**Ask:** Which file holds the tables you want audited?
+
+| Option | Short description |
+|---|---|
+| *one row per database file found* | The tables live in this one. |
+| `They're all in one file` | Everything is in a single file, so there is nowhere else for them to be. |
+
+**Preferred:** none. Only you know which file is which, and working it out from a file name is
+exactly the kind of guess this wizard is built to avoid.
+
+**Skip when:** never.
+
+<details>
+<summary>Tell me more about why the file matters</summary>
+
+The tracking gets attached to the tables themselves, so it has to be built in the file the tables
+actually live in. Build it in the wrong one and nothing errors — you simply get a database with
+some code in it and no tracking anywhere.
+
+Most Access applications with more than one user are split across two files: one holds the tables
+(usually on a shared drive), and each person runs their own copy of a second file holding the
+forms, reports and code. The second file doesn't really contain the tables — it contains links
+pointing at them. Tracking has to go where the real tables are.
+
+If the two files are named alike, or one is a copy, open each and look: the one with real tables in
+it rather than linked ones is the answer.
+
+</details>
+
+### Step 3 — Have you made a backup copy of this database?
+
+**Ask:** Have you made a backup copy of this database?
+
+| Option | Short description |
+|---|---|
+| `Yes, I have a copy I can go back to` | Carry on to the next question. |
+| `No — stop so I can make one` | Everything stops here. Nothing has been changed. |
+
+**Preferred:** none. Only you can say whether you have one.
+
+**Skip when:** Step 1 chose the try-it-out demo — a demo touches nothing you would want back.
+
+<details>
+<summary>Tell me more about why a copy matters here</summary>
+
+This build attaches Data Macros directly to your live tables, and `Application.LoadFromText`
+**replaces a table's entire macro set** — it never merges. Any other Data Macro a table already
+carries, written by you for reasons unrelated to auditing, is replaced along with everything else.
+
+Existing macros are backed up to a file before they are replaced, and the last step tells you which
+tables that happened to. But nothing puts that logic back afterward: re-adding it is your call,
+from the backup.
+
+Copying the database file is the same precaution you would take before any change you cannot easily
+undo, and it is the only one that covers everything at once.
+
+</details>
+
+### Step 4 — Which tables should be audited?
+
+**Ask:** Which tables should be audited?
+
+| Option | Short description |
+|---|---|
+| `Tables named tbl… or tlkp…, but not tmp…` | Your data and lookup tables. Temporary tables are left out. |
+| `A different set — I'll tell you which` | You say which tables, and I use that instead. |
+
+**Preferred:** `Tables named tbl… or tlkp…, but not tmp…` — from
+`standards/naming-conventions.md` §1.1, which is where those prefixes are defined.
+
+**Skip when:** never.
+
+<details>
+<summary>Tell me more about which tables get audited</summary>
+
+This answer is the **only** one in the whole system that ends up written into code. Every
+finer-grained
+choice — which tables, which individual fields — is a flag you set in the config table afterward,
+as data. That is deliberate: changing your mind about a field should not mean editing VBA.
+
+Access's own system tables (the ones whose names begin `MSys`) never match either prefix, so they
+are never in scope regardless of what you choose here.
+
+One thing to know if you change it: the same test appears in **two** procedures,
+`Two_PopulateConfigTable` and `CheckAuditReadiness`. Change one and you must change the other, or
+the readiness check will be reporting on a different set of tables than the scan wrote.
+
+</details>
+
+### Step 5 — Start by tracking everything, or nothing?
+
+**Ask:** Should every field start out tracked, or should none of them?
+
+| Option | Short description |
+|---|---|
+| `Track everything to start` | Everything is switched on, and you switch off what you don't want. |
+| `Track nothing to start` | Everything is switched off, and you switch on what you do want. |
+
+**Preferred:** follows Step 1 — `Track everything to start` on the demo, `Track nothing to start`
+on a database you already use. This template's own.
+
+**Skip when:** never.
+
+<details>
+<summary>Tell me more about the starting point</summary>
+
+Either way you get one line per field and you decide the rest by flipping switches, so neither
+answer locks anything in. Under the covers this sets a single argument on
+`Two_PopulateConfigTable` — nothing after it starts everything on, `False` starts everything off.
+
+**Starting on** suits the demo, where there are nine or ten fields and you want to see the trail
+working immediately.
+
+**Starting off** is the safer footing on tables this system was not designed around, where "track
+everything" can sweep in more than you meant — long free-text notes, columns another process
+rewrites constantly, fields you would rather not have a second copy of.
+
+Some rows are switched **off no matter which you choose**: the three system tables (auditing the
+audit trail would loop), each table's own primary key (its value is already on every log row), and
+the house audit columns and other always-changing system fields. Nothing is hidden — those rows
+are written and shown, just switched off.
+
+**What you will see, so it does not look wrong:** most of the rows belong to the three system
+tables, and on a small database that can be well over half of them. Sort by table name and review
+only the tables you recognise as your own.
+
+</details>
+
+### Step 6 — Check the tables first?
+
+**Ask:** Should I read your table definitions and report any table this system can't track as it
+stands?
+
+| Option | Short description |
+|---|---|
+| `Yes, check them first` | I look at every table and tell you what I find. Nothing is changed. |
+| `No, skip the check` | Go straight on. |
+
+**Preferred:** `Yes, check them first` — this template's own. On a database you already use it is
+expected rather than optional, for the reason in the note below.
+
+**Skip when:** never, though it is genuinely optional on the demo, where the tables were built by
+this template and are already known to be the right shape.
+
+<details>
+<summary>Tell me more about the check</summary>
+
+It reads your table definitions and reports whether each one will work. It changes nothing at all,
+so there is no risk in running it, and it can be run again at any time. The procedure behind it is
+`CheckAuditReadiness`.
+
+**What it is looking for:** every table needs **one single number field as its primary key, set to
+auto-number**. Most tables you designed yourself already look like this. Older or inherited tables
+sometimes don't — a table with no primary key set, one that uses two or more fields together as its
+key, or one keyed on a text code will not work with this system as it stands.
+
+That matters most on a database you already use, which is exactly where such a table is likely to
+turn up.
+
+If a table isn't ready you have two ways out: fix that table's primary key, or leave the table out
+by switching its fields off. Adapting the template to a different key design is possible, but it is
+your adaptation, not something this template supports.
+
+</details>
+
+### Step 7 — Are these the long-text fields?
+
+**Ask:** These are the long-text fields I found. Is that right?
+
+| Option | Short description |
+|---|---|
+| `Yes, that's right` | Tables with one of these get some extra handling. |
+| `No — let me look first` | Nothing happens until you say so. |
+
+**Preferred:** none. It is your database, and the build acts on this list.
+
+**Skip when:** never — but where no long-text field is found anywhere, this is an empty list to
+confirm rather than a decision.
+
+<details>
+<summary>Tell me more about Long Text fields</summary>
+
+**A Data Macro cannot read or write a Long Text field at all.** That is a limit of the Access
+engine, not a choice this template made, and it cannot be worked around inside the macro.
+
+So a table carrying one takes a different route: a Before Change and a Before Delete macro call a
+VBA function (`BackupLongTextFieldsDM`) that copies the old value into a staging table first, and
+the audit macro reads it back from there. A table with no Long Text field needs only the three
+simpler After macros.
+
+That is why the list matters: it decides which macros each table gets. Getting it wrong doesn't
+produce an error — it produces an audit trail that quietly records nothing for that field.
+
+The function this depends on lives in `modAuditLongText`, which must exist in the back end **and in
+every front end**, for the reason given before step 1.
+
+</details>
+
+### Step 8 — Have you set the tracking switches the way you want them?
+
+**Ask:** Have you set the tracking switches the way you want them?
+
+| Option | Short description |
+|---|---|
+| `Yes, they're how I want them` | Carry on. |
+| `Not yet — I'll set them now` | Open `tblAuditLogConfig` and set them; I wait until you say you're done. |
+
+**Preferred:** none. Only you know whether the list says what you meant.
+
+**Skip when:** never. This is the review the whole design is built around.
+
+<details>
+<summary>Tell me more about the switches</summary>
+
+This is where you actually decide what gets tracked, and you decide it as data rather than in code
+— one line per field, with a Yes/No switch. Open `tblAuditLogConfig`, sort by table name, and set
+them.
+
+It is worth spending a minute on, because the next step acts on exactly what is in that table. It
+is also the cheapest thing here to change your mind about later: flip a switch, run the last step
+again, and the macros are rebuilt.
+
+The rows for the three system tables are switched off and must stay off — auditing the audit trail
+would loop.
+
+</details>
+
+### Step 9 — Ready to switch auditing on?
+
+**Ask:** Ready to switch auditing on?
+
+| Option | Short description |
+|---|---|
+| `Yes, switch it on` | Attaches the tracking to your tables and reports what happened to each one. Any Data Macros they already carry are replaced. |
+| `Not yet` | Nothing is changed. |
+
+**Preferred:** none. This is the step that changes your tables.
+
+**Skip when:** never.
+
+<details>
+<summary>Tell me more about what this step does</summary>
+
+For each table still switched on, the generator writes the macro definitions out as XML and loads
+them onto the table. It has to be done this way: **DAO cannot create Data Macros**, and writing
+UTF-16 XML and loading it with `Application.LoadFromText` is the only build path there is.
+
+**`LoadFromText` replaces a table's entire macro set. It never merges.** This is why the house
+audit-column stamping and the change auditing are generated **together**, in one Before Change
+macro — so the two no longer destroy each other. But any *other* Data Macro a table carries,
+business logic of your own written for unrelated reasons, is replaced too. The generator backs a
+table's existing macros up to `DataMacroBackups\` before replacing them and names the affected
+tables in its report; putting that logic back is your call.
+
+**It is safe to run again.** Generation replaces rather than accumulates, so a run that stopped
+part-way — because a table was held open somewhere — is fixed by closing everything and running it
+again.
+
+**A table with auditing switched off still gets a stamping macro.** That is not an oversight: the
+house audit columns are `Required`, and a table with no macro at all has no way to fill them, so it
+would refuse every insert.
+
+**One thing to check about the code you imported, now that it is about to run.** If your import
+tool un-escapes XML entities — this repo's own Access Explorer MCP code-import tools do — then the
+literal `&lt;&gt;` inside `GetComparisonExpression` has become a raw `<>`, and the macro XML this
+step generates will fail with error 3870. The function builds that entity from `Chr(38)` at run
+time for exactly this reason; confirm it survived the import, and don't revert it to a literal.
+
+</details>
 
 ## Module-level declarations
 
@@ -833,7 +1174,7 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
     '            Passing bSilent:=True suppresses the message box and returns the same text,
     '            so a caller with no one at the keyboard does not hang on a dialog.
     '            bDefaultAuditable sets the starting point for ordinary fields only:
-    '            True  (default; Path A) — everything starts switched ON, you switch OFF
+    '            True  (preferred; demo build) — everything starts switched ON, you switch OFF
     '                  what you don't want tracked.
     '            False (Path B — call as Two_PopulateConfigTable(False)) — everything
     '                  starts switched OFF, you switch ON what you do want tracked.
@@ -1421,7 +1762,7 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
         sXml = sXml & "<Argument Name=""Value"">Now()</Argument>"
         sXml = sXml & "</Action>"
 
-        ' [STANDARDS / schema Business Rule 9] Identity — AuditUser() is the DEFAULT.
+        ' [STANDARDS / schema Business Rule 9] Identity — AuditUser() is the PREFERRED choice.
         '            The BeforeChange stamping macro calls it because audit-columns.md does,
         '            so the log names the same person the stamped row does.
         '            CurrentUser() is a named Extra Option: switch this and the three other
@@ -1563,7 +1904,7 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
             sXml = sXml & "</Action>"
 
             ' [STANDARDS / schema Business Rule 9] identity — see BuildAfterInsertMacro
-            ' [STANDARDS / schema Business Rule 9] AuditUser() default — same person as the
+            ' [STANDARDS / schema Business Rule 9] AuditUser() preferred choice — same person as the
             '            stamp. CurrentUser() is an Extra Option; change all four ChangedBy
             '            sites together, never just one.
             sXml = sXml & "<Action Name=""SetField"">"
@@ -1946,6 +2287,34 @@ Private Function GetComparisonExpression(sTableName As String, sFieldName As Str
 End Function
 ```
 
+### AuditUser — `Public Function` → `String` (module `modAuditLongText` — back end AND front end)
+
+**The single most important four lines in this template, and the easiest to leave out.** Every
+generated stamping macro calls `AuditUser()` on **every** table — Long Text or not — to fill
+`CreatedBy` and `ModifiedBy`. Those columns are `Required`, so a table whose macro cannot resolve
+this function **rejects every insert**, with an error that names the function rather than the cause.
+
+`modAuditLongText`'s name undersells it. A database with no Long Text field anywhere still needs
+this module, in the back end **and in every front end**, because a macro fired by an edit through a
+linked table looks for the function in *that person's* front end.
+
+Returns `"Unknown"` rather than an empty string (schema Business Rule 9): `Environ$("USERNAME")`
+comes back empty in some contexts — a scheduled task, a service account, a locked-down profile —
+and because `CreatedBy` is `Required`, an empty result would block the insert outright. A row naming
+an unknown user is a record; a refused write is not.
+
+```vba
+Public Function AuditUser() As String
+    ' [STANDARDS — audit-columns.md] The identity every generated stamping macro calls, as
+    '            =AuditUser(). Never returns an empty string: CreatedBy is Required, and an
+    '            empty value would block the insert (schema Business Rule 9).
+    '            CurrentUser() is a named alternative — see Extra Options — but it returns
+    '            "Admin" for everyone unless workgroup security is in use.
+    AuditUser = Environ$("USERNAME")
+    If Len(AuditUser) = 0 Then AuditUser = "Unknown"
+End Function
+```
+
 ### BackupLongTextFieldsDM — `Public Function` (module `modAuditLongText` — back end AND front end)
 
 The VBA half of the hybrid Long Text method, called *by the Before macros themselves*. Replaces
@@ -1993,7 +2362,7 @@ Public Function BackupLongTextFieldsDM(strTableName As String, lngPKValue As Lon
         rs!FieldName = strFieldName
         rs!OldValue = strOldValue
         rs!DateChanged = Now()
-        ' [STANDARDS / schema Business Rule 9] AuditUser() default, same as the macros. This
+        ' [STANDARDS / schema Business Rule 9] AuditUser() preferred choice, same as the macros. This
         '            row is the one the After macro reads back, so it is the easiest of the
         '            four sites to miss when applying the CurrentUser() Extra Option — and
         '            missing it puts two names on one edit.
@@ -2233,7 +2602,7 @@ End Function
 *Empty in the base template. Filled per client engagement.*
 
 - **`CurrentUser()` identity instead of `AuditUser()`** — the Access-session user rather than the
-  Windows user, and no VBA dependency for identity. `AuditUser()` is the **default** (schema Business
+  Windows user, and no VBA dependency for identity. `AuditUser()` is the **preferred choice** (schema Business
   Rule 9); this option swaps it back. Choose it if your shop wants the Access user, or wants no VBA
   in the identity path at all.
 
@@ -2258,7 +2627,7 @@ End Function
 
   - **`CurrentUser()` everywhere** — also point your forked `audit-columns.md` at `CurrentUser()`, so
     stamping and logging agree. Fully dependency-free for identity.
-  - **`AuditUser()` everywhere** — the default; change nothing.
+  - **`AuditUser()` everywhere** — the preferred choice; change nothing.
 
   Mixed is the one to avoid, and it's the one you get by editing only half.
 - **Scheduled backup-table cleanup** — a maintenance routine clearing aged `tblLongTextBackup`

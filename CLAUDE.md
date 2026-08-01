@@ -54,13 +54,42 @@ The design is the first deliverable, not the last. Once the developer approves i
 one of two ways, at their direction:
 
 - **They implement it themselves**, using your design as the specification.
-- **They direct you to build it.** First **ask how**: hand over the generated script for the
-  developer to import and run themselves is the **default deliverable** — do this unless the
-  developer has an Access MCP server available **and explicitly names it** as the build route.
-  Never assume an MCP because one happens to be connected; not every developer has one, and a real
-  test proved the MCP code-import path can silently corrupt VBA that emits escaped XML (see
-  `templates/_materialization.md`, "VBA code import — the Access MCP unescapes XML entities"). Then
-  **ask which platform the tables are for**, and generate the matching artifact (keys,
+- **They direct you to build it.** **Where an Access MCP server is connected, put the build route
+  as a wizard step** (§10) — say you have it, say you're set up to use it, and offer the other way
+  in the same breath:
+
+  > **Ask:** I have an MCP available to do the work in the Access database, and I'm set up to use it
+  > unless you'd rather import the code yourself.
+  >
+  > | Option | Short description |
+  > |---|---|
+  > | `Use it` | I create the modules and objects in the database directly. |
+  > | `I'll do it myself` | I hand you the code as files to import and run. |
+  >
+  > **Preferred:** `Use it`.
+
+  **The two failures this sits between, both of which have actually happened.** Using the MCP
+  without saying so leaves the developer watching objects appear in their database with no idea
+  another route existed. Asking an open-ended "how would you like me to build this?", with the
+  library's reasoning about adopters attached, is a gate that stops them for nothing — they
+  connected the server in order to have it used. **Say what you have, name the preferred choice,
+  give them one click to take the other.**
+
+  **Where no MCP is connected there is nothing to ask about**: generate the script, hand it over,
+  and say that's what you're doing.
+
+  **You are responsible for starting and restarting the MCP server, including after it drops
+  mid-build.** The recovery path ships inside this library (`mcp-server/setup.ps1`, with `.mcp.json`
+  beside it). A tooling outage is yours to fix, not a question to hand the developer — turning one
+  into a choice they have to make converts a trial of the template into a trial of the plumbing.
+
+  ***Tell me more* on that step covers two things:** what an MCP server is, in plain words, for a
+  developer who has never met one; and the caveat that survives — the MCP's code-import path can
+  silently corrupt VBA that emits escaped XML entities (see `templates/_materialization.md`, "VBA
+  code import — the Access MCP unescapes XML entities"). That is a reason to check the imported
+  source where a template warns about it, **not** a reason to avoid the MCP.
+
+  Then **ask which platform the tables are for**, and generate the matching artifact (keys,
   relationships, indexes, lookup tables, and **seed rows** throughout):
   - **Access (ACE) local tables** → a **VBA `Sub` using DAO** (`CreateTableDef` / `CreateField` /
     indexes / relationships) — **never** `CurrentDb.Execute "CREATE TABLE…"` DDL. Carry each field's
@@ -90,6 +119,51 @@ for a procedure whose job is to answer that question — run the procedure itsel
 sequence calls for it. Present one step's result at a time; don't collapse the sequence into a
 single upfront report, even when every fact in it is correct. Having the access and the context to
 answer a gate yourself is not the same as being asked to.
+
+**Running a template's wizard.** Some templates declare `wizard: true` and carry a `## Wizard`
+section: a short run of one-question steps, each with a plainly named default and a *Tell me more*
+block holding the reasoning and the warnings (`templates/_template-schema.md` §10). It is a
+**presentation device, not a second build path** — the same decisions and the same result, met one
+at a time instead of all at once. It is **not** an Access wizard: build no form, install nothing in
+the database to run it, and leave no artifact behind. Ask the steps yourself, in conversation.
+
+**A wizard of more than three steps opens with the entry question** (§10.5): *"This takes n
+questions. Do you want to answer them, or shall I just build it?"* Ask it **even when the
+developer's instruction was imperative** — "find a template and run it" is exactly the case it
+exists for, and it costs them one click instead of seven questions. `Just build it` still stops at
+every step that has no preferred choice, and you state the preferred choices before acting on them.
+
+**Every step names a preferred choice, and this library never calls it a "default"** (§10.6). The
+word means two things — *the one we'd point at first*, and *what happens when nobody chooses* — and
+in a file you are reading in order to act, the second meaning wins and the question stops being
+asked. **A preferred choice becomes the answer only when the developer declines to choose or tells
+you to get on with it. Never on your own initiative**, however obvious the answer looks.
+
+**Ask every step through the interactive selection control** — the one that renders each option as
+something the developer clicks. **A step written out as prose, a markdown table, or a list they
+have to answer by typing is a failed step**, however good its content: it promises a choice and
+delivers an essay question. One step per ask, never two.
+
+`Tell me more about <topic>` is **always the last option** — it is the only way the developer can
+reach it, so it must be clickable. Choosing it shows the explanation and then **asks the same step
+again, unchanged**. Never write "say tell me more if you want…" — that is the failure this rule
+exists to prevent. `Go back to the previous question` is an option on every step after the first,
+wherever there is room. The control takes at most four options, so a step offers at most three
+substantive answers plus *Tell me more*.
+
+Otherwise: name the preferred choice plainly — **never by emphasis, and never with a recommendation
+attached** — and **when the developer changes an earlier answer, discard every answer after it**
+and resume forward from there.
+
+**Write every question in the developer's world, not the system's.** "Which tables should be
+audited?" — not "Which of your tables should the scan consider?" Words like *the scan*, *the
+generator*, *the config table* name machinery; to a first-time reader they signal only that they
+are out of their depth. **Error numbers, engine limits, and internal names never appear in a
+question** — they live in *Tell me more*, where the person who wants them will find them and nobody
+else has to. A choice made
+against the standards layer holds for the rest of that run and is never silently re-defaulted —
+but it is never written back to `standards/` either. A step-1 answer that declines the feature ends
+**that wizard only**; any other wizard in the same template is asked independently.
 
 **Restate the decision in full at each gate.** Ask the question where the developer can answer it
 without reconstructing anything from earlier in the session: what the setting means, what it

@@ -29,10 +29,12 @@ Always these exact spellings: `errHandler:` and `Cleanup:` (never `ErrorHandler`
 Options 1 and 2 both call the same logger, `LogError`, and differ only in how the handler learns
 which module and procedure it sits in. Option 3 doesn't log at all.
 
-> **`LogError` itself ships in a following change.** Until it lands, generated code uses option 3,
-> which needs nothing installed. The call shape shown below is settled and won't change.
+> **`LogError` is built by `templates/errors/error-logging-scaffold.md`**, along with the table it
+> writes to. That template asks which of these three options you want — and where the record goes,
+> what the person at the keyboard sees, and the rest — one question at a time. Choosing between
+> them here, from this file, works just as well; the template exists so you don't have to.
 
-### Option 1 — named constants *(default)*
+### Option 1 — named constants *(preferred)*
 
 ```vba
 ' at the top of the module
@@ -53,7 +55,7 @@ errHandler:
 End Sub
 ```
 
-**Why this is the default: a template writes the names at the same moment it writes the
+**Why this one is preferred: a template writes the names at the same moment it writes the
 procedure**, so they are right by construction — there is no step at which a generator could get
 them wrong. It needs nothing installed, nothing enabled, and nothing configured on the machine it
 runs on, so it behaves the same way for every adopter. The constants are useful outside the handler
@@ -74,10 +76,15 @@ errHandler:
 Rather than storing the names, this asks the Visual Basic Editor which module and procedure the
 failing line belongs to, so there is nothing to keep current.
 
-**This option depends on a development environment that supports it.** Whether yours does is worth
-establishing for yourself before you adopt it, and worth reading up on beyond what's here — this
-library offers no guarantees on that point. If you'd rather not take that on, use option 1. Nothing
-else about your code changes: both options call the same logger, and only the call site differs.
+**This option depends on a development environment that supports it.** Reading the Visual Basic
+Editor's object model requires **Trust access to the VBA project object model** (Trust Center →
+Macro Settings), which is off by default and is a per-machine Access setting rather than a property
+of your file — so this can work on the machine you wrote it on and fail on someone else's. Whether
+your environment supports it is worth establishing for yourself before you adopt it, and worth
+reading up on beyond what's here; this library offers no guarantees on that point. If you'd rather
+not take that on, use option 1. Nothing else about your code changes: both options call the same
+logger, only the call site differs, and both put the same bare module name (`modInventory`) in the
+log.
 
 ### Option 3 — message box, no logging
 
@@ -98,9 +105,40 @@ If your practice already has a central error logger, swap it into the call site 
 you picked and keep the rest. What this file fixes is the surrounding structure: capture `Erl`,
 report, `Resume Cleanup`, `Resume`.
 
-**To the AI generating code:** emit option 1 once `LogError` is available, and option 3 until then.
-Generated code must compile on the adopter's machine as-is — never emit a call to a logger that
-isn't in this library and that the developer hasn't supplied.
+### Which one to use — and who decides
+
+**Option 1 is the preferred choice.** "Preferred" means the one to put first when offering the
+three; it does **not** mean the one to use without asking (see
+`templates/_template-schema.md` §10.6).
+
+**To the AI generating code: this is a question for the developer, not a rule you apply.** Ask
+which of the three they want, offer all three, and say which is preferred and why. Ask it even when
+the answer looks settled — a shop with its own house handler will say so, and it is the only moment
+they get to.
+
+One hard constraint bounds the answer, and it is not a preference: **generated code must compile on
+the machine it lands on, so never emit a call to a logger that isn't installed.** Where `LogError`
+is absent — no `templates/errors/error-logging-scaffold.md` build, no logger of the developer's
+own — options 1 and 2 are not available yet. **Say that, and offer the two real choices:** install
+the logger first, or use option 3 now. Do not quietly pick option 3 and report it afterward; that
+is a decision the developer never made.
+
+## The logger itself is the one exception
+
+`LogError` is what a handler calls, so it cannot call a handler of its own: an error raised inside
+it would re-enter the handler that called it and loop, or stop the application outright. It is
+therefore the single place in this library that is **guarded rather than handled** — `On Error
+Resume Next` from top to bottom, with each write attempt reporting success or failure as a value
+instead of raising.
+
+Two rules come with that exception, and both are easy to get wrong:
+
+- **Read `Err` before the guard, never after.** Any `On Error` statement clears the `Err` object,
+  and so do `Resume`, `Exit Sub`, and `Exit Function`. A logger that sets up its guard first and
+  then reads `Err.Number` records error 0 with an empty description, on every call, without ever
+  failing visibly.
+- **The exception does not travel.** `On Error Resume Next` stays confined to the logger and to
+  `Cleanup:` blocks. Nothing else in generated code adopts it because the logger does.
 
 ## Full procedure skeleton
 
@@ -146,7 +184,7 @@ End Sub
   useful value). Procedures with no `errHandler` have **no** line numbers.
 - Increment by 10 from 100; restart at a round number for `Cleanup:` and `errHandler:`.
 - **Do not manually renumber** after edits — MZ-Tools normalizes on import.
-- **Line numbering is itself a house-specific choice.** This default relies on `Erl`, which needs
+- **Line numbering is itself a house-specific choice.** This standard relies on `Erl`, which needs
   numbered lines, applied with a tool such as MZ-Tools on import. Other practices number manually, or
   reject line numbers entirely — in which case `Erl` returns 0 and the central handler simply logs
   without a line number. Templates and scaffolds **never hard-code line numbers**; they defer to
@@ -160,7 +198,8 @@ debugger step back to the error line during diagnosis.
 
 ## On Error Resume Next
 
-Only inside the `Cleanup:` block. **Never** in main logic.
+Only inside the `Cleanup:` block, and inside the logger itself (see "The logger itself is the one
+exception"). **Never** in main logic.
 
 ## Transaction guard
 
