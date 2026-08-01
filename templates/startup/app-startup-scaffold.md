@@ -32,6 +32,10 @@ house_assumptions:
 
 # Application Startup and Back-End Relinking — VBA Scaffold
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 Realize the open-time entry point that `standards/startup-conventions.md` describes — the

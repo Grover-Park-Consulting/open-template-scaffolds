@@ -1,5 +1,9 @@
 # Query Style — OTS Default Standards Layer
 
+**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+
+**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+
 > **OTS default; fork-and-replace.** How VBA and saved queries write and run SQL — the house style a
 > `vba-scaffold` (or any generated code that touches data) defers to via `standards_layer: [query-style]`.
 > A forked practice swaps this file for its own query conventions. Naming of the query *objects* lives

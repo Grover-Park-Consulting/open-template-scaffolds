@@ -1,5 +1,7 @@
 # Worked Example — The Prompt (Northwind Stocktake)
 
+**Who reads this:** anyone who wants to see a filled-in prompt before writing their own.
+
 This is the prompt from [`prompts/BuildNewTables-StartHere.md`](../../prompts/BuildNewTables-StartHere.md),
 filled in for a real request: adding scan-driven stocktake to a Northwind-based inventory database.
 See [`output.md`](output.md) for exactly what the AI produced from it.

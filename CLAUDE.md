@@ -1,5 +1,9 @@
 # Open Template Scaffolds — Working Instructions for AI Assistants
 
+**Who reads this:** the AI assistant working in this library — these are its instructions.
+
+**Anyone else:** read it to see what the AI assistant has been told. You don't need to read this file in order to use the template.
+
 You are working inside **Open Template Scaffolds**: a library of standards-based, AI-readable templates
 for building Microsoft Access and SQL Server artifacts. A template is **read context** — you read it
 together with the active standards layer and produce a **reviewable design** (a diagram plus field
@@ -214,6 +218,20 @@ the library ships, `standards/` included** — that layer is the first thing an 
 private file. Once a shop replaces it with their own, what they write there is theirs.
 
 All three apply to the whole library, not to beginner-facing sections alone.
+
+**This library has three readers, and every file names its reader at the top.**
+
+| | The person using a template | The AI assistant | A contributor or adopting shop |
+| --- | --- | --- | --- |
+| **Who** | They arrive with a database to build. Assume no familiarity with any technique, method, tool, or object named here — including AI assistants themselves. | It reads these files as instructions to act on. | A third party adding a template to the library, or a shop adapting the library for their own house. |
+| **Register** | The simplest vocabulary available. Every term defined where it first appears, or not used. Friendly directions: second person, one instruction at a time, and what they will see happen. | Whatever is precise. Terse and normative; internal names, file paths, section numbers, and error numbers all fine. | The same depth as a maintainer — jargon and concepts assumed — but no shared history. A rule is stated in full to a stranger. |
+| **The failure** | A product name, an error number, an engine limit, or an internal name like "the scan" or "the config table." | Instruction text left where a person will read it as advice meant for them. | Assuming context a stranger doesn't have. |
+
+**"You" has exactly one referent per file** — the reader named at the top; every other party
+appears in the third person. Template bodies and the `standards/` files address two readers, so
+each marks the switch where it starts, as `standards/error-handling.md` does with **"To the AI
+generating code:"**. Generic "you" — prose describing what any developer would experience — is not
+addressing anyone and is fine as it stands.
 
 ## Matching templates — use judgment
 

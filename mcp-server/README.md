@@ -1,5 +1,7 @@
 # Open Template Scaffolds — Reference MCP Server
 
+**Who reads this:** anyone setting up the server so their AI assistant can read the library.
+
 A thin, dependency-light **Model Context Protocol (MCP)** server that exposes the Open Template
 Scaffolds library to MCP-capable AI clients. It reads the library's markdown (`templates/`, `standards/`) as the
 single source of truth, and it ships *inside* the library itself — so when you make your own copy of

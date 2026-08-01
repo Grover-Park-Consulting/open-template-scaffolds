@@ -1,5 +1,7 @@
 # Worked Example — The Result (Northwind Stocktake)
 
+**Who reads this:** anyone who wants to see what the AI assistant produces before running it themselves.
+
 What the AI produced from [`prompt.md`](prompt.md). **Standards applied:** Northwind-consistent —
 no table-name prefixes, and the four `AddedBy / AddedOn / ModifiedBy / ModifiedOn` audit columns on
 every new table, maintained by data macros (as in the rest of Northwind). **Declared house

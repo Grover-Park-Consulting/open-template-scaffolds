@@ -25,6 +25,10 @@ house_assumptions:
 
 # Library Publication Catalog — Table Schema
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 A **standalone catalog** for a non-circulating reference library: books and other publications,

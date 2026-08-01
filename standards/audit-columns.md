@@ -1,5 +1,9 @@
 # Audit Columns — OTS Default Standards Layer
 
+**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+
+**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+
 > **OTS default; fork-and-replace.** Templates defer audit columns to this file — audit columns
 > never appear in a template body (per `templates/_template-schema.md` §6). Applies to Microsoft
 > Access and SQL Server.

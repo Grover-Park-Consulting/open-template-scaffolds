@@ -82,6 +82,10 @@ warnings:
 
 # Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 The working half of the Lite audit system: the VBA that **creates the three system tables**,
@@ -227,7 +231,7 @@ them.
 
 This is a **presentation device, not a second build path** — the same decisions, the same
 generated result, met one at a time instead of all at once. Nothing is installed to run it and no
-form is built; the assistant asks the questions in conversation. See
+form is built; the AI assistant asks the questions in conversation. See
 `templates/_template-schema.md` §10.
 
 > **If an AI assistant is running this for someone:** ask each step and wait for the answer. Never

@@ -13,6 +13,10 @@ new_forms: [frmGame_Assignment, sfrmGame_Crew]
 
 # Sports Officiating Assignment — Game Assignment Form
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 A default entry/edit form for scheduling a game and staffing its officiating crew

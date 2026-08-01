@@ -3,11 +3,15 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.6.0
+version: 0.6.1
 status: draft
 ---
 
 # Open Template Scaffolds — Canonical Template Format
+
+**Who reads this:** anyone writing a template, and the AI assistant reading one.
+
+**Using a template?** You do not need to read this file in order to use the template.
 
 This is the **format specification** every template file in this library must follow.
 It is the contract the reference MCP server keys off: discovery (`list_templates`,
@@ -305,7 +309,7 @@ without explicit approval. It addresses a different failure mode: an assistant t
 context and initiative to *answer* a gate the developer was meant to answer, even where it never
 touches a file. (See the `## Wizard` section of `templates/audit/audit-logging-lite-scaffold.md`
 for a worked example of this note in place, next to the steps it governs. §10 is how a template
-presents such a sequence to the developer; this section is the rule the assistant follows while
+presents such a sequence to the developer; this section is the rule the AI assistant follows while
 running it.)
 
 ### 8.5 `validate` rules for `vba-scaffold`
@@ -409,7 +413,7 @@ meets things in: one question at a time, with the reasoning and the warnings ava
 instead of fired at them before they have chosen anything.
 
 **It is not an Access wizard.** Nothing is installed in the developer's database to run it, and no
-form is left behind. The assistant asks the questions in conversation; this file is where the
+form is left behind. The AI assistant asks the questions in conversation; this file is where the
 questions, the options, and the explanations are written down. The resemblance to an Access wizard
 is one of shape only.
 
@@ -484,14 +488,14 @@ Four rules follow from it:
   decisions, or has two answers that should be one — resolve it in the template. Never resolve it
   by dropping *Tell me more*, and never by silently cutting an option (rule 8).
 
-### 10.4 What the assistant says outside a step
+### 10.4 What the AI assistant says outside a step
 
 §10.3 governs the step itself. Everything else said during a wizard — before the first question,
 between two steps, and before the build begins — has no specified shape, and unspecified space is
 where ordinary explaining habits reassert themselves. Three rules govern it. **The first two fix
 opposite problems, and neither is a rule about being brief.**
 
-Nothing here is written in a template file. These are run-time rules: what the assistant says as the
+Nothing here is written in a template file. These are run-time rules: what the AI assistant says as the
 wizard runs, composed in the conversation and never authored anywhere.
 
 **1. Between two steps, name what was recorded and what is being asked next.**
@@ -528,7 +532,8 @@ The rule governs the prose around them.
 
 **The build record is always written**, and delivered as a file alongside the artifact. Without it
 this rule deletes the detail rather than routing it, and the disclosure line promises something the
-format does not keep.
+format does not keep. **`templates/_materialization.md`, "The build record", defines what it is
+called, where it goes, and what belongs in it.**
 
 **3. A house assumption is asked, never assumed.**
 
@@ -670,7 +675,7 @@ developer:**
 1. They decline to choose — "you pick", "whatever you think".
 2. They ask to get on with it — the entry question's *"just build it"* answer (§10.6).
 
-**It never becomes the answer on the assistant's initiative.** No amount of obviousness, data
+**It never becomes the answer on the AI assistant's initiative.** No amount of obviousness, data
 shape, or convenience converts a preferred choice into a decision nobody made.
 
 > **A note for anyone writing a template.** This distinction does not arise when you write code:
@@ -691,7 +696,7 @@ two-column option table, a `<details>` block per step — and a checker could as
 between two steps is composed in the conversation, the disclosure line is spoken, and the build
 record is written into the adopter's own folder. A green `validate` run says nothing about §10.4
 either way, and would look identical if the rules were never followed. Until a checker exists, the
-only thing enforcing §10 is the assistant reading it and a person noticing afterwards.
+only thing enforcing §10 is the AI assistant reading it and a person noticing afterwards.
 
 ---
 

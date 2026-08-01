@@ -1,5 +1,7 @@
 # Open Template Scaffolds
 
+**Who reads this:** anyone deciding whether this library is useful to them.
+
 AI-readable templates for the tables behind common Access tasks — a stocktake, a library catalog, and more.
 
 When you start a new part of an Access database, you usually build the same kinds of things from
@@ -37,7 +39,7 @@ section in [`WELCOME.md`](WELCOME.md) first — it takes two minutes and gets yo
 2. **Give your AI assistant the files.** Your assistant needs to be able to read the library's
    files. How depends on which assistant you use — three common cases:
     - **An assistant built into a code editor** (such as Claude Code, or GitHub Copilot in
-      VS Code): open the library folder in the editor. The assistant can then read everything in it.
+      VS Code): open the library folder in the editor. The AI assistant can then read everything in it.
     - **A chat assistant that can read files on your computer** (such as Claude Desktop with
       folder access turned on): it can read files, but it doesn't know *where* the library is —
       it won't go looking on its own. Start your chat by telling it the full location, in plain
@@ -45,13 +47,13 @@ section in [`WELCOME.md`](WELCOME.md) first — it takes two minutes and gets yo
       — read what you need from there."* After that, it finds everything itself.
     - **A chat assistant in a browser** (such as Claude or ChatGPT on the web): don't worry about
       giving it files yet. Skip ahead to **step 3 first** — fill in the form there, then copy that
-      whole file into the chat and send it. The assistant will then tell you, by name, which other
+      whole file into the chat and send it. The AI assistant will then tell you, by name, which other
       files it needs. For each one: open it, copy everything (the same select-all, copy, paste as
       in "Before you start"), and paste it into the chat. *(If your assistant can read files on
       your computer — the middle case above — you can skip the copying and just tell it the full
       location of the library folder instead.)*
 
-    Don't worry about getting this perfect. If the assistant ever says it can't see a file, just
+    Don't worry about getting this perfect. If the AI assistant ever says it can't see a file, just
     paste that file's contents into the chat and carry on.
 3. **Open the prompt and fill in four lines.** In the folder you just unzipped, open
    [`prompts/BuildNewTables-StartHere.md`](prompts/BuildNewTables-StartHere.md). Near the top is

@@ -13,6 +13,10 @@ new_forms: [frmPublication_Edit, sfrmPublication_Creator, sfrmPublication_Genre]
 
 # Library Catalog — Publication Entry Form
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 A default entry/edit form for the catalog's publications (`library-catalog-schema`). It provides a

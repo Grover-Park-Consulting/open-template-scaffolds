@@ -1,5 +1,9 @@
 # Form Conventions — OTS Default Standards Layer
 
+**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+
+**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+
 > **OTS default; fork-and-replace.** Covers form **design** — control prefixes, default control types,
 > the standard button set, tab order, sizing — **plus the named reusable patterns** a `form-spec`
 > defers to via `standards_layer: [form-conventions]`. Form / subform / record-source *naming* lives in

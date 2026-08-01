@@ -1,5 +1,7 @@
 # Contributing to Open Template Scaffolds
 
+**Who reads this:** anyone adding a template to the library.
+
 ## How this works
 
 Welcome, and thanks for thinking about contributing. We're building this library together,

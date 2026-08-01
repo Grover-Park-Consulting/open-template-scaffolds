@@ -3,11 +3,15 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.2.0
+version: 0.3.0
 status: draft
 ---
 
 # Materialization — building real artifacts from a template
+
+**Who reads this:** the AI assistant turning an approved design into real tables, code, or forms.
+
+**If you are the developer:** read it to see exactly what will be done in your database. It is written as instructions only to the AI assistant, not for anyone else.
 
 This is a **format/process reference** (like `_template-schema.md`): it defines how a template's
 approved design becomes a real, buildable artifact, and **proves each mapping by hand** so the MCP
@@ -16,6 +20,46 @@ generator (phase B3) is never built against an unproven mapping. It is meta, not
 
 - **Table-schema → tables** — Access local tables via a VBA DAO `Sub`, or SQL Server via `CREATE TABLE` DDL.
 - **Form-spec → a form** — importable Access form text (`SaveAsText` / `LoadFromText`).
+
+---
+
+## The build record
+
+**Every build leaves a build record**: one file, written beside the artifact, saying how it was
+built. It is not optional, and it is not a summary of the conversation. **This applies to every
+template and every build** — whether a wizard ran or the developer answered everything at once,
+whether the artifact is tables, code, or a form.
+
+It is also what `_template-schema.md` §10.4 promises the developer in your own words, and it is the
+reason the detail can stay out of the messages they read while they are still deciding things.
+
+**Name it `build-record.md`**, and write it in the folder that holds the artifact — beside the
+`.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
+one record covers both.
+
+Six parts, in this order:
+
+1. **What was built, and where.** Every object created, and which file it went into. The developer
+   should be able to open the database and find each one.
+2. **What was checked before building.** The state you found: what already existed, which references
+   were present, whether the folder was trusted. This is the part that is worth nothing on the day
+   and a great deal three months later, when something has changed and nobody remembers what it
+   used to be.
+3. **The decisions taken.** Every question the developer answered and what they chose, and any
+   decision they handed back to you. Where a wizard ran, that is its steps and their answers.
+4. **What was verified afterwards, and how.** The tests actually run, with their real results —
+   never "tested and working". Say which paths were exercised, and name the ones that were not.
+5. **Anything that did not match what the template said.** Divergences, surprises, and anything you
+   worked around. This is the section a template author needs and nobody else will write.
+6. **What is left for the developer to do.** Every follow-up the build could not complete, including
+   anything the standards layer calls for that the build route could not deliver.
+
+**Write it before you say the build is finished**, not when you are asked for it. A record written
+later is written from memory, and the details worth keeping are the first ones to go.
+
+**It records what happened, not what was meant to happen.** A step that failed and was retried
+belongs in it. A test that was skipped belongs in it, named as skipped. A build record in which
+everything went to plan is either untrue or not worth keeping.
 
 ---
 

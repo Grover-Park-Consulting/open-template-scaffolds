@@ -15,6 +15,10 @@ house_assumptions:
 
 # School District Capital Asset Tracking
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 Tracks every capital asset above a district's capitalization threshold — computers, vehicles,

@@ -62,6 +62,10 @@ house_assumptions:
 
 # Access Audit Logging (Lite) — Table Schema
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 A **lite, self-contained change-audit system for Access** built on table-level **Data Macros** —

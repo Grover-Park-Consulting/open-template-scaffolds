@@ -25,6 +25,10 @@ new_procedures:
 
 # Record Finder for an Entry Form — VBA Scaffold
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 Realize the **record finder** the publications entry form defers to code — the pattern

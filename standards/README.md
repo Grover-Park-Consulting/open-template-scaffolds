@@ -1,5 +1,9 @@
 # Standards Layer — OTS Defaults
 
+**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+
+**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+
 This folder holds the **OTS default standards layer**: the house rules a template defers to, so the
 same template produces house-conforming output for any practice. A template names what it defers in
 its `standards_layer` front-matter; when the generator builds artifacts, it reads the matching

@@ -53,6 +53,10 @@ warnings:
 
 # Error Logging — Set-up Wizard and Logger
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 Two things: a short **wizard** that walks a developer through the six decisions error logging
@@ -65,7 +69,7 @@ before they had chosen anything. The wizard does not remove any of it. It moves 
 step where it is actually actionable, and keeps it closed until the reader asks.
 
 **Nothing here is an Access wizard.** No form is built, nothing is installed in the database to run
-it, and no artifact is left behind afterward. The assistant asks the six questions in conversation;
+it, and no artifact is left behind afterward. The AI assistant asks the six questions in conversation;
 this file is where the questions, the options, and the explanations are written down. See
 `templates/_template-schema.md` §10 for the format.
 

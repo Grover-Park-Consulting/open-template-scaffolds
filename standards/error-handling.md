@@ -1,5 +1,9 @@
 # Error Handling — OTS Default Standards Layer
 
+**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+
+**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+
 > **OTS default; fork-and-replace.** The pattern for any VBA generated alongside a schema or
 > scaffold (templates that declare `standards_layer: [error-handling]`). The *structure* is the
 > standard; the logger it calls is replaceable — a forked practice substitutes its own.

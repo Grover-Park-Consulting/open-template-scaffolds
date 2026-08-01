@@ -1,5 +1,7 @@
 # Welcome — A Note from the Maintainer
 
+**Who reads this:** anyone arriving here for the first time.
+
 *A personal word before you dive in. — George*
 
 Thanks for stopping by. Open Template Scaffolds began as an in-house template library at
@@ -27,7 +29,7 @@ Any of these works:
 
 Open one, create a free account, and you're set.
 
-**The one thing nobody tells you:** the assistant will never *ask* for your files — there is no
+**The one thing nobody tells you:** the AI assistant will never *ask* for your files — there is no
 upload step waiting for them. The message box is the whole interface. Open a file from this
 package, select all its text (**Ctrl+A**), copy it (**Ctrl+C**), click in the message box, and
 paste (**Ctrl+V**). You can paste several files into one message before pressing Send — then type

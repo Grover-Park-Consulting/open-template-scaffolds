@@ -32,6 +32,10 @@ new_procedures:
 
 # Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 Realize the scan-processing logic that the Northwind stocktake **table** template

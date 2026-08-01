@@ -30,6 +30,10 @@ house_assumptions:
 
 # Sports Officiating Assignment — Table Schema
 
+**Who reads this:** the AI assistant, building this alongside the developer who asked for it.
+
+**If that developer is you:** this file holds the decisions already made on your behalf. You do not have to read it to use the template.
+
 ## Intent
 
 Tables for assigning **officials** (umpires, referees) to **games** by **position**, with

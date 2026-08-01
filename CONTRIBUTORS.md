@@ -1,5 +1,7 @@
 # Contributors
 
+**Who reads this:** anyone who wants to see who has contributed.
+
 Open Template Scaffolds grows from the generosity of developers who share real-world schemas and
 patterns so others can start from something proven rather than a blank page. Each contribution
 below is certified by its author under the [Developer Certificate of Origin](https://developercertificate.org)

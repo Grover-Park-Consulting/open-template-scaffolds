@@ -1,5 +1,7 @@
 # Build a Set of Tables (a *schema*) — Ready-to-Use Prompt
 
+**Who reads this:** you — copy it, fill it in, and give it to your AI assistant.
+
 Using this template, you'll create a set of tables for whatever you're building — for example,
 adding stocktake scanning to an inventory app, or setting up a catalog for a library. You don't
 need to know how to design a database, and you don't need the vocabulary that goes with it. The
@@ -62,7 +64,7 @@ you want.
 
 Copy **everything from the form above down to the end of this file** — your filled-in form *and*
 the "Instructions to the AI" section — and paste it all to your assistant in one go. The
-instructions are what make the result reliable; the assistant needs both. That's it — the AI
+instructions are what make the result reliable; the AI assistant needs both. That's it — the AI
 takes it from here.
 
 If your assistant can't see the library's files, it will ask for them by name — paste in each

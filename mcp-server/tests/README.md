@@ -1,5 +1,7 @@
 # Checking that the library's tools work — the self-check
 
+**Who reads this:** anyone changing the server and running its tests.
+
 The library's optional server comes with a built-in self-check: a set of small
 automatic tests that confirm the tools behave the way they should. Think of it
 like the compile check in Access — you run it, and it either says *everything's

@@ -1,5 +1,9 @@
 # Design Principles — OTS Default Standards Layer
 
+**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+
+**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+
 > **OTS default; fork-and-replace.** The reasoning behind the specific rules in this standards
 > layer — the principles that decide how generated VBA is shaped. A `vba-scaffold` (or any code
 > generated alongside a template) defers to these via `standards_layer: [design-principles]`. The
