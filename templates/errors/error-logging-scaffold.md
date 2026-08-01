@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — Set-up Wizard and Logger
 domain: errors
 type: vba-scaffold
-version: 0.4.0
+version: 0.4.1
 status: draft
 implements: error-log-schema
 requires_tables:
@@ -307,8 +307,8 @@ failure. In a numbered procedure it tells you where; in an unnumbered one it ret
 log records which procedure failed but not the place inside it. On a short procedure that is often
 enough. On a long one it is the difference between reading the code and searching it.
 
-Numbering by hand is tedious and goes stale. The OTS standard applies **MZ-Tools** to normalize
-numbering when code is imported, and re-normalizes after edits.
+Numbering by hand is tedious and goes stale. If you have a tool that applies line numbering
+automatically, it can normalize the numbering on import and after each edit.
 
 **Stale numbers are worse than no numbers**, because they point confidently at the wrong line. If
 you are not going to re-normalize after editing, choose No — an honest gap beats a confident lie.

@@ -174,12 +174,23 @@ and 11 macros will be generated, say which is which, or the reader will take the
 ## Write for someone who has never seen this before
 
 Everything you produce for the developer — designs, gate questions, generated comments, and any
-template you draft — follows one rule: **every term is defined where it first appears, or it isn't
-used.** Prefer the plain name for a thing over the internal one. Where a rule has a visible
-consequence, state the consequence as well — what they will actually see happen — not only the rule
-that governs it. If a sentence would send a first-time reader to a search engine or to another file
-to understand it, rewrite it. This applies to the whole library, not to beginner-facing sections
-alone.
+template you draft — follows two rules.
+
+**Every term is defined where it first appears, or it isn't used.** Prefer the plain name for a
+thing over the internal one. Where a rule has a visible consequence, state the consequence as well —
+what they will actually see happen — not only the rule that governs it. If a sentence would send a
+first-time reader to a search engine or to another file to understand it, rewrite it.
+
+**One name per thing, from first use to last.** Once you have named something, keep that name — no
+synonyms, no switch to the more technical term once you judge the reader has caught up, no
+shortening after first use. **A second name for something already named is a defect even when both
+names are correct**: a new word signals a new thing, so the reader stops to find the difference and
+there isn't one. Repeating the plain name costs nothing by comparison. **Where the plain name and
+the precise name compete, use the plain one** — a reader who feels talked down to is annoyed and
+keeps going; a reader who is not sure two words mean one thing has already lost the thread, and may
+not know they lost it.
+
+Both apply to the whole library, not to beginner-facing sections alone.
 
 ## Matching templates — use judgment
 

@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.4.0
+version: 0.5.0
 status: draft
 ---
 
@@ -482,7 +482,7 @@ Four rules follow from it:
 - **The control takes at most four options.** A step therefore carries **at most three substantive
   answers plus *Tell me more***. A decision with more than three natural answers is either two
   decisions, or has two answers that should be one — resolve it in the template. Never resolve it
-  by dropping *Tell me more*, and never by silently cutting an option (rule 7).
+  by dropping *Tell me more*, and never by silently cutting an option (rule 8).
 
 ### 10.4 Rules
 
@@ -495,48 +495,89 @@ Four rules follow from it:
    for the first time; what they convey is that they are out of their depth, and the likeliest
    response is to stop using it. **If the question needs a second sentence, that sentence belongs in
    *Tell me more*.**
-3. **A short description says what the option *is*, in one line — never why it is better.** No
+3. **One name per thing, from the first step to the last.** Once something has been named — a file,
+   a folder, a setting, a table, a step — it keeps that name in every question, every option, and
+   every *Tell me more*. No synonyms, no switch to the more technical term later, no shortening
+   after first use. **A second name for something already named is a defect even when both names
+   are correct**: a new word signals a new thing, so the reader stops to work out what the
+   difference is and finds none. That pause costs more than the repetition would have. **Where the
+   plain name and the precise name compete, use the plain one** — a reader who feels talked down to
+   is annoyed and keeps going; a reader who is not sure two words mean one thing has already lost
+   the thread, and may not know they lost it. If the precise name is genuinely needed, it replaces
+   the plain one from first use; it never joins it.
+4. **A short description says what the option *is*, in one line — never why it is better.** No
    bolding, no ordering by preference, no "recommended". Every comparison lives in *Tell me more*.
    A description may carry a consequence the developer needs *at the moment of choosing* ("any Data
    Macros those tables already have are replaced"), but never the reasoning behind it.
-4. **Error numbers, engine limits, version caveats, and internal names never appear outside *Tell
+5. **Error numbers, engine limits, version caveats, and internal names never appear outside *Tell
    me more*.** Someone who meets "error 3870", "VBE reflection", or "`Application.LoadFromText`" in
    a question they are being asked to answer learns one thing: this was not written for them. Put
    it one click away, where the person who wants it will find it and nobody else has to.
-5. **Every step names a preferred choice — never a "default".** See §10.6. The `**Preferred:**`
+6. **Every step names a preferred choice — never a "default".** See §10.6. The `**Preferred:**`
    line is the only signal a reader gets about which option the library would point at first, and
    it is enough: no bolding, no "(Recommended)", no argument. Where the standards layer answers the
    question, the preferred choice is that answer and the line names the file it came from; where
    the standards layer is silent, it is the template's own and the line says so. It may follow an
    earlier answer, in which case the line says which step it follows.
-6. **A confirmation step has no preferred choice.** Where a step asks the developer to attest to
+7. **A confirmation step has no preferred choice.** Where a step asks the developer to attest to
    something rather than to prefer something — that they have a backup, that a list the build will
    act on is correct — write `**Preferred:** none` and say why: nothing the library picks can stand
    in for the developer's own word.
-7. **Options are re-ranked, never removed.** A choice the library ranks last is still offered, in
+8. **Options are re-ranked, never removed.** A choice the library ranks last is still offered, in
    the same plain form as the others.
-8. ***Tell me more* stays closed until asked for** and gives one or two facts that might tip the
+9. ***Tell me more* stays closed until asked for** and gives one or two facts that might tip the
    choice — drawn from the standards files and the template's own description, not restated from
    them, and not exhaustive.
-9. **Warnings live at the step they belong to.** A front-matter `warnings` entry that governs one
-   decision is surfaced inside that step's *Tell me more*; one that governs the whole build is
-   surfaced before step 1. This is the point of the format: the warnings are not less visible, they
-   are visible where they are actionable.
-10. **A choice made against the standards layer holds for that run** — carried forward to every
+10. **Warnings live at the step they belong to.** A front-matter `warnings` entry that governs one
+    decision is surfaced inside that step's *Tell me more*; one that governs the whole build is
+    surfaced before step 1. This is the point of the format: the warnings are not less visible, they
+    are visible where they are actionable.
+11. **A choice made against the standards layer holds for that run** — carried forward to every
     later step, never quietly reverted, and never written back to the standards files. The next run
     starts from the standards again. Flexibility within limits.
-11. **Going back is always available.** Every step after the first offers it, and the developer may
+12. **Going back is always available.** Every step after the first offers it, and the developer may
     name any earlier step at any time. **Changing an answer discards every answer after it** and the
     wizard resumes forward from the changed step — so a revised decision can never leave a stale one
     standing behind it.
-12. **A wizard of more than three steps opens with the entry question** (§10.5), which is where the
+13. **A wizard of more than three steps opens with the entry question** (§10.5), which is where the
     developer chooses whether to answer every step or have the preferred choices used. It is never
     an option inside Step 1.
-13. **Ending early ends one wizard, not the run.** Where a step-1 answer declines the whole feature,
+14. **Ending early ends one wizard, not the run.** Where a step-1 answer declines the whole feature,
     that wizard stops; any other wizard in the same template is asked independently.
-14. **§8.4's facilitation rules apply in full.** Never infer the answer to a step, present one step
+15. **§8.4's facilitation rules apply in full.** Never infer the answer to a step, present one step
     at a time, and restate the decision at the gate so it can be answered without reconstructing
     anything from earlier in the session.
+
+### 10.5 The entry question
+
+**A wizard of more than three steps opens with one question before Step 1**, asked through the same
+selection control as every other step:
+
+> **Ask:** This takes *n* questions. Do you want to answer them, or shall I just build it?
+
+| Option | Short description |
+|---|---|
+| `Ask me the questions` | Go through them one at a time. |
+| `Just build it` | I use the preferred choice at each step, and only stop where a step needs something from you. |
+
+**Preferred:** `Ask me the questions`.
+
+It exists because an instruction to proceed — "find a template and run it" — is not permission to
+put seven questions in front of someone. The entry question costs them one, and it is the only
+place the wizard interposes itself between the instruction and the build.
+
+Four rules govern it:
+
+- **Asked once, before Step 1, and never again.** It is not an option inside Step 1, and no later
+  step re-opens it.
+- **`Just build it` cannot skip a confirmation step** (rule 7). A step with no preferred choice has
+  nothing to fall back on, and passing one silently would answer for the developer on exactly the
+  questions they were meant to answer. Say up front how many of those remain.
+- **State the preferred choices before acting on them** — the answer being used at each skipped
+  step, in a short list. `Just build it` authorizes known answers; it is not consent to be
+  surprised.
+- **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
+  is what this question is for, and answering it takes one click.
 
 ### 10.6 "Preferred choice", not "default" — and why the word matters
 
@@ -569,37 +610,6 @@ shape, or convenience converts a preferred choice into a decision nobody made.
 > function signature turn ambiguous in an instruction, and the ambiguity resolves toward *action*,
 > because acting is what the reader is there to do. When in doubt, name the act you want and the
 > act you don't.
-
-### 10.5 The entry question
-
-**A wizard of more than three steps opens with one question before Step 1**, asked through the same
-selection control as every other step:
-
-> **Ask:** This takes *n* questions. Do you want to answer them, or shall I just build it?
-
-| Option | Short description |
-|---|---|
-| `Ask me the questions` | Go through them one at a time. |
-| `Just build it` | I use the preferred choice at each step, and only stop where a step needs something from you. |
-
-**Preferred:** `Ask me the questions`.
-
-It exists because an instruction to proceed — "find a template and run it" — is not permission to
-put seven questions in front of someone. The entry question costs them one, and it is the only
-place the wizard interposes itself between the instruction and the build.
-
-Four rules govern it:
-
-- **Asked once, before Step 1, and never again.** It is not an option inside Step 1, and no later
-  step re-opens it.
-- **`Just build it` cannot skip a confirmation step** (rule 6). A step with no preferred choice has
-  nothing to fall back on, and passing one silently would answer for the developer on exactly the
-  questions they were meant to answer. Say up front how many of those remain.
-- **State the preferred choices before acting on them** — the answer being used at each skipped
-  step, in a short list. `Just build it` authorizes known answers; it is not consent to be
-  surprised.
-- **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
-  is what this question is for, and answering it takes one click.
 
 `validate` does not yet check §10 — the format is proven by hand first, exactly as the three
 template types were (see the scope note at the top of this file). `templates/errors/error-logging-scaffold.md`
