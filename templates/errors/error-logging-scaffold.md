@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — Set-up Wizard and Logger
 domain: errors
 type: vba-scaffold
-version: 0.6.0
+version: 0.6.1
 status: draft
 implements: error-log-schema
 requires_tables:
@@ -131,8 +131,8 @@ module. The other warnings belong to individual steps and appear there.
 | `Yes, include error handling and logging` | Carry on to the rest of the questions. |
 | `No, do not include logging and error handling` | The code is written with no error handling and nothing recorded. |
 
-**Preferred:** `Yes, include error handling and logging` — from `standards/error-handling.md`, which
-describes a handler on every procedure.
+**Preferred:** `Yes, include error handling and logging` — the standards these templates follow
+expect a handler on every procedure.
 
 **Skip when:** never. This is the first question after the entry question.
 
@@ -168,8 +168,8 @@ Nothing here is permanent. Run the wizard again later and answer differently.
 | `Look the names up while the code runs` | The code finds out for itself which module and procedure failed, so there is nothing to keep current. |
 | `Show a message box, keep no record` | Tells the person something went wrong and records nothing. |
 
-**Preferred:** `Write the names into the code` — from
-`standards/error-handling.md`, "Three ways to report an error", option 1.
+**Preferred:** `Write the names into the code` — the first of the three ways to report an error,
+in the order the standards these templates follow rank them.
 
 **Skip when:** Step 1 was answered "No".
 
@@ -249,8 +249,8 @@ when it cannot. If you are unsure, this is the one that loses nothing.
 | `The back end` | One shared log, holding everybody's errors together. |
 | `Each front end` | Every person has their own log, inside their own copy of the application. |
 
-**Preferred:** `The back end` — this template's own, following the general rule in
-`error-log-schema` that tables go in the back end.
+**Preferred:** `The back end` — this template's own, following the general rule that tables live in
+the file that holds the tables.
 
 **Ask (where Step 3 kept a file):** Where should the log file go?
 
@@ -260,8 +260,8 @@ when it cannot. If you are unsure, this is the one that loses nothing.
 | `Your Documents folder` | The standard Windows per-person location. |
 | `The back end's folder` | Beside the shared data file, so everyone's files land together. |
 
-**Preferred:** `The front end's folder` — from `standards/startup-conventions.md` §4, which classes a
-local log as a per-user working folder, created per front end on each machine.
+**Preferred:** `The front end's folder` — the standards these templates follow treat a local log as
+a per-user working folder, created per front end on each machine.
 
 **Skip when:** Step 3 was skipped. Where Step 3 chose the fallback option, **this step is asked
 twice** — once for the table's home, once for the file's folder.
@@ -306,7 +306,7 @@ the front end already has, so it only works where the log table is a linked tabl
 | `Yes, name the line` | Procedures get numbered lines, so the log can point at the one that failed. |
 | `No, the procedure is enough` | The log names where the failure happened, but not the place inside it. |
 
-**Preferred:** `Yes, name the line` — from `standards/error-handling.md`, "Line numbering".
+**Preferred:** `Yes, name the line` — the standards these templates follow, on line numbering.
 
 **Skip when:** Step 1 was answered "No", or Step 2 chose the message box.
 

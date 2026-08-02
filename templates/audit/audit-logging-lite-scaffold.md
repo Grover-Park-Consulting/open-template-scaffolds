@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.5.0
+version: 0.5.1
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -358,8 +358,8 @@ undo, and it is the only one that covers everything at once.
 | `Tables named tbl… or tlkp…, but not tmp…` | Your data and lookup tables. Temporary tables are left out. |
 | `A different set — I'll tell you which` | You say which tables, and I use that instead. |
 
-**Preferred:** `Tables named tbl… or tlkp…, but not tmp…` — from
-`standards/naming-conventions.md` §1.1, which is where those prefixes are defined.
+**Preferred:** `Tables named tbl… or tlkp…, but not tmp…` — the naming style these templates
+follow, which is where those prefixes are defined.
 
 **Skip when:** never.
 

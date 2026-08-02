@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.6.1
+version: 0.7.0
 status: draft
 ---
 
@@ -590,9 +590,22 @@ mattered. The disclosure line gives an anchor instead — everything you must ac
 6. **Every step names a preferred choice — never a "default".** See §10.7. The `**Preferred:**`
    line is the only signal a reader gets about which option the library would point at first, and
    it is enough: no bolding, no "(Recommended)", no argument. Where the standards layer answers the
-   question, the preferred choice is that answer and the line names the file it came from; where
-   the standards layer is silent, it is the template's own and the line says so. It may follow an
-   earlier answer, in which case the line says which step it follows.
+   question, the preferred choice is that answer; where the standards layer is silent, it is the
+   template's own and the line says so. It may follow an earlier answer, in which case the line says
+   which step it follows.
+
+   **Say where it came from in plain words — never as a file name or a section number.** Rule 5
+   forbids an internal name in a question, and a `Preferred:` line is part of the question. So write
+   *"the naming style these templates follow"*, not `standards/naming-conventions.md` §1.1. **A line
+   that cites a file forces whoever reads it aloud to invent a paraphrase**, and the paraphrase is
+   then unreviewed: one such line produced *"from **your** naming conventions"* in a live run —
+   claiming the developer had authored a file they had never seen. Give the spoken wording in the
+   template and there is nothing to invent.
+
+   **Avoid the possessive entirely.** *"Your standards"* is wrong for anyone who has not adopted a
+   layer; *"the house standard"* assumes a house the reader may not have; *"the template's"* is
+   inaccurate, since the template follows the layer rather than defining it. *"The standards these
+   templates follow"* claims nothing about whose they are.
 7. **A confirmation step has no preferred choice.** Where a step asks the developer to attest to
    something rather than to prefer something — that they have a backup, that a list the build will
    act on is correct — write `**Preferred:** none` and say why: nothing the library picks can stand
