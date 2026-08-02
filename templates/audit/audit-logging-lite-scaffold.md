@@ -538,10 +538,10 @@ For each table still switched on, the generator writes the macro definitions out
 them onto the table. It has to be done this way: **DAO cannot create Data Macros**, and writing
 UTF-16 XML and loading it with `Application.LoadFromText` is the only build path there is.
 
-**`LoadFromText` replaces a table's entire macro set. It never merges.** This is why the house
-audit-column stamping and the change auditing are generated **together**, in one Before Change
+`LoadFromText` replaces a table's entire macro set. It never merges. This is why the house
+audit-column stamping and the change auditing are generated together, in one Before Change
 macro — so the two no longer destroy each other. But any *other* Data Macro a table carries,
-business logic of your own written for unrelated reasons, is replaced too. The generator backs a
+***business logic of your own written for unrelated reasons is replaced too.*** The generator backs a
 table's existing macros up to `DataMacroBackups\` before replacing them and names the affected
 tables in its report; putting that logic back is your call.
 
