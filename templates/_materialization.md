@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.3.0
+version: 0.4.0
 status: draft
 ---
 
@@ -382,12 +382,53 @@ module's source. A `Chr(38)`-built entity exists only in memory as the string `&
 never present as literal text for an importer to re-interpret. See
 `templates/audit/audit-logging-lite-scaffold.md`'s `GetComparisonExpression` for the worked fix.
 
-This is also why the MCP must never be the **default** build route (`CLAUDE.md` → "After approval
-— building it"): the corruption above only happens on the MCP import path. The default deliverable
-— handing the developer a script to import and run themselves the ordinary way (VBE import/paste)
-— doesn't touch this failure mode at all, because that path preserves literal text untouched. Build
-via MCP only when the developer has one and names it, and even then, scaffolds that emit escaped
-XML should still assemble entities from `Chr()` codes as a second line of defense.
+**The build route is asked, never assumed.** Where an MCP is connected, say you have it and ask —
+`CLAUDE.md` → "After approval — building it" carries the question, and its preferred answer is
+`Use it`. **A connected MCP is not authorization to use one:** presence is not an answer, the
+developer's is. Where none is connected there is nothing to ask about — generate the script, hand
+it over, and say that is what you are doing.
+
+*This passage avoids the word "default" on purpose. It means both the route we would point at first
+and what happens when nobody chooses, and only the first is true here (`_template-schema.md` §10.7).*
+
+The entity corruption above is a reason to **check the imported source** where a scaffold warns
+about it, not a reason to steer away from that route. Handing the developer a script to import the
+ordinary way does avoid the failure mode entirely — but a scaffold that emits escaped XML should
+assemble entities from `Chr()` codes either way, as a second line of defence.
+
+### Importing a VBA module through an MCP — the encoding, and one wrong document
+
+**A module goes in as a file, and the file must be UTF-8 with no byte-order mark.**
+
+⚠ **The import tool's own documentation says the input must be UTF-16 LE. It is wrong**, and the
+failure is quiet enough to cost a build: a UTF-16 LE file imports without reporting an error and
+produces a module of null-padded garbage whose first characters are `ÿþA` — the byte-order mark
+stored as text. Re-encoding the identical content as UTF-8 without a BOM imports correctly.
+*(Observed 2026-08-02 building the audit-logging scaffold: a 2,954-line corrupt module on the first
+attempt, clean on the second.)*
+
+**The first line of each file is the module name**, in the form the editor expects:
+
+```text
+Attribute VB_Name = "modAddDataMacros"
+```
+
+followed by that module's `Option` header, then its procedures.
+
+**One `Option` header per module, not per procedure.** A `vba-scaffold`'s `## Procedures` section is
+written to be *read* — one fenced block per procedure — and some blocks carry their own
+`Option Compare Database` / `Option Explicit` lines while others do not. Concatenating them yields
+duplicate headers in some modules and none in others, and the compile stops on the duplicate. Strip
+every `Option` line out of the bodies and emit one header per module.
+
+**Not every fenced `vba` block is code to import.** The same file may hold illustrative fragments —
+a call sequence showing what the procedures do in order, say — fenced exactly like real code. There
+is no marker distinguishing them; read each block before including it.
+
+**A failed import can take the COM session with it.** After the corrupt import above, the next two
+calls failed with "This operation requires an open database" and "refers to an object that is closed
+or doesn't exist." Closing the session and calling any tool re-established it, with no work lost.
+Treat it as a reconnect, not a rebuild.
 
 ### Running a procedure through an MCP — bare name, and use eval for arguments
 
