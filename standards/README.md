@@ -19,8 +19,13 @@ file(s) here and applies them.
 | [`form-conventions.md`](form-conventions.md) | `form-conventions` | Form design defaults (control prefixes, control types, buttons, tab order, sizing) + named form patterns (selector, quick-add, validation highlights; audit display optional) |
 | [`startup-conventions.md`](startup-conventions.md) | `startup-conventions` | How a generated Access application initializes on open — the `AutoExec` → `Startup()` convention, the idempotent `EnsureAppFolders()` slot, and reliable external-file-asset folders |
 
-## Forking
+## Using your own standards
 
-Replace these files with your own house rules. **Nothing in a template body depends on the specific
-names or patterns here** — that's the standards/template split. Swap in your standards, regenerate,
-and the templates produce artifacts in your conventions without any edit to the templates themselves.
+You can replace the standards files with your own rules. Swap in your standards, regenerate, and
+the templates produce artifacts in your conventions without any edit to the templates themselves.
+
+However, the templates do depend on these 7 standards being available and consistent with the way
+they are written. If you edit or replace one or more of these standards files, be sure to preserve
+their shape.
+
+When you run any of the templates in the library, you'll be asked how to use the standards.

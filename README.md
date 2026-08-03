@@ -93,9 +93,11 @@ Editing a template is for something different: changing the *design* itself — 
 always need, dropping one you never use or changing data types to suit your preferences.
 Once you've used a template a few times and know it well, it's yours to customize. Make it your own.
 
-And if nothing in the library matches what you need? You're still covered. The AI will say so
-plainly — and, with your go-ahead, design your tables from scratch following the same conventions,
-with the same look-it-over-and-approve flow. A missing template never leaves you stranded.
+And if nothing in the library matches what you need? The AI will say so plainly — no forced fit —
+and offer to design your tables from scratch, following the same conventions, with the same
+look-it-over-and-approve flow. Fair warning, though: without a template, you're outside the
+library's tested ground. The AI helps, and you still approve everything, but the design is your
+own — no template stands behind it.
 
 The library ships with a sensible default set of standards, so you can start the minute you arrive.
 
