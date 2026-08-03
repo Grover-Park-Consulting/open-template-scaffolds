@@ -214,10 +214,20 @@ design view to attach its macros, and a table held open elsewhere stops the run 
 some tables generated and others not. Re-running is safe (generation replaces), so the fix for a
 partial run is simply to close everything and run it again.
 
+## Standards Gate
+
+**Before anything below, run the standards gate** — `templates/_standards-gate.md`, in full. It is
+one question in the ordinary case and it settles whose rules govern this build. It is a separate
+wizard from the one below, and it is asked first: the disclosure line, then the gate, then this
+template's house assumptions and warnings, then its entry question.
+
+This template is the gate's pilot and the only template that runs it.
+
 ## Wizard
 
 Nine questions, asked one at a time, preceded by the entry question
-(`templates/_template-schema.md` §10.6) that asks whether you want to answer them at all.
+(`templates/_template-schema.md` §10.6) that asks whether you want to answer them at all. The
+standards gate above is asked before all of them and is not counted among the nine.
 
 **One of the nine — Step 3 — is only asked where you are adding auditing to a database you already
 use**, so the try-it-out build asks eight and the other asks all nine.
