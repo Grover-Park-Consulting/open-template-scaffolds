@@ -51,10 +51,14 @@ exists to prevent. Do not ask one.
 
 ### 1.3 Writing to the standards files is what this gate is for
 
-**§10.5 rule 11 does not apply here.** That rule governs a choice made *inside a template's wizard*
-— it holds for that run and is never written back to the standards files. The gate is not that. Two
-of its paths change the standards layer on purpose and permanently, because the developer said to.
-Make the change, and record it (§7).
+**§10.5 rule 11 stands, and it does not reach the gate.** Rule 11 governs a choice made *inside a
+template's wizard*: a step that offers a message box where the standards layer calls for a central
+logger is exactly its case — the developer's choice holds for that build, and the standards file is
+left untouched. That is right, and nothing here changes it.
+
+The gate is a different act. It is not a build decision that departs from the layer for one run; it
+is the developer setting the layer. Two of its three ownership paths change `standards/` on purpose
+and permanently, because they said to. Make the change, and record it (§7).
 
 ---
 
@@ -139,7 +143,9 @@ written against.
 They cover names for tables, fields, queries, forms, and the code that goes with them. Two parts are
 important in what gets built today: table names start with a short prefix (`tbl` for a table of your
 own data, `tlkp` for a short list of choices), and no field is left with a bare everyday word like
-`Date` or `Name` as its name, because those words already mean something to the database.
+`Date` or `Name` as its name. The database already uses those words for things of its own, and it
+has no way to tell that you meant your field — it takes the word for the thing it already knows, and
+what comes back is not your data.
 
 The table prefix decides which of your tables this build looks at. If your tables are named a
 different way, change or replace this file, or point me at your own. Otherwise the build may find
@@ -352,8 +358,13 @@ their numbering — every template depends on that. Only what the sections *say*
 answered** — before any file is changed, and never later than that. Do not ask the developer to do
 it and do not ask permission: it is the thing that makes every other path safe.
 
-Take it once. A `standards-original/` that already exists is a previous run's copy of the files as
-they shipped, and overwriting it with already-edited files would destroy the only way back.
+**`standards-original/` holds the files exactly as they shipped, and it is inviolable.** Written
+once; never written again, by any path, for any reason. If it already exists, leave it alone — it is
+the one thing in the library that cannot be regenerated from anything the developer has, and
+overwriting it with already-edited files would quietly destroy the only way back.
+
+Saving further versions is a separate matter and a separate folder. Nothing in the pilot needs one;
+the restore in §8 makes the only other copy the gate ever takes.
 
 **It sits beside `standards/`, not inside it.** A folder inside `standards/` reads as part of the
 layer to anything walking it, and the developer who downloaded a zip file has no other way back —
@@ -481,9 +492,14 @@ to it again if you want.
 actually differs from it.** With nothing to restore the option means nothing, and the slot is better
 spent on going back. That is not hiding an option under §10.5 rule 8 — the choice does not exist.
 
-**Restoring keeps the developer's version.** Copy the current `standards/` aside before overwriting
-it from `standards-original/`, and say where it went. A restore that destroys their work is the same
-mistake the backup exists to prevent, made in the other direction.
+**Restoring keeps the developer's version.** Copy the current `standards/` to
+`standards-saved-YYYY-MM-DD/` before overwriting it from `standards-original/`, and say where it
+went. A restore that destroys their work is the same mistake the backup exists to prevent, made in
+the other direction.
+
+**That saved copy is not a second original**, and its name has to keep saying so — it is what the
+developer had, at a date, and any later one is another dated folder beside it. `standards-original/`
+is never a destination for any of this.
 
 ---
 
@@ -504,9 +520,9 @@ Moving from the tracking columns to what happens when something goes wrong:
 Moving into the last two files, where the developer is most likely to wonder why they are still
 being asked:
 
-> *"That's the five files that shape what I'm building today. Two more are part of the same set —
-> they shape other templates in the library, just not this build. Settling them now means you won't
-> be asked again."*
+> *"That's the five rules we'll need for this build. Two more are part of the same set — they shape
+> other templates in the library, just not this build. Settling them now means you won't be asked
+> again."*
 
 **After a `Change them with me` edit, say what changed in the build as a result** — not just that an
 edit happened. That is where the developer finds out their edit had a consequence, while the file is
