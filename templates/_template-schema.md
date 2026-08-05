@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.7.0
+version: 0.7.1
 status: draft
 ---
 
@@ -11,7 +11,8 @@ status: draft
 
 **Who reads this:** anyone writing a template, and the AI assistant reading one.
 
-**Using a template?** You do not need to read this file in order to use the template.
+**Using a template to build tables, forms, or code in a database?** You do not need to read this
+file in order to use the template.
 
 This is the **format specification** every template file in this library must follow.
 It is the contract the reference MCP server keys off: discovery (`list_templates`,
