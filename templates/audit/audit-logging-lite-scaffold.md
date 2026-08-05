@@ -862,7 +862,7 @@ End Function
 ### AddAuditColumns — `Private Sub` (Path A only — helper to step 0)
 
 Appends the house audit set to a table being built, always last in column order (per
-`standards/naming-conventions.md` §5.4). Called once per sample table by
+`standards/naming-conventions.md` §6.4). Called once per sample table by
 `Zero_CreateSampleTables`, before the table is appended to the database.
 
 `AccessTS` from the standards file is deliberately **not** created: it's a SQL Server rowversion

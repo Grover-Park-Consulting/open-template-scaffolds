@@ -30,8 +30,9 @@
 | Subform | `sfrm[Entity]_[Purpose]` | `sfrmIndividual_Address` |
 | Form record source | `qry[Entity]_frm` | `qryIndividual_frm` |
 | Listbox source | `qry[Entity]_lst` | `qryIndividual_lst` |
+| Combobox source | `qry[Entity]_cbo` | `qryPublisher_cbo` |
 | General query | `qry[Purpose]` | `qryActiveMembers` |
-| Pass-through query | `qspt[Purpose]` | `qsptSelectedFoodItem_Lst` |
+| Pass-through query | `qspt[Purpose]` | `qsptSelectedFoodItem_lst` |
 | Append / Update / Delete query | `qapd[Entity]` / `qupd[Entity]` / `qdel[Entity]` | `qapdInvoice` |
 | Standard module | `mod[Purpose]` | `modAppSetup` |
 | Callback/utility module | `bas[Purpose]` | `basRibbonCallbacks` |
@@ -84,18 +85,40 @@ combo/list box for data entry.
 Lookup tables take the `tlkp` prefix. User-extensible lookups that grow via "insert if not exists"
 are still lookups.
 
-### Junction tables
+---
 
-Junction tables appear in **both Access and SQL Server**.
+## 3. Junction tables
+
+Junction tables appear in **both Access and SQL Server**. A junction table requires **three fields**
+and **one unique index**.
 
 - Terminology: **junction table** (not bridge/link/associative).
 - **Primary key:** a surrogate — **AutoNumber** (Access) / **`INT IDENTITY`** (SQL Server) — named
   `[EntityA][EntityB]ID` (e.g. `AccessSiteOutletID` on `tblAccessSiteOutlet`).
 - **Two foreign-key columns**, named by the `[Entity]ID` convention, carrying the related pair.
+- **A unique index on the two foreign-key columns** — unique, not merely an index. This is what
+  stops the same pairing being recorded twice; a non-unique index there accepts duplicates and
+  never objects. On SQL Server it takes the `UIX_` name from §6.3.
+- **Additional fields are allowed, and every one of them joins that unique index.** A column added
+  to a junction changes what counts as a duplicate, so the index moves with it: a junction carrying
+  an effective date is unique on the two foreign keys **and** the date, which lets a person be
+  assigned to the same shift again later in their employment while still refusing a true duplicate.
+- **What a junction must not carry is transaction data** — quantities, amounts, prices, or the
+  details of an event that happened. Those belong to the event's own table, which may itself
+  reference the junction. The test: does the column describe **the link**, or does it record
+  **something that happened**?
+
+Applying the test:
+
+| Column on a junction | What it describes | Legitimate? |
+|---|---|---|
+| `EffectiveDate` / `EndDate` | When the pairing started and stopped | Yes — attributes of the link |
+| `AssignmentRole` | What kind of association this is | Yes |
+| `QuantityOrdered`, `UnitPrice` | An event's details | No — a transaction, belongs elsewhere |
 
 ---
 
-## 3. Field / column naming
+## 4. Field / column naming
 
 - **Primary key:** `[Entity]ID` — `IndividualID`, `ProjectID`. No `pk`/`fk` prefixes on columns.
 - **Foreign key:** the `[ReferencedEntity]ID` of the PK it references — a FK to `tblProject.ProjectID`
@@ -106,13 +129,16 @@ Junction tables appear in **both Access and SQL Server**.
 
 ---
 
-## 4. Qualified field names (the core rule)
+## 5. Qualified field names (the core rule)
 
 **Never use an unqualified common English noun as a field name.** Always qualify with entity,
 domain, or purpose. Two tiers:
 
 **Tier 1 — Reserved words (hard prohibition).** Reserved in Access (Jet/ACE), T-SQL, or the
-ODBC/ISO standard; bare use causes parser errors or ODBC failures on linked tables:
+ODBC/ISO standard; bare use causes parser errors or ODBC failures on linked tables. **These are
+examples, not a complete list — and no complete list exists.** The Access database engine, SQL
+Server, and the ODBC standard each reserve a different set of words, and each of them adds more
+over time. Do not use this as a checklist to clear a name against:
 `Name`, `Date`, `Time`, `Timestamp`, `Description`, `Note`, `Text`, `Memo`, `Type`, `Value`,
 `Number`, `Level`, `Key`, `Field`, `Group`, `Order`, `Index`, `Table`, `View`, `User`, `Schema`,
 `Image`, `Password`, `Count`, `Size`.
@@ -128,21 +154,31 @@ Qualify with entity or purpose: `ProjectStatus`, `ProductCategory`, `RecordLabel
 
 > **Test:** *Would a reader in a query result know what this field refers to without seeing the
 > table name?* If no, qualify it.
+>
+> **Structural test:** *Is the field name a single word you would find in an ordinary dictionary?*
+> If yes, treat it as reserved whether or not it appears above. Reserved words are drawn from
+> exactly that set of words, so this catches the ones no list has yet.
+
+You never need to establish whether a particular word is reserved, because the qualified name is
+required either way. The lists explain **why** the rule exists; the two tests above are **how** it
+is applied. **Both tiers are handled the same way — qualify, always.** They differ only in what
+goes wrong if you don't: a parser or ODBC failure for Tier 1, ambiguity for Tier 2. That is why the
+Tier 1 list being incomplete does not matter.
 
 This applies to Access local tables and SQL Server columns equally — especially for SQL Server
 tables linked into Access via ODBC, where both reserved-word lists are active at once.
 
 ---
 
-## 5. Data types
+## 6. Data types
 
-### 5.1 Access (local tables)
+### 6.1 Access (local tables)
 
 Use the Access type vocabulary: `AutoNumber`, `Long`, `Integer`, `Byte`, `Single`, `Double`,
 `Currency`, `Text(n)`, `Memo`, `Date/Time`, `Boolean`. (This matches the field-spec vocabulary in
 `templates/_template-schema.md` §5.)
 
-### 5.2 SQL Server
+### 6.2 SQL Server
 
 - **Strings:** `NVARCHAR` universally. Use a defined maximum (`NVARCHAR(100)`, `NVARCHAR(500)`)
   where a practical bound exists; `NVARCHAR(MAX)` for indeterminate free text (notes, descriptions).
@@ -150,7 +186,7 @@ Use the Access type vocabulary: `AutoNumber`, `Long`, `Integer`, `Byte`, `Single
   `DATETIME2` only when Access will never touch the table.
 - **Identity PK:** `INT` (raise to `BIGINT` only where the row count genuinely requires it).
 
-### 5.3 Index & constraint naming (SQL Server)
+### 6.3 Index & constraint naming (SQL Server)
 
 | Object | Pattern | Example |
 |---|---|---|
@@ -164,7 +200,7 @@ Use the Access type vocabulary: `AutoNumber`, `Long`, `Integer`, `Byte`, `Single
 
 Composite indexes are named by leading column only.
 
-### 5.4 Column ordering in `CREATE TABLE`
+### 6.4 Column ordering in `CREATE TABLE`
 
 1. **Identity PK** (`[Entity]ID`) — always first.
 2. **Business/data columns** — identifying before qualifying (`ProjectName` before `ProjectDescription`).

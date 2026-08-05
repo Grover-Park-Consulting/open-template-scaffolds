@@ -11,7 +11,7 @@
 ## The OTS audit set
 
 Every `tbl` and `tlkp` table carries these five columns, **always last** in column order
-(see `naming-conventions.md` §5.4):
+(see `naming-conventions.md` §6.4):
 
 | Column | Type (SQL Server) | Type (Access local) | Rule |
 |---|---|---|---|

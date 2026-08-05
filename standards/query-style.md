@@ -30,7 +30,7 @@
 - In any **multi-table** query, give each table a short, meaningful **alias** and **qualify every
   column** with it (`p.ProductName`, `s.ScanQuantity`).
 - Do **not rename** a column to disambiguate it — alias the table instead (this is the
-  `naming-conventions.md` §3 rule; the aliasing details live here).
+  `naming-conventions.md` §4 rule; the aliasing details live here).
 - Single-table queries need no alias.
 - On **SQL Server**, schema-qualify objects (`dbo.tblProduct`) — see `naming-conventions.md` §1.2.
 
