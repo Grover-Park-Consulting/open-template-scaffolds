@@ -411,7 +411,7 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
   them once the log is in place. This template doesn't remove them for you — that's your call.
 - **Naming conventions** — this template is written in `tbl`/`tlkp` prefix style, and the paired
   scaffold's config scan keys on the `tbl`/`tlkp` prefixes (excluding `tmp`); a practice on
-  another convention regenerates under its own names and adjusts that one filter.
+  another convention builds under its own names and adjusts that one filter.
 - **Error handling** — the house errHandler pattern for the paired scaffold's VBA.
 
 ## Extra Options

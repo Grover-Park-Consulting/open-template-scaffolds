@@ -973,7 +973,7 @@ End Function
   that file ranks; Step 5 answers its line-numbering question. `LogError` itself is the one
   documented exception to the pattern, for the reason given at that procedure.
 - **Naming conventions** — module, table, and field names follow OTS house style. A forked practice
-  regenerates the same objects under its own.
+  builds the same objects under its own.
 - **Query style** — the one data write here is a recordset append rather than a concatenated
   `INSERT`, so the contents of an error description can never break it.
 - **Design principles** — one job per procedure: read the error, write to a table, write to a file,

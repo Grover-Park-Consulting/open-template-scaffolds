@@ -99,7 +99,7 @@ each other's templates easy to use.
   of a template; send it freely.
 - **Rendering choices** — the naming style, prefixes, and type encodings a template has to commit
   to just to exist. Fine to include — just call them out in your `## Standards Layer` section so an
-  adopter knows their AI can regenerate them under their own conventions. Forget to add them and there's no
+  adopter knows their AI can build them under their own conventions. Forget to add them and there's no
   harm — we'll add the one-line note together.
 
 **When your template carries something specific to your house** — a *modeling* decision where

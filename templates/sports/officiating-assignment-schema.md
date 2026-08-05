@@ -302,7 +302,7 @@ code.
   source's per-table timestamp columns are retired in the audit set's favor.)
 - **Naming conventions** — this template is written in the OTS default style (`tbl`/`tlkp`
   prefixes, `[Entity]ID` keys, qualified field names). A practice with different conventions
-  regenerates the same entities under its own `naming-conventions.md` without editing this
+  builds the same entities under its own `naming-conventions.md` without editing this
   template.
 - **Error handling** — any VBA generated alongside (see the paired
   `sports-officiating-assignment-scaffold`) takes its error pattern from the active

@@ -65,4 +65,5 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
 - **Host conventions differ, and that's expected.** A forked practice supplies its own audit names
   here; e.g. a Northwind-derived database uses `AddedBy` / `AddedOn` / `ModifiedBy` / `ModifiedOn`
   via data macros. A template that declares `standards_layer: [audit-columns]` inherits whatever
-  *this* file specifies — swap the file, regenerate, and the audit columns follow your house.
+  *this* file specifies — replace the file, and tables built from then on carry your house's audit
+  columns.

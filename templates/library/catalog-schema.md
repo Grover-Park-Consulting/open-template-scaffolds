@@ -67,7 +67,7 @@ these tables through those links.
 ## Entities
 
 Naming follows the **OTS default style** (`tbl` for entity/junction tables, `tlkp` for lookups); a
-different practice regenerates the same entities under its own conventions (see Standards Layer).
+different practice builds the same entities under its own conventions (see Standards Layer).
 Audit columns are supplied by the standards layer and are intentionally absent below.
 
 ### tblPublication
@@ -262,7 +262,7 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
   table, supplied by the standards layer (see `standards/audit-columns.md`). *The source collection
   had no audit columns; the standards layer supplies them — a clean demonstration of the split.*
 - **Naming conventions** — this template follows the OTS `tbl`/`tlkp` style and the
-  qualified-field rules (see `standards/naming-conventions.md`). A different practice regenerates the
+  qualified-field rules (see `standards/naming-conventions.md`). A different practice builds the
   same entities under its own conventions without editing this template.
 
 ## Extra Options (engagement-specific — stubs)

@@ -21,8 +21,9 @@ file(s) here and applies them.
 
 ## Using your own standards
 
-You can replace the standards files with your own rules. Swap in your standards, regenerate, and
-the templates produce artifacts in your conventions without any edit to the templates themselves.
+You can replace the standards files with your own rules. Put your own rules in place, and the next
+design built from a template follows them, with no edit to the template itself. Tables and code you
+have already built are not changed by this — the new rules apply to what you build from then on.
 
 However, the templates do depend on these 7 standards being available and consistent with the way
 they are written. If you edit or replace one or more of these standards files, be sure to preserve

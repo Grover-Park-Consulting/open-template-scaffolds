@@ -238,7 +238,7 @@ layer, so the same template produces house-conforming output for any practice:
   no-prefix house style; the OTS default would instead apply `tbl`/`tlkp`.* **Northwind
   is itself the worked illustration of why standards must be user-customizable: the team developing the
   Northwind Templates agreed to a generic naming convention — a different practice would
-  regenerate these same entities under its own conventions without touching this template.**
+  build these same entities under its own conventions without touching this template.**
 - **Error handling** — the `errHandler` / `Cleanup` pattern for any VBA produced
   alongside this schema.
 

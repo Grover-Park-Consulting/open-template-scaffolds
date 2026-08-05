@@ -8,7 +8,7 @@ status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
 house_assumptions:
-  - "tblDepartment — modeled as district-wide, independent of Site, because Site and Department are documented as separate, non-nested reporting axes; a practice that treats departments as site-scoped must regenerate this entity"
+  - "tblDepartment — modeled as district-wide, independent of Site, because Site and Department are documented as separate, non-nested reporting axes; a practice that treats departments as site-scoped must model this entity differently"
   - "tblAsset.VendorName / PurchaseOrderNumber — kept as plain text fields rather than a full vendor entity, deferring vendor master-data modeling to a future template"
   - "tlkpDepreciationMethod — seeded with only Straight-Line; the schema carries a method FK for extensibility, but no alternate depreciation calculation is implemented"
 ---
@@ -280,7 +280,7 @@ canonical format — each row is still its own discrete table.
   substitute for these.
 - **Naming conventions** — this template follows the OTS `tbl`/`tlkp` prefix policy and
   field-qualification rules (`Status` → `<Entity>StatusID`, `Notes` → `<Entity>Notes`). A
-  practice on a different naming convention regenerates the same entities under its own policy
+  practice on a different naming convention builds the same entities under its own policy
   without editing this file.
 - **Error handling** — any VBA generated against this schema (history-stamping logic, scan
   resolution, depreciation calculation) uses the house `errHandler` / global-error pattern.

@@ -5,8 +5,8 @@
 **Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
 
 > **This is the OTS default standards layer.** When you fork the library, replace this file
-> with your own house naming rules; the templates regenerate the same entities under whatever
-> conventions you put here. Nothing in a template body depends on these specific names — that's
+> with your own house naming rules; the same entities are then built under whatever conventions you
+> put here. Nothing in a template body depends on these specific names — that's
 > the point of the standards/template split.
 >
 > Applies to **Microsoft Access** (local tables, queries, VBA objects) and **SQL Server**
