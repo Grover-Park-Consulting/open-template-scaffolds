@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.5.1
+version: 0.6.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -1018,7 +1018,7 @@ CreateLongTextBackup:
 
     Set tdf = db.CreateTableDef("tblLongTextBackup")
 
-    Set fld = tdf.CreateField("BackupID", dbLong)
+    Set fld = tdf.CreateField("LongTextBackupID", dbLong)
     fld.Attributes = dbAutoIncrField
     tdf.Fields.Append fld
 
@@ -1050,7 +1050,7 @@ CreateLongTextBackup:
     Set idx = tdf.CreateIndex("PrimaryKey")
     idx.Primary = True
     idx.Required = True
-    Set fld = idx.CreateField("BackupID")
+    Set fld = idx.CreateField("LongTextBackupID")
     idx.Fields.Append fld
     tdf.Indexes.Append idx
 
@@ -1081,7 +1081,7 @@ CreateConfig:
 
     Set tdf = db.CreateTableDef("tblAuditLogConfig")
 
-    Set fld = tdf.CreateField("ConfigID", dbLong)
+    Set fld = tdf.CreateField("AuditLogConfigID", dbLong)
     fld.Attributes = dbAutoIncrField
     tdf.Fields.Append fld
 
@@ -1116,7 +1116,7 @@ CreateConfig:
     Set idx = tdf.CreateIndex("PrimaryKey")
     idx.Primary = True
     idx.Required = True
-    Set fld = idx.CreateField("ConfigID")
+    Set fld = idx.CreateField("AuditLogConfigID")
     idx.Fields.Append fld
     tdf.Indexes.Append idx
 

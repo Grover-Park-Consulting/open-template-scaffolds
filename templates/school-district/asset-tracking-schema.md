@@ -3,7 +3,7 @@ template: school-district-asset-tracking-schema
 title: School District Capital Asset Tracking
 domain: school-district
 type: table-schema
-version: 0.2.2
+version: 0.3.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
@@ -63,7 +63,7 @@ Grain: one row per physical capital asset.
 | `AssetBarcode` | Text(50) | Required | The asset tag scanned for inventory verification; unique |
 | `AssetCategoryID` | Long | FK → tlkpAssetCategory, Required | Computers / vehicles / land / cameras / furniture / HVAC equipment / network equipment |
 | `AssetDescription` | Text(255) | Required | Short identifying description |
-| `Manufacturer` | Text(150) | Nullable | |
+| `AssetManufacturer` | Text(150) | Nullable | |
 | `ModelNumber` | Text(100) | Nullable | |
 | `SerialNumber` | Text(100) | Nullable | Manufacturer serial; distinct from `AssetBarcode` |
 | `RoomID` | Long | FK → tblRoom, Required | Current location; site is derived via `tblRoom.SiteID`, not duplicated here |

@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.2.0
+version: 0.3.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -151,7 +151,7 @@ transient staging, not history (Business Rule 8).
 
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
-| `BackupID` | AutoNumber | PK | Surrogate key |
+| `LongTextBackupID` | AutoNumber | PK | Surrogate key |
 | `TableName` | Text(50) | Required | Source table |
 | `PrimaryKey` | Long | Required | Key value of the row being changed |
 | `FieldName` | Text(50) | Required | The Long Text field backed up |
@@ -159,7 +159,7 @@ transient staging, not history (Business Rule 8).
 | `DateChanged` | Date/Time | Required | When the backup was taken |
 | `ChangedBy` | Text(50) | Required | Who triggered it |
 
-Indexes: PK on `BackupID`; unique on (`TableName`, `PrimaryKey`, `FieldName`) — the helper
+Indexes: PK on `LongTextBackupID`; unique on (`TableName`, `PrimaryKey`, `FieldName`) — the helper
 replaces any earlier backup for the same field of the same row before writing a new one.
 
 ### tblAuditLogConfig
@@ -170,7 +170,7 @@ of every candidate table; what is and isn't audited is then decided **in this da
 
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
-| `ConfigID` | AutoNumber | PK | Surrogate key |
+| `AuditLogConfigID` | AutoNumber | PK | Surrogate key |
 | `TableName` | Text(50) | Required | Table the field belongs to |
 | `FieldName` | Text(50) | Required | The scanned field |
 | `FieldPosition` | Long | Required | The field's ordinal position in its table |
@@ -178,7 +178,7 @@ of every candidate table; what is and isn't audited is then decided **in this da
 | `IsPrimaryKey` | Boolean | Required | Default False; exactly one True row per table (Business Rule 4) |
 | `IsAuditable` | Boolean | Required | Default True; flip to False to exclude a field from auditing (Business Rule 5) |
 
-Indexes: PK on `ConfigID`; unique on (`TableName`, `FieldName`).
+Indexes: PK on `AuditLogConfigID`; unique on (`TableName`, `FieldName`).
 
 ### tblClient *(sample)*
 

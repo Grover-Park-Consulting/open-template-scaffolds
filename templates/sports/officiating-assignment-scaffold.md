@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: sports
 type: vba-scaffold
-version: 0.2.1
+version: 0.3.0
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -83,7 +83,7 @@ home are both making assignments into the one back end, and that changes two thi
 1. **`ValidateAssignment` cannot be relied on alone.** It checks that the position is free, then
    `AssignOfficial` inserts. Between those two moments somebody else can insert the same position
    for the same game — both people's checks passed, and the junction's unique index on
-   (`GameID`, `PositionID`) refuses the second insert with an engine error. Checking first does not
+   (`GameID`, `OfficialPositionID`) refuses the second insert with an engine error. Checking first does not
    remove the race; it makes it rare and keeps the *ordinary* refusal friendly, which is its real
    job. `AssignOfficial` must still trap the duplicate-key error and turn it into the same plain
    message, or the second assignor sees a raw Access error instead of "that position is already
@@ -105,20 +105,20 @@ procedure by design. Line numbers are deliberately absent (house-specific; see
 ```vba
 Public Function AssignOfficial(ByVal lGameID As Long, _
                                ByVal lOfficialID As Long, _
-                               ByVal lPositionID As Long) As Long
+                               ByVal lOfficialPositionID As Long) As Long
     ' [SCAFFOLD] Assign one official to one position on one game.
     '            Returns the new GameOfficialID, or 0 when the assignment is refused.
     Dim sRefusalReason As String
 
     On Error GoTo errHandler
 
-    If Not ValidateAssignment(lGameID, lOfficialID, lPositionID, sRefusalReason) Then
+    If Not ValidateAssignment(lGameID, lOfficialID, lOfficialPositionID, sRefusalReason) Then
         ' [SCAFFOLD] friendly refusal before the junction's unique indexes can bark
         MsgBox sRefusalReason, vbExclamation
         GoTo Cleanup
     End If
 
-    ' [BUSINESS LOGIC #1,#2] insert the tblGameOfficial row (GameID, OfficialID, PositionID)
+    ' [BUSINESS LOGIC #1,#2] insert the tblGameOfficial row (GameID, OfficialID, OfficialPositionID)
     ' >>> insert per query-style.md; set AssignOfficial = new GameOfficialID <<<
 
 Cleanup:
@@ -137,7 +137,7 @@ End Function
 ```vba
 Private Function ValidateAssignment(ByVal lGameID As Long, _
                                     ByVal lOfficialID As Long, _
-                                    ByVal lPositionID As Long, _
+                                    ByVal lOfficialPositionID As Long, _
                                     ByRef sRefusalReason As String) As Boolean
     ' [SCAFFOLD] All-or-nothing pre-checks for one assignment; on the first failure,
     '            set sRefusalReason and exit False. True = safe to insert.
@@ -149,7 +149,7 @@ Private Function ValidateAssignment(ByVal lGameID As Long, _
     Set db = CurrentDb
 
     ' [BUSINESS LOGIC #2] the position is not already filled for this game
-    '                     (unique on GameID + PositionID, checked kindly here first)
+    '                     (unique on GameID + OfficialPositionID, checked kindly here first)
     ' >>> existence query per query-style.md; on hit: sRefusalReason, GoTo Cleanup <<<
 
     ' [BUSINESS LOGIC #2] the official is not already working this game in another position
@@ -177,7 +177,7 @@ End Function
 
 ```vba
 Private Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
-                                      ByVal lPositionID As Long, _
+                                      ByVal lOfficialPositionID As Long, _
                                       ByVal dtGameDate As Date) As Currency
     ' [SCAFFOLD] Resolve the effective-dated rate for (level, position) as of a game date.
     '            Returns 0 when no rate row applies — caller surfaces a warning, never guesses.
@@ -188,7 +188,7 @@ Private Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    ' [BUSINESS LOGIC #6] the tblPositionRate row for (lPlayLevelID, lPositionID) with the
+    ' [BUSINESS LOGIC #6] the tblPositionRate row for (lPlayLevelID, lOfficialPositionID) with the
     '                     latest EffectiveDate on or before dtGameDate
     ' >>> TOP 1 ... ORDER BY EffectiveDate DESC query per query-style.md <<<
     sSql = vbNullString

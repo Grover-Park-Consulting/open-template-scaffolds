@@ -3,7 +3,7 @@ template: sports-officiating-assignment-form
 title: Sports Officiating Assignment — Game Assignment Form
 domain: sports
 type: form-spec
-version: 0.2.0
+version: 0.3.0
 status: draft
 implements: sports-officiating-assignment-schema
 record_source: qryGame_frm
@@ -75,7 +75,7 @@ the materialization step's job (a default stacked layout, not pixel-placed).
 
 | Control | Type | Bound to | Notes |
 |---|---|---|---|
-| `sfrmGame_Crew` | Subform | `tblGameOfficial` | Linked on `GameID`; continuous. Rows: `cboPositionID` (→ `tlkpOfficialPosition`) + `cboOfficialID` (→ `tblOfficial`, active only, "LastName, FirstName") |
+| `sfrmGame_Crew` | Subform | `tblGameOfficial` | Linked on `GameID`; continuous. Rows: `cboOfficialPositionID` (→ `tlkpOfficialPosition`) + `cboOfficialID` (→ `tblOfficial`, active only, "LastName, FirstName") |
 | `imgOfficialPhoto` | Image | — (driven by `PhotoFileName`) | **Optional feature 1** — selected crew member's photo |
 | `txtApplicableRate` | Textbox | — (computed) | **Optional feature 2** — read-only rate for the selected crew row |
 

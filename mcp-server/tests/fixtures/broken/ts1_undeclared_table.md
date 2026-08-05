@@ -15,8 +15,10 @@ new_tables:
 
 ## Intent
 
-Deliberately broken test fixture: `### TblGadget` is documented under Entities
-but absent from `new_tables`.
+Deliberately broken test fixture: `### TblGadgetPart` is documented under Entities
+but absent from `new_tables`. Its key is a compound name so that this fixture
+violates one rule only — a single-word key on an undeclared table would also be
+reported as unqualified, which is a different rule's business.
 
 ## Entities
 
@@ -26,11 +28,11 @@ but absent from `new_tables`.
 |---|---|---|---|
 | `WidgetID` | AutoNumber | PK | Surrogate key |
 
-### TblGadget
+### TblGadgetPart
 
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
-| `GadgetID` | AutoNumber | PK | Surrogate key |
+| `GadgetPartID` | AutoNumber | PK | Surrogate key |
 
 ## Relationships
 

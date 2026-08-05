@@ -34,6 +34,7 @@ EXPECTED_RULE = {
     "ts2_unknown_type": "TS2",
     "ts3_unknown_fk": "TS3",
     "ts5_audit_column": "TS5",
+    "ts6_unqualified_field": "TS6",
     "vs4_missing_error_handling": "VS4",
     "fs1_missing_record_source": "FS1",
 }

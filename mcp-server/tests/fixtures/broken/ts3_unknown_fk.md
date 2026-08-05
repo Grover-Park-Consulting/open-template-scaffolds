@@ -25,7 +25,7 @@ declared in `new_tables` nor listed in `requires_tables`.
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
 | `WidgetID` | AutoNumber | PK | Surrogate key |
-| `ParentID` | Long | FK → NoSuchTable, Required | Dangling reference |
+| `WidgetParentID` | Long | FK → NoSuchTable, Required | Dangling reference |
 
 ## Relationships
 

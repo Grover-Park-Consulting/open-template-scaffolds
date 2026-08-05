@@ -83,6 +83,10 @@ _TEXT_TYPE = re.compile(r"^text\(\d+\)$", re.I)
 _REQUIRED_FM = ("template", "title", "domain", "type", "version", "status", "standards_layer")
 _FIELD_TABLE_HEADER = ["field", "type", "key/req", "purpose&rules"]
 _FK_RE = re.compile(r"FK\s*(?:→|->)\s*`?([A-Za-z0-9_]+)`?")
+# A field name is read as words: an all-caps run, or a capital and what follows it.
+_SEGMENT = re.compile(r"[A-Z]+(?![a-z])|[A-Z][a-z0-9]*")
+_ACRONYM = re.compile(r"^[A-Z]{2,}$")
+_TABLE_PREFIX = re.compile(r"^(tlkp|tbl|USys)", re.I)
 
 
 def _h2_sections(body):
@@ -144,6 +148,48 @@ def _proc_base(x):
 
 def _slug_ok(s):
     return bool(re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", str(s or "")))
+
+
+def _entity_bases(tables):
+    """Entity names behind a set of table names: prefix stripped, plural-tolerant.
+
+    `tblPublication` and `Products` both yield the words a key field may be
+    built on, so `PublicationID` and `ProductID` can be recognized as keys of a
+    table this template knows about.
+    """
+    bases = set()
+    for t in tables:
+        name = _TABLE_PREFIX.sub("", str(t).strip().replace(" ", "")).lower()
+        bases.update({name, name + "s"})
+        if name.endswith("s"):
+            bases.add(name[:-1])
+    return bases
+
+
+def _field_qualified(name, entity_bases):
+    """Is this field name qualified, or one bare noun?
+
+    The test is whether the name is qualified, never whether it is reserved, so
+    no word list is involved and a reserved word added years from now is caught
+    the day it appears: reserved words are single common words by definition.
+
+    A trailing `ID` is not a qualifier. The word in front of it is what gets
+    judged, which is why `PublicationID` passes (`Publication` names the table)
+    while `StatusID` does not. An acronym standing alone is accepted (`ISBN`),
+    with one exception: `ID` by itself, because the standards layer in this
+    repository requires `[Entity]ID` for a key. A shop that replaces
+    `standards/` with its own may take a different view of that last point.
+    """
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", name):
+        return True                                    # other rules speak to these
+    if name == "ID":
+        return False
+    if _ACRONYM.match(name):
+        return True
+    if name.endswith("ID") and len(name) > 2:
+        base = name[:-2]
+        return len(_SEGMENT.findall(base)) >= 2 or base.lower() in entity_bases
+    return len(_SEGMENT.findall(name)) >= 2
 
 
 def validate_template(front: dict, body: str, stem: str) -> list[str]:
@@ -234,6 +280,7 @@ def _validate_table_schema(front, sections):
             errors.append(f"TS1: '### {name}' under '## Entities' is not in new_tables")
 
     known = set(declared) | {str(t) for t in front.get("requires_tables") or []}
+    bases = _entity_bases(known)
     for header, rows in _md_tables(ent):
         norm = [c.lower().replace(" ", "") for c in header]
         if norm[:1] != ["field"]:
@@ -245,6 +292,9 @@ def _validate_table_schema(front, sections):
                 continue
             if r[0].strip("` ").lower() in _AUDIT_COLUMNS:
                 errors.append(f"TS5: audit column '{r[0]}' is in a field table (belongs to the standards layer)")
+            elif not _field_qualified(r[0].strip("` "), bases):
+                errors.append(f"TS6: field '{r[0].strip('` ')}' is not qualified (add the entity or "
+                              "purpose it belongs to; a trailing 'ID' does not qualify it)")
             tval = r[1].strip().split()[0].lower().rstrip(".,") if r[1].strip() else ""
             if tval and tval not in _ACCESS_SCALAR_TYPES and not _TEXT_TYPE.match(tval):
                 errors.append(f"TS2: field '{r[0]}' has unknown type '{r[1]}'")

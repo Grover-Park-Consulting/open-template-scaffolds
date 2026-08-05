@@ -3,7 +3,7 @@ template: sports-officiating-assignment-schema
 title: Sports Officiating Assignment — Table Schema
 domain: sports
 type: table-schema
-version: 0.2.1
+version: 0.3.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -23,7 +23,7 @@ seeds:
   - tblAppSetting.OfficialPhotoFolder
 house_assumptions:
   - tblGameOfficial — crew-by-junction; the position set is seed data in tlkpOfficialPosition, so a bigger crew is a new seed row, never a schema change
-  - tblPositionRate — pay rates are effective-dated by (PlayLevelID, PositionID); the applicable rate is the row with the latest EffectiveDate on or before the game date
+  - tblPositionRate — pay rates are effective-dated by (PlayLevelID, OfficialPositionID); the applicable rate is the row with the latest EffectiveDate on or before the game date
   - tblManager — a team manager is a normalized entity with minimal contact fields; richer contact management is an Extra Option
   - tblGame — a game's play level is derived from its teams (both teams share one PlayLevel); it is not stored on the game
 ---
@@ -88,11 +88,11 @@ Grain: one row per officiating position a game can require.
 
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
-| `PositionID` | AutoNumber | PK | Surrogate key |
+| `OfficialPositionID` | AutoNumber | PK | Surrogate key |
 | `PositionName` | Text(30) | Required | e.g. Plate, Base |
 | `PositionCode` | Text(4) | Nullable | Short code |
 
-Indexes: PK on `PositionID`; unique on `PositionName`; unique on `PositionCode`.
+Indexes: PK on `OfficialPositionID`; unique on `PositionName`; unique on `PositionCode`.
 
 Seed rows (samples): Plate (P), Base (B). Growing the crew — a third base umpire, a field
 referee — is a new seed row here plus assignment rows, never a schema change (Business Rule 1).
@@ -193,9 +193,9 @@ hardcoded per-position columns.
 | `GameOfficialID` | AutoNumber | PK | Junction surrogate key per standards |
 | `GameID` | Long | FK → tblGame, Required | |
 | `OfficialID` | Long | FK → tblOfficial, Required | |
-| `PositionID` | Long | FK → tlkpOfficialPosition, Required | |
+| `OfficialPositionID` | Long | FK → tlkpOfficialPosition, Required | |
 
-Indexes: PK on `GameOfficialID`; unique on (`GameID`, `PositionID`) — one official per position
+Indexes: PK on `GameOfficialID`; unique on (`GameID`, `OfficialPositionID`) — one official per position
 per game; unique on (`GameID`, `OfficialID`) — one position per official per game (both =
 Business Rule 2); FK index on `OfficialID`.
 
@@ -208,12 +208,12 @@ formalized from the source's `EffDate` idea.
 |---|---|---|---|
 | `PositionRateID` | AutoNumber | PK | Surrogate key |
 | `PlayLevelID` | Long | FK → tlkpPlayLevel, Required | |
-| `PositionID` | Long | FK → tlkpOfficialPosition, Required | |
+| `OfficialPositionID` | Long | FK → tlkpOfficialPosition, Required | |
 | `PayRate` | Currency | Required | Must be ≥ 0 |
 | `EffectiveDate` | Date/Time | Required | Rate applies from this date until a later row supersedes it |
 
-Indexes: PK on `PositionRateID`; unique on (`PlayLevelID`, `PositionID`, `EffectiveDate`);
-FK index on `PositionID`.
+Indexes: PK on `PositionRateID`; unique on (`PlayLevelID`, `OfficialPositionID`, `EffectiveDate`);
+FK index on `OfficialPositionID`.
 
 ### tblAppSetting
 
@@ -242,8 +242,8 @@ code.
 
 - `tlkpPlayLevel (1) → (∞) tblTeam` on `PlayLevelID` — no cascade
 - `tlkpPlayLevel (1) → (∞) tblPositionRate` on `PlayLevelID` — no cascade
-- `tlkpOfficialPosition (1) → (∞) tblPositionRate` on `PositionID` — no cascade
-- `tlkpOfficialPosition (1) → (∞) tblGameOfficial` on `PositionID` — no cascade
+- `tlkpOfficialPosition (1) → (∞) tblPositionRate` on `OfficialPositionID` — no cascade
+- `tlkpOfficialPosition (1) → (∞) tblGameOfficial` on `OfficialPositionID` — no cascade
 - `tblManager (1) → (∞) tblTeam` on `ManagerID` — no cascade; FK nullable
 - `tblVenue (1) → (∞) tblGame` on `VenueID` — no cascade; FK nullable
 - `tblTeam (1) → (∞) tblGame` on `HomeTeamID` — no cascade

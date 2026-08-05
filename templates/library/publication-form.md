@@ -3,7 +3,7 @@ template: library-catalog-publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.2.0
+version: 0.3.0
 status: draft
 implements: library-catalog-schema
 record_source: qryPublication_frm
@@ -86,14 +86,14 @@ materialization step's job (a default stacked layout, not pixel-placed).
 | `cboMediaConditionID` | Combo | `MediaConditionID` | → `tlkpMediaCondition` |
 | `cboShelfID` | Combo | `ShelfID` | → `tlkpShelf` |
 | `txtYearPublished` | Textbox | `YearPublished` | |
-| `txtEdition` | Textbox | `Edition` | |
-| `txtPrinting` | Textbox | `Printing` | |
+| `txtPublicationEdition` | Textbox | `PublicationEdition` | |
+| `txtPublicationPrinting` | Textbox | `PublicationPrinting` | |
 | `txtCatalogNumber` | Textbox | `CatalogNumber` | |
 | `txtISBN` | Textbox | `ISBN` | |
-| `txtPages` | Textbox | `Pages` | |
+| `txtPageCount` | Textbox | `PageCount` | |
 | `txtListPrice` | Textbox | `ListPrice` | Currency |
-| `chkMultiVolumeSet` | Checkbox | `MultiVolumeSet` | bound; the *Volume-toggle UI behavior* is Parked (see below) |
-| `txtVolume` | Textbox | `Volume` | |
+| `chkMultiVolumeSet` | Checkbox | `MultiVolumeSet` | bound; the *volume-toggle UI behavior* is Parked (see below) |
+| `txtPublicationVolume` | Textbox | `PublicationVolume` | |
 | `txtNumberOfVolumes` | Textbox | `NumberOfVolumes` | default 1 |
 | `txtPublicationComments` | Textbox | `PublicationComments` | Memo; multi-line |
 | `txtPublicationInternalComments` | Textbox | `PublicationInternalComments` | Memo; multi-line |
@@ -170,9 +170,9 @@ library, not committed here.*
 
 ## Parked / future considerations (not in this design)
 
-- **`MultiVolumeSet` → `Volume` UI toggle** — the schema's Business Rule #3 companion UI behavior
-  (enable/require `Volume` from the checkbox). **Deferred pending client feedback (~3–4 months); it is
-  not in the production copy either.** The data-level validation remains the table's; only the form's
-  enable/disable affordance is parked.
+- **`MultiVolumeSet` → `PublicationVolume` UI toggle** — the schema's Business Rule #3 companion UI
+  behavior (enable/require `PublicationVolume` from the checkbox). **Deferred pending client
+  feedback (~3–4 months); it is not in the production copy either.** The data-level validation
+  remains the table's; only the form's enable/disable affordance is parked.
 - **MRU "recently edited"** — a most-recently-used list of titles; a framework feature, off by default.
 - **Styling / polish** — out of scope by design (the adopter's pass).

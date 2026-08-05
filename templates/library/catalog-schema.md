@@ -3,7 +3,7 @@ template: library-catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
-version: 0.2.1
+version: 0.3.0
 status: draft
 standards_layer:
   - audit-columns
@@ -81,15 +81,15 @@ Grain: one row per published **title** held in the collection.
 | `PublicationSortTitle` | Text(255) | Required | Indexable/sortable form of the title; **auto-derived** from `PublicationTitle` (leading noise words removed) on insert and refreshed on title edit. System-maintained, not user-entered — see Business Rules |
 | `CatalogNumber` | Text(255) | Nullable | Optional title-level accession/catalog number (not a per-copy number — see house assumption) |
 | `ISBN` | Text(50) | Nullable | ISBN, where known |
-| `Edition` | Text(255) | Nullable | Edition statement |
-| `Printing` | Text(255) | Nullable | Printing statement |
+| `PublicationEdition` | Text(255) | Nullable | Edition statement |
+| `PublicationPrinting` | Text(255) | Nullable | Printing statement |
 | `YearPublished` | Integer | Nullable | Year of publication |
-| `Pages` | Long | Nullable | Page count |
+| `PageCount` | Long | Nullable | Page count |
 | `PublisherID` | Long | FK → tblPublisher, Nullable | Publisher |
 | `MediaTypeID` | Long | FK → tlkpMediaType, Nullable | Format / media type |
 | `MediaConditionID` | Long | FK → tlkpMediaCondition, Nullable | Physical condition |
 | `ShelfID` | Long | FK → tlkpShelf, Nullable | Shelf location |
-| `Volume` | Long | Nullable | Which volume this record represents; governed by the MultiVolumeSet rule |
+| `PublicationVolume` | Long | Nullable | Which volume this record represents; governed by the MultiVolumeSet rule |
 | `NumberOfVolumes` | Long | Required | Copy count (single-volume work) or volume count (set); defaults to 1; see MultiVolumeSet rule |
 | `MultiVolumeSet` | Boolean | Required | False = `NumberOfVolumes` counts duplicate copies; True = a multi-volume set; defaults to False |
 | `ListPrice` | Currency | Nullable | List/catalog price |
@@ -246,11 +246,11 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
 3. **Volume / set validation** *(record-level validation rule — Access table `Validation Rule` or a
    SQL `CHECK` constraint):*
    - `NumberOfVolumes` is always required and defaults to **1**.
-   - When `MultiVolumeSet = True`: `Volume` is **required** and must fall in **1 … NumberOfVolumes**,
-     and `NumberOfVolumes` must be **≥ 2** (a set has more than one volume).
-   - When `MultiVolumeSet = False`: `Volume` must be **Null**.
-   - *(The companion UI behavior — enabling/disabling the `Volume` control by `MultiVolumeSet` — is a
-     form concern, deferred to a `form-spec` template.)*
+   - When `MultiVolumeSet = True`: `PublicationVolume` is **required** and must fall in
+     **1 … NumberOfVolumes**, and `NumberOfVolumes` must be **≥ 2** (a set has more than one volume).
+   - When `MultiVolumeSet = False`: `PublicationVolume` must be **Null**.
+   - *(The companion UI behavior — enabling/disabling the `PublicationVolume` control by
+     `MultiVolumeSet` — is a form concern, deferred to a `form-spec` template.)*
 4. **No duplicate creator or genre links** — enforced by the unique indexes on
    (`PublicationID`, `CreatorID`) and (`PublicationID`, `GenreID`).
 5. **Deleting a publication** cascades to its creator and genre links, never to the looked-up
