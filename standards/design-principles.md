@@ -1,15 +1,27 @@
 # Design Principles — OTS Default Standards Layer
 
-**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+**Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
+what to replace with their own. If you are building something from a template, only the first two
+paragraphs below are for your benefit; the rest of the file is not written for you.
 
-**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+**Building from a template?** What this file decides is how the code written for you is put
+together: how much any one procedure is allowed to do, and how its parts are kept apart, so that
+changing one of them later does not break another. It does not decide what anything is *named* —
+that is [`naming-conventions.md`](naming-conventions.md).
 
-> **OTS default; fork-and-replace.** The reasoning behind the specific rules in this standards
-> layer — the principles that decide how generated VBA is shaped. A `vba-scaffold` (or any code
-> generated alongside a template) defers to these via `standards_layer: [design-principles]`. The
-> concrete rules in the sibling files (`query-style.md`, `error-handling.md`, `form-conventions.md`,
-> `naming-conventions.md`) are these principles made specific. A forked practice may swap or extend
-> them. Applies to procedural Microsoft Access / VBA.
+You do not have to do anything with this information. The rules reach you in the code you receive
+whether or not you read this file. Using them as they are is the normal choice. If you came here
+because you were asked whether you want to use these rules as they are or make them your own, you
+don't answer the question here. After you've read about the choice here, go back and answer it where
+it was asked. [`README.md`](README.md) lists all seven files if you want to see the others first.
+
+> **This is the OTS default standards layer.** When you fork the library, replace this file with
+> your own house design principles, or add to them. It holds the reasoning behind the specific rules
+> in this standards layer — the principles that decide how generated VBA is shaped. A `vba-scaffold`
+> (or any code generated alongside a template) defers to these via
+> `standards_layer: [design-principles]`. The concrete rules in the sibling files
+> (`query-style.md`, `error-handling.md`, `form-conventions.md`, `naming-conventions.md`) are these
+> principles made specific. Applies to procedural Microsoft Access / VBA.
 
 ---
 

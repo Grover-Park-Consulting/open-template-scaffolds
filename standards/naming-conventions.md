@@ -1,8 +1,19 @@
 # Naming Conventions — OTS Default Standards Layer
 
-**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+**Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
+what to replace with their own. If you are building something from a template, only the first two
+paragraphs below are for your benefit; the rest of the file is not written for you.
 
-**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+**Building from a template?** What this file decides is what your tables, fields, queries, forms and
+code are called, and which everyday words are never used on their own as a field name. The extra
+columns every table carries are covered in [`audit-columns.md`](audit-columns.md), and what happens
+when something goes wrong in [`error-handling.md`](error-handling.md).
+
+You do not have to do anything with this information. The rules reach you in the code you receive
+whether or not you read this file. Using them as they are is the normal choice. If you came here
+because you were asked whether you want to use these rules as they are or make them your own, you
+don't answer the question here. After you've read about the choice here, go back and answer it where
+it was asked. [`README.md`](README.md) lists all seven files if you want to see the others first.
 
 > **This is the OTS default standards layer.** When you fork the library, replace this file
 > with your own house naming rules; the same entities are then built under whatever conventions you

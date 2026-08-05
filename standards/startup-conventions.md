@@ -1,12 +1,22 @@
 # Startup Conventions — OTS Default Standards Layer
 
-**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+**Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
+what to replace with their own. If you are building something from a template, only the first two
+paragraphs below are for your benefit; the rest of the file is not written for you.
 
-**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+**Building from a template?** What this file decides is what runs first when the database is opened,
+and what it puts in place before anyone can do anything.
 
-> **OTS default; fork-and-replace.** Governs how a generated Access application initializes when it
-> opens — the `AutoExec` → `Startup()` convention and the single extensible open-time slot. A forked
-> practice that uses a different startup mechanism swaps this file for its own.
+You do not have to do anything with this information. The rules reach you in the code you receive
+whether or not you read this file. Using them as they are is the normal choice. If you came here
+because you were asked whether you want to use these rules as they are or make them your own, you
+don't answer the question here. After you've read about the choice here, go back and answer it where
+it was asked. [`README.md`](README.md) lists all seven files if you want to see the others first.
+
+> **This is the OTS default standards layer.** When you fork the library, replace this file with
+> your own house startup conventions, or add to them — a practice that uses a different startup
+> mechanism swaps it out entirely. It governs how a generated Access application initializes when it
+> opens: the `AutoExec` → `Startup()` convention and the single extensible open-time slot.
 
 ---
 

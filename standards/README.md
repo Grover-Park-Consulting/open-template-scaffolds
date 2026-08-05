@@ -1,8 +1,20 @@
 # Standards Layer — OTS Defaults
 
-**Who reads this:** the AI assistant, applying these rules to what it generates — and a shop deciding what to replace with their own.
+**Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
+what to replace with their own. If you are building something from a template, only the first two
+paragraphs below and the table that follows them are for your benefit; the rest of the file is not
+written for you.
 
-**Using a template?** These rules reach you in the code you receive. You do not need to read this file in order to use the template.
+**Building from a template?** What these seven files decide is the part of how your database is
+built that the template itself does not settle: what things are called, what extra columns every
+table carries, what happens when something goes wrong, and how the code is laid out. The table below
+says which file covers which, one line each.
+
+You do not have to do anything with this information. The rules reach you in the code you receive
+whether or not you read these files. Using them as they are is the normal choice. If you came here
+because you were asked whether you want to use these rules as they are or make them your own, you
+don't answer the question here. After you've read about the choice here, go back and answer it where
+it was asked.
 
 This folder holds the **OTS default standards layer**: the house rules a template defers to, so the
 same template produces house-conforming output for any practice. A template names what it defers in
