@@ -33,9 +33,15 @@ Always these exact spellings: `errHandler:` and `Cleanup:` (never `ErrorHandler`
 Options 1 and 2 both call the same logger, `LogError`, and differ only in how the handler learns
 which module and procedure it sits in. Option 3 doesn't log at all.
 
+**`LogError` also tells the user** — it is not the silent alternative to a message
+box. It records the error *and* reports it to them, and **what they see is settled once, when the
+logger is built**, rather than written into each handler: a short message with a reference number
+they can quote back, the full technical detail, or — if that is deliberately chosen — nothing at
+all. Deciding it in one place is why no option below puts a `MsgBox` in the handler itself.
+
 > **`LogError` is built by `templates/errors/error-logging-scaffold.md`**, along with the table it
 > writes to. That template asks which of these three options you want — and where the record goes,
-> what the person at the keyboard sees, and the rest — one question at a time. Choosing between
+> what the user sees, and the rest — one question at a time. Choosing between
 > them here, from this file, works just as well; the template exists so you don't have to.
 
 ### Option 1 — named constants *(preferred)*
@@ -105,9 +111,13 @@ clutter. Not reasonable for anything someone else will rely on.
 
 ### Substituting your own logger
 
-If your practice already has a central error logger, swap it into the call site of whichever option
-you picked and keep the rest. What this file fixes is the surrounding structure: capture `Erl`,
-report, `Resume Cleanup`, `Resume`.
+If your practice already has a central error logger, replace the error logger in this standard with
+yours. Your error logger should both record the error and tell the user about the error. If your
+error logger doesn't also report to the user today, either add that to it or include a message for
+the user in the error handler beside the call to the error logger.
+
+If you do swap the error logger, be careful to replace only that part of the error handler. It still
+needs **capture `Erl`, report, `Resume Cleanup`** and **`Resume`**.
 
 ### Which one to use — and who decides
 
