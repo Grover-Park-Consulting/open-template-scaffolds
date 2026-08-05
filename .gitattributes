@@ -1,0 +1,4 @@
+# The git hooks must keep LF line endings. This repository checks out with CRLF
+# on Windows, and a shell script whose first line ends in CR is rejected by the
+# shell as an unknown interpreter - the hook would silently never run.
+.githooks/** text eol=lf

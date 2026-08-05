@@ -1,0 +1,20 @@
+#!/bin/sh
+# Runs before every commit. Blocks the commit if staged Python cannot be parsed.
+# Wired up with:  git config core.hooksPath .githooks
+
+hookdir=$(dirname "$0")
+
+# Being on PATH is not enough to be usable: on Windows, python3 is often a
+# zero-byte Microsoft Store placeholder that is found but cannot run. Probe
+# each candidate by actually executing it, and take the first that works.
+for interpreter in python3 python py; do
+    if "$interpreter" -c "" >/dev/null 2>&1; then
+        exec "$interpreter" "$hookdir/check_staged_python.py"
+    fi
+done
+
+# No interpreter on PATH. Warn rather than block: some git clients run hooks
+# with a reduced PATH, and failing every commit there would be worse than the
+# gap. The same check runs in CI, which stays as the backstop.
+echo "pre-commit: no Python interpreter found; syntax check skipped." >&2
+exit 0
