@@ -170,13 +170,15 @@ written against.
 <details>
 <summary>Tell me more about the tracking columns</summary>
 
-Five columns are added to the end of every table: who created the record and when, who last changed
-it and when, and one the database maintains itself. They go at the end, in that order, on every
-table.
+How many columns are added depends on where the tables live. **Four are added to a table in an
+Access file** — who created the record and when, who last changed it and when. **A table in SQL
+Server gets a fifth**, one the database maintains itself so it can tell whether someone else changed
+a record while you had it open. Access has nothing of its own that does that, so on a table in an
+Access file the fifth column is not added at all. They go at the end, in that order, on every table.
 
-They matter more here than in most builds. The audit system this template installs writes to those
-five columns every time anyone changes a record, so their names are built into the code you get. If
-you change the names here, the code changes with them.
+They matter more here than in most builds. The audit system this template installs writes to the
+four who-and-when columns every time anyone changes a record, so their names are built into the code
+you get. If you change the names here, the code changes with them.
 
 </details>
 ```

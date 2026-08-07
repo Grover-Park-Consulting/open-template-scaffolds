@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.6.1
+version: 0.6.2
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -2615,9 +2615,8 @@ End Function
 ## Standards Layer
 
 - **Error handling** — the blocks above ship the dependency-free `MsgBox` default; substitute
-  your house pattern per `error-handling.md`. Two deliberate exceptions are annotated in place:
-  `BackupLongTextFieldsDM` stays quiet (it runs inside every save), and
-  `BackupAndRemoveAllDataMacros` skips error 2950 by design.
+  your house pattern per `error-handling.md`. One deliberate exception is annotated in place:
+  `BackupLongTextFieldsDM` stays quiet (it runs inside every save).
 - **Query style** — the inline SQL kept here is from the proven source; rewrite per
   `query-style.md` if your house centralizes SQL differently.
 - **Naming conventions** — the config scan's `tbl`/`tlkp` (excluding `tmp`) prefix filter is the
