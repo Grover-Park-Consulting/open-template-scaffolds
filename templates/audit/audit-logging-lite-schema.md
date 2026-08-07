@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.3.0
+version: 0.3.1
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -49,8 +49,9 @@ house_assumptions:
     numeric (AutoNumber/Long) primary key; the Long Text backup plumbing and the generated macro
     XML key on one numeric PK, so composite or text keys are not supported
   - tblAuditLog — audited rows are referenced by name and key value (TableName + PrimaryKey),
-    deliberately without enforced relationships, so audit history survives deletion of the rows
-    it describes
+    and nothing in the database enforces that reference. In Access terms, there is no relationship
+    between the log and the audited table, so no referential integrity and no cascade delete. That
+    is deliberate — audit history survives deletion of the row it describes
   - tblAuditLogConfig — the schema scan selects candidate tables by the tbl/tlkp prefix naming
     convention, excluding tmp (one code filter in the paired scaffold, kept in sync between
     Two_PopulateConfigTable and CheckAuditReadiness); everything finer-grained is decided in
@@ -247,7 +248,8 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
   outlive nothing; delete clients only after their tickets are resolved or reassigned).
 - `tlkpTicketPriority (1) → (∞) tblSupportTicket` on `TicketPriorityID` — enforced, no cascade.
 - **The three system tables are deliberately unrelated** — to each other and to the audited
-  tables. `tblAuditLog` and `tblLongTextBackup` reference audited rows by `TableName` +
+  tables. No referential integrity is defined between them, so no cascade delete ever reaches the
+  log. `tblAuditLog` and `tblLongTextBackup` reference audited rows by `TableName` +
   `PrimaryKey` value so the trail survives deletion of the rows it describes, and so one log
   serves every audited table without a web of enforced keys.
 
