@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.7.2
+version: 0.7.3
 status: draft
 ---
 
@@ -664,7 +664,7 @@ It exists because an instruction to proceed — "find a template and run it" —
 put seven questions in front of someone. The entry question costs them one, and it is the only
 place the wizard interposes itself between the instruction and the build.
 
-Four rules govern it:
+Five rules govern it:
 
 - **Asked once, before Step 1, and never again.** It is not an option inside Step 1, and no later
   step re-opens it.
@@ -674,6 +674,13 @@ Four rules govern it:
 - **State the preferred choices before acting on them** — the answer being used at each skipped
   step, in a short list. `Just build it` authorizes known answers; it is not consent to be
   surprised.
+- **A preferred choice that contradicts what the developer asked for is not a preferred choice on
+  that run — ask the step, and say why you are asking it.** Preferred choices are written into a
+  template before anyone has said what they want, so a request can arrive that one of them directly
+  contradicts. A developer who asks for the feature on the database they already have has ruled out
+  the step whose preferred choice builds a set of sample tables to try it on; using it anyway is
+  precisely the surprise the rule above forbids. This applies to one step at a time — the rest of
+  `Just build it` stands.
 - **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
   is what this question is for, and answering it takes one click.
 

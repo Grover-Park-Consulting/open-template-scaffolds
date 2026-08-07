@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.6.0
+version: 0.6.1
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -313,6 +313,16 @@ exactly the kind of guess this wizard is built to avoid.
 
 **Skip when:** never.
 
+**To the AI assistant: the option list holds three answers at most, and `They're all in one file`
+is one of them — so two database files fill it exactly.** An ordinary folder holds more than two:
+the file with the real tables, a copy of the file people run, and a backup of either. Narrow the
+list before offering it rather than truncating it afterwards. A file holding only links to tables
+elsewhere cannot be the answer, and neither can one with no tables in it at all, so neither is
+offered. Drop `They're all in one file` as soon as a second database file has been found — the
+folder has already answered it. If more than three candidates still survive, offer three and say in
+the question itself that a different file can be named instead. There is no room on this step for
+`Go back to the previous question`; that is expected here, not an omission.
+
 <details>
 <summary>Tell me more about why the file matters</summary>
 
@@ -506,11 +516,17 @@ every front end**, for the reason given before step 1.
 | Option | Short description |
 |---|---|
 | `Yes, they're how I want them` | Carry on. |
-| `Not yet — I'll set them now` | Open `tblAuditLogConfig` and set them; I wait until you say you're done. |
+| `Not yet — I'll set them now` | I close the database so you can open `tblAuditLogConfig` and set them, then wait until you say you're done. |
 
 **Preferred:** none. Only you know whether the list says what you meant.
 
 **Skip when:** never. This is the review the whole design is built around.
+
+**To the AI assistant: if you are building the database yourself rather than handing over a script,
+you are holding the file open and the developer cannot open it.** Close it, say that you have, and
+wait for them. Then reopen it to carry on. This applies at every step that asks the developer to go
+and look at a table, not only this one — an instruction to open something they are locked out of
+reads as the wizard being broken.
 
 <details>
 <summary>Tell me more about the switches</summary>
