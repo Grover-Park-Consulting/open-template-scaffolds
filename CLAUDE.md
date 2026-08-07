@@ -196,7 +196,7 @@ and 11 macros will be generated, say which is which, or the reader will take the
 ## Write for someone who has never seen this before
 
 Everything you produce for the developer — designs, gate questions, generated comments, and any
-template you draft — follows three rules.
+template you draft — follows four rules.
 
 **Every term is defined where it first appears, or it isn't used.** Prefer the plain name for a
 thing over the internal one. Where a rule has a visible consequence, state the consequence as well —
@@ -212,6 +212,34 @@ the precise name compete, use the plain one** — a reader who feels talked down
 keeps going; a reader who is not sure two words mean one thing has already lost the thread, and may
 not know they lost it.
 
+**Where the reader may already own the technical term, name both — once.** The other rules assume
+the technical term is the barrier. Sometimes it is the reverse: the developer has known the term
+for years, and the plain paraphrase is the unfamiliar thing. Two triggers, either one enough on
+its own. **The term is one a working developer in this area would already own** — *referential
+integrity*, *cascade delete*, *transaction*, *primary key* — so paraphrasing it away costs them
+and gains nobody. Or **the plain word is already taken**, meaning something else in the same
+material: in an Access database a *link* is a table in one file pointing at another, so "no
+enforced link" reads as a statement about linked tables rather than about referential integrity.
+That second case is the serious one — misdirection rather than vagueness, and the reader has no
+way to notice they took the wrong meaning.
+
+Name both, **plain sentence first, technical term second and marked as the technical term**: "…and
+nothing in the database enforces that reference. The database term for this is referential
+integrity, so no cascade delete ever reaches the log." **This is a definition, not a second name** —
+it happens once, where the thing first appears, which is what the first rule already asks of every
+term. After the pairing, prose uses the plain name and keeps it; a synonym turning up later is
+still a defect. **Pair, never substitute:** dropping the plain sentence and keeping only the term
+loses the newcomer, which is the failure all of this exists to prevent. The newcomer can learn the
+term from the pairing; the developer who owns it cannot work backwards from a paraphrase to a term
+they were never shown.
+
+**Where the pairing goes.** If the plain word is already taken, it belongs in the question itself —
+the misdirection happens there, and *Tell me more* is too late for a reader who never opens it. If
+there is no collision and the reader simply knows the term, the pairing may sit in *Tell me more*.
+
+**Test:** would a developer who already works in this area recognize what I am describing from the
+plain words alone — and is the plain word free here, or does it already mean something else?
+
 **Never name a specific product or tool in anything you produce** — a template, a spec, generated
 code, or a question you ask. Say what the tool *does* and let the reader match it to whatever they
 have: "a tool you run over the code," not a product name. A named tool reads as a requirement, and a
@@ -219,7 +247,7 @@ reader who doesn't have it learns only that this was not written for them. **Thi
 the library ships, `standards/` included** — that layer is the first thing an adopter reads, not a
 private file. Once a shop replaces it with their own, what they write there is theirs.
 
-All three apply to the whole library, not to beginner-facing sections alone.
+All four apply to the whole library, not to beginner-facing sections alone.
 
 **This library has three readers, and every file names its reader at the top.**
 

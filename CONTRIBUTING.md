@@ -54,6 +54,9 @@ Every contributed template must:
   rule. If a sentence would send a first-time reader to a search engine or to another file, rewrite
   it. This is a review criterion, not a preference — real testing has repeatedly shown that where a
   template states a rule without its consequence, the reader concludes the system is broken.
+  Where a plain paraphrase would collide with a term the reader probably already owns, or with a
+  word that already means something else here, name both once — plain sentence first, technical
+  term second.
 
 `validate()` is **format-only**: it checks that a template is internally well-formed. It does not
 open any database, and it does not judge whether a template *fits* a given application — that

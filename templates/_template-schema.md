@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.7.1
+version: 0.7.2
 status: draft
 ---
 
@@ -52,7 +52,9 @@ engagement is always the adopter's judgment.
   actually see happen — not only the rule that governs it. If a sentence would send a first-time
   reader to a search engine or to another file to understand it, rewrite it. This applies to the
   whole template, not to its introductory sections alone: field tables and Business Rules stay
-  precise, but precision and plain language are not in tension.
+  precise, but precision and plain language are not in tension. Where a plain paraphrase would
+  collide with a term the reader probably already owns, or with a word that already means something
+  else here, name both once — plain sentence first, technical term second (§10.5 rule 3).
 
 ---
 
@@ -579,7 +581,15 @@ mattered. The disclosure line gives an anchor instead — everything you must ac
    plain name and the precise name compete, use the plain one** — a reader who feels talked down to
    is annoyed and keeps going; a reader who is not sure two words mean one thing has already lost
    the thread, and may not know they lost it. If the precise name is genuinely needed, it replaces
-   the plain one from first use; it never joins it.
+   the plain one from first use. **The exception is a term the developer probably already owns** —
+   *referential integrity*, *cascade delete* — **or a plain word already taken by something else in
+   this material**, where the paraphrase misdirects rather than merely under-informs. There, name
+   both once, plain sentence first and the technical term marked as such: *"nothing in the database
+   enforces that reference — the database term for this is referential integrity."* After the
+   pairing the plain name carries on alone; pairing is a definition given once, and a synonym
+   appearing later is still a defect. Where the plain word is taken, the pairing belongs **in the
+   question**, not in *Tell me more* — a reader who does not open *Tell me more* has already taken
+   the wrong meaning.
 4. **A short description says what the option *is*, in one line — never why it is better.** No
    bolding, no ordering by preference, no "recommended". Every comparison lives in *Tell me more*.
    A description may carry a consequence the developer needs *at the moment of choosing* ("any Data
