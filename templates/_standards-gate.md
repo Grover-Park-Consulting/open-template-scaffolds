@@ -454,6 +454,11 @@ A copy of the rules as they came with the library is in `standards-original`.
 
 Replace an existing block; do not add a second one.
 
+**Say that it was written, and where.** If it cannot be written — the folder is read-only, or the
+library is somewhere the developer would rather not have changed — say that instead, and say what
+follows: the next run asks the gate as a first run rather than asking about what was settled. Either
+way it goes in the build record.
+
 **The build record** (`_materialization.md`, "The build record") carries the gate too: its steps and
 answers under the decisions taken, everything the compatibility check found under what was checked
 before building — including anything the developer chose to build past — and anything a chosen rule

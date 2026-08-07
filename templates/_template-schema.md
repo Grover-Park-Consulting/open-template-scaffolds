@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.7.3
+version: 0.7.4
 status: draft
 ---
 
@@ -664,7 +664,7 @@ It exists because an instruction to proceed — "find a template and run it" —
 put seven questions in front of someone. The entry question costs them one, and it is the only
 place the wizard interposes itself between the instruction and the build.
 
-Five rules govern it:
+Six rules govern it:
 
 - **Asked once, before Step 1, and never again.** It is not an option inside Step 1, and no later
   step re-opens it.
@@ -683,6 +683,11 @@ Five rules govern it:
   `Just build it` stands.
 - **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
   is what this question is for, and answering it takes one click.
+- ***n* is this template's own count** — the steps in its `## Wizard` section that apply to this
+  run, a number the developer could arrive at from the file. A run can turn up questions no
+  template carries: a build route where a connected tool offers one, a file that has to be made
+  writable first, a step re-asked under the rule above. Don't fold those into *n* and don't try to
+  predict them. Ask each where it arises and say it is one more than the number given at the start.
 
 ### 10.7 "Preferred choice", not "default" — and why the word matters
 

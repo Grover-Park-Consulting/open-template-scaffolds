@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.6.2
+version: 0.6.3
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -175,6 +175,7 @@ Three layers, kept distinct throughout:
 | A Trusted Location | The generator and the macros' VBA calls run only with code enabled |
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
 | **Every copy of the database closed** | `Three_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros. Another Access instance holding one of those tables breaks the run part-way through, leaving some tables done and some not. In a split design that means the back end *and* every front end — see below. |
+| **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Three_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
 
 ### Where each module goes in a split database
 
@@ -233,11 +234,12 @@ standards gate above is asked before all of them and is not counted among the ni
 use**, so the try-it-out build asks eight and the other asks all nine.
 
 **If the entry question is answered `Just build it`:** Steps 1, 4, 5 and 6 use their preferred
-choices, and **Steps 2, 7, 8 and 9 are still asked** — those four have no preferred choice, because
-each needs something only you can supply: which file the tables are in, whether a list is right,
-whether the switches say what you meant, and permission to change your tables. So the demo build
-becomes four questions instead of eight. State the preferred choices being used before acting on
-them.
+choices, and the rest are still asked — they have no preferred choice, because each needs something
+only you can supply: which file the tables are in, whether you have a backup, whether a list is
+right, whether the switches say what you meant, and permission to change your tables. On the
+try-it-out demo that is Steps 2, 7, 8 and 9 — four questions instead of eight. On a database you
+already use it is those four and Step 3 as well — five instead of nine, because only you can say
+whether you have a copy to go back to. State the preferred choices being used before acting on them.
 
 This is a **presentation device, not a second build path** — the same decisions, the same
 generated result, met one at a time instead of all at once. Nothing is installed to run it and no
