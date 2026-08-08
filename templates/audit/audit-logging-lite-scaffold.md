@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.7.0
+version: 0.8.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -23,6 +23,7 @@ new_procedures:
   - AddAuditColumns (Path A only)
   - One_CreateAuditTables
   - Two_PopulateConfigTable
+  - IsAuditCandidateTable
   - CheckAuditReadiness
   - Three_GenerateAllAuditDataMacros
   - CreateAllDataMacros
@@ -74,9 +75,12 @@ warnings:
     therefore emits the house audit-column stamping (standards/audit-columns.md) and the change
     auditing TOGETHER, in one Before Change macro, so the two no longer destroy each other. Any
     OTHER Data Macro a table already carries — business logic of your own, written for reasons
-    unrelated to this system — is still replaced. The generator backs up a table's existing macros
-    automatically before replacing them, but nothing restores that logic afterward; re-adding it is
-    the developer's call. Check for this specifically on Path B.
+    unrelated to this system — is still replaced. And where a table already stamps who-and-when, that
+    macro is replaced by this generator's version, which may not behave identically — an existing one
+    may stamp the modified pair on insert as well as on update, or put back a cleared value, neither
+    of which this one does. Both write the same columns, so the change is easy to miss. The generator
+    backs up a table's existing macros automatically before replacing them, but nothing restores that
+    logic afterward; re-adding it is the developer's call. Check for this specifically on Path B.
   - If any importer un-escapes HTML/XML entities in VBA source on the way in (this repo's own
     Access Explorer MCP code-import tools do), a literal &lt;&gt; in GetComparisonExpression
     becomes a raw <> and breaks the generated macro XML (error 3870). The function builds the
@@ -150,7 +154,7 @@ there (see `BackupLongTextFieldsDM`).
 
 | Module | Procedures | Lives in |
 |---|---|---|
-| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the numbered procedures, `CheckAuditReadiness`, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression` | Back end only |
+| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the numbered procedures, `CheckAuditReadiness`, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression`, `IsAuditCandidateTable` | Back end only |
 | `modAuditLongText` | `AuditUser`, `BackupLongTextFieldsDM` | **Back end AND every front end** |
 | `modAuditAdmin` | `BackupAndRemoveAllDataMacros` | Back end only |
 | `modAuditVerify` | `DumpTableMacros`, `ListMacroEvents` | Back end only |
@@ -638,6 +642,13 @@ macro — so the two no longer destroy each other. But any *other* Data Macro a 
 ***business logic of your own written for unrelated reasons is replaced too.*** The generator backs a
 table's existing macros up to `DataMacroBackups\` before replacing them and names the affected
 tables in its report; putting that logic back is your call.
+
+**And if your tables already record who created a record and who changed it, the macro doing that is
+replaced too — by this system's version, which may not behave exactly like yours.** Both fill the
+same columns, so the difference is easy to miss. Yours might fill the changed-by pair when a record
+is first created, or put a value back if somebody clears it. This one fills the created pair when the
+record is made and the changed pair only on a later change, and it never puts anything back. Your
+original is in `DataMacroBackups\` if you want to compare the two, or fold something back in.
 
 **It is safe to run again.** Generation replaces rather than accumulates, so a run that stopped
 part-way — because a table was held open somewhere — is fixed by closing everything and running it
@@ -1356,15 +1367,10 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
     db.Execute "DELETE * FROM tblAuditLogConfig", dbFailOnError
 
     For Each tdef In db.TableDefs
-        ' [BUSINESS LOGIC — scan boundary] Which tables are candidates at all. This default
-        ' scans tables prefixed tbl or tlkp (your data and lookup tables under
-        ' naming-conventions.md) but never tmp (temporary/working tables); system (MSys)
-        ' tables never match either prefix. On another naming policy, change this one test —
-        ' every finer-grained decision is a flag in the config table, not code. Keep
-        ' CheckAuditReadiness's copy of this test in sync if you change it here.
-        ' >>> adjust the prefix test to your naming convention <<<
-        If (Left(tdef.Name, 3) = "tbl" Or Left(tdef.Name, 4) = "tlkp") _
-            And Left(tdef.Name, 3) <> "tmp" Then
+        ' [BUSINESS LOGIC — scan boundary] Which tables are candidates at all. The test lives
+        ' in IsAuditCandidateTable, which CheckAuditReadiness calls as well, so the two cannot
+        ' disagree about what is in scope. Change it there, in one place.
+        If IsAuditCandidateTable(tdef.Name) Then
 
             ' Get the primary key field name for this table
             pkFieldName = ""
@@ -1454,6 +1460,28 @@ errHandler:
 End Function
 ```
 
+### IsAuditCandidateTable — `Private Function` → `Boolean`
+
+**The one place that decides whether a table is in scope at all.** `Two_PopulateConfigTable` and
+`CheckAuditReadiness` both call it, so the scan and the safety check cannot disagree about which
+tables they are talking about — a disagreement that shows up as a table reported ready and then never
+scanned, or the reverse.
+
+**This is the naming convention made executable**, and it is the single line to change on another
+naming policy. Everything finer-grained is a flag in the config table rather than code.
+
+```vba
+Private Function IsAuditCandidateTable(sTableName As String) As Boolean
+    ' [BUSINESS LOGIC — scan boundary] This default takes tables prefixed tbl or tlkp (data
+    '            and lookup tables under naming-conventions.md) and never tmp (temporary or
+    '            working tables); system (MSys) tables match neither prefix. Change this test
+    '            and nothing else if your naming policy differs.
+    ' >>> adjust the prefix test to your naming convention <<<
+    IsAuditCandidateTable = (Left(sTableName, 3) = "tbl" Or Left(sTableName, 4) = "tlkp") _
+        And Left(sTableName, 3) <> "tmp"
+End Function
+```
+
 ### CheckAuditReadiness — `Public Function` → `String` (safety check — run before step 3, required for Path B)
 
 A read-only check you can run any time, at no risk — it doesn't change anything. It looks at each
@@ -1502,10 +1530,10 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
     sMsg = ""
 
     For Each tdef In db.TableDefs
-        ' [BUSINESS LOGIC — scan boundary] Same tbl-or-tlkp-but-not-tmp test as
-        ' Two_PopulateConfigTable; keep the two in sync if you change one.
-        If (Left(tdef.Name, 3) = "tbl" Or Left(tdef.Name, 4) = "tlkp") _
-            And Left(tdef.Name, 3) <> "tmp" _
+        ' [BUSINESS LOGIC — scan boundary] The same test Two_PopulateConfigTable uses, from the
+        ' one place it lives. The three system tables are excluded here as well: they are
+        ' scanned into the config table but never get macros (schema Business Rule 5).
+        If IsAuditCandidateTable(tdef.Name) _
             And tdef.Name <> "tblAuditLog" _
             And tdef.Name <> "tblLongTextBackup" _
             And tdef.Name <> "tblAuditLogConfig" Then
@@ -1725,6 +1753,7 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     Dim sPrimaryKeyField As String
     Dim fieldInfo As Variant
     Dim bHasLongText As Boolean
+    Dim bHasAuditColumns As Boolean
     Dim lAuditableCount As Long
     Dim lMacroCount As Long
     Dim sWhatWasBuilt As String
@@ -1739,6 +1768,7 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     ' Find the PK field, count auditable fields, and detect auditable Long Text
     ' (schema Business Rules 2, 4, 5)
     bHasLongText = False
+    bHasAuditColumns = False
     lAuditableCount = 0
     For Each fieldInfo In fieldList
         If fieldInfo(2) = True Then sPrimaryKeyField = fieldInfo(0)
@@ -1746,6 +1776,14 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
             lAuditableCount = lAuditableCount + 1
             If fieldInfo(1) = dbMemo Then bHasLongText = True
         End If
+        ' [SCAFFOLD] Presence of the tracking columns, for the report only — the same test
+        '            BuildBeforeChangeMacro makes when it decides whether to emit stamping.
+        '            Outside the IsAuditable test above, because tracking columns are always
+        '            seeded off and would never be seen there.
+        If StrComp(fieldInfo(0), AUDIT_CREATED_DATE, vbTextCompare) = 0 _
+            Or StrComp(fieldInfo(0), AUDIT_CREATED_BY, vbTextCompare) = 0 _
+            Or StrComp(fieldInfo(0), AUDIT_MODIFIED_DATE, vbTextCompare) = 0 _
+            Or StrComp(fieldInfo(0), AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasAuditColumns = True
     Next fieldInfo
 
     ' BeforeChange carries the audit-column stamping as well as Long Text staging, so it is
@@ -1835,12 +1873,22 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     If lAuditableCount = 0 Then
         sWhatWasBuilt = "BeforeChange only — audit-column stamping, no audit trail " & _
             "(this table has no auditable fields; inserts still work)"
-    ElseIf bHasLongText Then
-        sWhatWasBuilt = "3 After + BeforeChange (stamping and Long Text staging) + BeforeDelete"
-    ElseIf Len(sBeforeChange) > 0 Then
-        sWhatWasBuilt = "3 After + BeforeChange (stamping)"
     Else
-        sWhatWasBuilt = "3 After (this table carries no house audit columns, so nothing to stamp)"
+        sWhatWasBuilt = "3 After"
+        If Len(sBeforeChange) > 0 Then
+            If bHasAuditColumns And bHasLongText Then
+                sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (stamping and Long Text staging)"
+            ElseIf bHasAuditColumns Then
+                sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (stamping)"
+            Else
+                sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (Long Text staging only — " & _
+                    "no tracking columns found on this table, so nothing is stamped)"
+            End If
+        Else
+            sWhatWasBuilt = sWhatWasBuilt & " (no tracking columns found on this table, " & _
+                "so nothing is stamped)"
+        End If
+        If bHasLongText Then sWhatWasBuilt = sWhatWasBuilt & " + BeforeDelete"
     End If
 
     Debug.Print "  - " & lMacroCount & " data macro(s) created: " & sWhatWasBuilt
@@ -2745,9 +2793,9 @@ End Function
   annotated in place: `BackupLongTextFieldsDM` stays quiet (it runs inside every save).
 - **Query style** — the inline SQL kept here is from the proven source; rewrite per
   `query-style.md` if your house centralizes SQL differently.
-- **Naming conventions** — the config scan's `tbl`/`tlkp` (excluding `tmp`) prefix filter is the
-  naming convention made executable, and `CheckAuditReadiness` repeats the same filter so the two
-  stay in step; adjust both with your prefix policy.
+- **Naming conventions** — the `tbl`/`tlkp` (excluding `tmp`) prefix filter is the naming convention
+  made executable. It lives in `IsAuditCandidateTable`, which both the config scan and
+  `CheckAuditReadiness` call, so adjusting it to your prefix policy is one edit in one place.
 - **Design principles** — one job per procedure throughout: one sample-data setup (Path A only),
   three numbered entry points, one safety check, five single-macro builders, one comparison
   helper, one staging function, one admin reset.

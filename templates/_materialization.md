@@ -407,6 +407,17 @@ stored as text. Re-encoding the identical content as UTF-8 without a BOM imports
 *(Observed 2026-08-02 building the audit-logging scaffold: a 2,954-line corrupt module on the first
 attempt, clean on the second.)*
 
+**A later build wrote the same content as ANSI and it imported correctly too, which proves less than
+it looks.** For content that is entirely plain ASCII, ANSI and UTF-8-without-a-BOM are the same
+bytes, so both "working" is one result, not two. The durable rule is the one stated above — **not
+UTF-16 LE** — and UTF-8 without a BOM is what to write.
+
+**Where that distinction starts to matter is the first non-ASCII character**, and a comment is the
+likeliest place for one: a dash typed as an em dash, a curly quote pasted in from prose. Whether such
+a character survives the import is **untested**. Until somebody establishes it, keep the code blocks
+a scaffold ships ASCII-only — a plain hyphen in a comment costs nothing, and a module that will not
+compile costs a build.
+
 **The first line of each file is the module name**, in the form the editor expects:
 
 ```text
