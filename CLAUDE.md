@@ -64,8 +64,8 @@ one of two ways, at their direction:
   as a wizard step** (§10) — say you have it, say you're set up to use it, and offer the other way
   in the same breath:
 
-  > **Ask:** I have an MCP available to do the work in the Access database, and I'm set up to use it
-  > unless you'd rather import the code yourself.
+  > **Ask:** I can build this directly in your database through the Access MCP server you have
+  > connected, and I'm set up to do that unless you'd rather import the code yourself.
   >
   > | Option | Short description |
   > |---|---|
@@ -74,26 +74,47 @@ one of two ways, at their direction:
   >
   > **Preferred:** `Use it`.
 
-  **The two failures this sits between, both of which have actually happened.** Using the MCP
-  without saying so leaves the developer watching objects appear in their database with no idea
-  another route existed. Asking an open-ended "how would you like me to build this?", with the
+  **Two different servers, and only one of them can build anything.** This library ships **the
+  template library MCP server** (`mcp-server/`, registered by the `.mcp.json` at the root). It
+  reads templates and standards and **cannot create or change anything in a database**. Building
+  needs **an Access MCP server** — one whose tools open and modify an `.accdb`. This library does
+  not ship one. **The template library MCP server never satisfies this check:** if the only server
+  connected is that one, no Access MCP server is connected. Neither name is ever shortened to "the
+  MCP" — that phrase alone names both, which is how the two get confused.
+
+  **Whoever has an Access MCP server connected installed it deliberately.** So the question above
+  names the connected server and asks; it does not explain what an MCP server is. There is no
+  reader who has one and does not know what it is.
+
+  **The two failures this sits between, both of which have actually happened.** Using an Access MCP
+  server without saying so leaves the developer watching objects appear in their database with no
+  idea another route existed. Asking an open-ended "how would you like me to build this?", with the
   library's reasoning about adopters attached, is a gate that stops them for nothing — they
   connected the server in order to have it used. **Say what you have, name the preferred choice,
   give them one click to take the other.**
 
-  **Where no MCP is connected there is nothing to ask about**: generate the script, hand it over,
-  and say that's what you're doing.
+  **Where no Access MCP server is connected there is nothing to ask about**: generate the script,
+  hand it over, and say that's what you're doing.
 
-  **You are responsible for starting and restarting the MCP server, including after it drops
-  mid-build.** The recovery path ships inside this library (`mcp-server/setup.ps1`, with `.mcp.json`
-  beside it). A tooling outage is yours to fix, not a question to hand the developer — turning one
-  into a choice they have to make converts a trial of the template into a trial of the plumbing.
+  **If the Access MCP server drops mid-build, restoring it is yours to attempt, not a question to
+  hand the developer** — a tooling outage turned into a choice converts a trial of the template
+  into a trial of the plumbing. Reconnect and carry on if you can. Nothing in this library restores
+  it: it is registered in the developer's own AI client, not shipped here, so `mcp-server/setup.ps1`
+  has no bearing on it — that script sets up the template library MCP server.
 
-  ***Tell me more* on that step covers two things:** what an MCP server is, in plain words, for a
-  developer who has never met one; and the caveat that survives — the MCP's code-import path can
-  silently corrupt VBA that emits escaped XML entities (see `templates/_materialization.md`, "VBA
-  code import — the Access MCP unescapes XML entities"). That is a reason to check the imported
-  source where a template warns about it, **not** a reason to avoid the MCP.
+  **If you can't, the other build route is always open:** generate the remaining code as files,
+  hand them over, and tell the developer:
+
+  > The Access MCP server couldn't complete the import in this run. You can complete the import
+  > yourself, or stop the template and retry. If you continue to have problems with the Access MCP
+  > server, troubleshoot it before retrying this template.
+
+  ***Tell me more* on that step covers what each route does to the database** — not the entity
+  caveat below, which the developer can do nothing about and which is yours to handle silently:
+
+  > Building directly creates the modules and objects while you watch, and nothing is written until
+  > you choose it. Taking the files means you import and run them yourself, at whatever pace you
+  > like. Either way the result is the same, and either way you approve the design first.
 
   Then **ask which platform the tables are for**, and generate the matching artifact (keys,
   relationships, indexes, lookup tables, and **seed rows** throughout):
@@ -291,7 +312,7 @@ When no template fits:
    In the same breath, name the alternatives without stopping for a menu: adapting the nearest
    template despite the stated mismatch, or refining the description.
 3. **On the go-ahead, design under the full standards layer.** Read every file in `standards/` (or
-   call the MCP `get_standards` tool if available) and apply naming, audit columns, field
+   call the template library MCP server's `get_standards` tool if available) and apply naming, audit columns, field
    qualification, the junction-PK convention, and third-normal-form discipline exactly as you would
    for a template-based design. Same two-part deliverable (diagram + field detail), same approval
    gate.

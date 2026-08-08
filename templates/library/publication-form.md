@@ -3,7 +3,7 @@ template: library-catalog-publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.3.0
+version: 0.3.1
 status: draft
 implements: library-catalog-schema
 record_source: qryPublication_frm
@@ -156,8 +156,9 @@ patterns; not baseline form features):*
 The form-spec materializes as importable Access form text (`LoadFromText`) with a default stacked
 layout and the code-behind wired in — event handlers calling the framework helpers (and any paired
 `vba-scaffold` procedures). The markdown → Access-text mapping is **defined and hand-validated** as
-part of this template type's proof; the actual generator is built in the MCP phase (B3). Alternatively,
-the form is built live via the Access MCP `create_form` / `create_control` tools.
+part of this template type's proof; the actual generator is built in the template library MCP server
+phase (B3). Alternatively, the form is built live through an Access MCP server's form-creation and
+control-creation tools.
 
 ## Extra Options
 

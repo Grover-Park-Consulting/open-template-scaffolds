@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.7.4
+version: 0.7.5
 status: draft
 ---
 
@@ -15,7 +15,7 @@ status: draft
 file in order to use the template.
 
 This is the **format specification** every template file in this library must follow.
-It is the contract the reference MCP server keys off: discovery (`list_templates`,
+It is the contract the template library MCP server keys off: discovery (`list_templates`,
 `search_templates`) reads the front-matter; `get_template` composes the body with the
 active standards layer; `validate` checks a template (or a filled-in copy) against the
 rules in this document.
@@ -32,8 +32,8 @@ engagement is always the adopter's judgment.
 > `templates/northwind/stocktake-schema.md` (`type: table-schema`),
 > `templates/northwind/stocktake-scan-scaffold.md` (`type: vba-scaffold`), and
 > `templates/library/publication-form.md` (`type: form-spec`). **All three type sections (§4, §8,
-> §9) are authoritative — the template format is complete**, each proven by hand before the MCP's
-> schema-dependent tooling is built against it.
+> §9) are authoritative — the template format is complete**, each proven by hand before the
+> template library MCP server's schema-dependent tooling is built against it.
 
 ---
 
@@ -43,8 +43,8 @@ engagement is always the adopter's judgment.
 - **Location:** `templates/<domain>/<name>.md`. Files prefixed `_` (e.g. this one) are
   library infrastructure, not domain templates.
 - **One template per file.** A template defines one cohesive artifact set for one domain.
-- **Single source of truth:** the file *is* the template. CLAUDE.md and the MCP are readers
-  of it, never separate copies.
+- **Single source of truth:** the file *is* the template. CLAUDE.md and the template library
+  MCP server are readers of it, never separate copies.
 - **Write for a reader who has never seen this system.** Every term is defined where it first
   appears, or it isn't used — no undefined jargon, no coined label the reader has to look up, no
   concept assumed from another file. Prefer the plain name for a thing over the internal one.
@@ -387,7 +387,8 @@ in the spec. Hidden/internal controls (PK, sort key, image-link) are listed and 
 A form-spec materializes as **importable Access form text** (`SaveAsText`/`LoadFromText`) with a
 default stacked layout and the code-behind wired to the named framework helpers (and any paired
 `vba-scaffold`). The markdown → Access-text mapping is proven by hand before a generator is built; the
-alternative path builds the form live via the Access MCP `create_form`/`create_control` tools. The
+alternative path builds the form live through an Access MCP server's form-creation and
+control-creation tools. The
 markdown is the source of truth; the Access text is a generated target. See `_materialization.md` for
 the full mapping rules and a hand-validated fragment.
 

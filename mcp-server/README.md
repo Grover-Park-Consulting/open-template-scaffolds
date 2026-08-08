@@ -7,6 +7,12 @@ Scaffolds library to MCP-capable AI clients. It reads the library's markdown (`t
 single source of truth, and it ships *inside* the library itself — so when you make your own copy of
 the library, the server comes with it. There's nothing separate to download or keep up to date.
 
+**What it does not do: it never touches your database.** Every tool here reads this library's own
+files. It cannot create a table, import code, or change anything in an `.accdb` — and the one tool
+that opens a database at all, `check_compatibility`, opens it only to read what is already there.
+Building into a database is the job of **an Access MCP server**, a different thing that this
+library does not ship. If you have one connected, your AI will say so and ask before using it.
+
 ## Tools
 
 | Tool | Purpose |
@@ -22,8 +28,9 @@ the library, the server comes with it. There's nothing separate to download or k
 
 ## Is this the path for you?
 
-This server is the **more powerful, but more involved** way to use the library. It needs Python and a
-couple of terminal commands. **If that's new to you, you don't need it to get started** — the
+This server is **optional and additive.** What it buys you is speed of lookup, not a different
+result — your AI can find, compose, and check templates without you pointing it at files. It needs
+Python and a couple of terminal commands. **If that's new to you, you don't need it to get started** — the
 [main quick-start](../README.md) uses the templates with just your AI assistant and a copy-paste
 prompt, no setup at all. Come back here when you want the AI to discover, compose, and validate
 templates automatically — or have a more technical colleague set this up once.

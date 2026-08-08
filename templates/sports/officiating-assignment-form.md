@@ -3,7 +3,7 @@ template: sports-officiating-assignment-form
 title: Sports Officiating Assignment — Game Assignment Form
 domain: sports
 type: form-spec
-version: 0.3.0
+version: 0.3.1
 status: draft
 implements: sports-officiating-assignment-schema
 record_source: qryGame_frm
@@ -127,8 +127,8 @@ subform rows).
 
 The form-spec materializes as importable Access form text (`LoadFromText`) with a default
 stacked layout and the code-behind wired to the paired `vba-scaffold` procedures, or is built
-live via the Access MCP `create_form` / `create_control` tools. The markdown is the source of
-truth; see `_materialization.md` for the mapping rules.
+live through an Access MCP server's form-creation and control-creation tools. The markdown is the
+source of truth; see `_materialization.md` for the mapping rules.
 
 ## Extra Options
 

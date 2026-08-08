@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.4.0
+version: 0.4.1
 status: draft
 ---
 
@@ -14,8 +14,9 @@ status: draft
 **If you are the developer:** read it to see exactly what will be done in your database. It is written as instructions only to the AI assistant, not for anyone else.
 
 This is a **format/process reference** (like `_template-schema.md`): it defines how a template's
-approved design becomes a real, buildable artifact, and **proves each mapping by hand** so the MCP
-generator (phase B3) is never built against an unproven mapping. It is meta, not a template
+approved design becomes a real, buildable artifact, and **proves each mapping by hand** so the
+template library MCP server's generator (phase B3) is never built against an unproven mapping.
+It is meta, not a template
 (`type: spec`, `domain: _meta`). Two builds are covered:
 
 - **Table-schema → tables** — Access local tables via a VBA DAO `Sub`, or SQL Server via `CREATE TABLE` DDL.
@@ -364,14 +365,14 @@ Generate both jobs **together**, into one 2010/12 document, with the stamping ac
 change-auditing actions sharing the same `IsNull([Old].[<PK>])` branch. The audit-logging scaffold's
 `BuildBeforeChangeMacro` is the worked example.
 
-### VBA code import — the Access MCP unescapes XML entities
+### VBA code import — an import path can unescape XML entities
 
 Proven by a real failure: a `vba-scaffold` module whose Data Macro builder emits **escaped XML
 entities** (`&lt;`, `&gt;`, `&amp;`) as literal string content compiled and ran fine as a
 standalone import, then threw error **3870** ("Microsoft Access cannot interpret the text you are
-pasting as a data macro") on every table when the *same* source was imported through the **Access
-MCP's code-import tools** (`access_set_code` / `access_vbe_append`). The import path **HTML-
-unescapes entities on the way in** — a literal `&lt;&gt;` in the source becomes a raw `<>` once
+pasting as a data macro") on every table when the *same* source was imported through **an Access
+MCP server's code-import tools**. The import path **HTML-unescapes entities on the way in** — a
+literal `&lt;&gt;` in the source becomes a raw `<>` once
 stored, and that raw `<` is then read as an opening tag inside `<Condition>…</Condition>`,
 malforming the macro XML `LoadFromText` is asked to load.
 
@@ -382,11 +383,13 @@ module's source. A `Chr(38)`-built entity exists only in memory as the string `&
 never present as literal text for an importer to re-interpret. See
 `templates/audit/audit-logging-lite-scaffold.md`'s `GetComparisonExpression` for the worked fix.
 
-**The build route is asked, never assumed.** Where an MCP is connected, say you have it and ask —
-`CLAUDE.md` → "After approval — building it" carries the question, and its preferred answer is
-`Use it`. **A connected MCP is not authorization to use one:** presence is not an answer, the
-developer's is. Where none is connected there is nothing to ask about — generate the script, hand
-it over, and say that is what you are doing.
+**The build route is asked, never assumed.** Where an Access MCP server is connected, say you have
+it and ask — `CLAUDE.md` → "After approval — building it" carries the question, and its preferred
+answer is `Use it`. **A connected Access MCP server is not authorization to use one:** presence is
+not an answer, the developer's is. Where none is connected there is nothing to ask about — generate
+the script, hand it over, and say that is what you are doing. **The template library MCP server
+that ships in `mcp-server/` is not an Access MCP server** — it reads this library's files and
+cannot build anything.
 
 *This passage avoids the word "default" on purpose. It means both the route we would point at first
 and what happens when nobody chooses, and only the first is true here (`_template-schema.md` §10.7).*
@@ -396,7 +399,7 @@ about it, not a reason to steer away from that route. Handing the developer a sc
 ordinary way does avoid the failure mode entirely — but a scaffold that emits escaped XML should
 assemble entities from `Chr()` codes either way, as a second line of defence.
 
-### Importing a VBA module through an MCP — the encoding, and one wrong document
+### Importing a VBA module through an Access MCP server — the encoding, and one wrong document
 
 **A module goes in as a file, and the file must be UTF-8 with no byte-order mark.**
 
@@ -441,7 +444,7 @@ calls failed with "This operation requires an open database" and "refers to an o
 or doesn't exist." Closing the session and calling any tool re-established it, with no work lost.
 Treat it as a reconnect, not a rebuild.
 
-### Running a procedure through an MCP — bare name, and use eval for arguments
+### Running a procedure through an Access MCP server — bare name, and use eval for arguments
 
 Three separate failures, each observed while driving a `vba-scaffold`'s staged procedures.
 
@@ -454,7 +457,7 @@ in the project.
 **2. To pass an argument, evaluate an expression instead of running a procedure.** A run-style tool
 that marshals arguments separately can fail to pass a VBA `Boolean` at all, and a failed marshal has
 been seen to kill the COM session outright — leaving the database held and the next call dead. Use
-the MCP's **expression-evaluation** tool and write the call as ordinary VBA:
+the Access MCP server's **expression-evaluation** tool and write the call as ordinary VBA:
 
 ```vba
 Three_GenerateAllAuditDataMacros(True)    ' works — evaluated as an expression
@@ -472,22 +475,22 @@ evaluation tool has failed with **"Subscript out of range"** where the ordinary 
 identical call without complaint. Use the run tool by default; the evaluation tool is the exception,
 not the upgrade.
 
-### Code imported through an MCP arrives without line numbers
+### Code imported through an Access MCP server arrives without line numbers
 
 Line numbers are added to VBA code by hand, or by a tool run over it in the editor. Neither happens
-when an MCP writes code straight into a database, so **every procedure built that way arrives
+when an Access MCP server writes code straight into a database, so **every procedure built that way arrives
 unnumbered**, and `Erl` in an error handler returns **0** instead of the line that failed. Nothing
 breaks; the handler still fires and still reports the error number and description. What is lost is
 the one thing line numbers buy: knowing *where* it failed.
 
 Whether that matters is a house decision, not a rule this library sets — `standards/error-handling.md`
-owns it. Say it out loud when handing over an MCP-built module, because a shop that relies on `Erl`
+owns it. Say it out loud when handing over a module built through an Access MCP server, because a shop that relies on `Erl`
 for diagnostics will otherwise lose it silently — and tell them the numbers can be added afterwards,
 by hand or with a tool.
 
-### After an MCP-driven build, confirm the file was actually released
+### After a build through an Access MCP server, confirm the file was actually released
 
-A successful close reported by the MCP is **not** proof the file is free. An `MSACCESS` process can
+A successful close reported by the Access MCP server is **not** proof the file is free. An `MSACCESS` process can
 survive that close and keep the .accdb exclusively locked, leaving a `.laccdb` file beside it.
 Before telling the developer to open the file and look at what was built — the natural next step
 after any build — check for the leftover `.laccdb` and test an exclusive open; if the file is still
@@ -563,8 +566,8 @@ Begin
 End
 ```
 
-Once you have that text, the Access Explorer MCP `access_set_code` (object type `macro`) round-trips
-it directly — no FSO / UTF-16 file dance (unlike the data macros above).
+Once you have that text, an Access MCP server's code-setting tool round-trips it directly (proven
+with object type `macro`) — no FSO / UTF-16 file dance (unlike the data macros above).
 
 ---
 
@@ -674,14 +677,14 @@ confirms. A byte-perfect importable file is the generator's job in B3.)*
 
 ---
 
-## Alternative path — build live via MCP
+## Alternative path — build live through an Access MCP server
 
-The same mapping drives the Access Explorer MCP `create_form` / `create_control` tools: instead of
+The same mapping drives an Access MCP server's form-creation and control-creation tools: instead of
 emitting text for import, the generator creates the form and its controls directly, applying the same
 default-layout rule and wiring the same code-behind. The `form-spec` markdown remains the source of
 truth; both paths are generated targets.
 
-**Create the label controls explicitly.** `create_control` makes only the control you name — it does
-**not** auto-create an attached label — so each data control needs a second `create_control` call for
+**Create the label controls explicitly.** A control-creation tool makes only the control you name — it does
+**not** auto-create an attached label — so each data control needs a second call for
 its `lbl…` label (Mapping rule 4). Skipping this is why a live-built form comes up with no captions on
 any control; every control the inventory lists must get its matching label.

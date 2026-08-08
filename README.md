@@ -22,11 +22,35 @@ applications — especially with an AI assistant helping — this library takes 
 abstract part, designing the tables, and gives you a running start. You describe what you want in
 plain words, the AI builds it, and you look it over and approve or adjust.
 
+## What the templates build — and when to back up first
+
+The library provides templates for most of the kinds of work you do when building an Access database:
+
+- **Design and create relational tables**
+- **Write VBA procedures and data macros** — a data macro lives on a table itself and runs whenever a
+  record is added, changed, or deleted. Access has other kinds of macro too; those are not covered
+  yet, but nothing rules them out.
+- **Design and build forms and reports**
+
+Some templates assume you are building new from scratch. Others add features and functionality to a
+database you already have. Each template carries information about how it does those things, and your
+AI assistant tells you which kind you are getting before it builds anything.
+
+**If you choose a template that retrofits an existing database, you must follow good backup
+practices.**
+
+- **Back up before you start.** If your database is split — the tables in one file, the forms and
+  code in another — that means the back end *and* every front end.
+- **Never run a template on a production database** until you have verified that the template
+  produces correct, well-formed results in a backup.
+- **Always keep before and after master copies of your databases**, so you can compare what changed
+  and go back if you need to.
+
 ## Try it in 15 minutes
 
-*There are two ways to use this library — for your first try, use this quick path. **Nothing to
-install.** (A more automated "server" path is optional and comes later — see
-[`mcp-server/`](mcp-server/README.md).)*
+*For your first try, use this quick path. **Nothing to install.** (The library also ships an
+optional server that lets your AI look up templates without opening the files itself — see
+[`mcp-server/`](mcp-server/README.md). It changes nothing about what you get, and it can wait.)*
 
 *Never used an AI assistant, or not sure you have one? Read the short **"Before you start"**
 section in [`WELCOME.md`](WELCOME.md) first — it takes two minutes and gets you set up.*
@@ -76,6 +100,44 @@ Want to see it work first? Open **[`examples/northwind-stocktake/`](examples/nor
 It's the same prompt filled in for a real request, and the tables the AI produced from it. You can compare it
 with your own first result. Look for what's the same and what's different.
 
+## Working on a database you already have
+
+The 15-minute path above builds tables from scratch, so there is nothing of yours to protect. Once
+you move to a template that retrofits — one that adds VBA, data macros, forms or reports to a
+database you already have — set up a working folder first. Everything happens there, on a copy of
+your database.
+
+1. **Make a folder for the work.** Anywhere you like; give it a name you will recognise later.
+2. **Put your copy of the library inside it.** If you downloaded a `.zip`, unzip it here.
+3. **Copy in the databases you want to work on — copies, never the originals.** If your database is
+   split, that means the back end *and* a front end. Close every copy in Access before you start; a
+   file held open elsewhere will stop a build part-way through.
+4. **Open the working folder — the one holding the library and your databases — in your AI
+   assistant.** Not your Documents folder, and not the library folder on its own. That is what
+   rooting the assistant means: it reads and writes inside that folder, and it can see both the
+   library and your databases at once. If you are using a chat assistant in a browser instead, tell
+   it the full path of the folder in your first message.
+5. **Say what you want in plain words.** For a template that retrofits you do not fill in the
+   four-line form from the quick path — you just ask, naming the database: *"Add change auditing to
+   `MyDatabase.accdb` in this folder, using the library here."* The assistant finds the matching
+   template, asks you the questions it needs answered one at a time, shows you the design, and waits
+   for your approval before building anything.
+
+**About the two kinds of server — you need neither.** Everything above works without them. Read
+this only if you have already met one.
+
+- **The template library MCP server** ships with the library and lets your AI look up templates and
+  standards without reading the files itself. It reads this library's files and **cannot create or
+  change anything in your database.** The library ships a configuration file at its root that lets
+  some AI clients start it by themselves — but only when the library folder is the one you opened.
+  In the arrangement above the library is a subfolder, so nothing appears automatically, and there
+  is no error to tell you why. Two ways forward, neither wrong: register it by hand once
+  (`mcp-server/setup.ps1` prints exactly what to paste), or skip it.
+- **An Access MCP server** is a separate thing, and this library does not ship one: its tools open
+  your database and build in it directly. If you have one connected, your AI will say so and ask
+  before using it, and you can always say no and import the code yourself instead. If you don't
+  have one, nothing changes — your AI hands you the code and tells you how to run it.
+
 ## How it works
 
 Two parts, kept separate on purpose:
@@ -100,6 +162,7 @@ library's tested ground. The AI helps, and you still approve everything, but the
 own — no template stands behind it.
 
 The library ships with a sensible default set of standards, so you can start the minute you arrive.
+However, you will still have the opportunity to make decisions about the shape of the final output.
 
 ## What's in here
 
@@ -108,12 +171,13 @@ You only act on a few of these. The rest your AI reads for you, or you can ignor
 | In the folder | What it's for | Do you open it? |
 |---|---|---|
 | **`README.md`** (this file) | Where you start | **Yes — you're reading it** |
+| **`WELCOME.md`** | If you have never used an AI assistant — how to get set up | **Yes, if you're new** |
 | **`prompts/`** | The prompt you fill in and paste (`BuildNewTables-StartHere.md`) | **Yes — the one you use** |
 | **`examples/`** | A finished example, to see it work first | Optional — read to learn |
 | `templates/` | The designs your AI builds from | No — the AI reads these |
 | `standards/` | The default conventions your AI applies | No — unless you swap your own (later) |
 | `CLAUDE.md` | Instructions your AI picks up on its own | No — leave it |
-| `mcp-server/` | The optional, more-automated server path | Only if you choose it — has its own README; not needed to start |
+| `mcp-server/` | An optional server that lets your AI look up templates and standards directly. It cannot change your database. | Only if you choose it — has its own README; not needed to start |
 | `CONTRIBUTING.md`, `LICENSE` | For people adding templates; the license | No |
 
 ### Reading these files
@@ -147,5 +211,8 @@ released under the [MIT license](LICENSE) — free to use, change, and build on.
 ## More to come
 
 We build to a plan, and we hold ourselves to the same discipline this library is about: we publish
-each new piece as we finish and validate it, not before. More templates — and easier ways to put
-them to work — are on the way.
+each new piece as we finish and validate it, not before.
+
+The three kinds of work described above — tables, VBA and data macros, forms and reports — are where
+this library is headed across the board. They are a direction, not a finished list. Expect more
+templates in each of them, and easier ways to put them to work.
