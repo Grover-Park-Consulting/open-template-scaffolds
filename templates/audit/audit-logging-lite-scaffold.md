@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.6.3
+version: 0.7.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -19,8 +19,8 @@ standards_layer:
   - audit-columns
 target_module: modAddDataMacros
 new_procedures:
-  - Zero_CreateSampleTables
-  - AddAuditColumns
+  - Zero_CreateSampleTables (Path A only)
+  - AddAuditColumns (Path A only)
   - One_CreateAuditTables
   - Two_PopulateConfigTable
   - CheckAuditReadiness
@@ -33,7 +33,7 @@ new_procedures:
   - BuildBeforeDeleteMacro
   - AuditSetField
   - GetComparisonExpression
-  - AuditUser
+  - AuditUser (not built when the host's own identity function is used)
   - BackupLongTextFieldsDM
   - BackupAndRemoveAllDataMacros
   - DumpTableMacros
@@ -52,8 +52,11 @@ warnings:
     design. modAuditLongText (BOTH AuditUser and BackupLongTextFieldsDM) must additionally exist in
     every front end, because a data macro fired by a front-end edit resolves the function there.
     AuditUser is needed on every build, Long Text or not, because the stamping macro calls it on
-    every table — without it in the front end, front-end inserts fail outright. The copies must be
-    kept identical by hand; nothing enforces that.
+    every table — without it in the front end, front-end inserts fail outright. Where a build uses
+    the host database's own identity function instead of AuditUser, that requirement moves with it to
+    whichever module holds that function — the same rule, a different file — and modAuditLongText is
+    then needed only where there is a Long Text field. The copies must be kept identical by hand;
+    nothing enforces that.
   - Close every copy of the database before generating. Three_GenerateAllAuditDataMacros opens each
     table in design view, and
     a table held open by another Access instance stops the run part-way, leaving some tables done
@@ -207,6 +210,67 @@ so it can be viewed, the backup table because a front-end-triggered macro has to
 > that takes a day to find. Treat the back end's copy as the original and re-import it to each front
 > end after any change.
 
+### Before you write the modules
+
+**To the AI assistant.** `standards/error-handling.md` requires you to ask the developer how errors
+are reported, and to ask it even when the answer looks settled. **That question is not one of this
+template's nine wizard steps and is not meant to be** — the standards file owns it. Ask it through
+the selection control before you write any of the four modules, and name it as a question this build
+added rather than folding it into the template's count. The answer changes the handler in every
+procedure you emit, so asking afterwards means writing them twice. The blocks below ship option 3
+inline; anything else means replacing the handler in all four modules, not some of them.
+
+**Look before you ask.** The question is the same on every build; the answers are not, and two of
+them exist only if you go and see. Open the file wizard Step 2 named and find out what is there
+before you compose the question — asking first offers three answers when there were four.
+
+**What the answers are here.** The three in `error-handling.md` — and on Path B usually a fourth:
+**the error handler this database already has.** A database that has been in use generally has one,
+and it is usually the right answer, because the code you are adding should fail the way the rest of
+the database already fails. Offer it by name if you find one. If it records the failure without
+telling anyone, `error-handling.md` says what to do about that.
+
+**When there is no logger at all** — none built here, none of the developer's own — options 1 and 2
+are not available, because generated code has to compile on the machine it lands on. Offer the two
+real choices: install a logger first, or use the message box now. Never quietly pick the message box
+and report it afterwards.
+
+**One procedure keeps its own handler whatever is chosen.** `BackupLongTextFieldsDM` runs inside
+every save, called by the data macro itself. A handler that shows a message there interrupts someone
+who was only editing a record, over a failure in bookkeeping they never asked for — and a handler
+that blocks costs them the edit outright. It stays quiet: log silently if the chosen pattern can, and
+never block. Anything else you add to that path follows the same rule.
+
+**Whose name is recorded — ask this the same way, and look first.** The template's answer is
+`AuditUser()`, which returns the Windows account name (schema Business Rule 9, and
+`standards/audit-columns.md` names it). `CurrentUser()` is the named alternative in Extra Options.
+**On Path B there is usually a third, and it is often the best one: the identity function this
+database already has.** A database built by a team frequently has one, and it may return the
+signed-in person's actual name rather than their Windows account. Find whatever fills the host's
+existing tracking columns, offer it by name, and say what it returns that the template's answer does
+not.
+
+**If the host's function is chosen, use it in all six places, not four.** Extra Options lists four
+sites and those four are the audit *log*. `BuildBeforeChangeMacro` calls the identity function twice
+more, for the stamped `CreatedBy` and `ModifiedBy` on the *record*. Change the log's four, leave the
+record's two, and you get two different names on one edit — the failure Extra Options already
+describes. Choosing the host's function departs from `audit-columns.md`, which names `AuditUser()`:
+it holds for this build and is not written back to `standards/`.
+
+**The front-end placement requirement belongs to whichever function is chosen, not to
+`AuditUser()`.** The stamping macro calls it on every table, and a macro firing because somebody
+edited through a link resolves the function in **that person's front end** — absent, and that front
+end cannot insert a row at all. Everything this template says about putting `modAuditLongText` in
+every front end is that requirement wearing `AuditUser()`'s name. Choose the host's function and the
+requirement does not go away: it moves to whichever module holds it, which is a module this template
+does not own and will not place for you. Say which module that is, and tell the developer it now has
+to be in every front end.
+
+**And one thing stops being true when that happens.** `modAuditLongText` is described here as
+required on every build, which holds because `AuditUser()` lives in it. Replace `AuditUser()` with
+the host's function and it holds only `BackupLongTextFieldsDM` — needed where there is a Long Text
+field, and nowhere else.
+
 ### Before you run the generator
 
 Close **every** copy of the database — the back end and each front end.
@@ -264,7 +328,9 @@ you can act on right now:
 - **This module runs in the same file as the tables it audits** — the back end of a split design.
   Data Macros attach to tables in the file the tables actually live in.
 - **`modAuditLongText` goes in every front end as well**, because it holds `AuditUser()`, which the
-  stamping macro calls on every table. Without it there, a front end cannot insert a row at all.
+  stamping macro calls on every table. Without it there, a front end cannot insert a row at all. If
+  this build uses a function your own database already has for that instead, the same requirement
+  applies to whichever module holds that one.
 
 Nothing else is said here. Every other warning this template carries is raised at the step where
 you can do something about it.
@@ -609,6 +675,63 @@ Private Const AUDIT_CREATED_BY    As String = "CreatedBy"
 Private Const AUDIT_MODIFIED_DATE As String = "ModifiedDate"
 Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
 ```
+
+**To the AI assistant — Path B, before you import the module.** These four values name the columns
+the generator stamps. A host database that already carries tracking columns may name them something
+else — `AddedOn`/`AddedBy`/`ModifiedOn`/`ModifiedBy` is one form you will meet, and there are others.
+
+**First find out how the host fills those columns today, because it changes what every answer below
+costs.** There are three ways and you cannot tell them apart without looking:
+
+- **A data macro on the table.** The generator replaces a table's entire macro set, so the host's
+  stamping is overwritten by the generated one automatically, and the original is written to
+  `DataMacroBackups\` first. Nothing extra for anyone to do — but read the old macro before you
+  replace it and tell the developer if it did anything the generated one will not.
+- **A column default.** Common on a date column; it cannot fill a user-name column, because the
+  engine cannot reach the current user from a default. The generator never touches defaults, so it
+  stays and keeps firing. A default and the generated macro both writing the same column is
+  harmless — Before Change runs at the engine and its value is the one that lands — but say that you
+  found it.
+- **VBA — a form's Before Update, a save routine, anywhere else.** The generator does not touch VBA.
+  That code keeps running after the build, alongside the generated macro, both writing the same
+  columns. Search the database's own modules and form code for the four column names so you know
+  whether this is the case, and tell the developer what you found. Retiring their code is their
+  call, not this template's.
+
+**When the host's names differ from the four above, ask. Never settle it yourself.** Put it through
+the selection control as its own question, and name it as a question this database added rather than
+folding it into the template's own count. The two answers, and both belong in the question:
+
+- **Use the names this database already has.** No columns are added. Set the four values above to
+  the host's names. `Two_PopulateConfigTable` then seeds those columns not-auditable, and
+  `BuildBeforeChangeMacro` stamps them, exactly as it would the library's own names.
+- **Use the library's names.** The host's four columns are replaced by the library's four. Leave the
+  values above as shipped; they seed and stamp the library's columns. **Say what this costs before
+  they choose it, because nothing here does it for them:** the four columns have to be added, the
+  values already in the host's columns carried across, the old four dropped, and every form, query,
+  report and line of the database's own code that names them corrected. **What it costs depends on
+  what you found above** — a data macro is replaced anyway and a default goes with the column it sits
+  on, but **their own VBA stops working the moment the old columns are dropped, because the columns
+  it names are gone.** Check whether the tables hold data and say so when you ask: on an empty table
+  this is cheap; on a table with history it is not.
+
+**When no table carries tracking columns**, there is nothing to reconcile and nothing to ask. Leave
+the four values above as shipped, and **tell the developer that these four columns will be added to
+each table they chose to audit.** Two things belong in what you tell them: `CreatedDate` and
+`CreatedBy` are required, so a table that already holds rows needs the column added, filled, and only
+then marked required; and every row that was already there will carry the date the columns were added
+rather than the date the record was really created, because that history was never kept.
+
+**When some tables carry them and others don't, ask what happens to the ones that don't** — the split
+is usually a decision somebody already made, and overriding it silently is the wrong move. Two
+answers: add the four columns so every audited table stamps who and when, or leave those tables as
+they are, in which case they still get their audit trail and simply have nothing to stamp. Both work.
+Say which tables you're asking about, by name.
+
+Left as shipped on a host that names them differently, with nobody asked, they match no column: the
+host's tracking columns get seeded as ordinary tracked fields, `BuildBeforeChangeMacro` emits no
+stamping for any table, and because loading a macro set replaces the whole set, a table that arrived
+with stamping loses it. Nothing errors.
 
 ## Procedures
 
@@ -2617,8 +2740,9 @@ End Function
 ## Standards Layer
 
 - **Error handling** — the blocks above ship the dependency-free `MsgBox` default; substitute
-  your house pattern per `error-handling.md`. One deliberate exception is annotated in place:
-  `BackupLongTextFieldsDM` stays quiet (it runs inside every save).
+  your house pattern per `error-handling.md`. **This is a question, not a default** — see
+  *Before you write the modules*, which is where it gets asked. One deliberate exception is
+  annotated in place: `BackupLongTextFieldsDM` stays quiet (it runs inside every save).
 - **Query style** — the inline SQL kept here is from the proven source; rewrite per
   `query-style.md` if your house centralizes SQL differently.
 - **Naming conventions** — the config scan's `tbl`/`tlkp` (excluding `tmp`) prefix filter is the
@@ -2632,6 +2756,13 @@ End Function
 
 *Empty in the base template. Filled per client engagement.*
 
+- **The identity function this database already has** — on Path B, a database that has been in use
+  often has its own, returning the signed-in person's name rather than their Windows account. Where
+  it does, that is usually the better answer than either choice below. Use it in **all six** sites:
+  the four in the table below, plus the two in `BuildBeforeChangeMacro` that stamp `CreatedBy` and
+  `ModifiedBy` on the record. `AuditUser()` is then not built at all, and the front-end placement
+  requirement moves with the choice — see *Before you write the modules*, which is also where this
+  gets asked.
 - **`CurrentUser()` identity instead of `AuditUser()`** — the Access-session user rather than the
   Windows user, and no VBA dependency for identity. `AuditUser()` is the **preferred choice** (schema Business
   Rule 9); this option swaps it back. Choose it if your shop wants the Access user, or wants no VBA
