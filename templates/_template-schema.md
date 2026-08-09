@@ -326,6 +326,41 @@ running it.)
    open the named template or check that cited Business Rule numbers exist; that is the human
    review gate.)*
 
+### 8.6 Code that finds its own targets
+
+Some generated procedures are handed a list of objects to work on. Others **discover** their
+targets — asking the database which tables have a certain property, then acting on whatever comes
+back. A procedure that discovers its own targets **and then changes or deletes something** follows
+the rules below. They exist because discovery returns things nobody chose: the database's own
+objects, and objects belonging to a developer who never opted into any of this.
+
+**1. Names are a floor, never the mechanism.** Do not decide what is safe to change by reading an
+object's name. A shop's tables may be `tblCompany`, `Company` or `CompanyT`, and their own
+housekeeping tables may be called anything at all — a template cannot predict any of it, and a
+template that guesses gets it wrong silently. Gate destructive action on one of two things
+instead: **a list the developer confirmed**, or **a test that the artifact is one this template
+created**. The second is usually available and usually better — generated artifacts can be made to
+carry a recognizable mark, and a mark survives every naming convention.
+
+**2. Two names are off limits regardless, and they are off limits for different reasons.**
+
+| Prefix | Whose it is | Rule |
+|---|---|---|
+| `MSys` | Access's own | Never touched, **not even read or exported**. No opt-in, no exception. |
+| `USys` | The developer's own hidden tables | Left alone **unless the developer opted that object in themselves**, by naming it in whatever list or configuration table the template uses for scope. |
+
+The `USys` rule is not the same rule with a softer edge. Creating a `USys` table is a deliberate
+act by someone who has taken responsibility for managing part of the database themselves; the
+template's business is to leave that alone until invited. `MSys` is not the developer's to opt in
+with in the first place.
+
+**3. The name check has to come before the ownership test**, because the ownership test usually
+has to read the object to apply it — and reading is itself something that must not happen to
+Access's own tables. Order the guards accordingly.
+
+**4. Back up before removing, and keep the backup when you decline to remove.** A procedure that
+declines to touch something should still leave the developer a record of what it found.
+
 ## 9. `type: form-spec`
 
 A `form-spec` template defines a **default, functional form layout** that edits a paired

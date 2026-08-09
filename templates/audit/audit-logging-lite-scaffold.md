@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.9.0
+version: 0.9.1
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -51,6 +51,13 @@ warnings:
     Long Text field in the tables to be audited and confirm the list with the developer — any
     table carrying one takes the hybrid VBA path (BeforeChange/BeforeDelete backing values up
     through BackupLongTextFieldsDM); a table without one needs only the three After macros.
+    Build that list from the same test the generator itself uses — the field type
+    Two_PopulateConfigTable records as DataType 12 — and never from a separate pass over the
+    tables. A list assembled independently can differ from the one the build acts on, and then
+    the developer has confirmed something other than what gets built. That same test also
+    catches Hyperlink fields, which Access stores as Long Text and reports as the same type.
+    They are handled correctly, but name them to the developer as Hyperlink, which is what they
+    see in the table designer.
   - Two other field types are never audited at all, and the developer is told which ones they have
     rather than left to notice the gap later. An Attachment field cannot be read or written by a
     Data Macro, so a macro referencing one does not work. A calculated field is never edited by
@@ -190,7 +197,7 @@ Three layers, kept distinct throughout:
 | The audited tables | Each with a single-column numeric PK (schema Business Rule 4) |
 | A Trusted Location | The generator and the macros' VBA calls run only with code enabled |
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
-| **Every object in the database closed** | Close every table, form, report and query before you run `Three_GenerateAllAuditDataMacros`. It opens each table in **design view** to attach its macros, and it cannot do that while anything is using the table. This applies whether or not another copy of the database is open. |
+| **Every object in the database closed** | Close every table, form, report and query before you run **any** of these procedures, and leave them closed until the whole run is finished. `Three_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros and cannot do that while anything is using the table, so it is the step that fails outright; the earlier steps do not fail, they rebuild the settings the already-attached macros read while someone could still be editing. This applies whether or not another copy of the database is open. |
 | **Every other copy of the database closed** | The same requirement, one file further out: another Access instance holding one of those tables blocks it too. In a split design that means the back end *and* every front end — see below. |
 | **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Three_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
 
@@ -382,10 +389,11 @@ form is built; the AI assistant asks the questions in conversation. See
 **Before step 1**, three things that apply to the whole build whatever the answers are, and that
 you can act on right now:
 
-- **Close every copy of the database** — the back end and every front end. The last step opens each
-  table in design view, and a table held open by another Access instance stops the run part-way,
-  leaving some tables done and some not. Re-running is safe, so the fix for a partial run is to
-  close everything and repeat.
+- **Close every copy of the database** — the back end and every front end, for the whole run and
+  not only for the last step. The step that attaches the macros opens each table in design view,
+  and a table held open by another Access instance stops the run part-way, leaving some tables
+  done and some not. Re-running is safe, so the fix for a partial run is to close everything and
+  repeat.
 - **This module runs in the same file as the tables it audits** — the back end of a split design.
   Data Macros attach to tables in the file the tables actually live in.
 - **`modAuditLongText` goes in every front end as well**, because it holds `AuditUser()`, which the
@@ -1867,10 +1875,10 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     '            cause by a distance is an object left open in the database.
     If lFailCount > 0 Then
         sSummary = sSummary & vbCrLf & vbCrLf & _
-            "The tables that failed still have the Data Macros they had before — nothing " & _
-            "was changed on them. The usual cause is something left open: close every " & _
-            "table, form, report and query in this database, then run this again. It is " & _
-            "safe to run again."
+            "A table that failed almost always still has the Data Macros it had before, and " & _
+            "where it had any, that set is saved in the DataMacroBackups folder beside this " & _
+            "database. The usual cause is something left open: close every table, form, " & _
+            "report and query in this database, then run this again. It is safe to run again."
     End If
     sReport = sSummary & vbCrLf & vbCrLf & sReport
 
@@ -2097,19 +2105,24 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     '            caller counts it as failed rather than built.
     DoCmd.OpenTable sTableName, acViewDesign, acHidden
     Application.LoadFromText acTableDataMacro, sTableName, sFilePath
-    DoCmd.Close acTable, sTableName, acSaveYes
 
-    fso.DeleteFile sFilePath
-
-    ' [SCAFFOLD] The load stuck, so the copy taken earlier is now a true record of what was
-    '            replaced and earns its real name. Clearing sBackupTemp is also what tells
-    '            Cleanup there is nothing left to throw away.
+    ' [SCAFFOLD] The load has happened, so the copy taken earlier is now a true record of what
+    '            was replaced and earns its real name — promoted HERE, on the line after the
+    '            load, and not further down. Everything below this point runs with the table
+    '            already replaced, so a backup still carrying its working name past this line
+    '            would be thrown away by Cleanup while the macros it recorded were already
+    '            gone. Clearing sBackupTemp is also what tells Cleanup there is nothing left
+    '            to throw away.
     If Len(sBackupTemp) > 0 Then
         Name sBackupTemp As sBackupFinal
         sBackupTemp = ""
         sBackupNote = " (existing macros backed up to " & sBackupFinal & " before replacing)"
         Debug.Print "  - " & sTableName & " already had Data Macros — backed up to " & sBackupFinal
     End If
+
+    DoCmd.Close acTable, sTableName, acSaveYes
+
+    fso.DeleteFile sFilePath
 
     ' [SCAFFOLD] Report what was actually built rather than a fixed count — the count varies
     '            by table now, and a reader comparing tables needs to see why.
@@ -2138,11 +2151,12 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     CreateAllDataMacros = "OK — " & lMacroCount & " macro(s): " & sWhatWasBuilt & sBackupNote
 
 Cleanup:
-    ' [SCAFFOLD] A working-name export still sitting here means the load never completed, so
-    '            nothing was replaced and the file records nothing that was lost. Throwing it
-    '            away is what keeps the rule that a file in DataMacroBackups\ means a
-    '            replacement happened. On the success path sBackupTemp was cleared above and
-    '            there is nothing to do.
+    ' [SCAFFOLD] A working-name export still sitting here means the load never happened — the
+    '            promotion above runs on the line straight after LoadFromText, so no failure
+    '            past that point can leave one behind. Nothing was replaced, the file records
+    '            nothing that was lost, and throwing it away is what keeps the rule that a file
+    '            in DataMacroBackups\ means a replacement happened. On the success path
+    '            sBackupTemp was cleared above and there is nothing to do.
     If Len(sBackupTemp) > 0 Then
         On Error Resume Next
         Kill sBackupTemp
@@ -2162,22 +2176,28 @@ errHandler:
 End Function
 ```
 
-### MacroBackupIsOurs — `Private Function` → `Boolean`
+### MacroBackupIsOurs — `Public Function` → `Boolean`
 
-**Decides what to call a backup file, and nothing else.** Given a macro set just exported from a
-table, it answers whether this generator wrote that set. Every audit macro it emits names
-`tblAuditLog`; nothing else on a host table has any reason to. A set of ours is filed as a
-`PreRegenBackup`, anything else as a `PreAuditBackup`.
+**Answers one question: did this generator write that macro set?** Given a macro set just exported
+from a table, it looks for `tblAuditLog` in it — every audit macro this generator emits names that
+table, and nothing else on a host table has any reason to.
+
+**Two callers rely on the answer, which is why it is `Public` and not `Private`.**
+`CreateAllDataMacros` uses it to name a backup file: a set of ours is filed as a `PreRegenBackup`,
+anything else as a `PreAuditBackup`. `BackupAndRemoveAllDataMacros` uses it to decide what it is
+allowed to strip, and lives in a different module — a `Private` function would not compile there.
 
 **It reads the file as Unicode** — the `-1` argument — because `SaveAsText` writes UTF-16, and
 reading it as plain text returns characters separated by nulls and finds nothing. **If the file
-cannot be read the answer is `False`**, which produces the pre-audit name: the more cautious of the
-two, since it never claims a file holds less than it does.
+cannot be read the answer is `False`**, and `False` is the safe direction for both callers: it
+produces the pre-audit name, which never claims a file holds less than it does, and it leaves a
+macro set in place rather than stripping it.
 
 ```vba
-Private Function MacroBackupIsOurs(sBackupPath As String) As Boolean
-    ' [SCAFFOLD] Naming only — this never decides whether to back something up, just what to
-    '            call the file. Every audit macro this generator writes names tblAuditLog
+Public Function MacroBackupIsOurs(sBackupPath As String) As Boolean
+    ' [SCAFFOLD] Recognition only — this never backs anything up. It answers whether a macro
+    '            set is one this generator wrote; the callers decide what to do about it.
+    '            Every audit macro this generator writes names tblAuditLog
     '            (tblAuditLogConfig matches the same test, and is equally ours).
     '            No errHandler and therefore no line numbers: an unreadable file is an
     '            answer, not a failure, and the caller has a backup to name either way.
@@ -2889,15 +2909,35 @@ End Function
 
 ### BackupAndRemoveAllDataMacros — `Public Function` → `Boolean` (module `modAuditAdmin` — back end only)
 
-The reset tool for regeneration (schema Business Rule 7): exports every table's current data
-macros to timestamped XML backups, then strips them by loading an empty macro document. Run it
-before re-running `Three_GenerateAllAuditDataMacros` when the audit scope changes — the backups
-double as your archive of prior macro states.
+The reset tool for regeneration (schema Business Rule 7): exports a table's current data macros to
+a timestamped XML backup, then strips them by loading an empty macro document. Run it before
+re-running `Three_GenerateAllAuditDataMacros` when the audit scope changes — the backups double as
+your archive of prior macro states.
+
+**It removes only the macros this generator created, and it never touches an Access system table.**
+Two guards, and both matter because this is the tool a developer reaches for when something has
+already gone wrong:
+
+- **Two kinds of system table are skipped, for two different reasons.** Access's own — names
+  starting `MSys` — are never touched, not even exported: this loop finds its work by asking which
+  tables carry a data macro, and Access's own tables can answer yes. A table whose name starts
+  `USys` is the *developer's* own hidden table, not Access's; it is theirs to manage, so it is left
+  alone unless they opted it in themselves by putting it in `tblAuditLogConfig`. Both are name
+  checks because the export has to be skipped too, and the ownership test below cannot run until
+  something has been exported.
+- **A macro set that is not this generator's is backed up and left in place** (`MacroBackupIsOurs`).
+  Business-logic macros of the developer's own, and any who-and-when stamping the database had
+  before this system arrived, are not this tool's to throw away. The export is still taken, so the
+  developer has a record of what was found either way.
+
+The trade this makes: a table whose generated macros are only the who-and-when stamping names no
+audit table, so it reads as not-ours and is left alone. That is the safe direction — the tool
+declines to strip rather than stripping something it should not have.
 
 ```vba
 Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = "", _
                                              Optional bSilent As Boolean = False) As Boolean
-    ' [SCAFFOLD] Back up, then remove, the data macros on every table that has them.
+    ' [SCAFFOLD] Back up every table's data macros, then remove the ones this generator wrote.
     '            Passing bSilent:=True suppresses both message boxes, so a caller with no one
     '            at the keyboard does not hang on a dialog. The Boolean return is the result.
     Dim db As DAO.Database
@@ -2905,12 +2945,16 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
     Dim strSQL As String
     Dim strTempFile As String
     Dim strBackupFile As String
+    Dim strTableName As String
+    Dim strSummary As String
     Dim intFileNum As Integer
     Dim intMacrosRemoved As Integer
+    Dim intMacrosKept As Integer
 
     On Error GoTo errHandler
     Set db = CurrentDb
     intMacrosRemoved = 0
+    intMacrosKept = 0
 
     If strBackupPath = "" Then
         strBackupPath = CurrentProject.Path & "\DataMacroBackups\"
@@ -2935,14 +2979,40 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
     Set rst = db.OpenRecordset(strSQL, dbOpenSnapshot)
 
     Do While Not rst.EOF
-        Debug.Print "Processing: " & rst!Name
+        strTableName = rst!Name
 
-        strBackupFile = strBackupPath & rst!Name & "_DataMacro_" & _
-                        Format(Now(), "yyyymmdd_hhnnss") & ".xml"
-        Application.SaveAsText acTableDataMacro, rst!Name, strBackupFile
+        ' [SCAFFOLD] Two kinds of system table, skipped for two different reasons. Access's own
+        '            (MSys) are never ours to touch, not even to export — the query above finds
+        '            tables by asking which ones carry a data macro, and Access's own can answer
+        '            yes. A USys table is the DEVELOPER's own hidden table: theirs to manage, so
+        '            it is left alone unless they opted it in themselves by putting it in
+        '            tblAuditLogConfig. Both guards are on the name because the export has to be
+        '            skipped too, and the ownership test below cannot run without one.
+        If Left$(strTableName, 4) = "MSys" Then
+            Debug.Print "Skipped (Access's own system table): " & strTableName
+        ElseIf Left$(strTableName, 4) = "USys" _
+            And DCount("*", "tblAuditLogConfig", "TableName='" & strTableName & "'") = 0 Then
+            Debug.Print "Skipped (your own system table, not opted in): " & strTableName
+        Else
+            Debug.Print "Processing: " & strTableName
 
-        Application.LoadFromText acTableDataMacro, rst!Name, strTempFile
-        intMacrosRemoved = intMacrosRemoved + 1
+            strBackupFile = strBackupPath & strTableName & "_DataMacro_" & _
+                            Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+            Application.SaveAsText acTableDataMacro, strTableName, strBackupFile
+
+            ' [SCAFFOLD] Remove only what this generator wrote. The export is taken either
+            '            way, so the developer has a record of what was on the table; only
+            '            the removal is conditional. A table carrying someone else's business
+            '            logic, or who-and-when stamping older than this system, keeps it.
+            If MacroBackupIsOurs(strBackupFile) Then
+                Application.LoadFromText acTableDataMacro, strTableName, strTempFile
+                intMacrosRemoved = intMacrosRemoved + 1
+            Else
+                intMacrosKept = intMacrosKept + 1
+                Debug.Print "  - left in place, not this generator's macros: " & strTableName
+            End If
+        End If
+
         rst.MoveNext
     Loop
 
@@ -2950,9 +3020,15 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
     Set rst = Nothing
     Kill strTempFile
 
-    If Not bSilent Then MsgBox "Successfully backed up and removed data macros from " & _
-           intMacrosRemoved & " tables." & vbCrLf & _
-           "Backups saved to: " & strBackupPath, vbInformation, "Data Macros Removed"
+    strSummary = "Backed up and removed data macros from " & intMacrosRemoved & " table(s)."
+    If intMacrosKept > 0 Then
+        strSummary = strSummary & vbCrLf & vbCrLf & intMacrosKept & " table(s) were backed up " & _
+            "but left as they are, because their Data Macros were not created by this system. " & _
+            "Removing those is a separate decision, and yours to make."
+    End If
+    strSummary = strSummary & vbCrLf & vbCrLf & "Backups saved to: " & strBackupPath
+
+    If Not bSilent Then MsgBox strSummary, vbInformation, "Data Macros Removed"
 
     BackupAndRemoveAllDataMacros = True
 
@@ -2961,9 +3037,10 @@ Cleanup:
 
 errHandler:
     ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
-    '            One exit for every error: the recordset above already selects only tables
-    '            that have data macros, so there is no "nothing to export" case to skip past,
-    '            and skipping one item mid-loop is not something this pattern does.
+    '            One exit for every error: an error here stops the whole run rather than
+    '            carrying on to the next table, because a failure part-way through means the
+    '            database is in a half-reset state and the developer needs to know that now.
+    '            The two skips inside the loop are decisions, not errors, and never come here.
     If Not bSilent Then MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
     On Error Resume Next
     If Not rst Is Nothing Then rst.Close

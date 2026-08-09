@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.3.1
+version: 0.3.2
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -349,6 +349,13 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
 8. **The backup table is staging, not history.** `tblLongTextBackup` may be cleared at any time;
    the durable record is `tblAuditLog`, which is append-only. Retention/archival policy for the
    log is the adopter's call.
+
+   **What staging means for text that was deleted.** A staged row is not removed once the audit
+   row has been written, and that includes the row staged ahead of a delete — so the last value
+   of every Long Text field stays in `tblLongTextBackup` until something clears it, for records
+   that no longer exist as well as for records that do. Where those fields hold notes about
+   people, deleting the record does not delete the text. Nothing here clears the table; deciding
+   when to is the adopter's call, and worth making deliberately rather than discovering later.
 9. **`ChangedBy` identity — one person per edit.** Every identity in this system comes from the same
    place: a public VBA function `AuditUser()`, returning `Environ$("USERNAME")`, present in the back
    end **and** in every front end. The log's `ChangedBy` and the stamped `CreatedBy`/`ModifiedBy` all

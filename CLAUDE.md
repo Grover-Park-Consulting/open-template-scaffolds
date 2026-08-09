@@ -365,3 +365,11 @@ them. This is what lets one template serve every shop.
 - Audit columns belong to `standards/`, never to a template's field list — flag them if you find them
   in a template body.
 - Don't carry one practice's house conventions into output generated for another.
+- **Never generate code that decides what is safe to change or delete by reading an object's
+  name.** A shop's tables may be `tblCompany`, `Company` or `CompanyT`, and their own housekeeping
+  tables may be named anything; you cannot predict it, and guessing fails silently. Gate every
+  destructive action on a list the developer confirmed, or on a test that the artifact is one this
+  template created. Two exceptions, both hard: a table named `MSys…` is Access's own and is
+  **never touched, not even read or exported**, and a table named `USys…` is the developer's own
+  hidden table and is left alone **unless they opted it in themselves**. `templates/_template-schema.md`
+  §8.6 is authoritative.
