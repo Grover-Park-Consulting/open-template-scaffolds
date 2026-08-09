@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.4.1
+version: 0.5.0
 status: draft
 ---
 
@@ -61,6 +61,48 @@ later is written from memory, and the details worth keeping are the first ones t
 **It records what happened, not what was meant to happen.** A step that failed and was retried
 belongs in it. A test that was skipped belongs in it, named as skipped. A build record in which
 everything went to plan is either untrue or not worth keeping.
+
+---
+
+## The runbook — every build the developer finishes themselves
+
+**A build the developer has to run any part of leaves a runbook**: one file, beside the code, saying
+what to run and in what order. It is not optional, and it is not the build record. The build record
+says what was done; the runbook says what they do next.
+
+**When it applies:** the file-handoff route always, and any build that leaves a procedure for the
+developer to run. Where you built everything directly and nothing is left to run, there is nothing
+to write.
+
+**Why it exists.** You know the order because you generated the code. They have a folder of files. A
+procedure named `Three_…` tells them it is third; it does not tell them what the first two are,
+which one needs an answer written into a table before the next will do anything, or which ones are
+optional. **Naming a procedure is not documenting it**, and a developer who cannot tell an optional
+tool from a required step either runs everything or runs nothing.
+
+**Name it `runbook.md`**, and write it in the folder that holds the code.
+
+Five parts:
+
+1. **Before you start.** Everything that has to be true first, each one paired with what happens if
+   it isn't: the folder trusted, the file writable, every object in the database closed, a backup
+   taken. A precondition with no stated consequence gets skipped.
+2. **Importing the files.** Which files, and where each one goes — in a split design, which belong
+   in the back end and which have to be in every front end as well.
+3. **What to run, in order.** Every procedure they run, numbered, each with: what it does, how to
+   run it, what they should see when it worked, and what to do when it didn't. **Where a step needs
+   them to go and look at something** — review rows in a table, set switches, check a value — that
+   is its own numbered step, not a remark attached to another one.
+4. **What is optional.** Procedures that exist but are no part of a normal run, and what each is
+   for.
+5. **How to tell it worked.** What they can open or run to confirm the result in their own database,
+   without asking you.
+
+**Write it in the second person and name every procedure exactly as it appears in the code.** A
+runbook that says "run the setup procedures" has told them nothing they had not already guessed.
+
+**Say it exists when you hand the files over.** A file in a folder nobody was told about is a file
+nobody reads.
 
 ---
 

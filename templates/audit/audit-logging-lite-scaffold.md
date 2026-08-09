@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.8.1
+version: 0.9.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -24,9 +24,11 @@ new_procedures:
   - One_CreateAuditTables
   - Two_PopulateConfigTable
   - IsAuditCandidateTable
+  - IsUnauditableFieldType
   - CheckAuditReadiness
   - Three_GenerateAllAuditDataMacros
   - CreateAllDataMacros
+  - MacroBackupIsOurs
   - BuildAfterInsertMacro
   - BuildAfterUpdateMacro
   - BuildAfterDeleteMacro
@@ -49,6 +51,14 @@ warnings:
     Long Text field in the tables to be audited and confirm the list with the developer — any
     table carrying one takes the hybrid VBA path (BeforeChange/BeforeDelete backing values up
     through BackupLongTextFieldsDM); a table without one needs only the three After macros.
+  - Two other field types are never audited at all, and the developer is told which ones they have
+    rather than left to notice the gap later. An Attachment field cannot be read or written by a
+    Data Macro, so a macro referencing one does not work. A calculated field is never edited by
+    anyone — its value comes from other fields in the same row, and those fields are audited
+    themselves — so a log row for it would record a change nobody made. Two_PopulateConfigTable
+    seeds both switched off, and Three_GenerateAllAuditDataMacros ignores the switch if either is
+    turned back on afterwards. Before generating, name both types to the developer along with the
+    tables and fields concerned.
   - This module must run in the same accdb as the audited tables — the back end of a split
     design. modAuditLongText (BOTH AuditUser and BackupLongTextFieldsDM) must additionally exist in
     every front end, because a data macro fired by a front-end edit resolves the function there.
@@ -58,10 +68,13 @@ warnings:
     whichever module holds that function — the same rule, a different file — and modAuditLongText is
     then needed only where there is a Long Text field. The copies must be kept identical by hand;
     nothing enforces that.
-  - Close every copy of the database before generating. Three_GenerateAllAuditDataMacros opens each
-    table in design view, and
-    a table held open by another Access instance stops the run part-way, leaving some tables done
-    and some not. Re-running is safe, so a partial run is fixed by closing everything and repeating.
+  - Close every object in the database before generating — tables, forms, reports and queries.
+    Three_GenerateAllAuditDataMacros opens each table in design view to attach its macros, and it
+    cannot do that while anything is using the table. This applies whether or not another copy of
+    the database is open, and it is the commonest cause of a partial run. Close every other copy as
+    well — in a split design, the back end and every front end. A table held open stops the run on
+    that table only; the rest still finish. Re-running is safe, so the fix is to close everything
+    and run it again.
   - DAO cannot create Data Macros. The only build path is writing UTF-16 XML to a file and
     loading it with Application.LoadFromText acTableDataMacro — exactly what this module does.
   - Every audited table is expected to have a single-column AutoNumber primary key. If any table
@@ -177,7 +190,8 @@ Three layers, kept distinct throughout:
 | The audited tables | Each with a single-column numeric PK (schema Business Rule 4) |
 | A Trusted Location | The generator and the macros' VBA calls run only with code enabled |
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
-| **Every copy of the database closed** | `Three_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros. Another Access instance holding one of those tables breaks the run part-way through, leaving some tables done and some not. In a split design that means the back end *and* every front end — see below. |
+| **Every object in the database closed** | Close every table, form, report and query before you run `Three_GenerateAllAuditDataMacros`. It opens each table in **design view** to attach its macros, and it cannot do that while anything is using the table. This applies whether or not another copy of the database is open. |
+| **Every other copy of the database closed** | The same requirement, one file further out: another Access instance holding one of those tables blocks it too. In a split design that means the back end *and* every front end — see below. |
 | **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Three_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
 
 ### Where each module goes in a split database
@@ -273,11 +287,58 @@ field, and nowhere else.
 
 ### Before you run the generator
 
-Close **every** copy of the database — the back end and each front end.
-`Three_GenerateAllAuditDataMacros` opens each table in
-design view to attach its macros, and a table held open elsewhere stops the run part-way, leaving
-some tables generated and others not. Re-running is safe (generation replaces), so the fix for a
-partial run is simply to close everything and run it again.
+**Close every object in this database — tables, forms, reports and queries.**
+`Three_GenerateAllAuditDataMacros` opens each table in design view to attach its macros, and it
+cannot do that while anything is using the table. This is true whether or not another copy of the
+database is open, and it is the commonest reason a run only half works.
+
+Close every other copy of the database as well — in a split design, the back end and each front
+end.
+
+Anything left open stops the run on that one table; the other tables still finish, so what you get
+is some tables generated and others not. Re-running is safe (generation replaces rather than
+accumulates), so the fix is to close everything and run it again.
+
+## What the developer runs, and in what order
+
+**To the AI assistant.** This is the canonical sequence, and it is the source for the `runbook.md`
+that `_materialization.md` requires you to hand over with the files. **Write that runbook whenever
+the developer runs any of this themselves** — the file-handoff route always. Naming the procedures
+`One_`, `Two_`, `Three_` does not tell anyone what the first two are, that the config table has to
+be reviewed in between, or that three of the twenty procedures are the only ones they ever call
+directly. Turn the sequence below into their runbook in plain words; do not paste this section into
+it.
+
+**Only three procedures are ever run by hand** — `One_CreateAuditTables`,
+`Two_PopulateConfigTable`, `Three_GenerateAllAuditDataMacros` — plus `CheckAuditReadiness` before
+the last one, `Zero_CreateSampleTables` on Path A, and the verification helpers afterwards.
+Everything else in these modules is called by those.
+
+Each is a `Function` returning a report, so it is run from the Immediate window with a leading `?`
+to print what it returns: `?One_CreateAuditTables()`.
+
+| # | What they do | Path |
+|---|---|---|
+| 1 | Import the four modules, put each in the right file (see the split-database table above), and compile. | Both |
+| 2 | `?Zero_CreateSampleTables()` — builds three made-up tables to try the system on. | A only |
+| 3 | `?One_CreateAuditTables()` — creates `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig`. | Both |
+| 4 | `?Two_PopulateConfigTable()` on Path A — every field starts switched **on**. `?Two_PopulateConfigTable(False)` on Path B — every field starts switched **off**. | Both |
+| 5 | **Open `tblAuditLogConfig` and set the `IsAuditable` switches.** This is where the audit net is actually drawn, and nothing else does it for them. | Both |
+| 6 | `?CheckAuditReadiness()` — reports anything that would stop the next step. | Both; required on B |
+| 7 | **Close every table, form, report and query in the database.** | Both |
+| 8 | `?Three_GenerateAllAuditDataMacros()` — attaches the macros and reports per table. | Both |
+| 9 | Make one real edit to an audited table and open `tblAuditLog`. | Both |
+
+**Step 5 is a step, not a note.** It is the one place the developer has to make decisions in data
+rather than answer a question, and a runbook that folds it into step 4 produces a build that audits
+everything or nothing.
+
+**Step 7 is where a run goes wrong.** Say what happens if they skip it: the tables that were open
+keep the macros they already had, the report names them, and running step 8 again after closing
+everything fixes it.
+
+`BackupAndRemoveAllDataMacros`, `DumpTableMacros` and `ListMacroEvents` are optional tools, not
+steps — say what each is for and that a normal run never calls them.
 
 ## Standards Gate
 
@@ -614,7 +675,8 @@ would loop.
 
 ### Step 9 — Ready to switch auditing on?
 
-**Ask:** Ready to switch auditing on?
+**Ask:** Close every table, form, report and query in the database first — anything left open stops
+this on that table. Ready to switch auditing on?
 
 | Option | Short description |
 |---|---|
@@ -647,8 +709,14 @@ record is made and the changed pair only on a later change, and it never puts an
 original is in `DataMacroBackups\` if you want to compare the two, or fold something back in.
 
 **It is safe to run again.** Generation replaces rather than accumulates, so a run that stopped
-part-way — because a table was held open somewhere — is fixed by closing everything and running it
-again.
+part-way is fixed by closing everything and running it again.
+
+**The one thing that stops it part-way is an object left open**, and it is common enough to expect.
+Attaching the macros needs each table to itself, and it cannot have that while a form, report, query
+or the table itself is open on it — including in the copy of the database you are running from,
+which is the case people miss. Access says so at the time, one message per table it could not do.
+The tables it could not do keep the macros they already had; the rest are finished normally; and the
+report at the end says how many were built and how many failed. Close everything and run it again.
 
 **A table with auditing switched off still gets a stamping macro.** That is not an oversight: the
 house audit columns are `Required`, and a table with no macro at all has no way to fill them, so it
@@ -1306,6 +1374,14 @@ and a few other always-changing system columns (`SSMA_TimeStamp`, `ValidFrom`, `
 running, open the config table and review the flags** — that review, in data, is where the audit
 net is drawn (schema Business Rule 5).
 
+**Two field types are seeded off and stay off**, whatever that review says — `IsUnauditableFieldType`
+decides, and `Three_GenerateAllAuditDataMacros` asks it again rather than trusting the switch. An
+**Attachment** field cannot be read or written by a Data Macro at all, so a macro referencing one
+does not work. A **calculated** field is never edited by anyone: its value is derived from other
+fields in the same row, and those fields are audited themselves, so a row in the log for it would
+record a change nobody made. Seeding them off is not enough on its own — the config table exists to
+be edited, and a switch that can be turned back on will be.
+
 **What you will see, so it doesn't look wrong:** most of the rows belong to the three system
 tables — `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig` — and on a small database that
 can be well over half of them. They are all switched OFF and must stay OFF; auditing the audit
@@ -1410,6 +1486,16 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
                     '            it on afterward if they want that.
                     Case isPK
                         isAuditable = False
+                    ' [BUSINESS LOGIC] Attachment and calculated fields, which are never
+                    '            audited on any build — see IsUnauditableFieldType for why
+                    '            each one is impossible or pointless rather than merely
+                    '            unwanted. Seeded off here so the developer can see them in
+                    '            the config table and know they were considered; enforced
+                    '            again in Three_GenerateAllAuditDataMacros, because this
+                    '            table is meant to be edited and a switch that can be turned
+                    '            back on will be.
+                    Case IsUnauditableFieldType(fld)
+                        isAuditable = False
                     Case Else
                         isAuditable = bDefaultAuditable
                 End Select
@@ -1469,6 +1555,53 @@ Private Function IsAuditCandidateTable(sTableName As String) As Boolean
     ' >>> adjust the prefix test to your naming convention <<<
     IsAuditCandidateTable = (Left(sTableName, 3) = "tbl" Or Left(sTableName, 4) = "tlkp") _
         And Left(sTableName, 3) <> "tmp"
+End Function
+```
+
+### IsUnauditableFieldType — `Private Function` → `Boolean`
+
+**The one place that decides whether a field can be audited at all.** `Two_PopulateConfigTable`
+calls it to seed the switch off, and `Three_GenerateAllAuditDataMacros` calls it again to enforce
+that whatever the switch now says — so the scan and the generator cannot disagree.
+
+**Two types, for two different reasons.** An **Attachment** field cannot be read or written by a
+Data Macro; a macro that references one does not work, so switching it on breaks the table's whole
+macro set rather than adding a field to the log. A **calculated** field cannot be edited by anybody:
+its value is derived from other fields in the same row, and those fields are audited themselves, so
+a log row for it would record a change nobody made and attribute it to whoever changed something
+else.
+
+**Why the second test is a guarded property read.** A calculated field carries an `Expression`
+property holding the formula; an ordinary field either has no such property or an empty one, and
+reading a property that isn't there raises an error rather than returning empty. The read is
+therefore wrapped, and anything that goes wrong leaves the answer `False` — a field this function
+cannot classify is treated as ordinary, which is the behaviour every build before this one had.
+
+```vba
+Private Function IsUnauditableFieldType(fld As DAO.Field) As Boolean
+    ' [BUSINESS LOGIC] Fields that are never audited, whatever tblAuditLogConfig says:
+    '            Attachment — a Data Macro cannot read or write the type at all, so a macro
+    '                         referencing one does not work.
+    '            Calculated — nobody edits it; its value comes from other fields in the same
+    '                         row, which are audited themselves, so a log row here would
+    '                         record a change nobody made.
+    '            No errHandler and therefore no line numbers: any error propagates to the
+    '            caller, which is what should happen to a schema read this small.
+    Dim sExpression As String
+
+    If fld.Type = dbAttachment Then
+        IsUnauditableFieldType = True
+        Exit Function
+    End If
+
+    ' A calculated field carries a non-empty Expression property. Reading a property that is
+    ' not there raises, so the probe is guarded and an unreadable field counts as ordinary.
+    sExpression = ""
+    On Error Resume Next
+    sExpression = fld.Properties("Expression").Value & ""
+    On Error GoTo 0
+
+    IsUnauditableFieldType = (Len(sExpression) > 0)
 End Function
 ```
 
@@ -1598,6 +1731,22 @@ directly with no dialog — a script or an AI assistant facilitating the build n
 its own diagnostic wrapper to see which tables actually succeeded. `bSilent` is passed down into
 `CreateAllDataMacros`, so a per-table error can't strand an automated caller either.
 
+**The summary counts outcomes, not attempts.** A table that fails is caught inside
+`CreateAllDataMacros` and the loop carries on to the next one — which is the right behaviour, since
+one blocked table should not cost the other five. The cost of it is that the number of tables
+*processed* says nothing about how many were *built*, and a run where five of six tables were held
+open would once report "Generated audit data macros for 6 table(s)" and mean it. The summary now
+reads `6 table(s) processed: 1 built, 0 skipped, 5 failed`, the dialog carries a warning icon rather
+than an information one, and on any failure it says what state those tables are left in and what to
+do about it. **Access raises its own error first** — the developer sees a lock failure on the table
+before they ever reach this summary — so this is the message that has to agree with what they were
+just told, not the one that breaks the news.
+
+**It enforces the two unauditable field types rather than trusting the config table.** The switches
+were seeded in step 2, and between step 2 and step 3 the developer is expected to go and edit them;
+`IsUnauditableFieldType` is asked again here so an Attachment field switched back on cannot produce
+a macro set that does not work.
+
 ```vba
 Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Generate and attach audit Data Macros for every configured table.
@@ -1614,10 +1763,15 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     Dim bFieldIsAuditable As Boolean
     Dim fieldList As Collection
     Dim fieldInfo As Variant
+    Dim fldLive As DAO.Field
     Dim sTempPath As String
     Dim lTableCount As Long
+    Dim lBuiltCount As Long
+    Dim lSkipCount As Long
+    Dim lFailCount As Long
     Dim vCurrentTable As Variant
     Dim sTableResult As String
+    Dim sSummary As String
     Dim sReport As String
 
     On Error GoTo errHandler
@@ -1652,6 +1806,23 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
             Else
                 Set fieldList = dictTables(sTableName)
             End If
+            ' [SCAFFOLD] Hard guard above the flags, on the field this time. tblAuditLogConfig
+            '            exists to be edited, so a switch seeded off in step 2 may well be on
+            '            by the time this runs — and for two field types that is not a choice
+            '            the developer gets to make (see IsUnauditableFieldType). Ask the same
+            '            function step 2 asked rather than trusting the row. A field that has
+            '            since been deleted leaves fldLive Nothing and is simply not enforced;
+            '            the builders skip a field they cannot resolve anyway.
+            If bFieldIsAuditable Then
+                Set fldLive = Nothing
+                On Error Resume Next
+                Set fldLive = db.TableDefs(sTableName).Fields(sFieldName)
+                On Error GoTo errHandler
+                If Not fldLive Is Nothing Then
+                    If IsUnauditableFieldType(fldLive) Then bFieldIsAuditable = False
+                End If
+            End If
+
             ' Field info as array: (FieldName, DataType, IsPrimaryKey, IsAuditable)
             fieldInfo = Array(sFieldName, lFieldDataType, bFieldIsPK, bFieldIsAuditable)
             fieldList.Add fieldInfo
@@ -1663,19 +1834,51 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     sTempPath = Environ("TEMP") & "\"
 
     lTableCount = 0
+    lBuiltCount = 0
+    lSkipCount = 0
+    lFailCount = 0
     For Each vCurrentTable In dictTables.Keys
         sTableName = CStr(vCurrentTable)
         Set fieldList = dictTables(sTableName)
         sTableResult = CreateAllDataMacros(sTableName, fieldList, sTempPath, bSilent)
         sReport = sReport & sTableName & ": " & sTableResult & vbCrLf
         lTableCount = lTableCount + 1
+        ' [SCAFFOLD] Count what actually happened, not how many tables were attempted. A
+        '            per-table error is caught inside CreateAllDataMacros and the loop
+        '            carries on, which is right — one blocked table should not cost the
+        '            other five. But it means the number of tables processed says nothing
+        '            about how many were built, and a summary reporting the first as though
+        '            it were the second tells the developer a partial run succeeded.
+        Select Case True
+            Case Left$(sTableResult, 5) = "ERROR"
+                lFailCount = lFailCount + 1
+            Case Left$(sTableResult, 7) = "SKIPPED"
+                lSkipCount = lSkipCount + 1
+            Case Else
+                lBuiltCount = lBuiltCount + 1
+        End Select
     Next vCurrentTable
 
-    If Not bSilent Then MsgBox "Generated audit data macros for " & lTableCount & " table(s). " & _
-        "See the returned report for the per-table result.", vbInformation
+    sSummary = lTableCount & " table(s) processed: " & lBuiltCount & " built"
+    If lSkipCount > 0 Then sSummary = sSummary & ", " & lSkipCount & " skipped"
+    sSummary = sSummary & ", " & lFailCount & " failed."
+    ' [SCAFFOLD] On a failure, say what state the failed tables are in and what to do — the
+    '            developer is reading this in a dialog, not in the report, and the commonest
+    '            cause by a distance is an object left open in the database.
+    If lFailCount > 0 Then
+        sSummary = sSummary & vbCrLf & vbCrLf & _
+            "The tables that failed still have the Data Macros they had before — nothing " & _
+            "was changed on them. The usual cause is something left open: close every " & _
+            "table, form, report and query in this database, then run this again. It is " & _
+            "safe to run again."
+    End If
+    sReport = sSummary & vbCrLf & vbCrLf & sReport
+
+    If Not bSilent Then MsgBox sSummary, IIf(lFailCount > 0, vbExclamation, vbInformation)
     Three_GenerateAllAuditDataMacros = sReport
 
 Cleanup:
+    Set fldLive = Nothing
     Set rs = Nothing
     Set db = Nothing
     Set dictTables = Nothing
@@ -1716,6 +1919,23 @@ technique `BackupAndRemoveAllDataMacros` uses to detect a table's macros. It doe
 old logic into the new macros; it only makes sure nothing is destroyed without a copy and a
 plain-language warning first. Re-implementing anything lost is the developer's call.
 
+**A backup file is written only when a replacement actually happened.** The copy has to be taken
+before `LoadFromText` — afterwards there is nothing left to copy — but it is written under a working
+name and renamed to its real one only once the new macros have loaded. A run stopped part-way, by an
+object left open in the database, deletes its working file instead: that table was not changed, so a
+file claiming to hold what was replaced on it would be false. This matters because the folder is
+where a developer goes to recover something, and a backup for a table that was never touched sends
+them looking for a change that never happened.
+
+**The file name says which kind of backup it is.** `<Table>_PreAuditBackup_<timestamp>.xml` holds
+what the table had before this system was ever put on it. `<Table>_PreRegenBackup_<timestamp>.xml`
+holds a set this generator wrote on an earlier run — restoring that one gives you this system back,
+not the table's original macros, and regenerating is ordinary enough that the two would otherwise be
+indistinguishable in the folder. `MacroBackupIsOurs` tells them apart by looking for `tblAuditLog` in
+the exported macro set. One case it cannot tell apart, harmlessly: a table with nothing switched on
+gets a stamping macro only, which names no audit table, so a regeneration of that table is filed as a
+pre-audit backup. Either file restores a stamping macro, so nothing is lost by the mislabel.
+
 **`DataMacroBackups\` grows every time you regenerate, and nothing prunes it.** Once a table carries
 macros, *every* subsequent run backs it up again — so a schema you regenerate ten times leaves ten
 files per table beside the database. That is deliberate: throwing away the only copy of a macro set
@@ -1749,7 +1969,8 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     Dim sWhatWasBuilt As String
     Dim bHadExistingMacros As Boolean
     Dim sBackupFolder As String
-    Dim sBackupFile As String
+    Dim sBackupTemp As String
+    Dim sBackupFinal As String
     Dim sBackupNote As String
 
     On Error GoTo errHandler
@@ -1807,13 +2028,31 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     Set rsCheck = Nothing
 
     sBackupNote = ""
+    sBackupTemp = ""
+    sBackupFinal = ""
     If bHadExistingMacros Then
         sBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
         If Dir(sBackupFolder, vbDirectory) = "" Then MkDir sBackupFolder
-        sBackupFile = sBackupFolder & sTableName & "_PreAuditBackup_" & Format(Now(), "yyyymmdd_hhnnss") & ".xml"
-        Application.SaveAsText acTableDataMacro, sTableName, sBackupFile
-        sBackupNote = " (existing macros backed up to " & sBackupFile & " before replacing)"
-        Debug.Print "  - " & sTableName & " already had Data Macros — backed up to " & sBackupFile
+        ' [SCAFFOLD] Export under a working name. Taking the copy first is not optional —
+        '            after LoadFromText there is nothing left to copy — but the file is only
+        '            renamed to its real name once the new macros have actually loaded, and
+        '            deleted if they have not. That is what makes a file in DataMacroBackups\
+        '            mean a replacement really happened. Before this, a run stopped by an
+        '            open object left behind a backup for a table it never touched.
+        sBackupTemp = sBackupFolder & sTableName & "_backup-in-progress_" & _
+            Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+        Application.SaveAsText acTableDataMacro, sTableName, sBackupTemp
+        ' [SCAFFOLD] Whose macros are these? A set naming tblAuditLog is one this generator
+        '            wrote on an earlier run, and calling that file a PRE-AUDIT backup would
+        '            be false: restore it and you get this system back, not what the table
+        '            had before any of it. Regenerating is ordinary, so this case is common.
+        If MacroBackupIsOurs(sBackupTemp) Then
+            sBackupFinal = sBackupFolder & sTableName & "_PreRegenBackup_" & _
+                Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+        Else
+            sBackupFinal = sBackupFolder & sTableName & "_PreAuditBackup_" & _
+                Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+        End If
     End If
 
     ' One XML document carrying all of this table's macros
@@ -1852,11 +2091,25 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     txtFile.Close
     Set txtFile = Nothing
 
+    ' [SCAFFOLD] This is the line that fails when something in the database is still open —
+    '            Access cannot take a design lock on a table another object is using. The
+    '            error is caught below, the table keeps the macros it already had, and the
+    '            caller counts it as failed rather than built.
     DoCmd.OpenTable sTableName, acViewDesign, acHidden
     Application.LoadFromText acTableDataMacro, sTableName, sFilePath
     DoCmd.Close acTable, sTableName, acSaveYes
 
     fso.DeleteFile sFilePath
+
+    ' [SCAFFOLD] The load stuck, so the copy taken earlier is now a true record of what was
+    '            replaced and earns its real name. Clearing sBackupTemp is also what tells
+    '            Cleanup there is nothing left to throw away.
+    If Len(sBackupTemp) > 0 Then
+        Name sBackupTemp As sBackupFinal
+        sBackupTemp = ""
+        sBackupNote = " (existing macros backed up to " & sBackupFinal & " before replacing)"
+        Debug.Print "  - " & sTableName & " already had Data Macros — backed up to " & sBackupFinal
+    End If
 
     ' [SCAFFOLD] Report what was actually built rather than a fixed count — the count varies
     '            by table now, and a reader comparing tables needs to see why.
@@ -1885,6 +2138,15 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     CreateAllDataMacros = "OK — " & lMacroCount & " macro(s): " & sWhatWasBuilt & sBackupNote
 
 Cleanup:
+    ' [SCAFFOLD] A working-name export still sitting here means the load never completed, so
+    '            nothing was replaced and the file records nothing that was lost. Throwing it
+    '            away is what keeps the rule that a file in DataMacroBackups\ means a
+    '            replacement happened. On the success path sBackupTemp was cleared above and
+    '            there is nothing to do.
+    If Len(sBackupTemp) > 0 Then
+        On Error Resume Next
+        Kill sBackupTemp
+    End If
     Set rsCheck = Nothing
     Set txtFile = Nothing
     Set fso = Nothing
@@ -1897,6 +2159,45 @@ errHandler:
     If Not bSilent Then MsgBox "Error creating macros for " & sTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
     Resume
+End Function
+```
+
+### MacroBackupIsOurs — `Private Function` → `Boolean`
+
+**Decides what to call a backup file, and nothing else.** Given a macro set just exported from a
+table, it answers whether this generator wrote that set. Every audit macro it emits names
+`tblAuditLog`; nothing else on a host table has any reason to. A set of ours is filed as a
+`PreRegenBackup`, anything else as a `PreAuditBackup`.
+
+**It reads the file as Unicode** — the `-1` argument — because `SaveAsText` writes UTF-16, and
+reading it as plain text returns characters separated by nulls and finds nothing. **If the file
+cannot be read the answer is `False`**, which produces the pre-audit name: the more cautious of the
+two, since it never claims a file holds less than it does.
+
+```vba
+Private Function MacroBackupIsOurs(sBackupPath As String) As Boolean
+    ' [SCAFFOLD] Naming only — this never decides whether to back something up, just what to
+    '            call the file. Every audit macro this generator writes names tblAuditLog
+    '            (tblAuditLogConfig matches the same test, and is equally ours).
+    '            No errHandler and therefore no line numbers: an unreadable file is an
+    '            answer, not a failure, and the caller has a backup to name either way.
+    Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
+    Dim tsBackup As Object
+    Dim sContent As String
+
+    sContent = ""
+    On Error Resume Next
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    ' 1 = ForReading, -1 = TristateTrue (Unicode) — SaveAsText writes UTF-16.
+    Set tsBackup = fso.OpenTextFile(sBackupPath, 1, False, -1)
+    sContent = tsBackup.ReadAll
+    tsBackup.Close
+    On Error GoTo 0
+
+    Set tsBackup = Nothing
+    Set fso = Nothing
+
+    MacroBackupIsOurs = (InStr(1, sContent, "tblAuditLog", vbTextCompare) > 0)
 End Function
 ```
 

@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.7.5
+version: 0.8.0
 status: draft
 ---
 
@@ -495,9 +495,9 @@ Four rules follow from it:
 ### 10.4 What the AI assistant says outside a step
 
 §10.3 governs the step itself. Everything else said during a wizard — before the first question,
-between two steps, and before the build begins — has no specified shape, and unspecified space is
-where ordinary explaining habits reassert themselves. Three rules govern it. **The first two fix
-opposite problems, and neither is a rule about being brief.**
+between two steps, before the build begins, and while it runs — has no specified shape, and
+unspecified space is where ordinary explaining habits reassert themselves. Four rules govern it.
+**The first two fix opposite problems, and neither is a rule about being brief.**
 
 Nothing here is written in a template file. These are run-time rules: what the AI assistant says as the
 wizard runs, composed in the conversation and never authored anywhere.
@@ -550,6 +550,29 @@ any other decision, and the build waits for the answer.
 This is the §10.7 trap one level up, and worse: a preferred choice at least appears in a question the
 developer is looking at. A self-confirmed assumption appears in prose they were free to skim — and an
 expert skims and loses nothing, while a newcomer skims and misses the one line that mattered.
+
+**4. While the build runs, do not narrate it.**
+
+The questions are over and the developer is waiting for a result. Everything happening now is work
+they already approved, so a running commentary on it reports progress to nobody: they cannot act on
+it, cannot verify it, and cannot tell from it whether anything is going wrong. Rule 2 covers the
+moment before the build; this covers the build itself, which is longer and where the habit is
+strongest. Three things are said between the last question and the finished artifact:
+
+- **That it has started**, once, and what it will produce. Silence for several minutes is its own
+  failure — this is the line that prevents it.
+- **Anything that needs the developer to act** — a failure they have to clear, or something the
+  build hit that no question covered. Asked as a question, never narrated past.
+- **That it is finished**: what was built, and where the build record is.
+
+Every object created, every procedure run, every check that passed, every step that went exactly as
+expected: all of it goes to the build record. **A build that goes to plan produces nothing between
+its first message and its last.**
+
+**Progress commentary has a real audience, and it is not this one.** Someone developing or trialling
+a template does want to watch each step land — they are reading for the template's behaviour, not
+for their own database, and that is a different reader (see the three readers in `CLAUDE.md`). They
+will say so. Absent that, the developer wants their tables, not a transcript of them being made.
 
 **The disclosure line**, said once, immediately before the entry question (§10.6):
 

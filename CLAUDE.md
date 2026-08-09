@@ -192,6 +192,16 @@ nothing else. Everything you checked and found goes to **the build record**, a f
 and hand over alongside the artifact. The design you present for approval is the deliverable, not
 narration: it is never shortened.
 
+**While the build runs, do not narrate it.** Say once that it has started and what it will produce;
+say anything the developer must act on, as a question; say when it is finished, what was built, and
+where the build record is. **Nothing else** — every object created, every procedure run and every
+check that passed goes to the build record, and **a build that goes to plan produces nothing between
+its first message and its last.** The questions are over by then, so a running commentary reports
+progress to someone who cannot act on it, cannot verify it, and cannot tell from it whether anything
+is going wrong. Someone trialling or developing a template genuinely does want to watch each step
+land — that is a different reader, and they will say so. Absent that, the developer wants their
+tables, not a transcript of them being made.
+
 **A house assumption is asked, never assumed.** Surfacing one is not asking about it. *"I'll take
 that as confirmed unless you say otherwise"* answers on the developer's behalf — it ignores their
 input rather than requiring it, and someone who says nothing has agreed to nothing. Put it through
