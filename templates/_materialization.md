@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.5.0
+version: 0.6.0
 status: draft
 ---
 
@@ -440,6 +440,79 @@ The entity corruption above is a reason to **check the imported source** where a
 about it, not a reason to steer away from that route. Handing the developer a script to import the
 ordinary way does avoid the failure mode entirely — but a scaffold that emits escaped XML should
 assemble entities from `Chr()` codes either way, as a second line of defence.
+
+### Opening a host database that has a startup routine — it can block, and it is not a dropped connection
+
+**This applies to every template, not only the one that found it.** Any build against a database the
+developer already uses has to open that database first, and opening it is where this goes wrong.
+
+**What happens.** Opening a database runs whatever it is set up to run on open — an `AutoExec`
+macro, a startup form, or both. If any of that puts a form on screen and waits for an answer, a
+sign-in prompt being the usual case, the open never completes: an Access MCP server is not a person
+and has nobody to answer it. The call sits there and eventually comes back as a **remote-procedure-call
+failure**. Nothing is wrong with the file, and nothing is wrong with the server.
+
+**Why this needs saying.** The failure arrives with no mention of startup, so it reads as the tool
+being broken. It has already been misread once, as a restriction on launching Access as a separate
+process, in a build that then took the file-handoff route for the wrong reason. And `CLAUDE.md`
+tells you a dropped Access MCP server is yours to reconnect rather than a question to hand over —
+correct in general, and here it will put you in a retry loop against something that was never going
+to succeed. **Before you treat a failed open as a dropped connection, rule this out.**
+
+**You may not be able to check first**, which is the awkward part: reading the startup settings
+means opening the database, and that is the thing that blocks. The system catalog is not a way
+around it either — an external read of it fails for an unrelated reason, on permissions, and that
+failure is *not* evidence about startup. Two failures in the same minute can have two causes.
+
+**So ask the developer, who knows the answer instantly**, and ask it in their world:
+
+> **Ask:** When you open this database yourself, does it show you anything before you can use it — a
+> sign-in, a menu screen, a form of any kind?
+
+**If the answer is yes, tell them to turn it off. Do not offer a choice about it.** A startup routine
+earns its place when people are using the application. Nobody is using it right now — it is being
+built or changed, and the part that greets a person at the door is standing between the work and the
+database. Switching it off for the duration is the ordinary thing to do, not a concession.
+
+Say it as a direction, with the reason and the reassurance in the same breath:
+
+> **Say:** That sign-in runs every time the database opens, including when I open it, and it waits
+> for an answer I have no way to give — so it needs to be off while we work. Nothing about your
+> application changes: you switch it back on when we're done, and I'll remind you. Two things to
+> switch off, and both go back the same way:
+>
+> - The macro named `AutoExec`, if there is one. Rename it — `AutoExec_off` will do — and it stops
+>   running. Renaming it back starts it again.
+> - The form the database opens by itself, set in the database's own options. Clear it there.
+>
+> To get in and make those two changes, hold the Shift key down while you open the file. That skips
+> both of them for that one open.
+
+**Why this one is in the developer's own hands.** Everywhere else here, the assistant does the work.
+This is a deliberate exception. Startup is how an application meets the people who use it, and
+changing that on somebody's behalf is a step beyond any template's remit. Only two people can be at
+the keyboard, and the reasoning holds for both. If they built the application, they already know how
+to get past its own startup, so nothing is being asked of them that they cannot do. If they did not
+build it — if they are changing somebody else's application without going back to whoever wrote it —
+then switching the startup off themselves is the moment they take ownership of it. That is worth
+requiring rather than doing for them.
+
+**Put it back, and say so.** When the build is finished, tell them to restore both, in the same plain
+terms. **Record in the build record what was switched off, that the developer switched it off, and
+that it was restored** — an application that greets nobody at the door three months from now is a
+defect somebody will lose an afternoon to, and this is the only written trace of why.
+
+**Handing over the code is the last resort, and it is a real loss.** It exists for the developer who
+*cannot* switch startup off — a database they do not administer, a sign-in their organization
+requires — or who will not. Take it then, and only then. It is not the polite option and it is not
+the cautious one: an AI-assisted template build that ends in a folder of files the developer has to
+run themselves has handed back the thing they came for. Say plainly why you are falling back to it,
+and put that in the build record too.
+
+*Not to be confused with "Application startup — `AutoExec`, `Startup()`, and external file assets"
+below, which is about the startup routine you **build** for a generated application. This one is
+about a startup routine that is **already there**, in somebody else's database, getting in the way
+of opening it.*
 
 ### Importing a VBA module through an Access MCP server — the encoding, and one wrong document
 
