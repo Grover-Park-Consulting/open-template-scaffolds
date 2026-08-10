@@ -163,6 +163,30 @@ reasoning better than anyone. If you'd rather not spend the effort, that's fine 
 consolidation goes ahead, and your contribution **keeps its credit** in the template's history
 either way.
 
+## Rules we won't add — the code wad
+
+The library resists new rules, and a submission that proposes one is the likeliest thing we'll push
+back on. Worth knowing why before you write it, because the reasoning isn't obvious and the proposal
+always looks free.
+
+These files aren't documentation. `CLAUDE.md` is read in full at the start of every run, and the
+format specs are read whole every time a template is built from them, by something that acts on them
+immediately. A rule added to cover one variation costs a little of the judgment that handles the next
+one, and rules accumulate far faster than they are ever removed. What they make is a **code wad** —
+this library's name for it. Not a stack, which you could take apart from the top, but a wad of chewed
+gum: fused, with no seam and no edges. You cannot tell where one rule ends and the next begins, which
+of them is load-bearing, or what breaks if you pull one out — so nobody pulls any out, and it only
+ever grows.
+
+So when your template met something nothing covered and you handled it, **that is the argument against
+writing a rule, not for it.** Put what happened in the template's own text, where it binds your
+template and nothing else — `## Business Rules`, a wizard step, a `warnings` entry in the front matter
+— or leave it to the build record, which exists to carry exactly that.
+
+If it genuinely belongs in the shared layer, make the case in the pull request: what it prevents, what
+it costs, and **what it replaces.** A rule that retires an existing one is a far easier sell than one
+more that fuses into the rest.
+
 ## How review works
 
 Two gates, in this order:

@@ -22,6 +22,17 @@ applications — especially with an AI assistant helping — this library takes 
 abstract part, designing the tables, and gives you a running start. You describe what you want in
 plain words, the AI builds it, and you look it over and approve or adjust.
 
+## Which assistant you use, and where you run it, changes what you see
+
+The same template, run two different ways, can look very different on screen. Some assistants —
+especially ones built into a code editor — show you a great deal as they work: everything they are
+considering, and every file as it is written, line by line. Others show you almost none of it. The
+library can't control that, and neither can your assistant.
+
+**What doesn't change is what you get, and where your decisions are.** Anything you have to decide is
+put to you as a question. So if text you didn't ask for goes past, nothing is wrong — you aren't
+expected to read it, and you haven't missed anything you needed to answer.
+
 ## What the templates build — and when to back up first
 
 The library provides templates for most of the kinds of work you do when building an Access database:

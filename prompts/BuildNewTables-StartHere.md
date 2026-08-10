@@ -18,6 +18,11 @@ prompt to your AI assistant, and read back what it gives you.
 *(Your AI assistant needs to be able to see the library files. If you followed the setup steps in
 the README, it can.)*
 
+*(How much you see on screen while the AI works depends on which assistant you use and where you run
+it — some show every file being written, others show almost nothing. It changes nothing about what
+you get. The README explains it under **"Which assistant you use, and where you run it, changes what
+you see."**)*
+
 ---
 
 ## Step 1 — Fill in the form

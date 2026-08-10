@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.6.0
+version: 0.7.0
 status: draft
 ---
 
@@ -58,9 +58,18 @@ Six parts, in this order:
 **Write it before you say the build is finished**, not when you are asked for it. A record written
 later is written from memory, and the details worth keeping are the first ones to go.
 
-**It records what happened, not what was meant to happen.** A step that failed and was retried
-belongs in it. A test that was skipped belongs in it, named as skipped. A build record in which
-everything went to plan is either untrue or not worth keeping.
+**It records what happened, not what was meant to happen — good or bad, and whatever it reflects on
+you.** A step that failed and was retried belongs in it. A test that was skipped belongs in it, named
+as skipped. A build record in which everything went to plan is either untrue or not worth keeping.
+
+**Two kinds of entry go missing, and they are the two worth most.** Anything the developer had to do
+to unblock the run — a message they had to clear, a file they had to close. From where you sit that is
+a moment of waiting; from where they sit the build stopped and demanded something, and it is the part
+they will remember. Say what stopped, what they had to do, and how many times — not only a technical
+note about the cause. And anything that went wrong because of how you worked rather than because of
+their database: a file written in the wrong encoding, code that would not compile, a tool used the
+wrong way. Both belong in part 5, with everything else that did not go as the template said. **Neither
+is a new part of the record** — nothing here needs a seventh.
 
 ---
 

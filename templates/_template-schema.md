@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.8.0
+version: 0.9.0
 status: draft
 ---
 
@@ -609,12 +609,25 @@ a template does want to watch each step land — they are reading for the templa
 for their own database, and that is a different reader (see the three readers in `CLAUDE.md`). They
 will say so. Absent that, the developer wants their tables, not a transcript of them being made.
 
-**The disclosure line**, said once, immediately before the entry question (§10.6):
+**The disclosure line**, said once, before the first question of the run — immediately before the
+entry question (§10.6) where there is one, and immediately before Step 1 where there is not:
 
 > *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
 > that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
 > record of how it was built, not just the thing. Anything you need to decide is in a question I ask
-> you. Nothing you have to act on will be buried in what I say in between."*
+> you. Nothing you have to act on will be buried in what I say in between. One thing neither of us
+> controls: the assistant you're using, and where you run it, decide how much of my work you see going
+> past — some show every file as it's written, line by line, and others show almost none of it. That
+> changes nothing about what you get, or about your decisions arriving as questions."*
+
+**The last two sentences are there because rules 2 and 4 bind one participant in the run and not the
+other.** They govern what the AI assistant says; they cannot reach what the tool it is running inside
+displays on its own account — its own commentary, or a view of every file as it is written. Where that
+happens, the developer sees a great deal of text that no rule here produced, and no way to tell which
+of the two is talking. Nothing in this library removes that variation, so the line names it instead:
+what changes is what they see, not what they get, and not where their decisions are. **A run with no
+wizard says these two sentences anyway** — `CLAUDE.md` carries that rule, since there is no disclosure
+line to carry it.
 
 **Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
 experience buys: an expert skims and loses nothing, a newcomer skims and misses the one line that

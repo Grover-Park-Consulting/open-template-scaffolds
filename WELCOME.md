@@ -38,6 +38,20 @@ attaches files directly — even easier.)
 
 That's the process; you work only through the chat window. Everything below assumes that.
 
+## Which one you use, and where you run it, changes what you see
+
+Having an AI assistant is what gets you in the door. *Which* one, and where you run it, decides what
+the work looks like while it happens — and that part surprises people, so it's worth a minute now.
+
+The same template, run two different ways, can look very different on screen. Some assistants —
+especially ones built into a code editor — show you a great deal as they work: everything they are
+considering, and every file as it is written, line by line. Others show you almost none of it.
+Neither is the right one. The library can't control which you get, and neither can your assistant.
+
+**What doesn't change is what you get, and where your decisions are.** Anything you have to decide is
+put to you as a question. So if text you didn't ask for goes past, nothing is wrong — you aren't
+expected to read it, and you haven't missed anything you needed to answer.
+
 ## Who stands behind this
 
 This note also covers the one thing the README doesn't: who stands behind the project.
