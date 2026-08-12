@@ -5,6 +5,7 @@
 
 # Packaging artifacts
 *.zip
+*.7z
 
 # Python
 __pycache__/
