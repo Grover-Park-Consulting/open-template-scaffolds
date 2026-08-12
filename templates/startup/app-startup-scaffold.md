@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: startup
 type: vba-scaffold
-version: 0.1.1
+version: 0.1.2
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -19,6 +19,9 @@ new_procedures:
   - EnsureBackEndLink
   - EnsureAppFolders
   - CurrentBackEndPath
+  - PathFromConnect
+  - BackEndExtras
+  - ConnectWithNewPath
   - BackEndIsReachable
   - RelinkAllTables
   - AskUserForBackEnd
@@ -363,8 +366,8 @@ Private Function CurrentBackEndPath() As String
     ' [SCAFFOLD] Where do this front end's links currently point? Returns the path held by
     '            the first file link found, or an empty string when there are none - which
     '            is how a single-file database identifies itself, without asking anyone.
-    '            A link to an Access file stores its path as ";DATABASE=<path>"; an ODBC
-    '            link stores something else entirely and is deliberately ignored here.
+    '            Which links count, and how the path is dug out of one, is PathFromConnect's
+    '            job - there is more than one shape and getting it wrong fails silently.
     Dim db  As DAO.Database
     Dim tdf As DAO.TableDef
 
@@ -373,9 +376,105 @@ Private Function CurrentBackEndPath() As String
     Set db = CurrentDb
 
     For Each tdf In db.TableDefs
-        If Left$(tdf.Connect, 10) = ";DATABASE=" Then
-            CurrentBackEndPath = Mid$(tdf.Connect, 11)
-            Exit For
+        CurrentBackEndPath = PathFromConnect(tdf.Connect)
+        If Len(CurrentBackEndPath) > 0 Then Exit For
+    Next tdf
+
+Cleanup:
+    On Error Resume Next
+    Set tdf = Nothing
+    Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### PathFromConnect — `Private Function` → `String`
+
+```vba
+Private Function PathFromConnect(ByVal sConnect As String) As String
+    ' [SCAFFOLD] Given what one link records, return the Access file it points at, or an
+    '            empty string if it doesn't point at one. This is the single place that
+    '            decides what counts as a link to this application's data file.
+    '            Exactly TWO shapes name an Access file, and both are ten characters long:
+    '              ";DATABASE=" - an ordinary link, path immediately after
+    '              "MS Access;" - a link to a file that HAS A DATABASE PASSWORD, which
+    '                             records the password first: MS Access;PWD=x;DATABASE=y
+    '            Testing the START of the string, rather than searching anywhere in it, is
+    '            what keeps a spreadsheet or text-file link out - those carry ";DATABASE="
+    '            too, further along ("Excel 12.0 Xml;HDR=YES;...;DATABASE=..."), and
+    '            repointing one at an .accdb would break it.
+    Dim lStart As Long
+    Dim lEnd   As Long
+    Dim sTail  As String
+
+    On Error GoTo errHandler
+
+    Select Case Left$(sConnect, 10)
+        Case ";DATABASE=", "MS Access;"
+            ' one of ours - carry on
+        Case Else
+            GoTo Cleanup
+    End Select
+
+    lStart = InStr(1, sConnect, ";DATABASE=", vbTextCompare)
+    If lStart = 0 Then GoTo Cleanup
+
+    sTail = Mid$(sConnect, lStart + 10)
+
+    ' Whatever follows the path is separated from it by a semicolon.
+    lEnd = InStr(sTail, ";")
+    If lEnd > 0 Then sTail = Left$(sTail, lEnd - 1)
+
+    PathFromConnect = sTail
+
+Cleanup:
+    Exit Function
+
+errHandler:
+    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### BackEndExtras — `Private Function` → `String`
+
+```vba
+Private Function BackEndExtras() As String
+    ' [SCAFFOLD] Everything OpenDatabase needs about the back end BESIDES its path. Today
+    '            that means one thing: the database password, where the back end has one.
+    '            Returned in the form OpenDatabase wants - ";PWD=<password>" - or an empty
+    '            string, which OpenDatabase accepts happily.
+    '            Read out of the links the front end already holds, so nobody types a
+    '            password and none is stored anywhere new. Note what that means: a link to
+    '            a password-protected file carries the password IN CLEAR TEXT, readable by
+    '            anyone who can open the front end. That is Access's doing, not this
+    '            scaffold's, but it is worth knowing before choosing to use one.
+    Dim db     As DAO.Database
+    Dim tdf    As DAO.TableDef
+    Dim lStart As Long
+    Dim lEnd   As Long
+    Dim sTail  As String
+
+    On Error GoTo errHandler
+
+    Set db = CurrentDb
+
+    For Each tdf In db.TableDefs
+        If Left$(tdf.Connect, 10) = "MS Access;" Then
+            lStart = InStr(1, tdf.Connect, ";PWD=", vbTextCompare)
+            If lStart > 0 Then
+                sTail = Mid$(tdf.Connect, lStart + 5)
+                lEnd = InStr(sTail, ";")
+                If lEnd > 0 Then sTail = Left$(sTail, lEnd - 1)
+                BackEndExtras = ";PWD=" & sTail
+                Exit For
+            End If
         End If
     Next tdf
 
@@ -383,6 +482,44 @@ Cleanup:
     On Error Resume Next
     Set tdf = Nothing
     Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### ConnectWithNewPath — `Private Function` → `String`
+
+```vba
+Private Function ConnectWithNewPath(ByVal sConnect As String, _
+                                    ByVal sNewPath As String) As String
+    ' [SCAFFOLD] Swap the file path inside a link's Connect string and change nothing else.
+    '            Building a fresh ";DATABASE=" & path string instead would be shorter and
+    '            would silently throw away a database password, after which RefreshLink
+    '            fails and the relink reports failure for a reason nobody can see.
+    Dim lStart As Long
+    Dim lEnd   As Long
+    Dim sTail  As String
+
+    On Error GoTo errHandler
+
+    lStart = InStr(1, sConnect, ";DATABASE=", vbTextCompare)
+    If lStart = 0 Then GoTo Cleanup
+
+    sTail = Mid$(sConnect, lStart + 10)
+    lEnd = InStr(sTail, ";")
+
+    If lEnd > 0 Then
+        ' Something follows the path - keep it, starting at its semicolon.
+        ConnectWithNewPath = Left$(sConnect, lStart + 9) & sNewPath & Mid$(sTail, lEnd)
+    Else
+        ConnectWithNewPath = Left$(sConnect, lStart + 9) & sNewPath
+    End If
+
+Cleanup:
     Exit Function
 
 errHandler:
@@ -411,8 +548,10 @@ Private Function BackEndIsReachable(ByVal sPath As String) As Boolean
     If Len(Dir$(sPath)) = 0 Then GoTo Cleanup
 
     ' Opened read-only and non-exclusively, so this check never blocks anyone else, and
-    ' closed again in Cleanup a few lines later.
-    Set dbBackEnd = DBEngine.OpenDatabase(sPath, False, True)
+    ' closed again in Cleanup a few lines later. BackEndExtras supplies the database
+    ' password where the back end has one - without it this open fails on a file that is
+    ' perfectly reachable, and the person is told their own data file is the wrong file.
+    Set dbBackEnd = DBEngine.OpenDatabase(sPath, False, True, BackEndExtras())
 
     ' [BUSINESS LOGIC] name a table this application's back end must contain. Asking for a
     '            table that isn't there raises an error, which is exactly the answer wanted.
@@ -453,19 +592,20 @@ Private Function RelinkAllTables(ByVal sNewPath As String, _
     '            failed, yet where no link matched, has a problem worth stopping for.
     Dim db        As DAO.Database
     Dim tdf       As DAO.TableDef
-    Dim sConnect  As String
     Dim lRelinked As Long
 
     On Error GoTo errHandler
 
     Set db = CurrentDb
-    sConnect = ";DATABASE=" & sNewPath
 
     For Each tdf In db.TableDefs
-        If Left$(tdf.Connect, 10) = ";DATABASE=" Then
+        If Len(PathFromConnect(tdf.Connect)) > 0 Then
             If Len(sOldPath) = 0 Or _
                InStr(1, tdf.Connect, sOldPath, vbTextCompare) > 0 Then
-                tdf.Connect = sConnect
+                ' Only the path is replaced. Anything else the link carries - a database
+                ' password, for one - is kept, because rebuilding the string from scratch
+                ' would drop it and the refresh below would then fail.
+                tdf.Connect = ConnectWithNewPath(tdf.Connect, sNewPath)
                 ' RefreshLink is what actually re-establishes the connection; setting
                 ' Connect on its own only changes the stored text.
                 tdf.RefreshLink
@@ -666,6 +806,20 @@ library, not committed here.*
   parameter is already there; the calling logic is not.
 - **ODBC links.** Deliberately untouched. A SQL Server link fails for its own reasons — a server
   name, a driver, credentials — and repointing it at a file path would make things worse.
+- **A back end whose database password has also changed.** Where the back end has a password, the
+  scaffold reads it out of the existing links and reuses it — for the file it already knows about and
+  for whatever file the person picks. That is right when a file has moved and wrong when the password
+  changed at the same time, in which case the probe rejects the file and says it is not this
+  application's data file.
+
+  **Why it is parked rather than solved.** The whole question turns on whether the person at the
+  keyboard knows there is a password. Normally they do, one way or the other — and somebody who is
+  *surprised* by one is a person who probably should not be in this database at all, which is a
+  reason to leave the door shut rather than open it. But it is not inconceivable that someone
+  legitimately doesn't know, so this cannot be ruled out flat either. Against that sits the cost of
+  the obvious fix: asking for a password at startup produces a prompt that looks exactly like the
+  prompts people are trained never to answer. Left open deliberately, for a fresher mind than the one
+  that found it.
 - **Automatic discovery.** Searching likely folders for the back end rather than asking. Tempting,
   and the reason it is parked is the same reason the picked file gets validated: a search that finds
   the wrong copy is worse than a question that gets the right answer.
