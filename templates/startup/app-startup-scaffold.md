@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: startup
 type: vba-scaffold
-version: 0.1.2
+version: 0.1.3
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -82,6 +82,26 @@ Three layers, kept distinct throughout:
 | One table the back end must contain | Named by you; `BackEndIsReachable` looks for it to prove a chosen file really is this application's data file. |
 | A startup form | The switchboard, menu, or home form `Startup()` opens once everything checks out. |
 | A central error logger | `error-handling.md`. **It must not write to the back end** — see *Standards Layer*. |
+| The back end's database password | Only where it has one. Asked before this is built, used while building, stored nowhere by this scaffold. |
+
+### Ask before building
+
+**Where the back end has a database password, ask for it before building anything.** Two questions,
+in this order:
+
+1. *"How this handles a data file kept behind a database password differs from how it handles one
+   without. Does the back end you want this built against have a password?"*
+2. Where the answer is yes: *"Supply that password and the build continues. Decline, and it stops."*
+
+**Stop and build nothing if they decline.** The password is used while building — opening the back
+end to confirm the table named in the row above really is in it — and this scaffold writes no copy of
+it anywhere. At run time `BackEndExtras` reads what it needs out of the links the front end already
+holds. Requiring the password up front also means nobody uses this scaffold to reach a database they
+were not meant to open.
+
+**Say plainly what it does not buy.** A link to a password-protected file already carries that
+password in clear text, readable by anyone who can open the front end. That is Access's doing, and
+nothing here changes it.
 
 ### `USysLocalSetting` — the front end's own memory
 
@@ -806,20 +826,11 @@ library, not committed here.*
   parameter is already there; the calling logic is not.
 - **ODBC links.** Deliberately untouched. A SQL Server link fails for its own reasons — a server
   name, a driver, credentials — and repointing it at a file path would make things worse.
-- **A back end whose database password has also changed.** Where the back end has a password, the
-  scaffold reads it out of the existing links and reuses it — for the file it already knows about and
-  for whatever file the person picks. That is right when a file has moved and wrong when the password
-  changed at the same time, in which case the probe rejects the file and says it is not this
-  application's data file.
-
-  **Why it is parked rather than solved.** The whole question turns on whether the person at the
-  keyboard knows there is a password. Normally they do, one way or the other — and somebody who is
-  *surprised* by one is a person who probably should not be in this database at all, which is a
-  reason to leave the door shut rather than open it. But it is not inconceivable that someone
-  legitimately doesn't know, so this cannot be ruled out flat either. Against that sits the cost of
-  the obvious fix: asking for a password at startup produces a prompt that looks exactly like the
-  prompts people are trained never to answer. Left open deliberately, for a fresher mind than the one
-  that found it.
+- **A back end whose database password changes after this is built.** The links carry the password as
+  it was when they were made, and this scaffold keeps no copy. Once the password no longer matches,
+  the probe cannot open the file, the back end reads as unreachable, and choosing that same file when
+  asked gets it refused as not this application's data file. Relinking the front end is what puts
+  that right, and it is outside what this scaffold sets up.
 - **Automatic discovery.** Searching likely folders for the back end rather than asking. Tempting,
   and the reason it is parked is the same reason the picked file gets validated: a search that finds
   the wrong copy is worse than a question that gets the right answer.
