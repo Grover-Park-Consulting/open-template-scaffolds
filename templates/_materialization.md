@@ -22,6 +22,13 @@ It is meta, not a template
 - **Table-schema → tables** — Access local tables via a VBA DAO `Sub`, or SQL Server via `CREATE TABLE` DDL.
 - **Form-spec → a form** — importable Access form text (`SaveAsText` / `LoadFromText`).
 
+**A requirement before any of this runs: the database has to sit in a folder Access trusts.** Outside
+one, Access silently disables VBA — nothing is created, and the failure reports that a procedure
+cannot be found rather than mentioning trust at all. This is not a case to design around; it is a
+condition of using these templates, and a developer who cannot arrange it cannot use them. Say so
+plainly, once, before building. What it means for a split application, and why the symptom can appear
+on one person's machine alone, is under *Five rules that make the generated Sub actually run* below.
+
 ---
 
 ## The build record
@@ -301,8 +308,8 @@ End Function
 **Five rules that make the generated Sub actually run** — each learned by running it against a real
 database:
 
-1. **Trusted Location.** The Sub must run from an Access **Trusted Location**; outside one, Access
-   silently disables VBA and nothing is created (a description-less failure). Always tell the developer.
+1. **Trusted Location.** Stated as a requirement at the top of this file, and this is where it bites:
+   outside one, Access silently disables VBA and nothing is created (a description-less failure).
    **In a split application this applies to every file that runs code, on every machine** — each
    person's front end as well as the back end you built the tables in. Trusted Locations are a
    per-machine Access setting, not a property of the file, so a front end copied to a new machine and
