@@ -6,7 +6,8 @@ paragraphs below are for your benefit; the rest of the file is not written for y
 
 **Building from a template?** What this file decides is how the code written for you is put
 together: how much any one procedure is allowed to do, and how its parts are kept apart, so that
-changing one of them later does not break another. It does not decide what anything is *named* —
+changing one of them later does not break another — and, where the same thing gets built more than
+once, what makes two of those builds the same result. It does not decide what anything is *named* —
 that is [`naming-conventions.md`](naming-conventions.md).
 
 You do not have to do anything with this information. The rules reach you in the code you receive
@@ -140,6 +141,48 @@ This also decides Sub versus Function. A Function returns a value and is called 
 performs an action and returns nothing. A Function that returns nothing, or one whose result is
 always ignored, is usually a Sub in the wrong clothes. (A shared helper that is a Function returning
 the same name it was handed did its work and returned nothing useful — it was really a Sub.)
+
+## The Same Result — what it means for two builds to agree
+
+The principles above shape one build. This one settles a question that only arises when the same
+specification is built more than once: two people, or the same person twice, ask for the same thing
+and get two sets of code that do not look alike. Are they the same result?
+
+The question is not academic. A specification that describes a finished condition rather than a
+route will produce different code every time it is used, by design — so somebody has to be able to
+say whether a given build satisfied it.
+
+**"Identical" is not a usable bar.** Identical in what? The same procedure names, the same division
+of work, the same order of operations, the same wording on screen — or the same things happening, in
+the same situations, for the people using the application? The first four are all satisfiable and
+none of them is worth having: two builds can match on every one and still differ in what a person
+experiences, and two builds can differ on every one and be indistinguishable in use.
+
+**The bar this layer sets: two builds are the same result when each satisfies every statement the
+specification makes, and neither is required to satisfy anything the specification does not state.**
+The second half carries as much weight as the first. A specification silent about how the work
+divides into procedures has not left a gap for whoever judges it to fill — it has declared that
+division free, and a build cannot fail on it.
+
+**The test is reversibility: can you reach a pass or a fail from the artifact alone?** Take the built
+thing, without the record of how it was built and without another build to hold it against, and work
+the specification statement by statement. If every statement can be answered yes or no from the
+artifact and what it does, the specification is sound and the judgment is repeatable. If a statement
+can only be answered by comparing this build against another one, that statement is not a
+requirement — it is a preference nobody wrote down, and it belongs in the specification or nowhere.
+
+**Comparing one build against another is not the test, and reaching for it is the usual way this
+goes wrong.** Two builds side by side invite a reader to treat every difference as a defect in one of
+them. Most differences are neither.
+
+**A shop may set this bar differently, and two shops may legitimately disagree about whether the same
+build passed.** That follows from the bar living in this layer, which is the layer a shop replaces. A
+house that requires a particular decomposition can say so, and its builds will then fail where
+another house's pass. What a shop cannot do and stay coherent is leave the bar unstated and judge
+builds anyway — the standard is then whatever the judge remembered at the time.
+
+A template states its own invariants in its own words. This section does not tell it how to phrase
+them; it says what those words have to achieve.
 
 ---
 
