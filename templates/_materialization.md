@@ -680,13 +680,15 @@ do two things the reference alone does not imply:
    lets a re-select overwrite cleanly. (This means the record must be saved first, so its key exists.)
 
 **The AutoExec build gotcha** (sits beside the data-macro and DDL-`DEFAULT` gotchas above). DAO
-**cannot** create a macro. `Application.LoadFromText acMacro` on modern Access **rejects both** the
-modern `SaveAsText` XML **and** the `Version =20` classic text format — either throws runtime **2128
-"errors while importing."** The accepted form is **classic macro text with `Version =196611`**:
+**cannot** create a macro. `Application.LoadFromText acMacro` on modern Access **rejects** the modern
+`SaveAsText` XML **and** the `Version =20` classic text format — either throws runtime **2128
+"errors while importing."** It also rejects classic `Version =196611` text on its own, reporting
+*"Microsoft Access encountered errors while importing |1"* with no diagnostic. The form that works
+carries the classic actions **and** the modern macro definition, as XML inside a `Comment` action
+prefixed `_AXL:`:
 
 ```text
 Version =196611
-PublishOption =1
 ColumnsShown =0
 Begin
     Action ="RunCode"
@@ -695,10 +697,23 @@ End
 Begin
     Action ="StopMacro"
 End
+Begin
+    Comment ="_AXL:<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>\015\012<UserInterfaceMacro MinimumClientDesignVersion=\"14.0.0000.0000\" xmlns=\"http://schemas.microsoft.com/office/accessservices/2009/11/application\" xmlns:a=\"http://schemas.microsoft.com/office/accessservices/2009/11/forms\"><Statements><Action Name=\"RunCode\"><Argument Name=\"FunctionName\">Startup()</Argument></Action><Action Name=\"StopMacro\" /></Statements></UserInterfaceMacro>"
+End
 ```
 
-Once you have that text, an Access MCP server's code-setting tool round-trips it directly (proven
-with object type `macro`) — no FSO / UTF-16 file dance (unlike the data macros above).
+Three things about that text. The XML inside `Comment =` is escaped — `\"` for each quote, `\015\012`
+for the line break; reproduce it exactly. `Argument Name="FunctionName"` is one word with no space,
+and the namespace shown is the one that works — the published open-spec schema of the same name
+governs SharePoint / Access Services publishing and is the wrong document for this file format.
+`PublishOption =1` is not required; the verified file omits it.
+
+**Which routes this was proven on.** The full text above imports through `Application.LoadFromText
+acMacro` and produces a working `AutoExec` — verified 2026-08-13 by building it into a real front end
+and opening the file. The eight-line classic text **without** the `_AXL:` block round-trips through an
+Access MCP server's code-setting tool (proven with object type `macro`) and **fails** through
+`LoadFromText`. Where a template hands the developer files to import rather than building through an
+Access MCP server, the `_AXL:` block is required.
 
 ---
 
