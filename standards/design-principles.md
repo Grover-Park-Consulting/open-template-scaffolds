@@ -1,28 +1,39 @@
 # Design Principles — OTS Default Standards Layer
 
 **Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
-what to replace with their own. If you are building something from a template, only the first two
-paragraphs below are for your benefit; the rest of the file is not written for you.
+what to replace with their own.
 
-**Building from a template?** What this file decides is how the code written for you is put
+If you are building something from a template, you don't need to read this file unless you are curious.
+However, we have included clarifying comments to help you interpret what it says, just in case.
+
+**Building from a template?** This file decides how the code written for you is put
 together: how much any one procedure is allowed to do, and how its parts are kept apart, so that
 changing one of them later does not break another — and, where the same thing gets built more than
 once, what makes two of those builds the same result. It does not decide what anything is *named* —
 that is [`naming-conventions.md`](naming-conventions.md).
 
-You do not have to do anything with this information. The rules reach you in the code you receive
-whether or not you read this file. Using them as they are is the normal choice. If you came here
-because you were asked whether you want to use these rules as they are or make them your own, you
-don't answer the question here. After you've read about the choice here, go back and answer it where
-it was asked. [`README.md`](README.md) lists all seven files if you want to see the others first.
+You do not have to do anything with this information to use the templates. The rules apply to the code you receive
+whether or not you read these files.
+
+Using the standards as they are is the normal choice. If you came here because a template asked whether
+you want to use these rules as they are or make them your own, you don't answer the question here.
+
+*After you've read about the choice here, go back and answer it where it was asked.*
+
+[`README.md`](README.md) lists all seven files if you want to see the others first.
 
 > **This is the OTS default standards layer.** When you fork the library, replace this file with
-> your own house design principles, or add to them. It holds the reasoning behind the specific rules
+> your own house design principles. You can also add to them here; **do so carefully to avoid
+> breaking the template.** It holds the reasoning behind the specific rules
 > in this standards layer — the principles that decide how generated VBA is shaped. A `vba-scaffold`
 > (or any code generated alongside a template) defers to these via
 > `standards_layer: [design-principles]`. The concrete rules in the sibling files
 > (`query-style.md`, `error-handling.md`, `form-conventions.md`, `naming-conventions.md`) are these
 > principles made specific. Applies to procedural Microsoft Access / VBA.
+
+From here on, this file contains instructions for the AI.
+
+**To the AI generating code:**
 
 ---
 

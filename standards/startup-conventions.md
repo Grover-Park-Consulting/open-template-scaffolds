@@ -1,22 +1,34 @@
 # Startup Conventions — OTS Default Standards Layer
 
 **Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
-what to replace with their own. If you are building something from a template, only the first two
-paragraphs below are for your benefit; the rest of the file is not written for you.
+what to replace with their own.
 
-**Building from a template?** What this file decides is what runs first when the database is opened,
+If you are building something from a template, you don't need to read this file unless you are curious.
+However, we have included clarifying comments to help you interpret what it says, just in case.
+
+**Building from a template?** This file decides what runs first when the database is opened,
 and what it puts in place before anyone can do anything.
 
-You do not have to do anything with this information. The rules reach you in the code you receive
-whether or not you read this file. Using them as they are is the normal choice. If you came here
-because you were asked whether you want to use these rules as they are or make them your own, you
-don't answer the question here. After you've read about the choice here, go back and answer it where
-it was asked. [`README.md`](README.md) lists all seven files if you want to see the others first.
+You do not have to do anything with this information to use the templates. The rules apply to the code you receive
+whether or not you read these files.
 
-> **This is the OTS default standards layer.** When you fork the library, replace this file with
-> your own house startup conventions, or add to them — a practice that uses a different startup
-> mechanism swaps it out entirely. It governs how a generated Access application initializes when it
-> opens: the `AutoExec` → `Startup()` convention and the single extensible open-time slot.
+Using the standards as they are is the normal choice. If you came here because a template asked whether
+you want to use these rules as they are or make them your own, you don't answer the question here.
+
+*After you've read about the choice here, go back and answer it where it was asked.*
+
+[`README.md`](README.md) lists all seven files if you want to see the others first.
+
+> **This is the OTS default standards layer.** A practice that uses a different startup
+> mechanism swaps it out entirely. If you fork the library, replace this file with
+> your own house startup conventions. You can also add to them here; **do so carefully to avoid breaking the template.**
+
+From here on, this file contains instructions for the AI.
+
+**To the AI generating code:**
+
+The standards layer governs how a generated Access application initializes when it
+opens: the `AutoExec` → `Startup()` convention and the single extensible open-time slot.
 
 ---
 
@@ -24,7 +36,7 @@ it was asked. [`README.md`](README.md) lists all seven files if you want to see 
 
 A generated Access application gets an **`AutoExec` macro** whose only action is `RunCode Startup()`
 (followed by `StopMacro`). Access runs `AutoExec` automatically on open, so `Startup()` is the one
-place open-time initialization happens — no logic is scattered across form Load events or left to run
+place open-time initialization happens. No logic is scattered across form Load events or left to run
 by chance.
 
 - **`Startup()` is a `Public Function`**, not a Sub — the `RunCode` macro action can only call a

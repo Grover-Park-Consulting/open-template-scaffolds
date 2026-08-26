@@ -212,7 +212,7 @@ for a one-off utility; not reasonable for anything someone else depends on.
 | Option | Short description |
 |---|---|
 | `A table in this database` | Errors go to `tblErrorLog`, which you can open, sort, and filter. |
-| `A text file` | Errors are appended as lines of text to a file. |
+| `A text file` | Errors are appended as lines of text to an external file. |
 | `The table, falling back to the text file` | Uses the table, and writes to the file when the table cannot be reached. |
 
 **Preferred:** `A table in this database` — this template's own; the standards layer settles the

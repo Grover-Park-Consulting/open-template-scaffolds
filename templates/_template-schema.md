@@ -12,7 +12,7 @@ status: draft
 **Who reads this:** anyone writing a template, and the AI assistant reading one.
 
 **Using a template to build tables, forms, or code in a database?** You do not need to read this
-file in order to use the template.
+file in order to *use* the template. You only need to read this file if you want to *create* a template.
 
 This is the **format specification** every template file in this library must follow.
 It is the contract the template library MCP server keys off: discovery (`list_templates`,
@@ -20,13 +20,19 @@ It is the contract the template library MCP server keys off: discovery (`list_te
 active standards layer; `validate` checks a template (or a filled-in copy) against the
 rules in this document.
 
-It is meta, not a template itself (`type: spec`, `domain: _meta`) — `validate` skips files
+The format specification is meta, not a template itself (`type: spec`, `domain: _meta`) — `validate` skips files
 whose `type` is `spec`.
 
 A template is a vetted, standards-baked *starting point*, not a drop-in guarantee. Every
 template a developer adopts must be confirmed fit for the developer's intended application
-before use — the library supplies structure and proven decisions; suitability for a specific
-engagement is always the adopter's judgment.
+before use.
+
+The library supplies structure and proven decisions for the template itself.
+
+Whether any given template is suitable for a specific engagement is always the adopter's judgment.
+
+This file contains the specifications for the OTS Template format. You may also examine one or more
+existing template files to see how they are applied as an example. However, **be careful not to unintentionally change an existing template.**
 
 > **Scope note (build order).** The common core below is proven against real templates:
 > `templates/northwind/stocktake-schema.md` (`type: table-schema`),
@@ -46,8 +52,8 @@ engagement is always the adopter's judgment.
 - **Single source of truth:** the file *is* the template. CLAUDE.md and the template library
   MCP server are readers of it, never separate copies.
 - **Write for a reader who has never seen this system.** Every term is defined where it first
-  appears, or it isn't used — no undefined jargon, no coined label the reader has to look up, no
-  concept assumed from another file. Prefer the plain name for a thing over the internal one.
+  appears. Templates do not use undefined jargon, coined labels the reader has to look up, or
+  concepts assumed from another file. Prefer the plain name for a thing over the internal one.
   Where a rule has a visible consequence, state the consequence as well — what the reader will
   actually see happen — not only the rule that governs it. If a sentence would send a first-time
   reader to a search engine or to another file to understand it, rewrite it. This applies to the
@@ -104,8 +110,8 @@ present on every template; conditional keys are required when their condition ho
 **Scope of `validate` — format, not fitness.** `validate` confirms a template is internally
 well-formed: complete front-matter, `new_tables` matching the `### <name>` entity headings, every
 `FK → <Table>` resolving to a table named in the template. It does **not** open any host
-database — that's a separate `check_compatibility(template, db_path)` tool. And neither check
-speaks to fitness: a passing `validate` means well-formed, never *suitable*. Confirming a
+database. That's a separate `check_compatibility(template, db_path)` tool. And neither check
+speaks to fitness: a passing `validate` means well-formed, never *suitable for purpose*. Confirming a
 template fits the intended application stays the adopter's responsibility.
 
 ---
@@ -291,11 +297,11 @@ When a template documents this kind of sequence, it must also state, alongside t
 facilitation rule for any assistant carrying out the steps on the developer's behalf:
 
 - **Never infer the answer to a staged decision.** Not from the shape of the data, not from
-  domain reasoning that makes an answer seem obvious — ask the developer, and wait for their
+  domain reasoning that makes an answer seem obvious. Ask the developer, and wait for their
   actual answer, even when it looks predictable.
 - **Never substitute your own analysis for a procedure whose job is to answer the question.** If
   the sequence includes a check or scan procedure, run *that procedure*, at the point the
-  sequence calls for it — don't read the underlying data directly and report a conclusion in its
+  sequence calls for it. Don't read the underlying data directly and report a conclusion in its
   place.
 - **Present one step at a time.** Don't collapse a staged sequence into a single upfront report,
   even where every fact in it turns out correct — the sequence exists so the developer reviews
@@ -338,8 +344,8 @@ objects, and objects belonging to a developer who never opted into any of this.
 object's name. A shop's tables may be `tblCompany`, `Company` or `CompanyT`, and their own
 housekeeping tables may be called anything at all — a template cannot predict any of it, and a
 template that guesses gets it wrong silently. Gate destructive action on one of two things
-instead: **a list the developer confirmed**, or **a test that the artifact is one this template
-created**. The second is usually available and usually better — generated artifacts can be made to
+instead: **a list the developer confirmed**, or **a test that the artifact is one this template created**.
+The second is usually available and usually better. Generated artifacts can be made to
 carry a recognizable mark, and a mark survives every naming convention.
 
 **2. Two names are off limits regardless, and they are off limits for different reasons.**
@@ -355,7 +361,7 @@ template's business is to leave that alone until invited. `MSys` is not the deve
 with in the first place.
 
 **3. The name check has to come before the ownership test**, because the ownership test usually
-has to read the object to apply it — and reading is itself something that must not happen to
+has to read the object to apply it, and reading is itself something that must not happen to
 Access's own tables. Order the guards accordingly.
 
 **4. Back up before removing, and keep the backup when you decline to remove.** A procedure that
@@ -423,9 +429,8 @@ A form-spec materializes as **importable Access form text** (`SaveAsText`/`LoadF
 default stacked layout and the code-behind wired to the named framework helpers (and any paired
 `vba-scaffold`). The markdown → Access-text mapping is proven by hand before a generator is built; the
 alternative path builds the form live through an Access MCP server's form-creation and
-control-creation tools. The
-markdown is the source of truth; the Access text is a generated target. See `_materialization.md` for
-the full mapping rules and a hand-validated fragment.
+control-creation tools. The markdown is the source of truth; the Access text is a generated target.
+See `_materialization.md` for the full mapping rules and a hand-validated fragment.
 
 ### 9.5 `validate` rules for `form-spec`
 
@@ -475,8 +480,8 @@ developer decides, then sees what their decisions produce. Inside it, one `### S
 
 | Option | Short description |
 |---|---|
-| `A table in this database` | Errors go to a table you can open, sort, and filter. |
-| `A text file` | Errors are appended as lines of text to a file. |
+| `A table in this database` | Errors go into a table you can open, sort, and filter. |
+| `A text file` | Errors are appended as lines of text to an external file. |
 
 **Preferred:** `A table in this database` — this template's own; the standards layer does not
 speak to this choice.
@@ -597,7 +602,7 @@ strongest. Three things are said between the last question and the finished arti
 - **That it has started**, once, and what it will produce. Silence for several minutes is its own
   failure — this is the line that prevents it.
 - **Anything that needs the developer to act** — a failure they have to clear, or something the
-  build hit that no question covered. Asked as a question, never narrated past.
+  build hit that no question covered. Always asked as a question, never narrated past.
 - **That it is finished**: what was built, and where the build record is.
 
 Every object created, every procedure run, every check that passed, every step that went exactly as
@@ -614,11 +619,15 @@ entry question (§10.6) where there is one, and immediately before Step 1 where 
 
 > *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
 > that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
-> record of how it was built, not just the thing. Anything you need to decide is in a question I ask
-> you. Nothing you have to act on will be buried in what I say in between. One thing neither of us
-> controls: the assistant you're using, and where you run it, decide how much of my work you see going
-> past — some show every file as it's written, line by line, and others show almost none of it. That
-> changes nothing about what you get, or about your decisions arriving as questions."*
+> record of how it was built, not just the thing.*
+>
+> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
+> in what I say in between.*
+>
+> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
+> of my work you see going past — some show every file as it's written, line by line, and others
+> show almost none of it. That changes nothing about what you get, or about your decisions arriving
+> as questions."*
 
 **The last two sentences are there because rules 2 and 4 bind one participant in the run and not the
 other.** They govern what the AI assistant says; they cannot reach what the tool it is running inside

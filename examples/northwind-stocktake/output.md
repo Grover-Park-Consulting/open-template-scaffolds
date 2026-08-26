@@ -2,11 +2,11 @@
 
 **Who reads this:** anyone who wants to see what the AI assistant produces before running it themselves.
 
-What the AI produced from [`prompt.md`](prompt.md). **Standards applied:** Northwind-consistent —
-no table-name prefixes, and the four `AddedBy / AddedOn / ModifiedBy / ModifiedOn` audit columns on
-every new table, maintained by data macros (as in the rest of Northwind). **Declared house
-assumptions:** none — this template declares none, so there was nothing to confirm. **Your
-specifics, folded in:** shrinkage shown as a percentage and flagged above 5%, with a per-product
+What the AI produced from [`prompt.md`](prompt.md).
+
+- **Standards applied:** Northwind-consistent. Tables have no table-name prefixes, and the four `AddedBy / AddedOn / ModifiedBy / ModifiedOn` audit columns are on every new table, maintained by data macros (as in the rest of Northwind).
+- **Declared house assumptions:** none. This template declares none, so there was nothing to confirm.
+- **Your specifics, folded in:** Stated in the prompt. Shrinkage shown as a percentage and flagged above 5%, with a per-product
 override for high-value items (the template's existing shrinkage tolerance, set to your 5% default).
 
 This is presented for your review — approve it, or tell me what to change.
@@ -54,8 +54,10 @@ erDiagram
     }
 ```
 
-*(Existing Northwind tables — `Products`, `Employees`, `SystemSettings` — are shown only where the
-new tables connect to them; they aren't changed.)*
+This diagram shows the shape only. Exact types and required/optional are in the field
+list below.
+
+*(Existing Northwind tables — `Products`, `Employees`, `SystemSettings` — are shown only where the new tables connect to them; they aren't changed.)*
 
 ## Every field, table by table
 

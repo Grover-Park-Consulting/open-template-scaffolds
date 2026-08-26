@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    One-time setup helper for the Open Template Scaffolds reference MCP server.
+    One-time setup helper for the Open Template Scaffolds template library MCP server.
 
 .DESCRIPTION
     Checks for Python, installs the server's dependencies, and PRINTS the exact,

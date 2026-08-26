@@ -1,25 +1,36 @@
 # Query Style — OTS Default Standards Layer
 
 **Who reads this:** the AI assistant, applying these rules to what it generates or a shop deciding
-what to replace with their own. If you are building something from a template, only the first two
-paragraphs below are for your benefit; the rest of the file is not written for you.
+what to replace with their own.
 
-**Building from a template?** What this file decides is how the code asks the database for data:
+If you are building something from a template, you don't need to read this file unless you are curious.
+However, we have included clarifying comments to help you interpret what it says, just in case.
+
+**Building from a template?** This file decides how the code asks the database for data:
 where those requests are kept, and how they are written. What the requests themselves are called is
 decided in [`naming-conventions.md`](naming-conventions.md).
 
-You do not have to do anything with this information. The rules reach you in the code you receive
-whether or not you read this file. Using them as they are is the normal choice. If you came here
-because you were asked whether you want to use these rules as they are or make them your own, you
-don't answer the question here. After you've read about the choice here, go back and answer it where
-it was asked. [`README.md`](README.md) lists all seven files if you want to see the others first.
+You do not have to do anything with this information to use the templates. The rules apply to the code you receive
+whether or not you read these files.
+
+Using the standards as they are is the normal choice. If you came here because a template asked whether
+you want to use these rules as they are or make them your own, you don't answer the question here.
+
+*After you've read about the choice here, go back and answer it where it was asked.*
+
+[`README.md`](README.md) lists all seven files if you want to see the others first.
 
 > **This is the OTS default standards layer.** When you fork the library, replace this file with
-> your own house query conventions, or add to them. It covers how VBA and saved queries write and
+> your own house query conventions. You can also add to them here; **do so carefully to avoid
+> breaking the template.** It covers how VBA and saved queries write and
 > run SQL — the house style a `vba-scaffold` (or any generated code that touches data) defers to via
 > `standards_layer: [query-style]`. Naming of the query *objects* lives in `naming-conventions.md`;
 > this file governs how the SQL *inside* them reads. Applies to Microsoft Access (DAO/Jet) and,
 > where noted, SQL Server.
+
+From here on, this file contains instructions for the AI.
+
+**To the AI generating code:**
 
 ---
 

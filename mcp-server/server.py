@@ -1,4 +1,4 @@
-"""Open Template Scaffolds — reference MCP server (thin).
+"""Open Template Scaffolds — the template library MCP server (thin).
 
 A dependency-light Model Context Protocol server that exposes the library's
 markdown templates to MCP-capable AI clients. The tool surface is built across
