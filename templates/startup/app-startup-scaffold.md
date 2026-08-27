@@ -798,7 +798,7 @@ End Sub
 
 ## Extra Options
 
-*Empty in the base template. Filled per engagement; the filled copy is saved to the developer's own
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's own
 library, not committed here.*
 
 - **Close the application instead of sitting idle.** As written, a failed relink opens no form and

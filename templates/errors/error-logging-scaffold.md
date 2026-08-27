@@ -982,7 +982,7 @@ End Function
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement.*
+*Named optional extensions, none of them filled in for an engagement.*
 
 - **A context note from the caller** — an optional extra argument on `LogError` recording what the
   code was doing ("saving invoice 4471"), paired with the matching column in the schema template's

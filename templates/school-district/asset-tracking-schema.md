@@ -289,7 +289,7 @@ canonical format — each row is still its own discrete table.
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement.*
+*Named optional extensions, none of them filled in for an engagement.*
 
 - District-specific capitalization threshold, if different from $500.
 - GASB 34 / state-reporting field extensions, if the district requires fields beyond this core set.

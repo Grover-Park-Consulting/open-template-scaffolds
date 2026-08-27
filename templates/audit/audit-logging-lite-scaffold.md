@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.9.1
+version: 0.9.2
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -25,6 +25,7 @@ new_procedures:
   - Two_PopulateConfigTable
   - IsAuditCandidateTable
   - IsUnauditableFieldType
+  - ListOpenObjects
   - CheckAuditReadiness
   - Three_GenerateAllAuditDataMacros
   - CreateAllDataMacros
@@ -93,7 +94,8 @@ warnings:
     Macros get attached directly to your live tables, and this is not a step to redo casually.
   - Application.LoadFromText replaces a table's ENTIRE macro set — it never merges. This generator
     therefore emits the house audit-column stamping (standards/audit-columns.md) and the change
-    auditing TOGETHER, in one Before Change macro, so the two no longer destroy each other. Any
+    auditing TOGETHER, in one Before Change macro, so that one macro carries both and neither can
+    replace the other. Any
     OTHER Data Macro a table already carries — business logic of your own, written for reasons
     unrelated to this system — is still replaced. And where a table already stamps who-and-when, that
     macro is replaced by this generator's version, which may not behave identically — an existing one
@@ -294,7 +296,10 @@ field, and nowhere else.
 
 ### Before you run the generator
 
-**Close every object in this database — tables, forms, reports and queries.**
+**Close every object in this database — tables, forms, reports and queries — and leave them closed
+until the whole run is finished.** Opening something to look at it between the numbered steps is
+enough to stop the next one. Each step checks before it starts and tells you what is open, so
+nothing is changed while you sort it out.
 `Three_GenerateAllAuditDataMacros` opens each table in design view to attach its macros, and it
 cannot do that while anything is using the table. This is true whether or not another copy of the
 database is open, and it is the commonest reason a run only half works.
@@ -332,7 +337,7 @@ to print what it returns: `?One_CreateAuditTables()`.
 | 4 | `?Two_PopulateConfigTable()` on Path A — every field starts switched **on**. `?Two_PopulateConfigTable(False)` on Path B — every field starts switched **off**. | Both |
 | 5 | **Open `tblAuditLogConfig` and set the `IsAuditable` switches.** This is where the audit net is actually drawn, and nothing else does it for them. | Both |
 | 6 | `?CheckAuditReadiness()` — reports anything that would stop the next step. | Both; required on B |
-| 7 | **Close every table, form, report and query in the database.** | Both |
+| 7 | **Close every table, form, report and query in the database, and leave them closed until step 9 is finished.** | Both |
 | 8 | `?Three_GenerateAllAuditDataMacros()` — attaches the macros and reports per table. | Both |
 | 9 | Make one real edit to an audited table and open `tblAuditLog`. | Both |
 
@@ -586,11 +591,11 @@ stands?
 | `Yes, check them first` | I look at every table and tell you what I find. Nothing is changed. |
 | `No, skip the check` | Go straight on. |
 
-**Preferred:** `Yes, check them first` — this template's own. On a database you already use it is
-expected rather than optional, for the reason in the note below.
+**Preferred:** `Yes, check them first` — this template's own.
 
-**Skip when:** never, though it is genuinely optional on the demo, where the tables were built by
-this template and are already known to be the right shape.
+**Skip when:** the tables were created by this template's own setup step, in this run. Those tables
+were built to the shape this system needs, so the check has nothing left to find. Any other table
+has never been looked at.
 
 <details>
 <summary>Tell me more about the check</summary>
@@ -604,8 +609,8 @@ auto-number**. Most tables you designed yourself already look like this. Older o
 sometimes don't — a table with no primary key set, one that uses two or more fields together as its
 key, or one keyed on a text code will not work with this system as it stands.
 
-That matters most on a database you already use, which is exactly where such a table is likely to
-turn up.
+A table designed before this system existed is where such a key turns up, which is why the check is
+here.
 
 If a table isn't ready you have two ways out: fix that table's primary key, or leave the table out
 by switching its fields off. Adapting the template to a different key design is possible, but it is
@@ -683,7 +688,7 @@ would loop.
 
 ### Step 9 — Ready to switch auditing on?
 
-**Ask:** Close every table, form, report and query in the database first — anything left open stops
+**Ask:** Close every table, form, report and query in the database first. Anything left open stops
 this on that table. Ready to switch auditing on?
 
 | Option | Short description |
@@ -704,7 +709,8 @@ UTF-16 XML and loading it with `Application.LoadFromText` is the only build path
 
 `LoadFromText` replaces a table's entire macro set. It never merges. This is why the house
 audit-column stamping and the change auditing are generated together, in one Before Change
-macro — so the two no longer destroy each other. But any *other* Data Macro a table carries,
+macro, so that one macro carries both and neither can replace the other. But any *other* Data Macro
+a table carries,
 ***business logic of your own written for unrelated reasons is replaced too.*** The generator backs a
 table's existing macros up to `DataMacroBackups\` before replacing them and names the affected
 tables in its report; putting that logic back is your call.
@@ -751,6 +757,17 @@ Private Const AUDIT_CREATED_DATE  As String = "CreatedDate"
 Private Const AUDIT_CREATED_BY    As String = "CreatedBy"
 Private Const AUDIT_MODIFIED_DATE As String = "ModifiedDate"
 Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
+
+' [SCAFFOLD] The mark that says this generator wrote a macro set. Every macro it emits
+' carries the full form in a <Comment>, and MacroBackupIsOurs looks for the stable form
+' before anything is removed. Public because BackupAndRemoveAllDataMacros, which decides
+' what may be stripped, lives in another module.
+' Two constants, not one: emit the version so an old build can be identified later, but
+' match on the part before it, so releasing a new version never stops this system
+' recognising work it did itself. Never edit either string and never reuse them
+' elsewhere: the way back out depends on this mark being unique to macros we wrote.
+Public Const AUDIT_MACRO_MARKER      As String = "OTS-AUDIT-DATAMACRO-GENERATED"
+Public Const AUDIT_MACRO_MARKER_FULL As String = "OTS-AUDIT-DATAMACRO-GENERATED v0.9.2"
 ```
 
 **To the AI assistant — Path B, before you import the module.** These four values name the columns
@@ -1613,6 +1630,64 @@ Private Function IsUnauditableFieldType(fld As DAO.Field) As Boolean
 End Function
 ```
 
+### ListOpenObjects — `Public Function` → `String`
+
+**Names everything open in this database, and returns an empty string when nothing is.** The
+generator attaches macros by opening each table in design view, and Access refuses that while
+anything is using the table, so the run has to start and stay in a closed database. This turns the
+prerequisite into something the code can check rather than something it has to assume.
+
+**A bound form is the usual cause, and it never names the table it uses.** That does not matter
+here: the form is open, so the form is what gets reported, and the developer is told which object to
+close rather than being asked to work out which forms reach which tables.
+
+**It only sees this database.** A second copy of it, or a front end holding links from its own
+session, is invisible from here and stays the developer's to close.
+
+```vba
+Public Function ListOpenObjects() As String
+    ' [SCAFFOLD] Recognition only. Returns "" when nothing in this database is open, and
+    '            otherwise one indented line per open object for a caller to print.
+    '            Access's own tables are skipped: AllTables lists them (11 in an empty
+    '            database), they are never this system's business, and an open one is not
+    '            something a developer would be asked to close.
+    '            No errHandler and therefore no line numbers: an object that cannot be asked
+    '            is reported as not open, and the caller stops on whatever else it finds.
+    Dim obj As Object
+    Dim sList As String
+
+    sList = ""
+
+    On Error Resume Next
+
+    For Each obj In CurrentProject.AllForms
+        If obj.IsLoaded Then sList = sList & "  Form: " & obj.Name & vbCrLf
+    Next obj
+
+    For Each obj In CurrentProject.AllReports
+        If obj.IsLoaded Then sList = sList & "  Report: " & obj.Name & vbCrLf
+    Next obj
+
+    For Each obj In CurrentData.AllTables
+        If Left$(obj.Name, 4) <> "MSys" Then
+            If SysCmd(acSysCmdGetObjectState, acTable, obj.Name) <> 0 Then
+                sList = sList & "  Table: " & obj.Name & vbCrLf
+            End If
+        End If
+    Next obj
+
+    For Each obj In CurrentData.AllQueries
+        If SysCmd(acSysCmdGetObjectState, acQuery, obj.Name) <> 0 Then
+            sList = sList & "  Query: " & obj.Name & vbCrLf
+        End If
+    Next obj
+
+    On Error GoTo 0
+
+    ListOpenObjects = sList
+End Function
+```
+
 ### CheckAuditReadiness — `Public Function` → `String` (safety check — run before step 3, required for Path B)
 
 A read-only check you can run any time, at no risk — it doesn't change anything. It looks at each
@@ -1654,11 +1729,28 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
     Dim lProblemCount As Long
     Dim sMsg As String
     Dim sReport As String
+    Dim sOpen As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
     lProblemCount = 0
     sMsg = ""
+
+    ' [SCAFFOLD] The database has to be closed for the whole run, not only at the start, so
+    '            every step that needs it asks again rather than trusting an earlier answer.
+    '            Between the numbered steps the developer is expected to go and edit the
+    '            config table, and opening something to look at it is the ordinary thing to
+    '            do next.
+    sOpen = ListOpenObjects()
+    If Len(sOpen) > 0 Then
+        sReport = "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
+            sOpen & vbCrLf & _
+            "Close it and run this again. Everything has to stay closed until the whole " & _
+            "run is finished, not just when it starts."
+        If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
+        CheckAuditReadiness = sReport
+        GoTo Cleanup
+    End If
 
     For Each tdef In db.TableDefs
         ' [BUSINESS LOGIC — scan boundary] The same test Two_PopulateConfigTable uses, from the
@@ -1733,10 +1825,10 @@ Reads the (reviewed) config, groups fields by table, and calls `CreateAllDataMac
 Re-runnable: reloading a table's macro XML replaces what was there (schema Business Rule 7).
 
 **Returns a per-table report as text**, in addition to the summary `MsgBox` — one line per table
-(`OK`, `SKIPPED`, or `ERROR: ...`), the same detail `CreateAllDataMacros` used to only send to
-`Debug.Print`. Call it as `sResult = Three_GenerateAllAuditDataMacros(True)` to read that report
-directly with no dialog — a script or an AI assistant facilitating the build no longer has to add
-its own diagnostic wrapper to see which tables actually succeeded. `bSilent` is passed down into
+(`OK`, `SKIPPED`, or `ERROR: ...`), the same detail `CreateAllDataMacros` sends to `Debug.Print`.
+Call it as `sResult = Three_GenerateAllAuditDataMacros(True)` to read that report directly with no
+dialog, so a script or an AI assistant facilitating the build can see which tables actually
+succeeded without adding a diagnostic wrapper of its own. `bSilent` is passed down into
 `CreateAllDataMacros`, so a per-table error can't strand an automated caller either.
 
 **The summary counts outcomes, not attempts.** A table that fails is caught inside
@@ -1781,11 +1873,28 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     Dim sTableResult As String
     Dim sSummary As String
     Dim sReport As String
+    Dim sOpen As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
     Set dictTables = CreateObject("Scripting.Dictionary")
     sReport = ""
+
+    ' [SCAFFOLD] This is the step that actually fails on an open object, because it opens each
+    '            table in design view to attach the macros. Stopping here costs one message;
+    '            carrying on costs a partial run that has to be diagnosed from Access's own
+    '            lock error. Asked again rather than relying on CheckAuditReadiness, which
+    '            may have run some time ago and is optional on Path A.
+    sOpen = ListOpenObjects()
+    If Len(sOpen) > 0 Then
+        sReport = "Stopped before anything was changed. Something in this database is " & _
+            "still open:" & vbCrLf & vbCrLf & sOpen & vbCrLf & _
+            "Close it and run this again. Everything has to stay closed until the whole " & _
+            "run is finished, not just when it starts."
+        If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
+        Three_GenerateAllAuditDataMacros = sReport
+        GoTo Cleanup
+    End If
 
     ' Read configuration and group fields by table, in field order. All rows come along —
     ' the PK row is needed for plumbing even if its IsAuditable flag was flipped; the
@@ -1908,18 +2017,19 @@ Builds one table's macro XML into a single document, writes it UTF-16, and loads
 the three After macros whenever anything is being audited, BeforeChange whenever the table carries
 the house audit columns or an auditable Long Text field, BeforeDelete only for Long Text.
 
-**The insert-blocking trap this guards against.** Before this revision, a table with no auditable
-fields was skipped entirely, which was harmless when the generator only ever wrote audit macros —
-the table simply had no audit trail. Now that the same pass also writes the **audit-column stamping**
-macro, skipping the table would leave it with no stamping macro at all. `CreatedDate` and `CreatedBy`
-are `Required`, and no column default can reach the Windows username, so **that table would reject
-every insert** — nobody could add a record to it through any interface. Switching auditing off for a
+**The insert-blocking trap this guards against.** Every table in scope gets its **audit-column
+stamping** macro, including a table with no auditable fields. A table with nothing worth auditing
+still has records created and changed on it, so it still needs the who-and-when stamp.
+`CreatedDate` and `CreatedBy` are `Required`, and no column default can reach the Windows username,
+so a table left without that macro **would reject every insert**. Nobody could add a record to it
+through any interface. Switching auditing off for a
 table is the ordinary Path B workflow, so it must never break writing to that table. The audit
 actions are skipped; the stamping macro is still written. Only a table needing neither is skipped.
 
 **Backs up a table's existing macros before replacing them.** `LoadFromText` replaces a table's
-entire Data Macro set — it does not merge. The commonest case of that used to be this generator
-destroying the house stamping macro, which is exactly why the two are now generated together. What
+entire Data Macro set — it does not merge. That is why the house stamping and the change auditing
+are generated together in one macro: written as two, whichever loaded second would replace the
+first. What
 remains is any **other** Data Macro a table carries — business logic written for reasons unrelated to
 this system, which a Path B table may well have. Before loading, this checks `MSysObjects` for an
 existing macro set and, if it finds one, exports it to a timestamped backup file first — the same
@@ -1939,10 +2049,10 @@ them looking for a change that never happened.
 what the table had before this system was ever put on it. `<Table>_PreRegenBackup_<timestamp>.xml`
 holds a set this generator wrote on an earlier run — restoring that one gives you this system back,
 not the table's original macros, and regenerating is ordinary enough that the two would otherwise be
-indistinguishable in the folder. `MacroBackupIsOurs` tells them apart by looking for `tblAuditLog` in
-the exported macro set. One case it cannot tell apart, harmlessly: a table with nothing switched on
-gets a stamping macro only, which names no audit table, so a regeneration of that table is filed as a
-pre-audit backup. Either file restores a stamping macro, so nothing is lost by the mislabel.
+indistinguishable in the folder. `MacroBackupIsOurs` tells them apart by the mark every macro this
+generator writes carries in a comment, so a set of ours is recognised whatever the host's tables are
+called and whatever is switched on for the table, including a table that gets a stamping macro and
+nothing else.
 
 **`DataMacroBackups\` grows every time you regenerate, and nothing prunes it.** Once a table carries
 macros, *every* subsequent run backs it up again — so a schema you regenerate ten times leaves ten
@@ -2009,15 +2119,14 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     ' built for every table; it comes back "" only when neither job applies to this one.
     sBeforeChange = BuildBeforeChangeMacro(sTableName, fieldList, sPrimaryKeyField)
 
-    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. A table with nothing auditable used to be
-    '            skipped outright, which was harmless when this generator only wrote audit
-    '            macros. Now that the same pass also writes the audit-column stamping,
-    '            skipping the table would leave it with NO stamping macro — and CreatedDate
-    '            and CreatedBy are Required, with no default able to reach the username. That
-    '            table would then reject EVERY insert. Turning auditing off for a table is the
-    '            normal Path B workflow, so it must never break writing to that table: the
-    '            audit actions are skipped, the stamping macro is still emitted. Only a table
-    '            that needs neither is skipped entirely.
+    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. Every table in scope gets the audit-column
+    '            stamping macro, including a table with nothing auditable: records are still
+    '            created and changed on it, so it still needs the who-and-when stamp.
+    '            CreatedDate and CreatedBy are Required, with no default able to reach the
+    '            username, so a table left without that macro would reject EVERY insert.
+    '            Turning auditing off for a table is the normal Path B workflow, so it must
+    '            never break writing to that table: the audit actions are skipped, the
+    '            stamping macro is still emitted. Only a table that needs neither is skipped.
     If lAuditableCount = 0 And Len(sBeforeChange) = 0 Then
         Debug.Print "  - Skipped (nothing to audit, and no audit columns to stamp)"
         CreateAllDataMacros = "SKIPPED (nothing to audit, no audit columns to stamp)"
@@ -2179,8 +2288,13 @@ End Function
 ### MacroBackupIsOurs — `Public Function` → `Boolean`
 
 **Answers one question: did this generator write that macro set?** Given a macro set just exported
-from a table, it looks for `tblAuditLog` in it — every audit macro this generator emits names that
-table, and nothing else on a host table has any reason to.
+from a table, it looks for the mark every macro this generator emits carries in a comment.
+
+**A table name cannot answer this, which is why the mark exists.** A database may have an audit
+table of its own called anything at all, including the same name this template uses, and a macro
+that mentions a table name says nothing about who wrote it. Deciding by name would eventually mean
+stripping somebody else's macros. The mark is written by this generator and by nothing else, so a
+false match is not something a developer can arrive at by accident.
 
 **Two callers rely on the answer, which is why it is `Public` and not `Private`.**
 `CreateAllDataMacros` uses it to name a backup file: a set of ours is filed as a `PreRegenBackup`,
@@ -2195,10 +2309,15 @@ macro set in place rather than stripping it.
 
 ```vba
 Public Function MacroBackupIsOurs(sBackupPath As String) As Boolean
-    ' [SCAFFOLD] Recognition only — this never backs anything up. It answers whether a macro
+    ' [SCAFFOLD] Recognition only. This never backs anything up. It answers whether a macro
     '            set is one this generator wrote; the callers decide what to do about it.
-    '            Every audit macro this generator writes names tblAuditLog
-    '            (tblAuditLogConfig matches the same test, and is equally ours).
+    '            The test is the mark every generated macro carries in a <Comment>, never a
+    '            table name: a host database may have its own audit table under any name,
+    '            and stripping someone else's macros because they mention one is exactly
+    '            the failure this guards against.
+    '            Matched on AUDIT_MACRO_MARKER, the part before the version, so a set
+    '            written by an earlier release is still recognised as ours. Matched
+    '            case-sensitively, because a mark is exact and a near miss is not our work.
     '            No errHandler and therefore no line numbers: an unreadable file is an
     '            answer, not a failure, and the caller has a backup to name either way.
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
@@ -2217,7 +2336,7 @@ Public Function MacroBackupIsOurs(sBackupPath As String) As Boolean
     Set tsBackup = Nothing
     Set fso = Nothing
 
-    MacroBackupIsOurs = (InStr(1, sContent, "tblAuditLog", vbTextCompare) > 0)
+    MacroBackupIsOurs = (InStr(1, sContent, AUDIT_MACRO_MARKER, vbBinaryCompare) > 0)
 End Function
 ```
 
@@ -2234,6 +2353,7 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
     Dim sFieldName As String
 
     sXml = "<DataMacro Event=""AfterInsert""><Statements>"
+    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
     For Each fieldInfo In fieldList
       If fieldInfo(3) = True Then    ' auditable fields only (schema Business Rule 5)
@@ -2315,6 +2435,7 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
     Dim bIsLongText As Boolean
 
     sXml = "<DataMacro Event=""AfterUpdate""><Statements>"
+    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
     For Each fieldInfo In fieldList
         sFieldName = fieldInfo(0)
@@ -2461,6 +2582,7 @@ Private Function BuildAfterDeleteMacro(sTableName As String, fieldList As Collec
     Dim bIsLongText As Boolean
 
     sXml = "<DataMacro Event=""AfterDelete""><Statements>"
+    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
     For Each fieldInfo In fieldList
       If fieldInfo(3) = True Then    ' auditable fields only (schema Business Rule 5)
@@ -2680,7 +2802,9 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     '            is untested against Access, and a live table is the wrong place to find
     '            out — so when only the update branch has work, invert the condition and
     '            emit a plain If with no Else.
-    sXml = "<DataMacro Event=""BeforeChange""><Statements><ConditionalBlock>"
+    sXml = "<DataMacro Event=""BeforeChange""><Statements>"
+    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    sXml = sXml & "<ConditionalBlock>"
 
     If Len(sInsertActions) > 0 Then
         sXml = sXml & "<If><Condition>IsNull([Old].[" & sPrimaryKeyField & "])</Condition>"
@@ -2727,6 +2851,7 @@ Private Function BuildBeforeDeleteMacro(sTableName As String, fieldList As Colle
     End If
 
     sXml = "<DataMacro Event=""BeforeDelete""><Statements>"
+    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
     sXml = sXml & "<Action Name=""SetLocalVar"">"
     sXml = sXml & "<Argument Name=""Name"">lngPKValue</Argument>"
@@ -3176,15 +3301,16 @@ End Function
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement.*
+*Named optional extensions, none of them filled in for an engagement.*
 
 - **The identity function this database already has** — on Path B, a database that has been in use
   often has its own, returning the signed-in person's name rather than their Windows account. Where
-  it does, that is usually the better answer than either choice below. Use it in **all six** sites:
-  the four in the table below, plus the two in `BuildBeforeChangeMacro` that stamp `CreatedBy` and
-  `ModifiedBy` on the record. `AuditUser()` is then not built at all, and the front-end placement
-  requirement moves with the choice — see *Before you write the modules*, which is also where this
-  gets asked.
+  you find one, offer it by name and let the developer decide. *Before you write the modules* is
+  where that question is asked, and finding a function is not the same as being told to use it.
+  **If the developer chooses it**, use it in **all six** sites: the four in the table below, plus
+  the two in `BuildBeforeChangeMacro` that stamp `CreatedBy` and `ModifiedBy` on the record.
+  `AuditUser()` is then not built at all, and the front-end placement requirement moves with the
+  choice.
 - **`CurrentUser()` identity instead of `AuditUser()`** — the Access-session user rather than the
   Windows user, and no VBA dependency for identity. `AuditUser()` is the **preferred choice** (schema Business
   Rule 9); this option swaps it back. Choose it if your shop wants the Access user, or wants no VBA

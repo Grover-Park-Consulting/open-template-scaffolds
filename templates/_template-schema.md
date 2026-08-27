@@ -866,6 +866,6 @@ Indexes: PK on `<TableA>ID`.
 - **Error handling** — house pattern for any VBA generated alongside.
 
 ## Extra Options
-*Empty in the base template. Filled per client engagement.*
+*Named optional extensions, none of them filled in for an engagement.*
 - <named optional extension>
 ```

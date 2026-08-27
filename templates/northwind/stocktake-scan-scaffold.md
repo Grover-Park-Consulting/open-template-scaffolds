@@ -299,7 +299,7 @@ End Sub
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement; the filled copy is saved to the
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the
 developer's own library, not committed here.*
 
 - **Batch / session transaction** — wrap a whole counting session's scans in one transaction (the

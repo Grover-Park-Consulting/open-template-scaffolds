@@ -162,7 +162,7 @@ control-creation tools.
 
 ## Extra Options
 
-*Empty in the base template. Filled per engagement; the filled copy is saved to the developer's own
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's own
 library, not committed here.*
 
 - **Read-only card view** — a `frmPublication_View` variant for browsing without edit.

@@ -261,7 +261,7 @@ End Sub
 
 ## Extra Options
 
-*Empty in the base template. Filled per engagement; the filled copy is saved to the developer's own
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's own
 library, not committed here.*
 
 - **"Recently edited" list** — a most-recently-used shortcut alongside the finder, jumping straight

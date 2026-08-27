@@ -267,7 +267,7 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
 
 ## Extra Options (engagement-specific — stubs)
 
-*Empty in the base template. Filled per engagement; the filled copy is saved to the developer's own
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's own
 library, not committed here.*
 
 - **Per-copy holdings** — for libraries that *do* track individual physical copies: add a `tblHolding`

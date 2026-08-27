@@ -310,7 +310,7 @@ code.
 
 ## Extra Options
 
-*Empty in the base template. Filled per engagement; the filled copy is saved to the developer's
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's
 own library, not committed here.*
 
 - **Official qualifications** — an official × play level qualification/certification junction,

@@ -148,7 +148,7 @@ would relate them.
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement.*
+*Named optional extensions, none of them filled in for an engagement.*
 
 - **`ErrorComputerName`** — the machine the error happened on, alongside `ErrorUser`. Worth adding
   where several people share a login, or where you need to know which front end produced a run of

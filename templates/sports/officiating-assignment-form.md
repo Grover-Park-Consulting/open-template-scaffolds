@@ -132,7 +132,7 @@ source of truth; see `_materialization.md` for the mapping rules.
 
 ## Extra Options
 
-*Empty in the base template. Filled per engagement; the filled copy is saved to the developer's
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's
 own library, not committed here.*
 
 - **Photo loader** — a `cmdLoadPhoto` file-dialog picker on the Official manage form that

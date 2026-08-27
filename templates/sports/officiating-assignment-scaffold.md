@@ -256,7 +256,7 @@ End Function
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement; the filled copy is saved to the
+*Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the
 developer's own library, not committed here.*
 
 - **RemoveAssignment / ReassignOfficial** — the un-assign and swap counterparts of

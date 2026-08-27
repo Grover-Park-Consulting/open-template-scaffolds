@@ -425,7 +425,7 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
 
 ## Extra Options
 
-*Empty in the base template. Filled per client engagement.*
+*Named optional extensions, none of them filled in for an engagement.*
 
 - **`CurrentUser()` identity instead of `AuditUser()`** — the Access-session user, and no VBA in the
   identity path. `AuditUser()` is the default (Business Rule 9); this swaps it back. Coherent only if
