@@ -71,7 +71,7 @@ def iter_standards():
 # Each check returns a short "RULE: message" string; an empty list means the
 # template is well-formed. No host database is ever opened here.
 
-_TYPE_ENUM = {"table-schema", "vba-scaffold", "form-spec", "spec"}
+_TYPE_ENUM = {"table-schema", "vba-scaffold", "outcome-first", "form-spec", "spec"}
 _STATUS_ENUM = {"draft", "review", "stable"}
 _STANDARDS_VALUES = {"audit-columns", "naming-conventions", "error-handling",
                      "query-style", "form-conventions", "design-principles",
@@ -252,6 +252,8 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
         errors += _validate_table_schema(front, sections)
     elif typ == "vba-scaffold":
         errors += _validate_vba_scaffold(front, sections)
+    elif typ == "outcome-first":
+        errors += _validate_outcome_first(front, sections)
     elif typ == "form-spec":
         errors += _validate_form_spec(front, sections)
     return errors
@@ -329,6 +331,34 @@ def _validate_vba_scaffold(front, sections):
         errors.append("VS4: vba-scaffold standards_layer must include 'error-handling'")
     if front.get("implements") and not _slug_ok(front["implements"]):
         errors.append(f"VS5: implements '{front['implements']}' is not a well-formed slug")
+    return errors
+
+
+def _validate_outcome_first(front, sections):
+    """An outcome-first template states the finished condition and no route to it.
+
+    The rules are the mirror image of `_validate_vba_scaffold`: the three sections
+    carrying the promise are required, and the three pieces of route specification
+    are forbidden. Declaring any of the latter is the one way a template of this
+    type stops being one.
+    """
+    errors = []
+    for sec in ("What you end up with",
+                "Information and conditions you need to supply",
+                "To the AI assistant building this"):
+        if not _has_section(sections, sec):
+            errors.append(f"OF: missing required section '## {sec}'")
+    if "error-handling" not in [str(x) for x in front.get("standards_layer") or []]:
+        errors.append("OF1: outcome-first standards_layer must include 'error-handling'")
+    if front.get("implements") and not _slug_ok(front["implements"]):
+        errors.append(f"OF2: implements '{front['implements']}' is not a well-formed slug")
+    for key in ("target_module", "new_procedures"):
+        if front.get(key):
+            errors.append(f"OF3: type 'outcome-first' must not declare '{key}' - that is route "
+                          "specification, which this type exists to leave out")
+    if _has_section(sections, "Procedures"):
+        errors.append("OF3: type 'outcome-first' must not have a '## Procedures' section - that is "
+                      "route specification, which this type exists to leave out")
     return errors
 
 

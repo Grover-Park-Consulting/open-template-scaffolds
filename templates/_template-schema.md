@@ -36,10 +36,11 @@ existing template files to see how they are applied as an example. However, **be
 
 > **Scope note (build order).** The common core below is proven against real templates:
 > `templates/northwind/stocktake-schema.md` (`type: table-schema`),
-> `templates/northwind/stocktake-scan-scaffold.md` (`type: vba-scaffold`), and
-> `templates/library/publication-form.md` (`type: form-spec`). **All three type sections (§4, §8,
-> §9) are authoritative — the template format is complete**, each proven by hand before the
-> template library MCP server's schema-dependent tooling is built against it.
+> `templates/northwind/stocktake-scan-scaffold.md` (`type: vba-scaffold`),
+> `templates/library/publication-form.md` (`type: form-spec`), and
+> `templates/audit/audit-logging-lite-outcome-first.md` (`type: outcome-first`). **All four type
+> sections (§4, §8, §9, §12) are authoritative — the template format is complete**, each proven by
+> hand before the template library MCP server's schema-dependent tooling is built against it.
 
 ---
 
@@ -74,7 +75,7 @@ present on every template; conditional keys are required when their condition ho
 | `template` | required | string (kebab-case) | Unique slug; matches the filename stem |
 | `title` | required | string | Human-readable title |
 | `domain` | required | string | Domain folder name (e.g. `northwind`, `sales`, `hr`); `_meta` reserved for infra |
-| `type` | required | enum | `table-schema` \| `vba-scaffold` \| `form-spec` \| `spec` |
+| `type` | required | enum | `table-schema` \| `vba-scaffold` \| `outcome-first` \| `form-spec` \| `spec` |
 | `version` | required | semver string | Template version, counted per template and independent of any library version. **Bump it in the same commit as any change to what the template produces** — patch for a correction an adopter needn't act on, minor for anything they would (a new or renamed field, a changed default, an added rule or section), major for a redesign an existing build can't absorb. It is the only thing that distinguishes a copy someone took earlier from the current file; see `CONTRIBUTING.md` → *Versioning a change* for why this is a rule and not a nicety |
 | `status` | required | enum | `draft` \| `review` \| `stable` |
 | `extends` | conditional | string | Required when the template grafts onto an existing database; names the host (e.g. `Northwind (Access Developer Edition)`) |
@@ -869,3 +870,52 @@ Indexes: PK on `<TableA>ID`.
 *Named optional extensions, none of them filled in for an engagement.*
 - <named optional extension>
 ```
+
+## 12. `type: outcome-first`
+
+An **outcome-first** template states the finished condition a build has to reach and says nothing
+about the route to it. Where a `vba-scaffold` (§8) ships working procedures with the house-specific
+parts marked for substitution, an outcome-first template ships no code at all. It specifies what the
+database must do once the build is finished, how the developer confirms it, and what is theirs to
+decide — and leaves the decomposition, the naming and the code itself to whoever builds it under
+the standards layer.
+
+The two are not a draft and a finished version of each other. **A domain may carry one of each**,
+built from the same paired `table-schema` and run against the same database, so a shop can see
+what the two methods produce for one requirement. `templates/audit/` carries the proven pair:
+`audit-logging-lite-scaffold.md` (§8) and `audit-logging-lite-outcome-first.md` (§12).
+
+### 12.1 Front matter
+
+The common core of §2 applies unchanged. Beyond it:
+
+| Key | Required? | Notes |
+|---|---|---|
+| `type` | required | `outcome-first` |
+| `implements` | conditional | the `table-schema` template (by slug) whose tables the build realizes |
+| `standards_layer` | required | must include `error-handling` — the build generates code, so a house pattern for reporting a failure always applies |
+
+**`target_module` and `new_procedures` must be absent.** They name a module and a list of
+procedures, which is route specification. Declaring either is the one way a template of this type
+stops being one, and `validate` reports it.
+
+### 12.2 Body sections
+
+In addition to the common core (§3), an outcome-first template **must** contain:
+
+| Section | Holds |
+|---|---|
+| `## What you end up with` | The specification: what the database does once this is built, in terms the developer can check without reading any code. Carries the checks that confirm it and the behaviours that must hold however the work was divided up. |
+| `## Information and conditions you need to supply` | Everything only the developer can answer, and which of those are gates that stop a build. |
+| `## To the AI assistant building this` | The build instruction, addressed to the assistant and marked as such where it starts. |
+
+There is **no `## Procedures` section**, and `validate` rejects one.
+
+### 12.3 `validate` rules for `outcome-first`
+
+| Rule | Check |
+|---|---|
+| `OF` | each of the three required sections above is present |
+| `OF1` | `standards_layer` includes `error-handling` |
+| `OF2` | `implements`, where set, is a well-formed slug |
+| `OF3` | no `target_module`, no `new_procedures`, and no `## Procedures` section |

@@ -1,6 +1,6 @@
 ---
 template: audit-logging-lite-scaffold
-title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
+title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
 version: 0.9.3
@@ -112,7 +112,7 @@ warnings:
     logic afterward; re-adding it is the developer's call. Check for this specifically on Path B.
 ---
 
-# Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
+# Access Audit Logging (Lite) — rules-based method
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -366,7 +366,10 @@ one question in the ordinary case and it settles whose rules govern this build. 
 wizard from the one below, and it is asked first: the disclosure line, then the gate, then this
 template's house assumptions and warnings, then its entry question.
 
-This template is the gate's pilot and the only template that runs it.
+Both versions of this template run the gate — this one and the outcome-first method
+(`audit-logging-lite-outcome-first`), which states the same result and leaves the route open.
+They differ in method, not in whose rules govern them. Between them they are the gate's pilot,
+and no other template runs it.
 
 ## Wizard
 

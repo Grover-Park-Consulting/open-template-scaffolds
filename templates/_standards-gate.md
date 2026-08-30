@@ -5,8 +5,10 @@
 **If that developer is you:** this file holds the questions you will be asked and why. You do not
 have to read it — every decision in it reaches you as a question.
 
-**Pilot scope.** Only `audit/audit-logging-lite-scaffold.md` runs this gate today. Nothing else
-points at it, and nothing else should until the pilot has been tried and judged.
+**Pilot scope.** Only the two audit-logging templates run this gate today — `audit/audit-logging-lite-scaffold.md`
+and `audit/audit-logging-lite-outcome-first.md`, the rules-based and outcome-first methods of
+the same build. Nothing else points at it, and nothing else should until the pilot has been
+tried and judged.
 
 ---
 
