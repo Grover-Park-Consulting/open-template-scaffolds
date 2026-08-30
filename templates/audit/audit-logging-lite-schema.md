@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.3.2
+version: 0.3.3
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -52,10 +52,11 @@ house_assumptions:
     and nothing in the database enforces that reference. In Access terms, there is no relationship
     between the log and the audited table, so no referential integrity and no cascade delete. That
     is deliberate — audit history survives deletion of the row it describes
-  - tblAuditLogConfig — the schema scan selects candidate tables by the tbl/tlkp prefix naming
-    convention, excluding tmp (one code filter in the paired scaffold, kept in sync between
-    Two_PopulateConfigTable and CheckAuditReadiness); everything finer-grained is decided in
-    data via IsAuditable. Adopters on other naming conventions adjust that one filter
+  - tblAuditLogConfig — which tables the schema scan takes is the developer's answer, asked
+    as its own question in the paired scaffold and held in one setting there. The three answers
+    are the tbl/tlkp naming convention, every table in the file, or a list of tables they name.
+    System tables, temporary tables and linked tables are out of scope under all three.
+    Everything finer-grained is decided in data via IsAuditable
   - tblClient — the sample tables (tblClient, tblSupportTicket, tlkpTicketPriority) are
     demonstration stand-ins showing both macro paths; a real build applies the system to the
     adopter's own tables
@@ -235,12 +236,13 @@ unknown to it — the insert fails with *"Undefined function."* Resolve each val
 concatenate it in as a literal. The cross-reference is spelled out here because the problem only
 appears once audit columns are in play, which is exactly when someone is least expecting it.
 
-**Deliberate teaching point:** the paired scaffold's schema scan takes `tbl…` **and** `tlkp…`
-tables (never `tmp…`), so this lookup reaches the config table right alongside the business
-tables — a real Path B build against a live schema turned up a table shaped like this one and
-confirmed lookups belong in scope by default, not outside it. The boundary is still a visible,
-editable one-line test, not an accident; it's just wider than an earlier draft of this template
-drew it (everything inside the boundary is then decided by `IsAuditable` flags, as data).
+**Deliberate teaching point:** on the naming-convention answer, the paired scaffold's schema scan
+takes `tbl…` **and** `tlkp…` tables (never `tmp…`), so this lookup reaches the config table right
+alongside the business tables — a real Path B build against a live schema turned up a table shaped
+like this one and confirmed lookups belong in scope by default, not outside it. The boundary is a
+decision the developer is asked for and it is recorded in one setting, not an accident; on this
+answer it is wider than an earlier draft of this template drew it, and the other two answers do not
+read names at all (everything inside the boundary is then decided by `IsAuditable` flags, as data).
 
 ## Relationships
 
@@ -418,9 +420,10 @@ drew it (everything inside the boundary is then decided by `IsAuditable` flags, 
   which is strictly more than a single "last modified by/when" pair can show. Some adopters keep
   the house columns anyway, for a quick single-row answer without a join to the log; others drop
   them once the log is in place. This template doesn't remove them for you — that's your call.
-- **Naming conventions** — this template is written in `tbl`/`tlkp` prefix style, and the paired
-  scaffold's config scan keys on the `tbl`/`tlkp` prefixes (excluding `tmp`); a practice on
-  another convention builds under its own names and adjusts that one filter.
+- **Naming conventions** — this template is written in `tbl`/`tlkp` prefix style, and that is
+  one of the three answers the paired scaffold's config scan will take. A practice on another
+  convention builds under its own names and answers with a list of tables, or with every table in
+  the file, rather than adjusting a test.
 - **Error handling** — the house errHandler pattern for the paired scaffold's VBA.
 
 ## Extra Options

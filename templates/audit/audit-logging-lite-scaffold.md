@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — Data Macro Generator VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.9.2
+version: 0.9.3
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -24,6 +24,7 @@ new_procedures:
   - One_CreateAuditTables
   - Two_PopulateConfigTable
   - IsAuditCandidateTable
+  - IsNamedInScopeList
   - IsUnauditableFieldType
   - ListOpenObjects
   - CheckAuditReadiness
@@ -92,6 +93,12 @@ warnings:
   - Path B (an existing accdb with real tables and real data) is much less forgiving than the
     demo. Make a copy of the .accdb file before running any of these steps against it — Data
     Macros get attached directly to your live tables, and this is not a step to redo casually.
+  - A linked table cannot carry a Data Macro. Auditing is attached to the table itself, in the
+    file where the table really lives, so a table that appears in this file only as a link is never
+    in scope - whatever the scope setting says, and whether or not the developer named it.
+    IsAuditCandidateTable excludes linked tables ahead of every other test, and
+    Two_PopulateConfigTable names any the developer asked for by name, so the omission is visible
+    rather than silent.
   - Application.LoadFromText replaces a table's ENTIRE macro set — it never merges. This generator
     therefore emits the house audit-column stamping (standards/audit-columns.md) and the change
     auditing TOGETHER, in one Before Change macro, so that one macro carries both and neither can
@@ -120,8 +127,8 @@ library, the procedures here are **complete, working code**, not skeletons — t
 (tables, macro set, Long Text hybrid path) stands behind a live production Access application
 whose audit trail validates it end to end. Audit **scope** is decided in data: the scan writes
 every candidate field to the config table and you flip `IsAuditable` flags — the `[BUSINESS
-LOGIC]` markers land on that review step and on the one code filter (which table prefix to
-scan); `[STANDARDS]` markers cover the usual deferred house style.
+LOGIC]` markers land on that review step and on the one code setting that decides which tables are
+in scope at all; `[STANDARDS]` markers cover the usual deferred house style.
 
 ### Two ways to use this
 
@@ -172,7 +179,7 @@ there (see `BackupLongTextFieldsDM`).
 
 | Module | Procedures | Lives in |
 |---|---|---|
-| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the numbered procedures, `CheckAuditReadiness`, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression`, `IsAuditCandidateTable` | Back end only |
+| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the numbered procedures, `CheckAuditReadiness`, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression`, `IsAuditCandidateTable`, `IsNamedInScopeList` | Back end only |
 | `modAuditLongText` | `AuditUser`, `BackupLongTextFieldsDM` | **Back end AND every front end** |
 | `modAuditAdmin` | `BackupAndRemoveAllDataMacros` | Back end only |
 | `modAuditVerify` | `DumpTableMacros`, `ListMacroEvents` | Back end only |
@@ -187,9 +194,9 @@ Three layers, kept distinct throughout:
 - **`[STANDARDS]`** — house style, deferred to the standards layer (`error-handling.md`,
   `query-style.md`, `naming-conventions.md`). The error blocks below use the dependency-free
   `MsgBox` default; substitute your house logger per `error-handling.md`.
-- **`[BUSINESS LOGIC]`** — the audit-scope decisions you must make: the scan-boundary prefix
-  test in `Two_PopulateConfigTable`, and the `IsAuditable` flag review in `tblAuditLogConfig`
-  after the scan.
+- **`[BUSINESS LOGIC]`** — the audit-scope decisions you must make: the scan boundary, set in
+  `AUDIT_SCOPE_MODE` and read by `IsAuditCandidateTable`, and the `IsAuditable` flag review in
+  `tblAuditLogConfig` after the scan.
 
 ## Prerequisites
 
@@ -331,7 +338,7 @@ to print what it returns: `?One_CreateAuditTables()`.
 
 | # | What they do | Path |
 |---|---|---|
-| 1 | Import the four modules, put each in the right file (see the split-database table above), and compile. | Both |
+| 1 | Set `AUDIT_SCOPE_MODE` (and `AUDIT_SCOPE_LIST`, where the answer was a list of names) at the top of `modAddDataMacros` to Step 4's answer, import the four modules, put each in the right file (see the split-database table above), and compile. | Both |
 | 2 | `?Zero_CreateSampleTables()` — builds three made-up tables to try the system on. | A only |
 | 3 | `?One_CreateAuditTables()` — creates `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig`. | Both |
 | 4 | `?Two_PopulateConfigTable()` on Path A — every field starts switched **on**. `?Two_PopulateConfigTable(False)` on Path B — every field starts switched **off**. | Both |
@@ -517,13 +524,22 @@ undo, and it is the only one that covers everything at once.
 
 | Option | Short description |
 |---|---|
-| `Tables named tbl… or tlkp…, but not tmp…` | Your data and lookup tables. Temporary tables are left out. |
-| `A different set — I'll tell you which` | You say which tables, and I use that instead. |
+| `Tables named tbl… or tlkp…` | Your data and lookup tables, in the naming style these templates follow. |
+| `Every table in this file` | All of them, apart from the four kinds that are never included. |
+| `A different set — I'll tell you which` | You give me the table names, and only those are used. |
 
-**Preferred:** `Tables named tbl… or tlkp…, but not tmp…` — the naming style these templates
-follow, which is where those prefixes are defined.
+**Preferred:** `Tables named tbl… or tlkp…` — the naming style these templates follow, which is
+where those prefixes are defined.
 
 **Skip when:** never.
+
+**To the AI assistant: three answers plus `Tell me more` fills the control, so there is no room on
+this step for `Go back to the previous question`.** That is expected here rather than an omission,
+the same as on Step 2. Whichever answer comes back, set `AUDIT_SCOPE_MODE` in the module-level
+declarations before the module is imported — `"Standard"`, `"All"` or `"List"` — and set
+`AUDIT_SCOPE_LIST` as well where the answer was a list of names. Nothing at run time changes either
+value. **Ask this step even where the answer looks obvious from the table names**, which is the one
+place it must not be read from.
 
 <details>
 <summary>Tell me more about which tables get audited</summary>
@@ -533,12 +549,20 @@ finer-grained
 choice — which tables, which individual fields — is a flag you set in the config table afterward,
 as data. That is deliberate: changing your mind about a field should not mean editing VBA.
 
-Access's own system tables (the ones whose names begin `MSys`) never match either prefix, so they
-are never in scope regardless of what you choose here.
+**Four kinds of table are left out whatever you choose here**, because including them either cannot
+work or is not this system's business:
 
-One thing to know if you change it: the same test appears in **two** procedures,
-`Two_PopulateConfigTable` and `CheckAuditReadiness`. Change one and you must change the other, or
-the readiness check will be reporting on a different set of tables than the scan wrote.
+- **Access's own system tables**, whose names begin `MSys`. Never touched.
+- **Your own hidden tables**, whose names begin `USys`. Yours to manage, so one is included only
+  where you name it yourself in the third answer.
+- **Temporary and working tables**, whose names begin `tmp`.
+- **Linked tables** — tables that live in another file and only appear in this one. Access cannot
+  attach the tracking to a linked table at all: it has to be built in the file where the table
+  really lives, which is what Step 2 was asking. Name one in the third answer and it is left out,
+  and the report says which, rather than passing over it quietly.
+
+If your tables are not named in any consistent way, the third answer is the one to take — you say
+which tables, and no rule about names is applied to any of them.
 
 </details>
 
@@ -746,6 +770,21 @@ Put these at the top of `modAddDataMacros`, below `Option Explicit`.
 Option Compare Database
 Option Explicit
 
+' [BUSINESS LOGIC — scan boundary] Which tables this build audits: the answer to Step 4 of
+' the wizard, and the only audit-scope decision that is written into code rather than set as
+' data afterward. Set it before the module is imported; nothing at run time changes it, so a
+' re-run of the scan always draws the same boundary as the first run did.
+'   "Standard" — tables named tbl... or tlkp..., the naming convention these templates follow.
+'   "All"      — every table in this file.
+'   "List"     — only the tables named in AUDIT_SCOPE_LIST, separated by semicolons.
+' Four kinds of table are out of scope under every mode, and IsAuditCandidateTable tests for
+' them before it reads this setting: Access's own (MSys), the developer's own hidden tables
+' (USys) unless named in the list, temporary tables (tmp), and linked tables, which cannot
+' carry a Data Macro at all.
+' >>> set these to the developer's answer before you import this module <<<
+Private Const AUDIT_SCOPE_MODE As String = "Standard"
+Private Const AUDIT_SCOPE_LIST As String = ""
+
 ' [STANDARDS — audit-columns.md] The house audit column names, in ONE place.
 ' Three procedures below use them: Two_PopulateConfigTable (to seed them
 ' not-auditable), BuildBeforeChangeMacro (to stamp them), and
@@ -767,8 +806,24 @@ Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
 ' recognising work it did itself. Never edit either string and never reuse them
 ' elsewhere: the way back out depends on this mark being unique to macros we wrote.
 Public Const AUDIT_MACRO_MARKER      As String = "OTS-AUDIT-DATAMACRO-GENERATED"
-Public Const AUDIT_MACRO_MARKER_FULL As String = "OTS-AUDIT-DATAMACRO-GENERATED v0.9.2"
+Public Const AUDIT_MACRO_MARKER_FULL As String = "OTS-AUDIT-DATAMACRO-GENERATED v0.9.3"
 ```
+
+**To the AI assistant — before you import the module.** `AUDIT_SCOPE_MODE` carries Step 4's answer
+and `AUDIT_SCOPE_LIST` carries the table names where that answer was a list. Set them here, in the
+module text, before the import. There is no run-time argument for either and no dialog that asks
+later: a module imported with the shipped values audits `tbl` and `tlkp` tables and nothing else.
+
+**Never fill either in from what the tables are called.** A database whose tables happen to be named
+`tbl...` is not thereby a database whose owner wants all of them audited, and one whose tables are
+named some other way is not thereby asking for a list. Step 4 is the only source for these two
+values.
+
+**Write the list exactly as the developer gave it**, one table name per entry, separated by
+semicolons: `"tblClient;tblSupportTicket"`. Spaces around a semicolon are ignored, so a name may
+itself contain spaces. A name that is not a table in this file simply never matches, and the scan
+then reports fewer tables than the developer expects — read the names back to them before you set
+this.
 
 **To the AI assistant — Path B, before you import the module.** These four values name the columns
 the generator stamps. A host database that already carries tracking columns may name them something
@@ -1447,12 +1502,16 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
     Dim isAuditable As Boolean
     Dim pkFieldName As String
     Dim lRowCount As Long
+    Dim lTablesInScope As Long
+    Dim sLinkedNamed As String
     Dim sReport As String
     Dim bFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
     lRowCount = 0
+    lTablesInScope = 0
+    sLinkedNamed = ""
 
     ' Clear existing config
     db.Execute "DELETE * FROM tblAuditLogConfig", dbFailOnError
@@ -1460,8 +1519,17 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
     For Each tdef In db.TableDefs
         ' [BUSINESS LOGIC — scan boundary] Which tables are candidates at all. The test lives
         ' in IsAuditCandidateTable, which CheckAuditReadiness calls as well, so the two cannot
-        ' disagree about what is in scope. Change it there, in one place.
-        If IsAuditCandidateTable(tdef.Name) Then
+        ' disagree about what is in scope. It reads AUDIT_SCOPE_MODE; change that, not this.
+        ' A table the developer named that turns out to be linked is collected here and named
+        ' in the report below, so a table asked for by name is never dropped in silence.
+        If (tdef.Attributes And (dbAttachedTable Or dbAttachedODBC)) <> 0 Then
+            If IsNamedInScopeList(tdef.Name) Then
+                sLinkedNamed = sLinkedNamed & "  " & tdef.Name & vbCrLf
+            End If
+        End If
+
+        If IsAuditCandidateTable(tdef) Then
+            lTablesInScope = lTablesInScope + 1
 
             ' Get the primary key field name for this table
             pkFieldName = ""
@@ -1536,9 +1604,36 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
         End If
     Next tdef
 
+    ' [SCAFFOLD] Nothing in scope is a stop, not a result. The config table ends up empty
+    '            either way; what differs is that "0 field row(s) written", phrased like a
+    '            successful run and shown with the same icon, reads as success — and the two
+    '            steps after this one then report success as well, on nothing at all.
+    If lTablesInScope = 0 Then
+        bFailed = True
+        sReport = "Stopped. No table in this file is in scope, so nothing was written to " & _
+            "tblAuditLogConfig and nothing has been built." & vbCrLf & vbCrLf & _
+            "The scope setting at the top of this module is """ & AUDIT_SCOPE_MODE & """:" & vbCrLf & _
+            "  Standard - tables named tbl... or tlkp..." & vbCrLf & _
+            "  All      - every table in this file." & vbCrLf & _
+            "  List     - only the tables named in AUDIT_SCOPE_LIST." & vbCrLf & vbCrLf & _
+            "Set it to match the tables in this file and run this again. System tables, " & _
+            "temporary tables and linked tables are left out whichever one is set."
+        GoTo Cleanup
+    End If
+
     sReport = "Table list built: " & lRowCount & " field row(s) written to tblAuditLogConfig." & _
         vbCrLf & "Open tblAuditLogConfig and check the IsAuditable switches before you run " & _
         "the next step."
+
+    ' [SCAFFOLD] A table the developer named by hand and did not get. Said here rather than
+    '            left to be noticed, because the whole point of naming tables one at a time
+    '            is that the developer decided which ones matter.
+    If Len(sLinkedNamed) > 0 Then
+        sReport = sReport & vbCrLf & vbCrLf & _
+            "These tables are named in AUDIT_SCOPE_LIST but are linked to another file, so " & _
+            "they were left out. Tracking attaches to the table itself and has to be built " & _
+            "in the file where the table really lives:" & vbCrLf & sLinkedNamed
+    End If
 
 Cleanup:
     Set pkField = Nothing
@@ -1568,18 +1663,92 @@ End Function
 tables they are talking about — a disagreement that shows up as a table reported ready and then never
 scanned, or the reverse.
 
-**This is the naming convention made executable**, and it is the single line to change on another
-naming policy. Everything finer-grained is a flag in the config table rather than code.
+**It carries out Step 4's answer; it does not make it.** `AUDIT_SCOPE_MODE` holds that answer, and
+this function reads it. Everything finer-grained is a flag in the config table rather than code.
+
+**Four exclusions are tested before the mode is read, so no answer can let one through.** Access's
+own system tables and temporary tables are never audited; the developer's own hidden tables are
+theirs, and are in scope only where they named one themselves; and a linked table cannot carry a
+Data Macro at all, so including one would fail at the last step rather than the first. The linked
+test is first of the four because it is the one a developer can ask for by name.
+
+**It takes the table itself, not the table's name.** The linked test needs the table definition, and
+a function that receives the whole thing cannot be called in a way that skips the check.
 
 ```vba
-Private Function IsAuditCandidateTable(sTableName As String) As Boolean
-    ' [BUSINESS LOGIC — scan boundary] This default takes tables prefixed tbl or tlkp (data
-    '            and lookup tables under naming-conventions.md) and never tmp (temporary or
-    '            working tables); system (MSys) tables match neither prefix. Change this test
-    '            and nothing else if your naming policy differs.
-    ' >>> adjust the prefix test to your naming convention <<<
-    IsAuditCandidateTable = (Left(sTableName, 3) = "tbl" Or Left(sTableName, 4) = "tlkp") _
-        And Left(sTableName, 3) <> "tmp"
+Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
+    ' [BUSINESS LOGIC — scan boundary] Reads AUDIT_SCOPE_MODE, set in the module-level
+    '            declarations from Step 4's answer. The four exclusions below hold under
+    '            every mode and are tested first, so no setting and no table list can let
+    '            one of them in.
+    Dim sName As String
+
+    sName = tdef.Name
+    IsAuditCandidateTable = False
+
+    ' A linked table lives in another file. Access cannot attach a Data Macro to one, so it
+    ' is never a candidate — whatever the mode says, and even when named in the list.
+    If (tdef.Attributes And (dbAttachedTable Or dbAttachedODBC)) <> 0 Then Exit Function
+
+    ' Access's own system tables are never touched.
+    If Left$(sName, 4) = "MSys" Then Exit Function
+
+    ' A USys table is the DEVELOPER's own hidden table, theirs to manage. In scope only where
+    ' they opted it in themselves by naming it.
+    If Left$(sName, 4) = "USys" Then
+        IsAuditCandidateTable = IsNamedInScopeList(sName)
+        Exit Function
+    End If
+
+    ' Temporary and working tables.
+    If Left$(sName, 3) = "tmp" Then Exit Function
+
+    Select Case AUDIT_SCOPE_MODE
+        Case "All"
+            IsAuditCandidateTable = True
+        Case "List"
+            IsAuditCandidateTable = IsNamedInScopeList(sName)
+        Case "Standard"
+            IsAuditCandidateTable = (Left$(sName, 3) = "tbl" Or Left$(sName, 4) = "tlkp")
+        Case Else
+            ' [SCAFFOLD] A mode nobody defined is a typo in the constant, and the safe
+            '            reading of a typo is not "audit nothing" — that is the failure
+            '            this whole setting exists to prevent. Stop on the first table
+            '            instead, where both callers' error blocks will report it.
+            Err.Raise vbObjectError + 513, "IsAuditCandidateTable", _
+                "AUDIT_SCOPE_MODE is set to """ & AUDIT_SCOPE_MODE & """. It has to be " & _
+                """Standard"", ""All"" or ""List""."
+    End Select
+End Function
+```
+
+### IsNamedInScopeList — `Private Function` → `Boolean`
+
+**Is this table one the developer named?** Reads `AUDIT_SCOPE_LIST`, which is empty unless Step 4
+was answered with a list of table names. Two callers, both in `IsAuditCandidateTable`: the `List`
+mode itself, and the `USys` opt-in, which works the same way under every mode.
+
+Names are separated by semicolons and compared without regard to capitals, as Access compares table
+names. Each name is trimmed, so a list typed with spaces after the semicolons still matches, and a
+table name that itself contains spaces is unaffected.
+
+```vba
+Private Function IsNamedInScopeList(sTableName As String) As Boolean
+    ' [SCAFFOLD] Exact match against one entry, never a partial one: "tblOrder" must not
+    '            match "tblOrderLine".
+    Dim vNames As Variant
+    Dim i As Long
+
+    IsNamedInScopeList = False
+    If Len(AUDIT_SCOPE_LIST) = 0 Then Exit Function
+
+    vNames = Split(AUDIT_SCOPE_LIST, ";")
+    For i = LBound(vNames) To UBound(vNames)
+        If StrComp(Trim$(vNames(i)), sTableName, vbTextCompare) = 0 Then
+            IsNamedInScopeList = True
+            Exit Function
+        End If
+    Next i
 End Function
 ```
 
@@ -1727,6 +1896,7 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
     Dim lPkFieldCount As Long
     Dim lPkFieldType As Long
     Dim lProblemCount As Long
+    Dim lTablesInScope As Long
     Dim sMsg As String
     Dim sReport As String
     Dim sOpen As String
@@ -1734,6 +1904,7 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
     On Error GoTo errHandler
     Set db = CurrentDb
     lProblemCount = 0
+    lTablesInScope = 0
     sMsg = ""
 
     ' [SCAFFOLD] The database has to be closed for the whole run, not only at the start, so
@@ -1756,11 +1927,12 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
         ' [BUSINESS LOGIC — scan boundary] The same test Two_PopulateConfigTable uses, from the
         ' one place it lives. The three system tables are excluded here as well: they are
         ' scanned into the config table but never get macros (schema Business Rule 5).
-        If IsAuditCandidateTable(tdef.Name) _
+        If IsAuditCandidateTable(tdef) _
             And tdef.Name <> "tblAuditLog" _
             And tdef.Name <> "tblLongTextBackup" _
             And tdef.Name <> "tblAuditLogConfig" Then
 
+            lTablesInScope = lTablesInScope + 1
             lPkFieldCount = 0
             lPkFieldType = -1
             For Each idx In tdef.Indexes
@@ -1789,6 +1961,21 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
             End If
         End If
     Next tdef
+
+    ' [SCAFFOLD] Nothing in scope means nothing was checked, and "every table checked is
+    '            ready" is true of an empty set and useless to the developer. This is the
+    '            worse of the two places to report success on nothing, because it is the
+    '            last thing asked before the tables are changed.
+    If lTablesInScope = 0 Then
+        sReport = "Stopped. No table in this file is in scope, so there was nothing to " & _
+            "check and there is nothing to build." & vbCrLf & vbCrLf & _
+            "Run Two_PopulateConfigTable first. If you already have, the scope setting at " & _
+            "the top of modAddDataMacros does not match the tables in this file - it is " & _
+            "set to """ & AUDIT_SCOPE_MODE & """. Nothing has been changed."
+        If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing is in scope"
+        CheckAuditReadiness = sReport
+        GoTo Cleanup
+    End If
 
     If lProblemCount = 0 Then
         sReport = "Every table checked is ready — each has one auto-number primary key. " & _
@@ -1838,7 +2025,9 @@ one blocked table should not cost the other five. The cost of it is that the num
 open would once report "Generated audit data macros for 6 table(s)" and mean it. The summary now
 reads `6 table(s) processed: 1 built, 0 skipped, 5 failed`, the dialog carries a warning icon rather
 than an information one, and on any failure it says what state those tables are left in and what to
-do about it. **Access raises its own error first** — the developer sees a lock failure on the table
+do about it. **A run with nothing to do stops before the loop** rather than reporting `0 table(s)
+processed` as though it had finished, and says whether the cause is switches left off or nothing in
+scope at all. **Access raises its own error first** — the developer sees a lock failure on the table
 before they ever reach this summary — so this is the message that has to agree with what they were
 just told, not the one that breaks the news.
 
@@ -1947,6 +2136,21 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
         rs.MoveNext
     Loop
     rs.Close
+
+    ' [SCAFFOLD] An empty config table is a stop. "0 table(s) processed: 0 built" is accurate
+    '            and still reads as a run that finished, which is the reading that lets a
+    '            build with nothing in it look like a build.
+    If dictTables.Count = 0 Then
+        sReport = "Stopped. There is nothing to build - no table in tblAuditLogConfig has " & _
+            "any field switched on." & vbCrLf & vbCrLf & _
+            "Run Two_PopulateConfigTable, then open tblAuditLogConfig and switch on the " & _
+            "fields you want a history of. If that table is empty rather than switched " & _
+            "off, no table in this file was in scope: check the scope setting at the top " & _
+            "of this module. Nothing has been changed."
+        If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing to build"
+        Three_GenerateAllAuditDataMacros = sReport
+        GoTo Cleanup
+    End If
 
     sTempPath = Environ("TEMP") & "\"
 
@@ -3292,9 +3496,12 @@ End Function
   annotated in place: `BackupLongTextFieldsDM` stays quiet (it runs inside every save).
 - **Query style** — the inline SQL kept here is from the proven source; rewrite per
   `query-style.md` if your house centralizes SQL differently.
-- **Naming conventions** — the `tbl`/`tlkp` (excluding `tmp`) prefix filter is the naming convention
-  made executable. It lives in `IsAuditCandidateTable`, which both the config scan and
-  `CheckAuditReadiness` call, so adjusting it to your prefix policy is one edit in one place.
+- **Naming conventions** — the `Standard` scope setting is the naming convention made
+  executable: `tbl` and `tlkp` tables, never `tmp`. It is one of the three answers Step 4 offers,
+  not the only one. `AUDIT_SCOPE_MODE` holds the answer, `IsAuditCandidateTable` reads it, and both
+  the config scan and `CheckAuditReadiness` call that — so scope is one setting in one place
+  whichever answer was given. A practice on another convention answers `List` or `All` rather than
+  editing a test.
 - **Design principles** — one job per procedure throughout: one sample-data setup (Path A only),
   three numbered entry points, one safety check, five single-macro builders, one comparison
   helper, one staging function, one admin reset.
