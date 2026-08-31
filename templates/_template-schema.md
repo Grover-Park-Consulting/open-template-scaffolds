@@ -919,3 +919,40 @@ There is **no `## Procedures` section**, and `validate` rejects one.
 | `OF1` | `standards_layer` includes `error-handling` |
 | `OF2` | `implements`, where set, is a well-formed slug |
 | `OF3` | no `target_module`, no `new_procedures`, and no `## Procedures` section |
+
+### 12.4 The specification is only what the closing instruction names
+
+An outcome-first template hands its builder no route, so **every statement that binds has to sit where
+the builder is told the binding statements are.** `## To the AI assistant building this` names the
+sections that make up the specification. A requirement stated anywhere else — in `## Intent`, in a
+platform-facts or background section, in a list of what the template does not do — is read as context
+and does not reach the build.
+
+This is not a limit on what a builder can read. It is a limit on what it can infer. A person assigns
+weight to a sentence by working out why its section is there; a builder assigns weight by designation.
+So a load-bearing sentence under a heading like "Facts about the platform" is invisible as a
+requirement however plainly it is written, and no amount of rewriting it helps.
+
+**This has happened.** The audit outcome-first template stated its central mechanism in a facts
+section — three headings away from the promise it served, and outside the sections its own closing
+instruction named as the specification. A build substituted a different mechanism, and passed every
+check the template listed while doing it.
+
+Two authoring tests, both answerable yes or no:
+
+1. **Is every binding sentence inside a section the closing instruction names as the specification?**
+   If a sentence would make a build wrong by its absence, it belongs in one of those sections. Others
+   may restate it; none may be its only home.
+2. **For each promise, what is the cheapest build that passes the sentence as written?** If a mechanism
+   you did not intend passes it, the sentence is a summary of the requirement rather than the
+   requirement itself. Strengthen it until the unintended build fails — by naming the condition that
+   tells the two apart, which is still an outcome, and not by naming the route.
+
+**A mechanism may be named in the specification only where the platform leaves exactly one.** Where two
+would both satisfy the promise, name neither: that is route, and it is the builder's. Where only one
+can satisfy it, the mechanism is part of the outcome, and saying so is not route specification. Give
+the reason in the same breath, so the constraint travels with what makes it necessary — a constraint
+whose reason is somewhere else is the defect above in a new place.
+
+A section that does not bind says so in one line where it starts, and says where the binding statements
+are instead.

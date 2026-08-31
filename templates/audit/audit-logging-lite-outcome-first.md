@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.1.0
+version: 0.3.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -53,8 +53,19 @@ separate copies to compare.
 Every change to the tables you choose to audit is recorded, by the database itself, regardless of who makes it and
 how they make it. Somebody editing through a form, somebody typing straight into a table,
 somebody running a query that updates a thousand rows at once — all of it lands in the same log.
-The recording mechanism is attached to the tables rather than to any screen or any code that reaches
-them. **No one can switch auditing off for their own session. It happens automatically, every time.**
+
+**The instructions that write each log row are stored inside the audited table itself.** Access lets a
+table carry automatic behaviour of its own, which the database engine runs whenever data in that table
+changes; the Access name for it is a **Data Macro**. The steps that build a log row — create the row,
+fill in its fields — are written into the table's own Data Macros. They are not a call out to code held
+somewhere else, and there is no screen and no code path a change can take that avoids them.
+
+**That is what makes the recording impossible to avoid, and you can see it in the conditions that stop
+ordinary code from running.** Open a copy of the database from a folder Access does not trust — Access
+will run no code at all from there, and will not tell you so — and every ordinary field of every audited
+table is still logged, because a Data Macro is not code and runs regardless. **No one can disable
+auditing for their own session. It happens automatically, every time.** Long-text fields are the one
+place code is involved at all, and *Long text is handled separately*, below, says exactly where.
 
 **The log answers two questions about each change: what did this field hold before, what does it hold now.**
 One row per field that actually changed. It does so by naming which table, which record, which field. It does so
@@ -62,16 +73,30 @@ whether the record was created, changed or deleted: the value before, the value 
 outright is logged field by field, so what it held is still there afterwards.
 
 **Nothing is recorded for a field that did not change.** Editing one field of a forty-field record
-produces one row in the log, not forty, because the 39 unchanged fields aren't recorded. A person opening a record, looking at it, and closing it produces nothing in the audit log at all.
+produces one row in the log for that one field because the 39 unchanged fields aren't recorded. A person opening a record, looking at it, and closing it produces nothing in the audit log at all.
 
 **Long text is handled separately.** Access Data Macros cannot retrieve the previous contents of a
-long-text field. Therefore, the template captures the old value before the change occurs and retrieves
-it for the log after the change. That way, the log holds values from long text fields the same as any other field.
+long-text field. Therefore, the template captures the old value in a staging table before the change occurs and retrieves
+it from the staging table for the log after the change. That way, the log holds values from long text fields the same as any other field.
 Without that special handling, the one field where people write the longest text strings would be the one field whose
-history you could not see.
+history you could not see. **Copying the old value aside is preparation for the log, not the logging
+itself: the log row is still built by Data Macro steps, the same as for every other field.** The staging
+table holds long-text values and nothing else.
 
-**Your tables may already carry four fields to identify who created each record and when, and who last changed it and when.**
-These are the four stamping columns your standards layer names. Those columns, when they exist, are filled by the same automatic Data Macro behaviour, on every table in scope, including a table where you have switched audit logging off.
+**Your tables may already carry four fields to identify who created each record and when, and who last
+changed it and when.** These are the four stamping columns your standards layer names, and the build
+takes over filling them. Where a table has them they are filled by the same automatic Data Macro
+behaviour that writes the log, on every table in scope, including a table where you have switched audit
+logging off. **You do not have to choose between those columns and the log, and you do not have to keep
+whatever was filling them before.** The two answer different questions — the columns say who last
+touched a record, the log says what each field held before and after — and keeping both is the normal
+result.
+
+**Two limits on that.** The build does not add those columns to a table that does not already have
+them; such a table is audited just the same, and the log still records who made each change. And where
+a Data Macro the table already carried was filling them, that Data Macro is replaced rather than added
+to, because Access loads a table's Data Macros as one whole. What was there is saved to a file first,
+and the table is named in the build report.
 
 **You decide what gets audited, one field at a time. Your decisions are recorded in a table.**
 It is data, not code. Changing your mind later means editing rows and running the build again, not rewriting anything.
@@ -123,7 +148,8 @@ Where your database is split into two files, you need both of them.
       - showing what each field contained
    - The record is gone; however, what it held is still readable in the audit log.
 5. **Long text survives being deleted.**
-   - Repeat check 4 (delete a record) on a record with a long-text field which had something in it
+   - Repeat *A deleted record leaves its contents behind*, on a record with a long-text field which had
+     something in it
    - Open the log to confirm
      - the log holds the full previous contents of the long-text field, not a blank and not a truncation of it
 6. **Long text survives being changed.**
@@ -161,7 +187,7 @@ Where your database is split into two files, you need both of them.
     - Open a form bound to an audited table
     - Edit a record through it
     - Open the log to confirm
-      - the log rows are the same as in check 1
+      - the log rows are the same as in *A change in one field is recorded as one row*
     - If your database is split, do this with a form in the front end.
 11. **A bulk update is recorded.**
     - Run an update query that changes several records at once
@@ -192,6 +218,47 @@ Where your database is split into two files, you need both of them.
       - stops
       - names what is open
       - changes nothing
+15. **The recording happens entirely in the Data Macro, not in code the macro calls.**
+    This one you check by looking rather than by editing anything.
+    - Open one of the audited tables in design view
+    - Open its After Insert Data Macro
+    - Confirm you can see the Data Macro actions that write the log row — create a row, set its
+      field values
+    - A macro whose only action calls a function, and does nothing else, has moved the
+      recording into code. You will not see that pattern in any Data Macro
+    - Then open the table that holds values between a change and the moment after it
+      - it holds values from long-text fields only
+      - one holding ordinary fields as well is the same fault seen from the other side: a
+        build that cannot read old values in the macro has to copy everything out first
+16. **Your existing who-and-when columns keep being filled.**
+    This one applies only if your tables already carry those four columns.
+    - Add a record to an audited table and save it
+    - Look at the record's "added by" and "added on" columns
+      - they hold your name and the time you saved it
+    - Change a field of that record and save it
+      - the "changed by" and "changed on" columns hold your name and the time
+    - Switch auditing off for every field of that table, then change a field again and save
+      - the "changed by" and "changed on" columns are still filled
+      - the log has no new rows for that table
+17. **The recording keeps working with code switched off.**
+    This is the check that tells a correct build apart from one that has moved the recording into code.
+    - Pick an audited table that has no long-text field being audited
+    - Copy the database to a folder you have not told Access to trust — a new folder on the desktop
+      will do. Where your database is split into two files, copy both and keep them together
+    - Open that copy. Access shows a warning bar across the top, and runs none of the database's code
+    - Change one field of one record in that table and save it
+    - Open the log to confirm
+      - the row is there, exactly as in *A change in one field is recorded as one row*
+    - Delete the copy when you are done
+18. **A long-text value is never quietly recorded as blank.**
+    - In the same copy used for *The recording keeps working with code switched off*, with code still
+      not running, change a long-text field that had something in it, and save
+    - One of two things happens, and either is correct
+      - the save reports a failure, or
+      - the log holds the full previous contents
+    - What must not happen is a change that saves without complaint and leaves a log row showing that
+      field as empty when it was not
+    - Delete the copy when you are done
 
 ### The same behavior every time, not the same structure
 
@@ -205,10 +272,26 @@ The audit logging work may be divided into different procedures, given different
 The following **behaviors** must be true of every run. When you see these results, you know the run was successful.
 You can confirm these behaviors with the validation checks listed above.
 
+- **The log row is created by the Data Macro itself.** When you open an audited table's Data Macros in
+  the macro designer, the Data Macro actions that build the log row are there to see. **A build that
+  produces Data Macros whose only action hands the work to a function elsewhere has failed**, because it
+  has moved the recording out of the database engine and into code, and that code does not always run. A
+  copy of the file in a folder Access does not trust, or a front end missing a module, would then stop
+  the recording without stopping the edit, and nothing would report it. **The one exception is a value the engine
+  will not give a macro at all:** the previous contents of a long-text field, which is captured before the
+  change and read back after it. The log row itself is still created by the Data Macro.
 - One log row per field that actually changed. A field whose value is the same before and after
   produces nothing, and an edit that changes nothing produces nothing.
 - A value that was in a field in a table before a change or a deletion is in the log afterwards, whatever its type,
   including the long-text types Access cannot hand to Data Macros directly.
+- **A long-text value is never quietly recorded as blank.** The previous contents of a long-text field
+  are the one thing a Data Macro cannot read for itself, so they are copied aside just before the change
+  by code the macro calls, and read back just after it. Where that code cannot be reached — a front end
+  that does not have it, or a copy of the file opened from a folder Access does not trust — the attempt
+  to save reports a failure. **What must never happen is a change that saves without complaint and
+  leaves a log row showing that field as empty when it held something.** A build that can produce that
+  has failed, and the deficiency would be invisible: a blank in the log reads exactly like a field that
+  was empty to begin with.
 - Every log row says what event produced it: create, change or delete.
 - Every row carries the time and the name of the person responsible for that edit.
 - **[your standards]** When present, the four created-and-changed stamping columns are filled by the database
@@ -255,7 +338,12 @@ say so while the design is being worked out, before anything is built. Where you
 on the rules built into it. The template's promise holds either way.
 
 - How VBA code is divided into procedures, what they are called, and how many there are. They will be functionally equivalent,
-  although not necessarily structurally the same.
+  although not necessarily structurally the same. How much VBA a build has, and how it is arranged, is
+  yours to leave open. Where the log row gets written is not open, and is not an exception carved out of
+  this list: it is one of the results the template promises, settled under *The same behavior every time,
+  not the same structure*, and confirmed by the two checks that look for it: *The recording happens
+  entirely in the Data Macro, not in code the macro calls* and *The recording keeps working with code
+  switched off*.
 - Names for the log table, the settings table and the staging table, and the names of their columns, within whatever your naming
   rules already require.
 - How the build identifies which of your tables to offer to audit in the first place.
@@ -275,7 +363,7 @@ on the rules built into it. The template's promise holds either way.
 
 **If you want something not already in the template, you can have it.**
 Our promise is specified in *What you end up with*, together with the list under *The same behavior every time, not the same structure*. The
-fourteen checks are how you confirm you got it in any given build.
+checks under *How you validate the template's output* are how you confirm you got it in any given build.
 
 Everything in this section leaves that promise intact.
 
@@ -285,9 +373,16 @@ You are welcome, even encouraged to experiment, now or later. If you do so, the 
 
 ### Facts about the platform
 
+**Nothing in this section is part of the specification.** It is here so a build knows what Access will
+and will not do, and so a developer reading it can see why the design looks as it does. Everything the
+build has to produce is stated in *What you end up with*, in the checks under *How you validate the
+template's output*, and in the list under *The same behavior every time, not the same structure* — and
+is stated there in full. A requirement that appears to live only here is a defect in this template: it
+belongs in one of those three sections, and finding one is worth reporting.
+
 - **Data Macros.** Access can attach automatic behaviour to a table itself using Data Macros. This behaviour occurs regardless of who makes
-  the change to data and how they make it. It is the only mechanism in Access that a person editing a table cannot bypass.
-  Audit logging takes advantage of this by creating and attaching Data Macros to tables you select.
+  the change to data and how they make it. It is the only mechanism in Access that a person editing a table cannot bypass,
+  and the only one that still runs when Access is refusing to run code.
 - **The ordinary VBA programming interface cannot programmatically create a Data Macro.** They can
   only be written programmatically as an XML document and loaded into the table. They can be read back out the same way.
 - That XML has to be written in the two-byte character encoding, **UTF-16**. Written any other way it
@@ -306,8 +401,14 @@ You are welcome, even encouraged to experiment, now or later. If you do so, the 
   whether a given attachment is one this build wrote.
 - Which tables carry Data Macros can be discovered from Access's own System table. That System table
   also lists Access's own tables, which carry attachments of their own. The template can read from the System table, but must never attempt to change anything in it.
-- **Access cannot hand the previous contents of a long-text field to its own Data Macro.** This is a limitation in Data Macros.
-  The data types affected are the long ones — the memo type and anything built on it. This shapes the design for long-text fields: the old value in a long-text field has to be captured a moment before the change, held somewhere, and retrieved for the audit log after the change.
+- **Access cannot hand the previous contents of a long-text field to its own Data Macro, and
+  asking for it stops the macro.** This is a limitation in Data Macros. The data types affected
+  are the long ones — the memo type and anything built on it. **The macro does not return a
+  blank and carry on: it abandons the rest of its work at that line, silently, and nothing is
+  reported.** So a macro written to read that value does not merely lose the value; every action
+  after it is skipped too. This shapes the design for long-text fields: the old value has to be
+  captured a moment before the change, held somewhere, and retrieved for the audit log after the
+  change — and that holding place is for long-text values, nothing else.
 - **A hyperlink field is a long-text field.** Access reports it as one and it needs the same handling,
   although a developer sees "Hyperlink" in the table designer. A list that refers to a hyperlink field as a long text field names
   something the developer cannot easily find. The two are told apart by a flag on the field rather than by its type. Hyperlink fields are audited the same way ordinary long-text fields are audited.
@@ -454,10 +555,24 @@ Both versions of this template run the gate — this one and the rules-based met
 
 ## To the AI assistant building this
 
-**Everything above is the specification.** Build a system that satisfies *What you end up with*,
-passes every entry under *How you validate the template's output*, and holds every line under
-*The same behavior every time, not the same structure*. How you do that is yours to decide, within
-*Free to choose alternatives*.
+**Three sections are the specification, and only those three.** Build a system that satisfies *What you
+end up with*, passes every entry under *How you validate the template's output*, and holds every line
+under *The same behavior every time, not the same structure*. How you do that is yours to decide, within
+*Free to choose alternatives*. Every other section in this file — *Intent*, *Facts about the platform*,
+*What the template does not do*, *Extra options* — is context for reading those three. None of it binds
+on its own, and nothing that binds is stated only there.
+
+- **Where the specification names a mechanism, it is because the platform leaves exactly one.** This file
+  names no procedures, no modules and no tables, and it names one mechanism: the Data Macro. That is
+  neither a preference nor a route decision that *Free to choose alternatives* reopens. The promise the
+  developer is given — recording that keeps working in the conditions where Access will not run code —
+  has no other implementation on this platform, so the mechanism is part of the outcome rather than the
+  route to it. A build that moves the writing of a log row into code can pass every check that does its
+  testing by reading the log, and has broken the promise those checks exist to confirm. Two checks are
+  there to catch exactly that, and they are the two that do not work by reading the log: *The recording
+  happens entirely in the Data Macro, not in code the macro calls*, which looks at the macro, and *The
+  recording keeps working with code switched off*, which puts the database somewhere its code will not
+  run.
 
 - **Read every file in `standards/` and apply it.** Naming, the audit column names, error handling and
   query style all come from there and never from this file. Lines marked **[your standards]** in
