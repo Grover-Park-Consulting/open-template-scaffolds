@@ -354,6 +354,40 @@ back.
 **All three paths keep the file's shape.** Filenames never change, and sections keep their order and
 their numbering — every template depends on that. Only what the sections *say* varies.
 
+### 4.1 Step G2.n-b-2 — what to change in that file
+
+Asked **only** after `Change them with me`, about that one file, and **asked again after every change
+you make** until the developer chooses to move on. Without it that answer leads nowhere: the
+developer has said they want to change the file together and there is no next question, which is
+where an open-ended *"what would you like to change?"* comes from. **That is a failed step** (§10.3),
+and this is the step that prevents it.
+
+```markdown
+**Ask:** Which part of the naming rules do you want to change?
+
+| Option | Short description |
+|---|---|
+| `The table name prefix` | §1.1. The one line that decides which of your tables this build looks at. |
+| `Something else in this file` | You say which part, in your own words. |
+| `Nothing — leave the rest as it is` | Go on to the next file. |
+```
+
+**No preferred choice, and that is deliberate.** Only the developer knows what they want changed, so
+naming a preferred answer here would be the library guessing at it. §10.7's rule that a preferred
+choice is named plainly applies where one exists; this is a step where none does.
+
+**The first option is composed, not fixed.** Name the part of *that* file which bears on the build in
+front of you — the same judgement the previous step's *Tell me more* already had to make. Where
+nothing in the file bears on this build, drop that slot and offer the remaining two. Where a change
+has just been made, the slot holds the next candidate, or drops.
+
+**`Something else in this file` is how the developer reaches an open answer** — by choosing it, not by
+being handed a blank. That distinction is the whole of this step: the same open question is fine once
+it has been asked for, and is a failed step when it arrives unbidden.
+
+**Summarize the file first, then ask.** The developer cannot choose a part of a file they have not
+been shown. That summary is not the step and does not replace it.
+
 ---
 
 ## 5. The backup — an action, not a question

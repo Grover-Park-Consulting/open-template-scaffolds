@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.4.0
+version: 0.5.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -90,7 +90,7 @@ below, says exactly where.
 **The log answers two questions about each change: what did this field hold before, what does it hold now.**
 One row per field that actually changed. It does so by naming which table, which record, which field. It does so
 whether the record was created, changed or deleted: the value before, the value after, when, and who. A record deleted
-outright is logged field by field, so what it held is still there afterwards.
+outright is logged field by field, empty fields included, so what it held is still there afterwards.
 
 **Nothing is recorded for a field that did not change.** Editing one field of a forty-field record
 produces one row in the log for that one field because the 39 unchanged fields aren't recorded. A person opening a record, looking at it, and closing it produces nothing in the audit log at all.
@@ -166,10 +166,17 @@ copy both and keep them together.
 4. **A deleted record leaves its contents behind.**
    - Delete a record
    - Open the log to confirm
-      - there is a row for each filled in field the deleted record held
+      - there is a row for every audited field the deleted record held, **including the fields that
+        were empty**
       - marked as a deletion
       - showing what each field contained
    - The record is gone; however, what it held is still readable in the audit log.
+   - **An empty field gets a row of its own here on purpose.** A row saying the field held nothing
+     is a record that it held nothing. No row at all says only that nothing was written, which reads
+     the same whether the field was empty or the deletion was never fully accounted for. The record
+     is gone, so there is nothing left to check it against, and the log says it outright instead.
+   - **Adding a record works the other way** — rows only for the fields you filled in — because that
+     record is still there to be looked at.
 5. **Long text survives being deleted.**
    - Repeat *A deleted record leaves its contents behind*, on a record with a long-text field which had
      something in it
@@ -182,11 +189,18 @@ copy both and keep them together.
      - the log shows the whole of what is in that field after the edit
 7. **Stamping columns fill themselves.**
    - If your tables also carry their own stamping columns, confirm they were not changed.
-   - Add a record without touching those four columns.
-     - Confirm that they fill in.
+   - Add a record without touching those four columns
+     - the "created" pair fills in
+     - whether the "last changed" pair fills in as well is set by your own rules about those four
+       columns, not by this template — see the note below
    - Change any field of that record
      - the "last changed" pair updates
      - the "created" pair does not
+   - **Two results are correct here, and which one you get is your rules' decision.** Where those
+     rules say the last-changed pair stays empty until the first change — which is what the rules
+     that came with this library say — a new record fills the created pair only. Where they say all
+     four fill on creation, all four fill. **You are told which one your rules produce before
+     anything is built**, so you can say at that point if you wanted the other.
 8. **A table for which you switched off audit logging is not logged, but stamping still works.**
    - Pick a table
    - Switch every one of its fields off in the configuration table
@@ -198,7 +212,8 @@ copy both and keep them together.
      - its *changed* columns fill in
    - **Add a new record to that table**
    - Confirm in the table itself
-     - its *created* and *changed* columns fill in
+     - the same columns fill in as in *Stamping columns fill themselves* — switching audit logging
+       off changes nothing about the stamping
 9. **Turn logging on again.**
    - In that table switch a field back on
    - Build again
@@ -314,6 +329,11 @@ You can confirm these behaviors with the validation checks listed above.
   produces nothing, and an edit that changes nothing produces nothing.
 - A value that was in a field in a table before a change or a deletion is in the log afterwards, whatever its type,
   including the long-text types Access cannot hand to Data Macros directly.
+- **A deleted record is logged field by field, and a field that was empty gets a row of its own.** A
+  row saying the field held nothing is a record that it held nothing; no row at all cannot be told
+  apart from a deletion the log failed to account for, and the record is gone, so nothing else can
+  settle it. Adding a record is the other way round — only the fields that were filled in produce
+  rows, because that record is still there to be looked at.
 - **A long-text value is never quietly recorded as blank.** The previous contents of a long-text field
   are the one thing a Data Macro cannot read for itself, so they are copied aside just before the change
   by code the macro calls, and read back just after it. Where that code cannot be reached — a front end
@@ -330,7 +350,10 @@ You can confirm these behaviors with the validation checks listed above.
 - **[your standards]** When present, the four created-and-changed stamping columns are filled by the database
   itself, on every table in scope, including tables with all auditing switched off. A table in scope
   that ends up without that behaviour would reject every insert, because those columns are required
-  and nothing else can supply a person's name.
+  and nothing else can supply a person's name. **Which of the four fill on a new record is your
+  layer's rule and not this template's** — the last-changed pair may stay empty until the first
+  change, or fill at the same time as the created pair — and the developer is told which one their
+  rules produce before anything is built.
 - **[your standards]** The name recorded on a log row and the name stamped on the record are the same
   name, produced the same way. One edit never writes two different people into two places.
 - Whatever supplies that name must be reachable from every file a person edits through, not only from
@@ -642,6 +665,11 @@ on its own, and nothing that binds is stated only there.
 - **The validation checks run on a copy, and that is a gate, not advice.** They insert, change and
   delete records in the developer's own tables. Make the copy before the first check; if you cannot,
   stop and say so rather than running them against the working file.
+- **Say which stamping behaviour their rules produce, in the design, before you build.** Where the
+  tables carry the four created-and-changed columns, the standards layer decides whether a new record
+  fills all four or only the created pair. Both are correct, both are visible in their own tables the
+  first time they add a record, and the difference is not one they can be expected to derive from a
+  rules file. It is one line in the design, and it is theirs to overrule.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like, not
   from reasoning that makes an answer seem obvious. Where a check exists to answer a question, run the
   check at the point the sequence calls for it rather than working the answer out yourself from the
