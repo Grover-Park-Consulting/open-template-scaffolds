@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.3.0
+version: 0.4.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -46,6 +46,13 @@ method, `audit-logging-lite-scaffold` — produces the same result from working 
 Either one can be run against your own database, and they can be run one after the other on
 separate copies to compare.
 
+**Why this is called *Lite*.** It covers the ordinary Access case: an Access database, edited by
+people using Access, on machines that trust it. It does not promise an audit trail under every
+condition a database can be put in — a table reached from another program over a data connection, a
+database published to a server, or a copy taken somewhere Access will not run its code. Some of those
+are covered anyway and some are not, and this template does not claim to know which for your setup.
+What it does promise is in *What you end up with*, and it holds for the ordinary case.
+
 ---
 
 ## What you end up with
@@ -60,12 +67,25 @@ changes; the Access name for it is a **Data Macro**. The steps that build a log 
 fill in its fields — are written into the table's own Data Macros. They are not a call out to code held
 somewhere else, and there is no screen and no code path a change can take that avoids them.
 
-**That is what makes the recording impossible to avoid, and you can see it in the conditions that stop
-ordinary code from running.** Open a copy of the database from a folder Access does not trust — Access
-will run no code at all from there, and will not tell you so — and every ordinary field of every audited
-table is still logged, because a Data Macro is not code and runs regardless. **No one can disable
-auditing for their own session. It happens automatically, every time.** Long-text fields are the one
-place code is involved at all, and *Long text is handled separately*, below, says exactly where.
+**That is what makes the recording impossible to avoid.** There is no screen, no query and no code
+path that can write to an audited table without its Data Macros running — the database engine runs
+them, not the application, so nothing depends on somebody remembering to call them.
+
+**Auditing cannot be bypassed. Where the database is not trusted, editing an audited table is refused
+outright rather than proceeding unlogged.** Access runs no code at all from a folder it has not been
+told to trust, and does not make that obvious. Where the name recorded against a change is one the
+database works out in code — the usual case, and always the case where your tables carry the four
+stamping columns — the save is simply refused. Nobody edits those tables unlogged; they cannot edit
+them at all. Where the name needs no code, the save goes through and the log row appears as normal.
+Either way, **a change never saves quietly and leaves nothing in the log.**
+
+**That is not a claim that the database works in an untrusted folder.** It does not, and neither does
+any other Access database — *Information and conditions you need to supply* names a trusted location
+as a condition of using this at all. It is a claim about what somebody gets if they take a copy
+elsewhere and try: stopped, not quietly unrecorded.
+
+Long-text fields are the one place code is involved at all, and *Long text is handled separately*,
+below, says exactly where.
 
 **The log answers two questions about each change: what did this field hold before, what does it hold now.**
 One row per field that actually changed. It does so by naming which table, which record, which field. It does so
@@ -109,8 +129,11 @@ It is data, not code. Changing your mind later means editing rows and running th
 
 You can validate that the template produced the results we promised. Perform each of these checks. Successfully completing these checks indicates the template ran as expected. Each validation check can be expressed as a yes/no question. **Validate by asking: Does this happen or not?**
 
-Perform these checks on a copy of the database after creating audit logging on it.
-Where your database is split into two files, you need both of them.
+**Do these on a copy, and stop if you do not have one.** The checks add records, change fields and
+delete records in your own tables — that is what they test, and there is no version of them that
+leaves your data alone. Make a copy of the database once auditing has been built into it, run every
+check on the copy, and keep your working file out of it. Where your database is split into two files,
+copy both and keep them together.
 
 1. **A change in one field is recorded as one row.**
    - Open one of the audited tables
@@ -240,19 +263,26 @@ Where your database is split into two files, you need both of them.
     - Switch auditing off for every field of that table, then change a field again and save
       - the "changed by" and "changed on" columns are still filled
       - the log has no new rows for that table
-17. **The recording keeps working with code switched off.**
+17. **Auditing cannot be got around by moving the database somewhere Access does not trust.**
     This is the check that tells a correct build apart from one that has moved the recording into code.
     - Pick an audited table that has no long-text field being audited
     - Copy the database to a folder you have not told Access to trust — a new folder on the desktop
       will do. Where your database is split into two files, copy both and keep them together
     - Open that copy. Access shows a warning bar across the top, and runs none of the database's code
     - Change one field of one record in that table and save it
-    - Open the log to confirm
-      - the row is there, exactly as in *A change in one field is recorded as one row*
+    - One of two things happens, and either is correct
+      - the save is refused, naming something it cannot use, or
+      - the save goes through and the log holds the row, exactly as in *A change in one field is
+        recorded as one row*
+    - Which of the two you get depends on where the name recorded against a change comes from. A name
+      the database has to work out in code cannot be worked out here, so the save is refused before it
+      happens. A name that needs no code lets the save through, and the row appears
+    - What must not happen is a save that goes through and leaves nothing in the log
     - Delete the copy when you are done
 18. **A long-text value is never quietly recorded as blank.**
-    - In the same copy used for *The recording keeps working with code switched off*, with code still
-      not running, change a long-text field that had something in it, and save
+    - In the same copy used for *Auditing cannot be got around by moving the database somewhere Access
+      does not trust*, with code still not running, change a long-text field that had something in
+      it, and save
     - One of two things happens, and either is correct
       - the save reports a failure, or
       - the log holds the full previous contents
@@ -275,9 +305,9 @@ You can confirm these behaviors with the validation checks listed above.
 - **The log row is created by the Data Macro itself.** When you open an audited table's Data Macros in
   the macro designer, the Data Macro actions that build the log row are there to see. **A build that
   produces Data Macros whose only action hands the work to a function elsewhere has failed**, because it
-  has moved the recording out of the database engine and into code, and that code does not always run. A
-  copy of the file in a folder Access does not trust, or a front end missing a module, would then stop
-  the recording without stopping the edit, and nothing would report it. **The one exception is a value the engine
+  has moved the recording out of the database engine and into code. Recording that lives in code the
+  application has to remember to call — a form's events, most often — is skipped altogether by a
+  datasheet edit, an update query, or any other route into the table, and nothing reports it. **The one exception is a value the engine
   will not give a macro at all:** the previous contents of a long-text field, which is captured before the
   change and read back after it. The log row itself is still created by the Data Macro.
 - One log row per field that actually changed. A field whose value is the same before and after
@@ -293,7 +323,10 @@ You can confirm these behaviors with the validation checks listed above.
   has failed, and the deficiency would be invisible: a blank in the log reads exactly like a field that
   was empty to begin with.
 - Every log row says what event produced it: create, change or delete.
-- Every row carries the time and the name of the person responsible for that edit.
+- Every row carries the time and the name of the person responsible for that edit. **On a deletion
+  that is the person deleting the record, never the person who last changed it.** The record's own
+  last-changed column names somebody else — whoever edited it before — and a log row that borrows
+  that name reports the wrong person as having deleted it.
 - **[your standards]** When present, the four created-and-changed stamping columns are filled by the database
   itself, on every table in scope, including tables with all auditing switched off. A table in scope
   that ends up without that behaviour would reject every insert, because those columns are required
@@ -342,8 +375,8 @@ on the rules built into it. The template's promise holds either way.
   yours to leave open. Where the log row gets written is not open, and is not an exception carved out of
   this list: it is one of the results the template promises, settled under *The same behavior every time,
   not the same structure*, and confirmed by the two checks that look for it: *The recording happens
-  entirely in the Data Macro, not in code the macro calls* and *The recording keeps working with code
-  switched off*.
+  entirely in the Data Macro, not in code the macro calls* and *Auditing cannot be got around by
+  moving the database somewhere Access does not trust*.
 - Names for the log table, the settings table and the staging table, and the names of their columns, within whatever your naming
   rules already require.
 - How the build identifies which of your tables to offer to audit in the first place.
@@ -353,6 +386,11 @@ on the rules built into it. The template's promise holds either way.
   - a table naming convention you specify
   - every table in the file
 - Whether the settings table starts with auditing switched on or switched off for everything.
+  **Switched on means every field that can be audited**, which is not every row in the table. The
+  field types that can never be audited stay off whatever you choose. So do the four
+  created-and-changed columns, where your standards layer asks for them: every save rewrites two of
+  those four, so auditing them would add two rows to the log for every edit, saying what that edit's
+  own log rows already say. You can switch them on yourself afterwards if you want them.
 - The wording of everything the developer sees.
 - Whether the build reports in message boxes, as returned text, or both.
 - How the previous contents of a long-text field are held between the moment before a change and the
@@ -389,7 +427,6 @@ belongs in one of those three sections, and finding one is worth reporting.
   loads without complaint but does nothing.
 - Loading XML for a table's Data Macros **replaces the Data Macros already attached to that table**. It never merges. Two separate
   loads means the second wipes out the first. Everything a table needs has to be built into one XML document.
-- The table has to be held open in design view while the load happens, or the change does not stick.
 - Reading the attachment back out also produces UTF-16, so anything reading that file has to be told
   to expect it.
 - **Access rewrites part of the XML document on the way out.** The version identifier it returns is not
@@ -565,15 +602,26 @@ on its own, and nothing that binds is stated only there.
 - **Where the specification names a mechanism, it is because the platform leaves exactly one.** This file
   names no procedures, no modules and no tables, and it names one mechanism: the Data Macro. That is
   neither a preference nor a route decision that *Free to choose alternatives* reopens. The promise the
-  developer is given — recording that keeps working in the conditions where Access will not run code —
-  has no other implementation on this platform, so the mechanism is part of the outcome rather than the
-  route to it. A build that moves the writing of a log row into code can pass every check that does its
+  developer is given — recording that no route into the table can get around, and that fails closed
+  rather than quietly where the conditions for it are not met — has no other implementation on this
+  platform, so the mechanism is part of the outcome rather than the route to it. A build that moves the writing of a log row into code can pass every check that does its
   testing by reading the log, and has broken the promise those checks exist to confirm. Two checks are
   there to catch exactly that, and they are the two that do not work by reading the log: *The recording
-  happens entirely in the Data Macro, not in code the macro calls*, which looks at the macro, and *The
-  recording keeps working with code switched off*, which puts the database somewhere its code will not
-  run.
+  happens entirely in the Data Macro, not in code the macro calls*, which looks at the macro, and
+  *Auditing cannot be got around by moving the database somewhere Access does not trust*, which puts
+  the database where its code will not run and confirms that an edit is either logged or refused.
 
+- **Read the proven encoding of that mechanism rather than deriving it.** A Data Macro can only be
+  created as an XML document loaded into the table, and the shape of that document is fixed by
+  Access. There is nothing in it for you to decide and no second way to write it, so working it out
+  by trial and error buys nothing and costs a great deal: the load fails with one error number that
+  says only that the text cannot be read as a Data Macro, and never says which part is wrong. Read
+  `templates/_materialization.md`, and read the working generator in
+  `templates/audit/audit-logging-lite-scaffold.md`, the rules-based method that produces this same
+  result. **Read them for the shape of the document and nothing else.** How the work divides, what
+  the procedures are called, where things live, and what the build does are yours, exactly as
+  declared under *Free to choose alternatives* — reading that file settles none of them, and copying
+  its decomposition would be importing a route you were not given.
 - **Read every file in `standards/` and apply it.** Naming, the audit column names, error handling and
   query style all come from there and never from this file. Lines marked **[your standards]** in
   *The same behavior every time, not the same structure* are outcomes that layer requires; they are
@@ -586,6 +634,14 @@ on its own, and nothing that binds is stated only there.
   selection control where the answer is a choice and as a plain question where it is a name. Two of
   them are gates: a database in real use with no backup stops the build, and permission to change the
   tables is asked immediately before anything is changed.
+- **When you ask what the settings table starts as, say what the answer covers.** Switching
+  everything on switches on every field that can be audited, which is fewer rows than the table
+  holds. Name at the point of asking how many will be on, how many will be off, and why each group
+  is off. An answer of "everything on" followed by a table with a fifth of its rows off is a
+  surprise the developer had no way to see coming.
+- **The validation checks run on a copy, and that is a gate, not advice.** They insert, change and
+  delete records in the developer's own tables. Make the copy before the first check; if you cannot,
+  stop and say so rather than running them against the working file.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like, not
   from reasoning that makes an answer seem obvious. Where a check exists to answer a question, run the
   check at the point the sequence calls for it rather than working the answer out yourself from the

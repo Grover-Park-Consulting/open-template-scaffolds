@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.7.0
+version: 0.8.0
 status: draft
 ---
 
@@ -350,6 +350,10 @@ so a generated table with a `Required` `CreatedBy` and no macro **rejects every 
 answer is a **Before Change data macro**, which **cannot be built with DAO** — write it as a UTF-16
 XML file and load it. Proven by running it against a generated table:
 
+**Read this example for the stamping, not for the namespace.** It writes one Before Change event and
+nothing else, and the namespace it declares is incidental to what it demonstrates — rule 3 below
+covers the namespace, and a document carrying more than one event is no different in that respect.
+
 ```vba
 ' Run in the accdb that holds the tables (the BE for a split app).
 Public Sub BuildAuditStampMacro(ByVal sTable As String, ByVal sPK As String)
@@ -406,33 +410,64 @@ End Function
 1. **Before Change fires before Required validation** — so the macro satisfies a `Required` `CreatedBy`.
 2. **`IsNull([Old].[<PK>])`** is the INSERT-vs-UPDATE discriminator inside Before Change.
 3. **A table's whole Data Macro set lives in one document** — `SaveAsText` exports it that way and
-   `LoadFromText` replaces it that way. The **2010/12** namespace carries all five events
-   (AfterInsert, AfterUpdate, AfterDelete, BeforeChange, BeforeDelete) together, and that is the form
-   to generate. If you are emitting Before and After events for the same table, they share one
-   document — there is no other way to attach both.
-4. **Data macros cannot set Long Text (Memo) fields** — keep audit fields Short Text / Date-Time.
+   `LoadFromText` replaces it that way. If you are emitting Before and After events for the same
+   table, they share one document — there is no other way to attach both. **Both published
+   namespaces carry all five events** (AfterInsert, AfterUpdate, AfterDelete, BeforeChange,
+   BeforeDelete): a five-event document declaring `…/accessservices/2009/11/application` loads and
+   runs, and so does one declaring `…/accessservices/2010/12/application`. Access rewrites the
+   declaration to `2009/11` on the way out either way, so an exported document never matches its
+   input. **The namespace is not a cause of a failed load** — an earlier form of this rule named
+   `2010/12` as the form to generate, on the evidence of one run, and a later run lost time changing
+   the namespace to chase a failure that was in the document's shape (rule 6).
+4. **The Long Text limit is on reading `[Old]`, not on writing.** A data macro cannot read the
+   previous contents of a Long Text (Memo) field: `[Old].[<field>]` fails and the macro **silently
+   abandons every action after it**, which is why an old value has to be staged before the change and
+   read back after it. It **can** set a Long Text field of a record it creates in another table —
+   `SetField` on a Long Text column inside `CreateRecord` works, and auditing long-text values
+   depends on it. Setting Long Text on the record being changed is untested here. The earlier form of
+   this rule prohibited Long Text outright, which ruled out the only design that captures a long-text
+   value at all.
 5. `CurrentUser()` is engine-known but returns `"Admin"` without workgroup security; `AuditUser()` gets
    the real Windows user.
+6. **`CreateRecord`, `LookUpRecord`, `EditRecord` and `ForEachRecord` are elements in their own
+   right, never `<Action Name="…">`.** Everything else in a data macro is an `<Action>`, so an action
+   is the reasonable guess and it is wrong. The load fails with error **3870**, which says only that
+   the text cannot be interpreted as a data macro and never says which part, so the cost of guessing
+   is high. The proven form is
+   `<CreateRecord><Data Alias="X"><Reference>TableName</Reference></Data><Statements>…</Statements></CreateRecord>`,
+   with `LookUpRecord` carrying a `<WhereCondition>` inside its `<Data>`. A record created inside a
+   `LookUpRecord` takes no alias, and its fields are then named with the table rather than an alias.
+   `templates/audit/audit-logging-lite-scaffold.md` holds a working generator for all five events.
 
 **Stamping on its own vs. stamping alongside change-auditing.** The `BuildAuditStampMacro` above is the
 proven form for a table that needs **only** the audit-column stamping — it emits one Before Change
 event and nothing else. The moment a table also needs After Insert/Update/Delete macros (for example
 `templates/audit/audit-logging-lite-scaffold.md`, which logs every field change), you cannot load the
 two separately: per rule 3 the second `LoadFromText` replaces the whole set, taking the first with it.
-Generate both jobs **together**, into one 2010/12 document, with the stamping actions and the
+Generate both jobs **together**, into one document, with the stamping actions and the
 change-auditing actions sharing the same `IsNull([Old].[<PK>])` branch. The audit-logging scaffold's
 `BuildBeforeChangeMacro` is the worked example.
 
-### VBA code import — an import path can unescape XML entities
+### VBA code import — an import path can corrupt XML entities, in either direction
 
-Proven by a real failure: a `vba-scaffold` module whose Data Macro builder emits **escaped XML
+Proven by two real failures, on the same kind of code, corrupted opposite ways.
+
+**Unescaped on the way in.** A `vba-scaffold` module whose Data Macro builder emits **escaped XML
 entities** (`&lt;`, `&gt;`, `&amp;`) as literal string content compiled and ran fine as a
 standalone import, then threw error **3870** ("Microsoft Access cannot interpret the text you are
 pasting as a data macro") on every table when the *same* source was imported through **an Access
-MCP server's code-import tools**. The import path **HTML-unescapes entities on the way in** — a
-literal `&lt;&gt;` in the source becomes a raw `<>` once
-stored, and that raw `<` is then read as an opening tag inside `<Condition>…</Condition>`,
+MCP server's code-import tools**. That import path **HTML-unescaped the entities on the way in** — a
+literal `&lt;&gt;` in the source became a raw `<>` once
+stored, and that raw `<` was then read as an opening tag inside `<Condition>…</Condition>`,
 malforming the macro XML `LoadFromText` is asked to load.
+
+**Left literal, and mangled, on the way in.** A later build against a newer Access MCP server saw the
+reverse: a literal `&amp;` written into module source **stayed literal**, and one line came back with
+a space inserted, as `& amp;`. Caught by reading the module back and fixed by re-importing.
+
+**Neither direction is the rule; the corruption is.** The two were observed against different
+versions of the same server, so treat the direction as unpredictable rather than as a property of a
+particular route. The fix below covers both.
 
 **The rule this proves:** any scaffold whose VBA assembles XML (or HTML) containing escaped
 entities must build those entities from character codes at runtime — `Chr(38) & "lt;" & Chr(38) &
