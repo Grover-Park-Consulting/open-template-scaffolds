@@ -13,6 +13,10 @@ or adjust them to match your own conventions. That's the "Open" part of Open Tem
 It's also more than a set of templates. It's a way to **shape** each one to the job in front of you
 — your client, your names, the specifics of this build.
 
+**Built and tested against [unmateria](https://github.com/unmateria)'s Access MCP server** — the tool
+that lets an AI assistant open your database and build in it directly. You do not need it to use this
+library; *About the two kinds of server* below says what it does, and how the library works without one.
+
 ## New to AI assisted development? We built OTS for you.
 
 You don't need to be an experienced database designer, although it can help if you are. Even if you've outgrown Excel and you're starting out building real Access applications — especially with an AI assistant helping — this library takes the hardest, most abstract part, designing the tables, and gives you a running start. You describe what you want in plain words, the AI builds it, and you look it over and approve or adjust. That's the "Template" part of Open Template Scaffolds.
@@ -159,6 +163,13 @@ You may have heard references to MCP servers, and you may also be wondering if t
 
 - **An Access MCP server** is a separate tool. Its tools open your database and build in it directly. Some developers prefer this method; some don't. It's up to you. 
 However, this library does not ship with one. We do look for one, and if you have one connected, your AI will say so and ask before using it. You can always say no. It's on you, then, to import the code produced by the library yourself instead. If you don't have one, your AI simply hands you the code and tells you how to run it.
+
+  **With thanks to [unmateria](https://github.com/unmateria).**
+  [MCP-Access](https://github.com/unmateria/MCP-Access) is the Access MCP server this library is
+  developed and tested against, and it is what makes the build-it-for-you route something we can
+  stand behind rather than describe. It is their project, not ours, and they have been generous with
+  it. As far as this library is concerned any Access MCP server works the same way; we name this one
+  because it is the one we owe.
 
 ## How it works
 
