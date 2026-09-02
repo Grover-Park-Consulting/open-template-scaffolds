@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.5.0
+version: 0.6.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -196,6 +196,12 @@ copy both and keep them together.
    - Change any field of that record
      - the "last changed" pair updates
      - the "created" pair does not
+   - **Do this on a record that was created before today, if you have one.** A record you added a
+     moment ago and changed straight away holds the same time in both pairs, because both happened
+     in the same second. That is what you see whether the build is right or wrong, so it proves
+     nothing either way. On an older record the difference is plain: the "created" pair stays where
+     it was, and only the "last changed" pair moves. If every record is new, wait a minute between
+     adding one and changing it.
    - **Two results are correct here, and which one you get is your rules' decision.** Where those
      rules say the last-changed pair stays empty until the first change — which is what the rules
      that came with this library say — a new record fills the created pair only. Where they say all
@@ -474,6 +480,11 @@ belongs in one of those three sections, and finding one is worth reporting.
   something the developer cannot easily find. The two are told apart by a flag on the field rather than by its type. Hyperlink fields are audited the same way ordinary long-text fields are audited.
 - **Attachment fields and calculated fields cannot usefully be audited.** A calculated field cannot be
   edited directly. Only its components are ever changed. Therefore, calculated fields themselves are not auditable.
+  **A calculated field is told apart from an ordinary one by its stored formula holding something, never by
+  whether it can be asked for one.** Every field answers that question, and an ordinary field answers it with
+  nothing — so a build that treats being able to ask as the answer marks every field in every table as one
+  that can never be audited, and reports that it succeeded, because each step did. The Data Macros go on,
+  the settings table fills up, and not one switch can ever be turned on.
 - **Data Macros can call functions (but not subs) in the file where they run.** They look for functions called that way in
   **the same file the person is editing from**, not the file holding the tables. In a split database that is each person's own front end. If the functions are not found in the same file, the change fails outright and nobody can add a record at all.
 - Attaching Data Macros to a table requires a design lock on that table, and Access refuses one while anything is using it.
@@ -536,6 +547,17 @@ Either way nothing here does them. The template build won't tell you what it isn
   a database server is often easier or more powerful, but it is not available within Access.
 - **Restoring Data Macros of your own that this template replaced.** Existing Data Macros are saved to a file and named in
   the report. Putting them back is yours to do if you wish, after the template build is complete.
+  **The same thing happens when you take the audit logging back off, and it is worth knowing before you
+  do.** Access holds a table's automatic behaviour as one whole, so removing this template's part of it
+  clears the rest along with it — including whatever was there before the build. Where a table filled its
+  own four stamping columns, it stops filling them once the audit logging is removed. The table still
+  works and still accepts records; what stops, without saying so, is the stamping. The file written
+  before the replacement is what puts it back.
+- **Tidying up the files it writes.** Each time the build attaches Data Macros to a table, or removes
+  them, it first writes out what was there into a file beside the database. That happens on every
+  rebuild, not only the first, and nothing ever removes those files. A database whose audited tables are
+  rebuilt a few times gathers hundreds of them. They are small, and deleting them is safe once you no
+  longer want what they hold — but that is your decision to make, and nothing prompts you to make it.
 - **Recognising Data Macros written by a version of this system that predates the mark it now writes.**
   Adding a mark to Data Macros was added to a later version of the template. Data Macros added in an earlier version
   are treated as somebody else's work and left in place.
@@ -678,7 +700,13 @@ on its own, and nothing that binds is stated only there.
   answer before building.
 - **The error-handling report comes from `standards/error-handling.md`.** One constraint on the answer
   is not a preference and is stated as an invariant above: nothing in the recording path interrupts
-  the person editing.
+  the person editing. **A second constraint applies wherever that layer's logger re-raises** — which is
+  normal, and is what a logger does unless it is told the caller is top level. A procedure whose purpose
+  is to return a report to the developer has to declare itself top level to it. Otherwise the error leaves
+  the procedure at the handler, the return value is never assigned, `Resume` is never reached, and the
+  caller gets a raised error instead of the report the procedure exists to produce. Every entry point a
+  person runs directly is such a procedure. The helpers beneath them should re-raise, which is what the
+  layer is for.
 - **Whatever proves an attachment is this system's own work must be written by the build itself.** A
   mark inside the attachment is the only thing that survives every naming convention. Verified: such a
   mark survives being loaded and read back unchanged.

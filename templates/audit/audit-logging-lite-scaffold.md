@@ -1769,9 +1769,10 @@ a log row for it would record a change nobody made and attribute it to whoever c
 else.
 
 **Why the second test is a guarded property read.** A calculated field carries an `Expression`
-property holding the formula; an ordinary field either has no such property or an empty one, and
-reading a property that isn't there raises an error rather than returning empty. The read is
-therefore wrapped, and anything that goes wrong leaves the answer `False` — a field this function
+property holding the formula; an ordinary field answers the same lookup with an empty one, so the
+test is what the lookup gives back and never whether it can be made at all. Reading a property that
+isn't there raises an error rather than returning empty, so the read is wrapped, and anything that
+goes wrong leaves the answer `False` — a field this function
 cannot classify is treated as ordinary, which is the behaviour every build before this one had.
 
 ```vba
