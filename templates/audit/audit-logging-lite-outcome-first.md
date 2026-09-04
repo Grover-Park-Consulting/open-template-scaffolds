@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.6.0
+version: 0.7.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -246,13 +246,15 @@ copy both and keep them together.
       - a table which had Data Macros of your own — unrelated to this template's Data Macros
         - if the build was stopped, those Data Macros are intact
         - if the build ran, those Data Macros are saved to a file you can read
-13. **A table that cannot be audited is reported, not attempted.**
-    Some tables are not auditable. This validation check applies only if you have a table like this.
-    Such tables include
-    - those whose primary key is text
-    - those whose primary keys consist of more than one field (composite keys)
-    - those which have no primary key
-    - The build names unauditable tables and tells you why, before anything is changed.
+13. **A table that cannot be audited is reported as not auditable.**
+    Some tables cannot be audited: those whose primary key is text, those whose primary key is made
+    up of more than one field (composite keys), those which have no primary key, and those whose
+    primary key is a number that cannot be stored as a Long Integer, such as a Large Number, a
+    Decimal, a Double or a Replication ID.
+    - Before anything is changed, the build shows you your tables, each marked auditable or not
+      auditable
+    - Each table marked not auditable comes with the reason
+    - If every table can be audited, the list says so
 14. **When a build is blocked, it stops rather than leaving your tables half-finished.**
     An open table or form in the database to which you are adding audit logging blocks the template
     - Open the database
@@ -386,8 +388,9 @@ You can confirm these behaviors with the validation checks listed above.
   changing a record because of something they did not ask for and cannot act on.
 - Before running a build against a database in real use, best practice is to make a backup copy of the file.
   The template asks for one before changing anything.
-- Every audited table has a single-field number primary key (usually an AutoNumber). The template reports tables
-  that do not qualify for audit before the build rather than failing during it.
+- Every audited table has a single-field primary key of a kind whose values fit in a Long Integer:
+  an AutoNumber, a Long Integer, an Integer or a Byte. The template reports tables that do not
+  qualify for audit before the build rather than failing during it.
 
 Lines marked **[your standards]** come from your standards layer rather than from this template, and
 move with that layer if your shop replaces it. Everything else in `standards/` applies here as it
@@ -639,8 +642,11 @@ Both versions of this template run the gate — this one and the rules-based met
 
 **Three sections are the specification, and only those three.** Build a system that satisfies *What you
 end up with*, passes every entry under *How you validate the template's output*, and holds every line
-under *The same behavior every time, not the same structure*. How you do that is yours to decide, within
-*Free to choose alternatives*. Every other section in this file — *Intent*, *Facts about the platform*,
+under *The same behavior every time, not the same structure*. Then run every entry under *How you
+validate the template's output* yourself, on the copy, and record what each one did. The checks bind
+you twice: the build has to pass them, and you have to run them. How you build is yours to decide,
+within *Free to choose alternatives*. Which checks you run is not. All of them, every run. Every other
+section in this file — *Intent*, *Facts about the platform*,
 *What the template does not do*, *Extra options* — is context for reading those three. None of it binds
 on its own, and nothing that binds is stated only there.
 
@@ -684,9 +690,12 @@ on its own, and nothing that binds is stated only there.
   holds. Name at the point of asking how many will be on, how many will be off, and why each group
   is off. An answer of "everything on" followed by a table with a fifth of its rows off is a
   surprise the developer had no way to see coming.
-- **The validation checks run on a copy, and that is a gate, not advice.** They insert, change and
-  delete records in the developer's own tables. Make the copy before the first check; if you cannot,
-  stop and say so rather than running them against the working file.
+- **Every check is attempted, and that is a gate, not advice.** You do not decide that a check is not
+  run, and nothing in this file, in the standards layer, or in anything said during the run relieves
+  you of one. A check whose attempt stopped short is not passed, and its entry says what you did and
+  what stopped it. The checks insert, change and delete records in the developer's own tables, so they
+  run on a copy. Make the copy before the first check; if you cannot, stop and say so rather than
+  running them against the working file.
 - **Say which stamping behaviour their rules produce, in the design, before you build.** Where the
   tables carry the four created-and-changed columns, the standards layer decides whether a new record
   fills all four or only the created pair. Both are correct, both are visible in their own tables the
@@ -710,8 +719,12 @@ on its own, and nothing that binds is stated only there.
 - **Whatever proves an attachment is this system's own work must be written by the build itself.** A
   mark inside the attachment is the only thing that survives every naming convention. Verified: such a
   mark survives being loaded and read back unchanged.
-- **The build record reports against *How you validate the template's output*** — a completed check list, not a narrative.
-  Anything you verified along the way goes there rather than into the conversation.
+- **The build record reports against *How you validate the template's output*, one entry per check,
+  each saying what was done and what was observed** — a completed check list, not a narrative. Passed
+  and not passed are the only outcomes. A check is passed when every line under it was observed. An
+  entry that is not passed says what was done and what stopped it. An entry with neither outcome is a
+  check that was not run, and the record is not complete until it has one. Anything you verified
+  along the way goes there rather than into the conversation.
 
 ## Extra options
 

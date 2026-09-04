@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.3.3
+version: 0.3.4
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -31,11 +31,12 @@ warnings:
   - The macro generator must run in the same accdb as the audited tables — in a split design,
     that is the back end. The three system tables are created in the back end and linked to the
     front end.
-  - Every audited table is expected to have a single-column AutoNumber primary key. If any table
-    to be audited has a different key design (composite, text, no PK), stop and tell the
-    developer this template will not work for that table out of the box — they are free to adapt
-    it, but the adaptation is theirs. The paired scaffold's CheckAuditReadiness procedure checks
-    for this automatically.
+  - Every audited table is expected to have a single-field primary key of a kind whose values fit
+    in a Long Integer, which means AutoNumber, Long Integer, Integer or Byte. If any table to be
+    audited has a different key design (composite, text, no PK, or a number that does not fit a
+    Long Integer), stop and tell the developer this template will not work for that table out of
+    the box — they are free to adapt it, but the adaptation is theirs. The paired scaffold's
+    CheckAuditReadiness procedure checks for this automatically.
   - Path B (adding this to a database you already use) is much less forgiving than the demo.
     Make a copy of the .accdb file before running any of the setup steps against it — Data
     Macros get attached directly to your live tables.
@@ -46,8 +47,9 @@ warnings:
     restore that stamping logic afterward — that is the developer's call.
 house_assumptions:
   - tblAuditLogConfig.IsPrimaryKey — every audited table is assumed to have a single-column
-    numeric (AutoNumber/Long) primary key; the Long Text backup plumbing and the generated macro
-    XML key on one numeric PK, so composite or text keys are not supported
+    whole-number primary key that fits in a Long Integer (AutoNumber, Long Integer, Integer or
+    Byte); the Long Text backup plumbing and the generated macro XML key on one such PK, so
+    composite, text, and larger-number keys are not supported
   - tblAuditLog — audited rows are referenced by name and key value (TableName + PrimaryKey),
     and nothing in the database enforces that reference. In Access terms, there is no relationship
     between the log and the audited table, so no referential integrity and no cascade delete. That
@@ -296,9 +298,10 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
    old value lands in `tblLongTextBackup` → the After macro retrieves it with `LookupRecord`
    and writes it to `tblAuditLog.OldValue`. This is the workaround for the platform limit: a
    Data Macro cannot read `[Old].[LongTextField]`.
-4. **Single AutoNumber PK, always.** Every audited table is expected to have a single-column
-   AutoNumber primary key, recorded in `tblAuditLogConfig.IsPrimaryKey`. A table with any other
-   key design (composite, text, no PK) is called out at build time: the template will not work
+4. **A single whole-number PK that fits a Long Integer, always.** Every audited table is expected
+   to have a single-column primary key of type AutoNumber, Long Integer, Integer or Byte, recorded
+   in `tblAuditLogConfig.IsPrimaryKey`. A table with any other key design (composite, text, no PK,
+   or a number that does not fit a Long Integer) is called out at build time: the template will not work
    for it out of the box, and adapting it is the adopter's own project. The paired scaffold's
    `CheckAuditReadiness` procedure checks every candidate table against this rule and lists any
    that fail it, before macros are generated.
@@ -448,5 +451,5 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
   and addresses the row by `tblAuditLog.PrimaryKey`. The key field is deliberately not logged as
   a field row of its own (Business Rule 5), which keeps it where a restore needs it — in the
   `WHERE`, never in the `SET`.
-- **Composite/text primary keys** — would require reworking the backup plumbing and macro XML
-  (Business Rule 4).
+- **Composite, text, or larger-than-Long-Integer primary keys** — would require reworking the
+  backup plumbing and macro XML (Business Rule 4).

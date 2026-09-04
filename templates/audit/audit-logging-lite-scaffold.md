@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.9.3
+version: 0.9.4
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -86,10 +86,12 @@ warnings:
     and run it again.
   - DAO cannot create Data Macros. The only build path is writing UTF-16 XML to a file and
     loading it with Application.LoadFromText acTableDataMacro — exactly what this module does.
-  - Every audited table is expected to have a single-column AutoNumber primary key. If any table
-    to be audited has a different key design (composite, text, no PK), stop and tell the
-    developer this template will not work for that table out of the box — they are free to adapt
-    it, but the adaptation is theirs. CheckAuditReadiness checks for this automatically.
+  - Every audited table is expected to have a single-field primary key of a kind whose values fit
+    in a Long Integer, which means AutoNumber, Long Integer, Integer or Byte. If any table to be
+    audited has a different key design (composite, text, no PK, or a number that does not fit a
+    Long Integer), stop and tell the developer this template will not work for that table out of
+    the box — they are free to adapt it, but the adaptation is theirs. CheckAuditReadiness checks
+    for this automatically.
   - Path B (an existing accdb with real tables and real data) is much less forgiving than the
     demo. Make a copy of the .accdb file before running any of these steps against it — Data
     Macros get attached directly to your live tables, and this is not a step to redo casually.
@@ -1956,9 +1958,9 @@ Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As Stri
                 lProblemCount = lProblemCount + 1
                 sMsg = sMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
                 Debug.Print tdef.Name & ": NOT READY — primary key has " & lPkFieldCount & " fields"
-            ElseIf lPkFieldType <> dbLong Then
+            ElseIf lPkFieldType <> dbLong And lPkFieldType <> dbInteger And lPkFieldType <> dbByte Then
                 lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber/Long Number field" & vbCrLf
+                sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, Integer or Byte field" & vbCrLf
                 Debug.Print tdef.Name & ": NOT READY — primary key type is " & lPkFieldType
             Else
                 Debug.Print tdef.Name & ": ready"
