@@ -252,3 +252,19 @@ errHandler:
       Resume Cleanup
       Resume
 ```
+
+**Reader: the AI assistant, and a shop replacing this file.**
+
+## What a conforming build looks like
+
+A build conforms to this file when every one of these is true of the code it produced. A practice
+replacing this file replaces these conditions with its own.
+
+1. Labels are spelled exactly `errHandler:` and `Cleanup:`.
+2. Every procedure with an `errHandler:` block reaches it from `On Error GoTo errHandler` as its
+   first executable line.
+3. Every `errHandler:` block captures `Erl`, reports, then `Resume Cleanup`, then `Resume`.
+4. No procedure with an `errHandler:` block exits by a route that skips `Cleanup:`.
+5. `On Error Resume Next` appears only inside a `Cleanup:` block and inside the logger.
+6. Every procedure with an `errHandler:` block is line-numbered; every procedure without one is not.
+7. Every logger the generated code calls exists in the built database.

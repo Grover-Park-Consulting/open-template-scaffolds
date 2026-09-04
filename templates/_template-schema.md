@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.9.0
+version: 0.9.1
 status: draft
 ---
 
@@ -62,6 +62,17 @@ existing template files to see how they are applied as an example. However, **be
   precise, but precision and plain language are not in tension. Where a plain paraphrase would
   collide with a term the reader probably already owns, or with a word that already means something
   else here, name both once — plain sentence first, technical term second (§10.5 rule 3).
+- **Every action the AI assistant must take is stated where the AI assistant is addressed.** A
+  template with more than one reader names each one and marks the switch where it happens, and
+  "you" has one referent per section. So an imperative in the developer's section binds the
+  developer only. "Perform each of these checks", said to the developer, tells the assistant
+  nothing about what it must do, however plainly it is put. Whatever the assistant has to do —
+  run every check, run a procedure at the point a sequence calls for it, stop at a gate — is
+  stated in the section addressed to the assistant. It may be repeated to the developer, and the
+  assistant's section is where it must appear. The test, for each thing the assistant must do:
+  which section says so, and whom does that section address? A requirement in the wrong section
+  is not a requirement. This holds for every template type; §8.4 and §12.4 are where two of them
+  meet it.
 
 ---
 
@@ -947,6 +958,9 @@ Two authoring tests, both answerable yes or no:
    you did not intend passes it, the sentence is a summary of the requirement rather than the
    requirement itself. Strengthen it until the unintended build fails — by naming the condition that
    tells the two apart, which is still an outcome, and not by naming the route.
+
+A third test, common to every template type, is in §1: for each thing the builder must do, which
+section says so, and whom does that section address?
 
 **A mechanism may be named in the specification only where the platform leaves exactly one.** Where two
 would both satisfy the promise, name neither: that is route, and it is the builder's. Where only one
