@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.7.0
+version: 0.7.2
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -41,10 +41,11 @@ result arrived and by the behaviours that must hold however the work was divided
 sections together are the whole of what this template promises.
 
 **Nothing else is here.** No procedures, no module names, no code. This template states the result
-and leaves the route to whoever builds it. The other version of this template — the rules-based
-method, `audit-logging-lite-scaffold` — produces the same result from working code you import.
-Either one can be run against your own database, and they can be run one after the other on
-separate copies to compare.
+and leaves the route to whoever builds it. It names one mechanism, the Data Macro, because nothing
+else on this platform can make the promise hold. Everything else about the route is open. The other
+version of this template — the rules-based method, `audit-logging-lite-scaffold` — produces the same
+result from working code you import. Either one can be run against your own database, and they can
+be run one after the other on separate copies to compare.
 
 **Why this is called *Lite*.** It covers the ordinary Access case: an Access database, edited by
 people using Access, on machines that trust it. It does not promise an audit trail under every
@@ -402,6 +403,9 @@ The template does not decide any of the following. If you have specific preferen
 say so while the design is being worked out, before anything is built. Where you don't choose, the build will choose based
 on the rules built into it. The template's promise holds either way.
 
+Before the design is drawn you are asked once whether to let the build decide these or to see the
+alternatives for each and pick yourself. Seeing them takes longer, by about one question per item.
+
 - How VBA code is divided into procedures, what they are called, and how many there are. They will be functionally equivalent,
   although not necessarily structurally the same. How much VBA a build has, and how it is arranged, is
   yours to leave open. Where the log row gets written is not open, and is not an exception carved out of
@@ -685,6 +689,11 @@ on its own, and nothing that binds is stated only there.
   selection control where the answer is a choice and as a plain question where it is a name. Two of
   them are gates: a database in real use with no backup stops the build, and permission to change the
   tables is asked immediately before anything is changed.
+- **After the seventh thing and before you present the design, offer the `Explore options` step**
+  (`_template-schema.md` §12.5) over the list under *Free to choose alternatives*, and nothing
+  outside it. The Data Macro is not on that list and is never offered an alternative. A pick made
+  there is recorded in the build record, holds for the rest of the run, and is restated in the
+  design you present.
 - **When you ask what the settings table starts as, say what the answer covers.** Switching
   everything on switches on every field that can be audited, which is fewer rows than the table
   holds. Name at the point of asking how many will be on, how many will be off, and why each group

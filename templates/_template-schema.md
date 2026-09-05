@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.9.1
+version: 0.9.3
 status: draft
 ---
 
@@ -896,6 +896,10 @@ built from the same paired `table-schema` and run against the same database, so 
 what the two methods produce for one requirement. `templates/audit/` carries the proven pair:
 `audit-logging-lite-scaffold.md` (§8) and `audit-logging-lite-outcome-first.md` (§12).
 
+An outcome-first template hands the route to whoever builds it, so it assumes a builder that can be
+trusted with one. Where the assistant in use cannot be, the `vba-scaffold` in the same domain is the
+path, and that is the second reason a domain carries both.
+
 ### 12.1 Front matter
 
 The common core of §2 applies unchanged. Beyond it:
@@ -970,3 +974,34 @@ whose reason is somewhere else is the defect above in a new place.
 
 A section that does not bind says so in one line where it starts, and says where the binding statements
 are instead.
+
+### 12.5 The `Explore options` step
+
+An outcome-first template leaves choices to whoever builds it and says which ones — the audit
+template lists them under *Free to choose alternatives*. Absent this step, the build makes those
+choices itself and records each in the build record. **The `Explore options` step lets the developer
+have them laid out first.**
+
+**When it is asked.** Once, after the last of the template's questions and before the design is
+presented, through the selection control (§10.3), on any outcome-first template that lists open
+choices:
+
+| Option | Short description |
+|---|---|
+| `Build it as specified` | The build makes the open choices itself and records each one in the build record. |
+| `Explore options` | Before the design, the AI assistant lays out each open choice with its alternatives, and you pick. Takes longer, by about one question per choice. |
+
+**Preferred:** `Build it as specified`.
+
+**What `Explore options` produces.** For each open choice with more than one workable route: the
+alternatives, what each costs, and which of the template's checks each passes. A route the AI
+assistant would not have taken on its own belongs in the comparison if it passes the checks — that is
+the step's purpose. The developer picks per choice, one choice per step. Each pick is recorded in the
+build record and holds for the rest of the run, and the picks are restated in the design presented
+for approval, never left to the transcript. Every route picked still passes every check the template
+carries; the step adds no check and relaxes none.
+
+**What it never reopens.** A mechanism the specification names under §12.4 is part of the outcome,
+not an open choice, and the step offers no alternative to it. A developer who asks for one is asking
+for a different template, or for the from-scratch path with its warning, and is told so in those
+words.
