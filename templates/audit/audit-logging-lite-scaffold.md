@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.12.0
+version: 0.12.1
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -156,26 +156,26 @@ produce.
 
 ```vba
 ' ---------- Path A — try it out first (nothing real is touched) ----------
-Zero_CreateSampleTables          ' 0. create the two made-up tables and a short pick-list
-One_CheckAuditReadiness              '    optional here: these tables were just built to the shape
-                                  '    this system needs, so the check has nothing to find
-Two_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
-Three_PopulateConfigTable          ' 2. make a list of every field in every table that could be
-                                  '    audited, switched ON to start
+Zero_CreateSampleTables         ' 0. create the two made-up tables and a short pick-list
+One_CheckAuditReadiness         ' 1. optional here: these tables were just built to the shape
+                                '    this system needs, so the check has nothing to find
+Two_CreateAuditTables           ' 2. create the 3 tables the audit trail itself lives in
+Three_PopulateConfigTable       ' 3. make a list of every field in every table that could be
+                                '    audited, switched ON to start
 '    ... open the list (tblAuditLogConfig) and switch OFF anything you don't want tracked ...
-Four_GenerateAllAuditDataMacros ' 3. turn on tracking for everything still switched ON
+Four_GenerateAllAuditDataMacros ' 4. turn on tracking for everything still switched ON
 
 ' ---------- Path B — add this to a database you already use ----------
 ' >>> back up the .accdb file first — this step changes real, live tables <<<
-One_CheckAuditReadiness              '    FIRST: tells you which of your tables can't be tracked
-                                  '    as-is (see Business Rule 4 below), before anything at
-                                  '    all is created
-Two_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
-Three_PopulateConfigTable False    ' 2. make a list of every field in every table that could be
-                                  '    audited, switched OFF to start
+One_CheckAuditReadiness         ' 1. FIRST: tells you which of your tables can't be tracked
+                                '    as-is (see Business Rule 4 below), before anything at
+                                '    all is created
+Two_CreateAuditTables           ' 2. create the 3 tables the audit trail itself lives in
+Three_PopulateConfigTable False ' 3. make a list of every field in every table that could be
+                                '    audited, switched OFF to start
 '    ... open the list (tblAuditLogConfig) and switch ON tracking, table by table, for whatever
 '        you actually want a history of ...
-Four_GenerateAllAuditDataMacros ' 3. turn on tracking for everything switched ON
+Four_GenerateAllAuditDataMacros ' 4. turn on tracking for everything switched ON
 ```
 
 `One_CheckAuditReadiness` and `Four_GenerateAllAuditDataMacros` are called above as bare statements
@@ -195,7 +195,7 @@ there (see `BackupLongTextFieldsDM`).
 | Module | Procedures | Lives in |
 |---|---|---|
 | `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the four numbered procedures, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression`, `IsAuditCandidateTable`, `IsNamedInScopeList` | Back end only |
-| `modAuditLongText` | `AuditUser`, `BackupLongTextFieldsDM` | **Back end AND every front end** |
+| `modAuditLongText` | `AuditUser`, `BackupLongTextFieldsDM`, `BackupKeyLiteral`, `SourceKeyLiteral` | **Back end AND every front end** |
 | `modAuditAdmin` | `BackupAndRemoveAllDataMacros` | Back end only |
 | `modAuditVerify` | `DumpTableMacros`, `ListMacroEvents` | Back end only |
 
@@ -3433,7 +3433,7 @@ Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Var
         "TableName='" & strTableName & "' AND IsPrimaryKey=" & True)
 
     Set rsOldValue = db.OpenRecordset("SELECT " & strFieldName & " FROM " & strTableName & _
-        " WHERE " & strPKField & "=" & SourceKeyLiteral(varPKValue))
+        " WHERE " & strPKField & "=" & SourceKeyLiteral(strTableName, strPKField, varPKValue))
 
     ' [SCAFFOLD] A key was supplied, so the row it names has to exist — it is the row being
     '            changed or deleted, and it is locked inside this transaction. Finding nothing
@@ -3481,22 +3481,30 @@ errHandler:
 End Function
 
 ' [BUSINESS LOGIC — schema Business Rule 4] Two literals, because the two columns are not the
-' same type. tblLongTextBackup.PrimaryKey follows the log's key column, which is text only where
-' the developer chose to audit Replication ID keys. The AUDITED table's own key field keeps its
-' real type either way, and Jet matches a Replication ID with the {guid {…}} form and nothing
-' else — ordinary quotes do not work.
+' same type, and both ASK rather than being told. This module ships to every front end on its
+' own; the module holding the build settings is back end only, so a setting read here would not
+' exist where this runs. Both tables are linked into the front end, so their column types are
+' readable here and are the authority in any case.
 Private Function BackupKeyLiteral(varPKValue As Variant) As String
-    If AUDIT_GUID_KEYS_AUDITED Then
+    ' The staging table's own key column decides how the key is written into it.
+    If CurrentDb.TableDefs("tblLongTextBackup").Fields("PrimaryKey").Type = dbText Then
         BackupKeyLiteral = "'" & CStr(varPKValue) & "'"
     Else
         BackupKeyLiteral = CStr(varPKValue)
     End If
 End Function
 
-Private Function SourceKeyLiteral(varPKValue As Variant) As String
+Private Function SourceKeyLiteral(ByVal strTableName As String, ByVal strPKField As String, _
+                                  varPKValue As Variant) As String
+    ' [BUSINESS LOGIC — schema Business Rule 4] Asked per table, never per build. A build that
+    '                 audits Replication ID keys still holds whole-number keyed tables, so one
+    '                 global answer would wrap an ordinary key as {guid 123} and match nothing.
+    '                 The audited table's own key field keeps its real type whatever the log's
+    '                 key column holds, and Jet matches a Replication ID with the {guid {…}}
+    '                 form and nothing else — ordinary quotes do not work.
     Dim sKey As String
 
-    If Not AUDIT_GUID_KEYS_AUDITED Then
+    If CurrentDb.TableDefs(strTableName).Fields(strPKField).Type <> dbGUID Then
         SourceKeyLiteral = CStr(varPKValue)
         Exit Function
     End If
