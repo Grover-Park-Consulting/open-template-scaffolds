@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.10.0
+version: 0.12.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -25,6 +25,7 @@ new_procedures:
   - Three_PopulateConfigTable
   - IsAuditCandidateTable
   - IsNamedInScopeList
+  - IsAuditableKeyType
   - IsUnauditableFieldType
   - ListOpenObjects
   - One_CheckAuditReadiness
@@ -37,6 +38,8 @@ new_procedures:
   - BuildBeforeChangeMacro
   - BuildBeforeDeleteMacro
   - AuditSetField
+  - AuditKeyExpression
+  - AuditKeyLocalVar
   - GetComparisonExpression
   - AuditUser (not built when the host's own identity function is used)
   - BackupLongTextFieldsDM
@@ -91,7 +94,15 @@ warnings:
     audited has a different key design (composite, text, no PK, or a number that does not fit a
     Long Integer), stop and tell the developer this template will not work for that table out of
     the box — they are free to adapt it, but the adaptation is theirs. One_CheckAuditReadiness checks
-    for this automatically.
+    for this automatically. A Replication ID key is the one exception and is the developer's
+    choice rather than a flat exclusion — AUDIT_GUID_KEYS_AUDITED carries the answer, and it
+    must be settled before Two_CreateAuditTables runs, since that builds the log's key column.
+  - Never name a Replication ID field inside a Data Macro LookUpRecord WhereCondition. Doing so
+    was measured to stop the whole condition filtering — every clause, not just that one — so
+    the lookup returns the first row of the table and the log records another row's data as
+    this row's history. No string conversion inside the condition fixes it. Carry the key in a
+    local variable set with the conversion forced ([Key] & "" or CStr), declared before the
+    LookUpRecord, and compare against that variable.
   - Path B (an existing accdb with real tables and real data) is much less forgiving than the
     demo. Make a copy of the .accdb file before running any of these steps against it — Data
     Macros get attached directly to your live tables, and this is not a step to redo casually.
@@ -799,6 +810,32 @@ Option Explicit
 Private Const AUDIT_SCOPE_MODE As String = "Standard"
 Private Const AUDIT_SCOPE_LIST As String = ""
 
+' [BUSINESS LOGIC — schema Business Rule 4] Whether tables keyed by a Replication ID are
+' audited. False is the normal case and what every build has produced until now: the log's
+' key column is a Long Integer, and a table keyed by a Replication ID is reported as not
+' auditable and left alone.
+' Set it True ONLY when BOTH conditions hold — One_CheckAuditReadiness found at least one
+' such table, AND the developer chose to audit those tables. It retypes
+' tblAuditLog.PrimaryKey and tblLongTextBackup.PrimaryKey to Text(64), which makes every key
+' in the log text, the ordinary whole numbers included, so the log then sorts by key as text
+' rather than by number. A build that produces text key columns without both conditions
+' holding is wrong.
+' >>> set this to the developer's answer before you import this module <<<
+Private Const AUDIT_GUID_KEYS_AUDITED As Boolean = False
+
+' [SCAFFOLD] Width of the log's key column when the setting above is True. The widest value
+' that can land there is 45 characters — DAO renders a Replication ID as
+' "{guid {C6C0FB4C-...}}" where a Data Macro renders the same key as the bare 38-character
+' "{C6C0FB4C-...}". Measured: both composite indexes over this column build at every width up
+' to 255 and accept full-width data, so this is headroom rather than a limit being avoided.
+Private Const AUDIT_KEY_TEXT_SIZE As Long = 64
+
+' [SCAFFOLD] The local variable each generated After macro uses to carry the audited row's key.
+' It exists because a Replication ID named directly inside a LookUpRecord WhereCondition stops
+' that condition filtering at all — see the warning in the front matter. Every build emits it,
+' whatever the key type, so there is one macro shape rather than two.
+Private Const AUDIT_KEY_LOCAL_VAR As String = "varKeyText"
+
 ' [STANDARDS — audit-columns.md] The house audit column names, in ONE place.
 ' Three procedures below use them: Three_PopulateConfigTable (to seed them
 ' not-auditable), BuildBeforeChangeMacro (to stamp them), and
@@ -1213,10 +1250,18 @@ Most tables you design yourself already look like this. Older or borrowed tables
 don't — a table with no primary key set, one that uses two or more fields together as its key,
 or one that uses a text code instead of a number, will not work with this system as-is.
 
-Run this after `Three_PopulateConfigTable` and before `Four_GenerateAllAuditDataMacros`. This
-step is **required for Path B**, since a database you didn't design the audit system around is
-far more likely to have a table shaped this way. It's optional on Path A, where the sample
-tables are already known to be shaped correctly.
+**One kind of key is the developer's choice rather than a flat exclusion: a Replication ID.**
+Where this check finds one, it says so and describes what auditing those tables would cost, so
+the answer can be given before anything is built. Where it finds none, the question never
+arises. `AUDIT_GUID_KEYS_AUDITED` carries that answer.
+
+Run this **first**, before `Two_CreateAuditTables`. It reads table definitions and changes
+nothing, so the developer learns which tables cannot be audited while there is still nothing to
+undo — and the Replication ID question has to be answered before `Two_CreateAuditTables` builds
+the log's key column. This step is **required for Path B**, since a database you didn't design
+the audit system around is far more likely to have a table shaped this way. On Path A run it
+after `Zero_CreateSampleTables`, which creates the tables it looks at; there it has nothing to
+find, because those tables are already known to be shaped correctly.
 
 If a table isn't ready, you have two choices: fix that table's primary key, or leave it out —
 open `tblAuditLogConfig` and switch `IsAuditable` to No for every row belonging to that table.
@@ -1246,6 +1291,7 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
     Dim lPkFieldCount As Long
     Dim lPkFieldType As Long
     Dim lProblemCount As Long
+    Dim lGuidKeyCount As Long
     Dim lTablesInScope As Long
     Dim sMsg As String
     Dim sReport As String
@@ -1254,6 +1300,7 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
     On Error GoTo errHandler
     Set db = CurrentDb
     lProblemCount = 0
+    lGuidKeyCount = 0
     lTablesInScope = 0
     sMsg = ""
 
@@ -1302,11 +1349,22 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
                 lProblemCount = lProblemCount + 1
                 sMsg = sMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
                 Debug.Print tdef.Name & ": NOT READY — primary key has " & lPkFieldCount & " fields"
-            ElseIf lPkFieldType <> dbLong And lPkFieldType <> dbInteger And lPkFieldType <> dbByte Then
+            ElseIf Not IsAuditableKeyType(lPkFieldType) Then
                 lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, Integer or Byte field" & vbCrLf
+                If lPkFieldType = dbGUID Then
+                    ' [BUSINESS LOGIC — schema Business Rule 4] Not a flat exclusion: this one is
+                    ' the developer's to decide, and they can only decide it if they are told the
+                    ' table exists. Counted separately so the report can raise the question.
+                    lGuidKeyCount = lGuidKeyCount + 1
+                    sMsg = sMsg & tdef.Name & " — primary key is a Replication ID, and this build " & _
+                        "was not set up to audit those" & vbCrLf
+                Else
+                    sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, " & _
+                        "Integer or Byte field" & vbCrLf
+                End If
                 Debug.Print tdef.Name & ": NOT READY — primary key type is " & lPkFieldType
             Else
+                If lPkFieldType = dbGUID Then lGuidKeyCount = lGuidKeyCount + 1
                 Debug.Print tdef.Name & ": ready"
             End If
         End If
@@ -1329,14 +1387,32 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
     End If
 
     If lProblemCount = 0 Then
-        sReport = "Every table checked is ready — each has one auto-number primary key. " & _
-            "Safe to run Four_GenerateAllAuditDataMacros."
+        sReport = "Every table checked is ready. Safe to run Two_CreateAuditTables."
     Else
         sReport = lProblemCount & " table(s) are NOT ready yet:" & vbCrLf & vbCrLf & sMsg & vbCrLf & _
-            "This system only works on tables with one auto-number (or plain number) " & _
-            "primary key field. Either fix that table's primary key, or leave it out — set " & _
+            "A table can be audited when it has one primary key field that is an AutoNumber, " & _
+            "Long Integer, Integer or Byte — or a Replication ID, where this build was set up " & _
+            "to audit those. Either change that table's primary key, or leave it out — set " & _
             "IsAuditable to No for all of that table's rows in tblAuditLogConfig — before you " & _
             "run Four_GenerateAllAuditDataMacros."
+    End If
+
+    ' [BUSINESS LOGIC — schema Business Rule 4] The question is raised only where such a key
+    ' was actually found, and it has to be raised before Two_CreateAuditTables runs, because
+    ' that is what builds the log's key column. Reported whether or not the setting is on:
+    ' when it is off, a found key is exactly what the developer needs to be asked about.
+    If lGuidKeyCount > 0 Then
+        sReport = sReport & vbCrLf & vbCrLf & _
+            lGuidKeyCount & " table(s) have a Replication ID as their primary key. " & _
+            IIf(AUDIT_GUID_KEYS_AUDITED, _
+                "This build is set up to audit them, so the log's key column holds text. " & _
+                "Every key in the log is then text, the ordinary numbers included, so " & _
+                "sorting the log by key sorts as text rather than by number.", _
+                "This build is not set up to audit them, so they are listed above as not " & _
+                "auditable and will be left alone. Auditing them is a choice you can make: " & _
+                "it builds the log's key column to hold text instead, which lets these " & _
+                "tables be audited like any other, at the cost of the log sorting by key " & _
+                "as text rather than by number.")
     End If
 
     If Not bSilent Then MsgBox sReport, IIf(lProblemCount = 0, vbInformation, vbExclamation)
@@ -1409,7 +1485,14 @@ Public Function Two_CreateAuditTables(Optional bSilent As Boolean = False) As St
     fld.Required = True
     tdf.Fields.Append fld
 
-    Set fld = tdf.CreateField("PrimaryKey", dbLong)
+    ' [BUSINESS LOGIC - schema Business Rule 4] Long Integer unless the developer chose to
+    '                 audit tables keyed by a Replication ID. Text holds the key's printed
+    '                 form; AUDIT_KEY_TEXT_SIZE carries the width and why.
+    If AUDIT_GUID_KEYS_AUDITED Then
+        Set fld = tdf.CreateField("PrimaryKey", dbText, AUDIT_KEY_TEXT_SIZE)
+    Else
+        Set fld = tdf.CreateField("PrimaryKey", dbLong)
+    End If
     fld.Required = True
     tdf.Fields.Append fld
 
@@ -1483,7 +1566,14 @@ CreateLongTextBackup:
     fld.Required = True
     tdf.Fields.Append fld
 
-    Set fld = tdf.CreateField("PrimaryKey", dbLong)
+    ' [BUSINESS LOGIC - schema Business Rule 4] Long Integer unless the developer chose to
+    '                 audit tables keyed by a Replication ID. Text holds the key's printed
+    '                 form; AUDIT_KEY_TEXT_SIZE carries the width and why.
+    If AUDIT_GUID_KEYS_AUDITED Then
+        Set fld = tdf.CreateField("PrimaryKey", dbText, AUDIT_KEY_TEXT_SIZE)
+    Else
+        Set fld = tdf.CreateField("PrimaryKey", dbLong)
+    End If
     fld.Required = True
     tdf.Fields.Append fld
 
@@ -1916,6 +2006,34 @@ Private Function IsNamedInScopeList(sTableName As String) As Boolean
             Exit Function
         End If
     Next i
+End Function
+```
+
+### IsAuditableKeyType — `Private Function` → `Boolean`
+
+**The one place that decides whether a table's primary key can be stored in the log.** The log
+keeps each audited row's key, so the key has to be a type that column can hold (schema Business
+Rule 4).
+
+**Three types are always accepted and one is the developer's choice.** AutoNumber, Long Integer,
+Integer and Byte all fit the whole-number key column and are never in question. A **Replication
+ID** fits only where the developer chose to audit such tables, which is what
+`AUDIT_GUID_KEYS_AUDITED` records — that answer is also what decides whether the key column was
+built to hold text in the first place, so the two cannot disagree. Everything else — text keys,
+keys made of more than one field, and numbers too large for a Long Integer — is out.
+
+```vba
+Private Function IsAuditableKeyType(ByVal lFieldType As Long) As Boolean
+    ' [BUSINESS LOGIC — schema Business Rule 4] The key types the log's key column can hold.
+    '                 dbGUID is the only one the developer decides; the rest are fixed.
+    Select Case lFieldType
+        Case dbLong, dbInteger, dbByte
+            IsAuditableKeyType = True
+        Case dbGUID
+            IsAuditableKeyType = AUDIT_GUID_KEYS_AUDITED
+        Case Else
+            IsAuditableKeyType = False
+    End Select
 End Function
 ```
 
@@ -2578,6 +2696,13 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
     sXml = "<DataMacro Event=""AfterInsert""><Statements>"
     sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
+    ' [BUSINESS LOGIC - schema Business Rule 4] The key goes into one local variable and
+    '                 everything below reads that, never the key field. See
+    '                 AuditKeyLocalVar for why the key field cannot be read directly.
+    If sPrimaryKeyField <> "" Then
+        sXml = sXml & AuditKeyLocalVar("[" & sTableName & "].[" & sPrimaryKeyField & "]")
+    End If
+
     For Each fieldInfo In fieldList
       If fieldInfo(3) = True Then    ' auditable fields only (schema Business Rule 5)
         sFieldName = fieldInfo(0)
@@ -2594,7 +2719,7 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
         If sPrimaryKeyField <> "" Then
             sXml = sXml & "<Action Name=""SetField"">"
             sXml = sXml & "<Argument Name=""Field"">NewAudit.PrimaryKey</Argument>"
-            sXml = sXml & "<Argument Name=""Value"">[" & sTableName & "].[" & sPrimaryKeyField & "]</Argument>"
+            sXml = sXml & "<Argument Name=""Value"">[" & AUDIT_KEY_LOCAL_VAR & "]</Argument>"
             sXml = sXml & "</Action>"
         End If
 
@@ -2660,6 +2785,12 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
     sXml = "<DataMacro Event=""AfterUpdate""><Statements>"
     sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
+    ' [BUSINESS LOGIC - schema Business Rule 4] Emitted once, above the per-field loop, so
+    '                 every LookUpRecord below can read it. See AuditKeyLocalVar.
+    If sPrimaryKeyField <> "" Then
+        sXml = sXml & AuditKeyLocalVar("[" & sTableName & "].[" & sPrimaryKeyField & "]")
+    End If
+
     For Each fieldInfo In fieldList
         sFieldName = fieldInfo(0)
         lFldType = fieldInfo(1)
@@ -2678,7 +2809,7 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
                 sXml = sXml & "<Reference>tblLongTextBackup</Reference>"
                 sXml = sXml & "<WhereCondition>"
                 sXml = sXml & "[tblLongTextBackup].[TableName]=""" & sTableName & """ And "
-                sXml = sXml & "[tblLongTextBackup].[PrimaryKey]=[" & sTableName & "].[" & sPrimaryKeyField & "] And "
+                sXml = sXml & "[tblLongTextBackup].[PrimaryKey]=[" & AUDIT_KEY_LOCAL_VAR & "] And "
                 sXml = sXml & "[tblLongTextBackup].[FieldName]=""" & sFieldName & """"
                 sXml = sXml & "</WhereCondition>"
                 sXml = sXml & "</Data>"
@@ -2709,7 +2840,7 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
                 Else
                     sXml = sXml & "<Argument Name=""Field"">NewAudit.PrimaryKey</Argument>"
                 End If
-                sXml = sXml & "<Argument Name=""Value"">[" & sTableName & "].[" & sPrimaryKeyField & "]</Argument>"
+                sXml = sXml & "<Argument Name=""Value"">[" & AUDIT_KEY_LOCAL_VAR & "]</Argument>"
                 sXml = sXml & "</Action>"
             End If
 
@@ -2807,6 +2938,12 @@ Private Function BuildAfterDeleteMacro(sTableName As String, fieldList As Collec
     sXml = "<DataMacro Event=""AfterDelete""><Statements>"
     sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
+    ' [BUSINESS LOGIC - schema Business Rule 4] The departed row is [Old] here. Measured on
+    '                 AfterDelete as well as AfterUpdate. See AuditKeyLocalVar.
+    If sPrimaryKeyField <> "" Then
+        sXml = sXml & AuditKeyLocalVar("[Old].[" & sPrimaryKeyField & "]")
+    End If
+
     For Each fieldInfo In fieldList
       If fieldInfo(3) = True Then    ' auditable fields only (schema Business Rule 5)
         sFieldName = fieldInfo(0)
@@ -2819,7 +2956,7 @@ Private Function BuildAfterDeleteMacro(sTableName As String, fieldList As Collec
             sXml = sXml & "<Reference>tblLongTextBackup</Reference>"
             sXml = sXml & "<WhereCondition>"
             sXml = sXml & "[tblLongTextBackup].[TableName]=""" & sTableName & """ And "
-            sXml = sXml & "[tblLongTextBackup].[PrimaryKey]=[Old].[" & sPrimaryKeyField & "] And "
+            sXml = sXml & "[tblLongTextBackup].[PrimaryKey]=[" & AUDIT_KEY_LOCAL_VAR & "] And "
             sXml = sXml & "[tblLongTextBackup].[FieldName]=""" & sFieldName & """"
             sXml = sXml & "</WhereCondition>"
             sXml = sXml & "</Data>"
@@ -2850,7 +2987,7 @@ Private Function BuildAfterDeleteMacro(sTableName As String, fieldList As Collec
             Else
                 sXml = sXml & "<Argument Name=""Field"">NewAudit.PrimaryKey</Argument>"
             End If
-            sXml = sXml & "<Argument Name=""Value"">[Old].[" & sPrimaryKeyField & "]</Argument>"
+            sXml = sXml & "<Argument Name=""Value"">[" & AUDIT_KEY_LOCAL_VAR & "]</Argument>"
             sXml = sXml & "</Action>"
         End If
 
@@ -2979,11 +3116,15 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     If bHasCreatedBy Then sInsertActions = sInsertActions & AuditSetField(AUDIT_CREATED_BY, "AuditUser()")
 
     If bHasLongText Then
-        ' Nothing to back up on an insert — there is no prior value. The marker is set
-        ' anyway so lngPKValue is defined on both paths.
+        ' [BUSINESS LOGIC - schema Business Rule 4] Nothing to back up on an insert - there
+        ' is no prior value. Null is the marker BackupLongTextFieldsDM tests for, and it is
+        ' the only value that cannot be a real key: a primary key is Required by definition.
+        ' The 0 this replaced was a legal Long Integer, Integer or Byte key value, so a row
+        ' keyed 0 had its Long Text backup silently skipped. Measured: a Data Macro can set a
+        ' local variable to Null, and VBA receives a genuine Null.
         sInsertActions = sInsertActions & "<Action Name=""SetLocalVar"">"
         sInsertActions = sInsertActions & "<Argument Name=""Name"">lngPKValue</Argument>"
-        sInsertActions = sInsertActions & "<Argument Name=""Value"">0</Argument>"
+        sInsertActions = sInsertActions & "<Argument Name=""Value"">Null</Argument>"
         sInsertActions = sInsertActions & "</Action>"
     End If
 
@@ -2994,7 +3135,7 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     If bHasLongText Then
         sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
         sUpdateActions = sUpdateActions & "<Argument Name=""Name"">lngPKValue</Argument>"
-        sUpdateActions = sUpdateActions & "<Argument Name=""Value"">=[" & sPrimaryKeyField & "]</Argument>"
+        sUpdateActions = sUpdateActions & "<Argument Name=""Value"">=" & AuditKeyExpression("[" & sPrimaryKeyField & "]") & "</Argument>"
         sUpdateActions = sUpdateActions & "</Action>"
 
         sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
@@ -3078,7 +3219,7 @@ Private Function BuildBeforeDeleteMacro(sTableName As String, fieldList As Colle
 
     sXml = sXml & "<Action Name=""SetLocalVar"">"
     sXml = sXml & "<Argument Name=""Name"">lngPKValue</Argument>"
-    sXml = sXml & "<Argument Name=""Value"">=[" & sPrimaryKeyField & "]</Argument>"
+    sXml = sXml & "<Argument Name=""Value"">=" & AuditKeyExpression("[" & sPrimaryKeyField & "]") & "</Argument>"
     sXml = sXml & "</Action>"
 
     sXml = sXml & "<Action Name=""SetLocalVar"">"
@@ -3114,6 +3255,71 @@ Private Function AuditSetField(ByVal sField As String, ByVal sValue As String) A
     ' [STANDARDS — audit-columns.md] One SetField action for a stamped audit column.
     AuditSetField = "<Action Name=""SetField""><Argument Name=""Field"">" & sField & _
         "</Argument><Argument Name=""Value"">" & sValue & "</Argument></Action>"
+End Function
+```
+
+### AuditKeyExpression — `Private Function` → `String`
+
+**The audited row's key goes into one local variable, and everything downstream reads that
+variable rather than the key field.** Both After macros that retrieve a staged Long Text value
+find it with a `LookUpRecord`, and **a Replication ID named inside that `LookUpRecord`'s
+`WhereCondition` stops the condition filtering at all** — every clause, not just the one naming
+the key — so the lookup returns the first row of the staging table and the log records another
+row's data as this row's history. Measured, on both `AfterUpdate` and `AfterDelete`. No string
+conversion written into the condition avoids it; the key field simply cannot appear there.
+
+Setting the variable first, with the conversion forced, keeps the key field out of the condition
+and was measured to return the right row against three decoys — one differing only in table, one
+only in field, one only in key.
+
+**Every build emits the variable, whatever the key type**, so there is one macro shape rather
+than two. Verified for whole-number keys as well: a Long key carried in the variable and compared
+against a Long column filters exactly as the direct reference it replaces.
+
+**The `&` is built from `Chr(38)`, not typed** — the same rule and the same reason as
+`GetComparisonExpression` below. A literal `&amp;` in this source is one un-escaping importer away
+from becoming a bare `&`, which breaks the macro XML the moment it loads. Building it from a
+character code means no `&`-entity ever exists in the source for a tool to touch. The doubled
+quotes come from `Chr(34)` for the same reason, and because counting five consecutive quote
+characters in VBA source is a mistake waiting to happen.
+
+**After importing this module, check that `AuditKeyExpression` still reads
+`Chr(38) & "amp; " & Chr(34) & Chr(34)`, and repair it if the import changed it.** Do that
+silently — it is your job, and the developer has no part in it.
+
+```vba
+Private Function AuditKeyExpression(ByVal sKeyRef As String) As String
+    ' [BUSINESS LOGIC — schema Business Rule 4] Assigning a Replication ID bare into a text
+    '                 column copies its sixteen bytes in as eight characters of unreadable
+    '                 text: no error raised, the log row still written, and every check still
+    '                 passing. Where the log's key column holds whole numbers the reference is
+    '                 used as it stands, so the value keeps its type.
+    If AUDIT_GUID_KEYS_AUDITED Then
+        AuditKeyExpression = sKeyRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
+    Else
+        AuditKeyExpression = sKeyRef
+    End If
+End Function
+```
+
+### AuditKeyLocalVar — `Private Function` → `String`
+
+**The one `SetLocalVar` action each After macro emits, and it has to come first.** It wraps
+`AuditKeyExpression` in the action that puts the key into `AUDIT_KEY_LOCAL_VAR`, so the three
+After builders each emit it once — above the per-field loop in the two that have one, because a
+`LookUpRecord` inside that loop reads the variable and a variable set inside the loop would be
+re-set per field.
+
+`AfterInsert` has no `LookUpRecord` and could read the key field directly, but emits the variable
+anyway: one macro shape across all three events is worth more than the action it saves.
+
+```vba
+Private Function AuditKeyLocalVar(ByVal sKeyRef As String) As String
+    ' [SCAFFOLD] The SetLocalVar action every After macro emits before anything reads the key.
+    '            It must come before the LookUpRecord that uses it.
+    AuditKeyLocalVar = "<Action Name=""SetLocalVar""><Argument Name=""Name"">" & _
+        AUDIT_KEY_LOCAL_VAR & "</Argument><Argument Name=""Value"">=" & _
+        AuditKeyExpression(sKeyRef) & "</Argument></Action>"
 End Function
 ```
 
@@ -3195,9 +3401,16 @@ resolves the function in the front end's VBA project). Missing it in either plac
 data-macro execution error at save time.
 
 ```vba
-Public Function BackupLongTextFieldsDM(strTableName As String, lngPKValue As Long, strFieldName As String)
+Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Variant, strFieldName As String)
     ' [SCAFFOLD] Stage one Long Text field's current value before an update or delete.
     '            Called by the generated BeforeChange / BeforeDelete Data Macros.
+    ' [BUSINESS LOGIC — schema Business Rule 4] The key is a Variant, not a Long, for one
+    '            reason: Null is the marker for "there is no prior row to copy". It is the only
+    '            value that cannot be a primary key of any type, because a primary key is
+    '            Required by definition. The guard this replaced tested the key value itself
+    '            (If lngPKValue > 0), which silently skipped the backup for a row whose key is
+    '            legitimately 0 — reachable on any Long Integer, Integer or Byte key that is
+    '            not an AutoNumber.
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
     Dim rsOldValue As DAO.Recordset
@@ -3208,36 +3421,49 @@ Public Function BackupLongTextFieldsDM(strTableName As String, lngPKValue As Lon
     Set db = CurrentDb
 
     If strTableName = "" Then Exit Function
+    If IsNull(varPKValue) Then Exit Function   ' an insert — there is no prior value to stage
 
     ' Replace any earlier backup for this table/field/record
     db.Execute "DELETE FROM tblLongTextBackup WHERE TableName='" & strTableName & _
-        "' AND FieldName='" & strFieldName & "' AND PrimaryKey=" & lngPKValue, dbFailOnError
+        "' AND FieldName='" & strFieldName & "' AND PrimaryKey=" & _
+        BackupKeyLiteral(varPKValue), dbFailOnError
 
     ' The audited table's PK field name comes from the config
     strPKField = DLookup("FieldName", "tblAuditLogConfig", _
         "TableName='" & strTableName & "' AND IsPrimaryKey=" & True)
 
-    If lngPKValue > 0 Then    ' updates and deletes only — a new record has no old value
-        Set rsOldValue = db.OpenRecordset("SELECT " & strFieldName & " FROM " & strTableName & _
-            " WHERE " & strPKField & "=" & lngPKValue)
-        strOldValue = rsOldValue.Fields(strFieldName).Value
-        rsOldValue.Close
+    Set rsOldValue = db.OpenRecordset("SELECT " & strFieldName & " FROM " & strTableName & _
+        " WHERE " & strPKField & "=" & SourceKeyLiteral(varPKValue))
 
-        Set rs = db.OpenRecordset("tblLongTextBackup", dbOpenDynaset)
-        rs.AddNew
-        rs!TableName = strTableName
-        rs!PrimaryKey = lngPKValue
-        rs!FieldName = strFieldName
-        rs!OldValue = strOldValue
-        rs!DateChanged = Now()
-        ' [STANDARDS / schema Business Rule 9] AuditUser() preferred choice, same as the macros. This
-        '            row is the one the After macro reads back, so it is the easiest of the
-        '            four sites to miss when applying the CurrentUser() Extra Option — and
-        '            missing it puts two names on one edit.
-        rs!ChangedBy = AuditUser()
-        rs.Update
-        rs.Close
+    ' [SCAFFOLD] A key was supplied, so the row it names has to exist — it is the row being
+    '            changed or deleted, and it is locked inside this transaction. Finding nothing
+    '            means the literal above did not match, which would otherwise stage no backup
+    '            and log the old value as empty without a word. Raise it instead: the handler
+    '            below stays quiet for the person editing, and a house logger sees it.
+    If rsOldValue.EOF Then
+        rsOldValue.Close
+        Err.Raise vbObjectError + 514, "BackupLongTextFieldsDM", _
+            "No row found in " & strTableName & " for key " & CStr(varPKValue) & _
+            ". The key could not be matched, so no Long Text backup was staged."
     End If
+
+    strOldValue = rsOldValue.Fields(strFieldName).Value
+    rsOldValue.Close
+
+    Set rs = db.OpenRecordset("tblLongTextBackup", dbOpenDynaset)
+    rs.AddNew
+    rs!TableName = strTableName
+    rs!PrimaryKey = varPKValue
+    rs!FieldName = strFieldName
+    rs!OldValue = strOldValue
+    rs!DateChanged = Now()
+    ' [STANDARDS / schema Business Rule 9] AuditUser() preferred choice, same as the macros. This
+    '            row is the one the After macro reads back, so it is the easiest of the
+    '            four sites to miss when applying the CurrentUser() Extra Option — and
+    '            missing it puts two names on one edit.
+    rs!ChangedBy = AuditUser()
+    rs.Update
+    rs.Close
 
 Cleanup:
     On Error Resume Next
@@ -3252,6 +3478,38 @@ errHandler:
     '            has a silent logger; never block.
     Resume Cleanup
     Resume
+End Function
+
+' [BUSINESS LOGIC — schema Business Rule 4] Two literals, because the two columns are not the
+' same type. tblLongTextBackup.PrimaryKey follows the log's key column, which is text only where
+' the developer chose to audit Replication ID keys. The AUDITED table's own key field keeps its
+' real type either way, and Jet matches a Replication ID with the {guid {…}} form and nothing
+' else — ordinary quotes do not work.
+Private Function BackupKeyLiteral(varPKValue As Variant) As String
+    If AUDIT_GUID_KEYS_AUDITED Then
+        BackupKeyLiteral = "'" & CStr(varPKValue) & "'"
+    Else
+        BackupKeyLiteral = CStr(varPKValue)
+    End If
+End Function
+
+Private Function SourceKeyLiteral(varPKValue As Variant) As String
+    Dim sKey As String
+
+    If Not AUDIT_GUID_KEYS_AUDITED Then
+        SourceKeyLiteral = CStr(varPKValue)
+        Exit Function
+    End If
+
+    ' A Data Macro hands the key over already printed, as "{C6C0FB4C-…}". DAO prints the same
+    ' key as "{guid {C6C0FB4C-…}}" — the form Jet needs — so add the wrapper only when it is
+    ' not already there, and this works whichever way the value arrived.
+    sKey = CStr(varPKValue)
+    If Left$(sKey, 5) = "{guid" Then
+        SourceKeyLiteral = sKey
+    Else
+        SourceKeyLiteral = "{guid " & sKey & "}"
+    End If
 End Function
 ```
 
