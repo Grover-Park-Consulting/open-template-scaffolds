@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.9.4
+version: 0.10.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -21,14 +21,14 @@ target_module: modAddDataMacros
 new_procedures:
   - Zero_CreateSampleTables (Path A only)
   - AddAuditColumns (Path A only)
-  - One_CreateAuditTables
-  - Two_PopulateConfigTable
+  - Two_CreateAuditTables
+  - Three_PopulateConfigTable
   - IsAuditCandidateTable
   - IsNamedInScopeList
   - IsUnauditableFieldType
   - ListOpenObjects
-  - CheckAuditReadiness
-  - Three_GenerateAllAuditDataMacros
+  - One_CheckAuditReadiness
+  - Four_GenerateAllAuditDataMacros
   - CreateAllDataMacros
   - MacroBackupIsOurs
   - BuildAfterInsertMacro
@@ -54,7 +54,7 @@ warnings:
     table carrying one takes the hybrid VBA path (BeforeChange/BeforeDelete backing values up
     through BackupLongTextFieldsDM); a table without one needs only the three After macros.
     Build that list from the same test the generator itself uses — the field type
-    Two_PopulateConfigTable records as DataType 12 — and never from a separate pass over the
+    Three_PopulateConfigTable records as DataType 12 — and never from a separate pass over the
     tables. A list assembled independently can differ from the one the build acts on, and then
     the developer has confirmed something other than what gets built. That same test also
     catches Hyperlink fields, which Access stores as Long Text and reports as the same type.
@@ -64,8 +64,8 @@ warnings:
     rather than left to notice the gap later. An Attachment field cannot be read or written by a
     Data Macro, so a macro referencing one does not work. A calculated field is never edited by
     anyone — its value comes from other fields in the same row, and those fields are audited
-    themselves — so a log row for it would record a change nobody made. Two_PopulateConfigTable
-    seeds both switched off, and Three_GenerateAllAuditDataMacros ignores the switch if either is
+    themselves — so a log row for it would record a change nobody made. Three_PopulateConfigTable
+    seeds both switched off, and Four_GenerateAllAuditDataMacros ignores the switch if either is
     turned back on afterwards. Before generating, name both types to the developer along with the
     tables and fields concerned.
   - This module must run in the same accdb as the audited tables — the back end of a split
@@ -78,7 +78,7 @@ warnings:
     then needed only where there is a Long Text field. The copies must be kept identical by hand;
     nothing enforces that.
   - Close every object in the database before generating — tables, forms, reports and queries.
-    Three_GenerateAllAuditDataMacros opens each table in design view to attach its macros, and it
+    Four_GenerateAllAuditDataMacros opens each table in design view to attach its macros, and it
     cannot do that while anything is using the table. This applies whether or not another copy of
     the database is open, and it is the commonest cause of a partial run. Close every other copy as
     well — in a split design, the back end and every front end. A table held open stops the run on
@@ -90,7 +90,7 @@ warnings:
     in a Long Integer, which means AutoNumber, Long Integer, Integer or Byte. If any table to be
     audited has a different key design (composite, text, no PK, or a number that does not fit a
     Long Integer), stop and tell the developer this template will not work for that table out of
-    the box — they are free to adapt it, but the adaptation is theirs. CheckAuditReadiness checks
+    the box — they are free to adapt it, but the adaptation is theirs. One_CheckAuditReadiness checks
     for this automatically.
   - Path B (an existing accdb with real tables and real data) is much less forgiving than the
     demo. Make a copy of the .accdb file before running any of these steps against it — Data
@@ -99,7 +99,7 @@ warnings:
     file where the table really lives, so a table that appears in this file only as a link is never
     in scope - whatever the scope setting says, and whether or not the developer named it.
     IsAuditCandidateTable excludes linked tables ahead of every other test, and
-    Two_PopulateConfigTable names any the developer asked for by name, so the omission is visible
+    Three_PopulateConfigTable names any the developer asked for by name, so the omission is visible
     rather than silent.
   - Application.LoadFromText replaces a table's ENTIRE macro set — it never merges. This generator
     therefore emits the house audit-column stamping (standards/audit-columns.md) and the change
@@ -146,29 +146,31 @@ produce.
 ```vba
 ' ---------- Path A — try it out first (nothing real is touched) ----------
 Zero_CreateSampleTables          ' 0. create the two made-up tables and a short pick-list
-One_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
-Two_PopulateConfigTable          ' 2. make a list of every field in every table that could be
+One_CheckAuditReadiness              '    optional here: these tables were just built to the shape
+                                  '    this system needs, so the check has nothing to find
+Two_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
+Three_PopulateConfigTable          ' 2. make a list of every field in every table that could be
                                   '    audited, switched ON to start
 '    ... open the list (tblAuditLogConfig) and switch OFF anything you don't want tracked ...
-Three_GenerateAllAuditDataMacros ' 3. turn on tracking for everything still switched ON
+Four_GenerateAllAuditDataMacros ' 3. turn on tracking for everything still switched ON
 
 ' ---------- Path B — add this to a database you already use ----------
 ' >>> back up the .accdb file first — this step changes real, live tables <<<
-One_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
-Two_PopulateConfigTable False    ' 2. make a list of every field in every table that could be
+One_CheckAuditReadiness              '    FIRST: tells you which of your tables can't be tracked
+                                  '    as-is (see Business Rule 4 below), before anything at
+                                  '    all is created
+Two_CreateAuditTables            ' 1. create the 3 tables the audit trail itself lives in
+Three_PopulateConfigTable False    ' 2. make a list of every field in every table that could be
                                   '    audited, switched OFF to start
-CheckAuditReadiness              '    a safety check: tells you if any of your tables can't be
-                                  '    tracked as-is (see Business Rule 4 below), before anything
-                                  '    is changed
 '    ... open the list (tblAuditLogConfig) and switch ON tracking, table by table, for whatever
 '        you actually want a history of ...
-Three_GenerateAllAuditDataMacros ' 3. turn on tracking for everything switched ON
+Four_GenerateAllAuditDataMacros ' 3. turn on tracking for everything switched ON
 ```
 
-`CheckAuditReadiness` and `Three_GenerateAllAuditDataMacros` are called above as bare statements
+`One_CheckAuditReadiness` and `Four_GenerateAllAuditDataMacros` are called above as bare statements
 (the ordinary, interactive way — each pops its own `MsgBox`). Both also take an optional
-`bSilent` argument: call them as `sResult = CheckAuditReadiness(True)` /
-`sResult = Three_GenerateAllAuditDataMacros(True)` to read the same report back as a `String`
+`bSilent` argument: call them as `sResult = One_CheckAuditReadiness(True)` /
+`sResult = Four_GenerateAllAuditDataMacros(True)` to read the same report back as a `String`
 with no dialog at all — the way a script, test harness, or an AI assistant facilitating the build
 should read the result, rather than adding a throwaway diagnostic just to see what happened.
 **Passing `True` is what suppresses the dialog**, not assigning the return value: VBA gives a
@@ -181,7 +183,7 @@ there (see `BackupLongTextFieldsDM`).
 
 | Module | Procedures | Lives in |
 |---|---|---|
-| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the numbered procedures, `CheckAuditReadiness`, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression`, `IsAuditCandidateTable`, `IsNamedInScopeList` | Back end only |
+| `modAddDataMacros` | `Zero_CreateSampleTables`, `AddAuditColumns`, the four numbered procedures, `CreateAllDataMacros`, the five `Build*` XML builders, `AuditSetField`, `GetComparisonExpression`, `IsAuditCandidateTable`, `IsNamedInScopeList` | Back end only |
 | `modAuditLongText` | `AuditUser`, `BackupLongTextFieldsDM` | **Back end AND every front end** |
 | `modAuditAdmin` | `BackupAndRemoveAllDataMacros` | Back end only |
 | `modAuditVerify` | `DumpTableMacros`, `ListMacroEvents` | Back end only |
@@ -204,13 +206,13 @@ Three layers, kept distinct throughout:
 
 | Object | Role |
 |---|---|
-| `audit-logging-lite-schema` system tables | `tblAuditLog` / `tblLongTextBackup` / `tblAuditLogConfig` — created by `One_CreateAuditTables`, described in the paired template |
+| `audit-logging-lite-schema` system tables | `tblAuditLog` / `tblLongTextBackup` / `tblAuditLogConfig` — created by `Two_CreateAuditTables`, described in the paired template |
 | The audited tables | Each with a single-column numeric PK (schema Business Rule 4) |
 | A Trusted Location | The generator and the macros' VBA calls run only with code enabled |
 | `Microsoft Scripting Runtime` (late-bound) | `FileSystemObject` writes the UTF-16 macro XML; `CreateObject` is used, no reference needed |
-| **Every object in the database closed** | Close every table, form, report and query before you run **any** of these procedures, and leave them closed until the whole run is finished. `Three_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros and cannot do that while anything is using the table, so it is the step that fails outright; the earlier steps do not fail, they rebuild the settings the already-attached macros read while someone could still be editing. This applies whether or not another copy of the database is open. |
+| **Every object in the database closed** | Close every table, form, report and query before you run **any** of these procedures, and leave them closed until the whole run is finished. `Four_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros and cannot do that while anything is using the table, so it is the step that fails outright; the earlier steps do not fail, they rebuild the settings the already-attached macros read while someone could still be editing. This applies whether or not another copy of the database is open. |
 | **Every other copy of the database closed** | The same requirement, one file further out: another Access instance holding one of those tables blocks it too. In a split design that means the back end *and* every front end — see below. |
-| **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Three_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
+| **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Four_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
 
 ### Where each module goes in a split database
 
@@ -309,7 +311,7 @@ field, and nowhere else.
 until the whole run is finished.** Opening something to look at it between the numbered steps is
 enough to stop the next one. Each step checks before it starts and tells you what is open, so
 nothing is changed while you sort it out.
-`Three_GenerateAllAuditDataMacros` opens each table in design view to attach its macros, and it
+`Four_GenerateAllAuditDataMacros` opens each table in design view to attach its macros, and it
 cannot do that while anything is using the table. This is true whether or not another copy of the
 database is open, and it is the commonest reason a run only half works.
 
@@ -330,28 +332,35 @@ be reviewed in between, or that three of the twenty procedures are the only ones
 directly. Turn the sequence below into their runbook in plain words; do not paste this section into
 it.
 
-**Only three procedures are ever run by hand** — `One_CreateAuditTables`,
-`Two_PopulateConfigTable`, `Three_GenerateAllAuditDataMacros` — plus `CheckAuditReadiness` before
-the last one, `Zero_CreateSampleTables` on Path A, and the verification helpers afterwards.
-Everything else in these modules is called by those.
+**Only four procedures are ever run by hand** — `One_CheckAuditReadiness`,
+`Two_CreateAuditTables`, `Three_PopulateConfigTable`, `Four_GenerateAllAuditDataMacros` — plus
+`Zero_CreateSampleTables` on Path A, and the verification helpers afterwards. Everything else in
+these modules is called by those. **They are numbered in the order they are run**, which is the
+only thing the number means.
 
 Each is a `Function` returning a report, so it is run from the Immediate window with a leading `?`
-to print what it returns: `?One_CreateAuditTables()`.
+to print what it returns: `?Two_CreateAuditTables()`.
 
 | # | What they do | Path |
 |---|---|---|
 | 1 | Set `AUDIT_SCOPE_MODE` (and `AUDIT_SCOPE_LIST`, where the answer was a list of names) at the top of `modAddDataMacros` to Step 4's answer, import the four modules, put each in the right file (see the split-database table above), and compile. | Both |
 | 2 | `?Zero_CreateSampleTables()` — builds three made-up tables to try the system on. | A only |
-| 3 | `?One_CreateAuditTables()` — creates `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig`. | Both |
-| 4 | `?Two_PopulateConfigTable()` on Path A — every field starts switched **on**. `?Two_PopulateConfigTable(False)` on Path B — every field starts switched **off**. | Both |
-| 5 | **Open `tblAuditLogConfig` and set the `IsAuditable` switches.** This is where the audit net is actually drawn, and nothing else does it for them. | Both |
-| 6 | `?CheckAuditReadiness()` — reports anything that would stop the next step. | Both; required on B |
+| 3 | `?One_CheckAuditReadiness()` — reports which tables cannot be audited as they stand, before anything at all is created. | Both; required on B |
+| 4 | `?Two_CreateAuditTables()` — creates `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig`. | Both |
+| 5 | `?Three_PopulateConfigTable()` on Path A — every field starts switched **on**. `?Three_PopulateConfigTable(False)` on Path B — every field starts switched **off**. | Both |
+| 6 | **Open `tblAuditLogConfig` and set the `IsAuditable` switches.** This is where the audit net is actually drawn, and nothing else does it for them. | Both |
 | 7 | **Close every table, form, report and query in the database, and leave them closed until step 9 is finished.** | Both |
-| 8 | `?Three_GenerateAllAuditDataMacros()` — attaches the macros and reports per table. | Both |
+| 8 | `?Four_GenerateAllAuditDataMacros()` — attaches the macros and reports per table. | Both |
 | 9 | Make one real edit to an audited table and open `tblAuditLog`. | Both |
 
-**Step 5 is a step, not a note.** It is the one place the developer has to make decisions in data
-rather than answer a question, and a runbook that folds it into step 4 produces a build that audits
+**Step 3 comes before anything is created, and that is the point of it.** It reads table
+definitions and changes nothing, so the developer learns which of their tables cannot be audited
+while there is still nothing to undo. Running it later — after the three system tables exist and
+after the config table has been filled in — tells them the same thing too late to act on it
+cheaply.
+
+**Step 6 is a step, not a note.** It is the one place the developer has to make decisions in data
+rather than answer a question, and a runbook that folds it into step 5 produces a build that audits
 everything or nothing.
 
 **Step 7 is where a run goes wrong.** Say what happens if they skip it: the tables that were open
@@ -590,7 +599,7 @@ on a database you already use. This template's own.
 
 Either way you get one line per field and you decide the rest by flipping switches, so neither
 answer locks anything in. Under the covers this sets a single argument on
-`Two_PopulateConfigTable` — nothing after it starts everything on, `False` starts everything off.
+`Three_PopulateConfigTable` — nothing after it starts everything on, `False` starts everything off.
 
 **Starting on** suits the demo, where there are nine or ten fields and you want to see the trail
 working immediately.
@@ -631,7 +640,7 @@ has never been looked at.
 
 It reads your table definitions and reports whether each one will work. It changes nothing at all,
 so there is no risk in running it, and it can be run again at any time. The procedure behind it is
-`CheckAuditReadiness`.
+`One_CheckAuditReadiness`.
 
 **What it is looking for:** every table needs **one single number field as its primary key, set to
 auto-number**. Most tables you designed yourself already look like this. Older or inherited tables
@@ -791,7 +800,7 @@ Private Const AUDIT_SCOPE_MODE As String = "Standard"
 Private Const AUDIT_SCOPE_LIST As String = ""
 
 ' [STANDARDS — audit-columns.md] The house audit column names, in ONE place.
-' Three procedures below use them: Two_PopulateConfigTable (to seed them
+' Three procedures below use them: Three_PopulateConfigTable (to seed them
 ' not-auditable), BuildBeforeChangeMacro (to stamp them), and
 ' Zero_CreateSampleTables (to create them on the sample tables).
 ' A shop that forks this library and renames its audit columns changes these
@@ -857,7 +866,7 @@ the selection control as its own question, and name it as a question this databa
 folding it into the template's own count. The two answers, and both belong in the question:
 
 - **Use the names this database already has.** No columns are added. Set the four values above to
-  the host's names. `Two_PopulateConfigTable` then seeds those columns not-auditable, and
+  the host's names. `Three_PopulateConfigTable` then seeds those columns not-auditable, and
   `BuildBeforeChangeMacro` stamps them, exactly as it would the library's own names.
 - **Use the library's names.** The host's four columns are replaced by the library's four. Leave the
   values above as shipped; they seed and stamp the library's columns. **Say what this costs before
@@ -897,7 +906,7 @@ you already use) — it only exists to build the made-up tables for trying the s
 Creates the two made-up tables (`tblClient`, `tblSupportTicket`) and a short pick-list
 (`tlkpTicketPriority`) described in the paired schema template, with the four starter pick-list
 rows (Low, Normal, High, Urgent) and the two links between the tables. Same idempotent style as
-`One_CreateAuditTables` — an existing table is reported and skipped, so it's safe to re-run.
+`Two_CreateAuditTables` — an existing table is reported and skipped, so it's safe to re-run.
 
 **All three carry the house audit columns** (`standards/audit-columns.md`), because a demo that
 leaves them off doesn't demonstrate the thing most likely to bite on real tables: stamping and
@@ -1195,7 +1204,160 @@ Private Sub AddAuditColumns(tdf As DAO.TableDef)
 End Sub
 ```
 
-### One_CreateAuditTables — `Public Function` → `String` (setup step 1)
+### One_CheckAuditReadiness — `Public Function` → `String` (setup step 1 — the safety check, required for Path B)
+
+A read-only check you can run any time, at no risk — it doesn't change anything. It looks at each
+table you might track and tells you whether this system will actually work on it: **every table
+needs one, single number field as its primary key, set to auto-number** (schema Business Rule 4).
+Most tables you design yourself already look like this. Older or borrowed tables sometimes
+don't — a table with no primary key set, one that uses two or more fields together as its key,
+or one that uses a text code instead of a number, will not work with this system as-is.
+
+Run this after `Three_PopulateConfigTable` and before `Four_GenerateAllAuditDataMacros`. This
+step is **required for Path B**, since a database you didn't design the audit system around is
+far more likely to have a table shaped this way. It's optional on Path A, where the sample
+tables are already known to be shaped correctly.
+
+If a table isn't ready, you have two choices: fix that table's primary key, or leave it out —
+open `tblAuditLogConfig` and switch `IsAuditable` to No for every row belonging to that table.
+
+**Returns the same report it shows in the message box, as text.** Called as a bare statement
+(`One_CheckAuditReadiness`) it behaves exactly as before — it pops the `MsgBox` for a person sitting
+at the keyboard. Called as `sResult = One_CheckAuditReadiness(True)`, the same text comes back as a
+`String` and no dialog is shown — for a script, a test harness, or an AI assistant facilitating a
+build to read directly, rather than needing to add its own throwaway diagnostic to see the
+verdict. **The `True` is what suppresses the dialog**, not the assignment: VBA cannot tell whether
+a procedure was called as a function or as a statement.
+
+```vba
+Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As String
+    ' [SCAFFOLD] Read-only pre-flight check. Looks at the real table definitions (not the
+    '            config table) so a multi-field primary key is never missed, and so this can
+    '            run before anything at all is created. Run FIRST, before
+    '            Two_CreateAuditTables — required on Path B, where tables were not designed
+    '            around this system. On Path A run it after Zero_CreateSampleTables, which
+    '            creates the tables it looks at; there it has nothing to find, because those
+    '            tables were built to the shape this system needs.
+    '            Returns the report as a String. Pass bSilent:=True to suppress the MsgBox so
+    '            an automated caller is never left waiting on a dialog nobody can dismiss.
+    Dim db As DAO.Database
+    Dim tdef As DAO.TableDef
+    Dim idx As DAO.Index
+    Dim lPkFieldCount As Long
+    Dim lPkFieldType As Long
+    Dim lProblemCount As Long
+    Dim lTablesInScope As Long
+    Dim sMsg As String
+    Dim sReport As String
+    Dim sOpen As String
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+    lProblemCount = 0
+    lTablesInScope = 0
+    sMsg = ""
+
+    ' [SCAFFOLD] The database has to be closed for the whole run, not only at the start, so
+    '            every step that needs it asks again rather than trusting an earlier answer.
+    '            Between the numbered steps the developer is expected to go and edit the
+    '            config table, and opening something to look at it is the ordinary thing to
+    '            do next.
+    sOpen = ListOpenObjects()
+    If Len(sOpen) > 0 Then
+        sReport = "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
+            sOpen & vbCrLf & _
+            "Close it and run this again. Everything has to stay closed until the whole " & _
+            "run is finished, not just when it starts."
+        If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
+        One_CheckAuditReadiness = sReport
+        GoTo Cleanup
+    End If
+
+    For Each tdef In db.TableDefs
+        ' [BUSINESS LOGIC — scan boundary] The same test Three_PopulateConfigTable uses, from the
+        ' one place it lives. The three system tables are excluded here as well: they are
+        ' scanned into the config table but never get macros (schema Business Rule 5).
+        If IsAuditCandidateTable(tdef) _
+            And tdef.Name <> "tblAuditLog" _
+            And tdef.Name <> "tblLongTextBackup" _
+            And tdef.Name <> "tblAuditLogConfig" Then
+
+            lTablesInScope = lTablesInScope + 1
+            lPkFieldCount = 0
+            lPkFieldType = -1
+            For Each idx In tdef.Indexes
+                If idx.Primary Then
+                    lPkFieldCount = idx.Fields.Count
+                    If lPkFieldCount = 1 Then
+                        lPkFieldType = tdef.Fields(idx.Fields(0).Name).Type
+                    End If
+                End If
+            Next idx
+
+            If lPkFieldCount = 0 Then
+                lProblemCount = lProblemCount + 1
+                sMsg = sMsg & tdef.Name & " — no primary key is set" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — no primary key"
+            ElseIf lPkFieldCount > 1 Then
+                lProblemCount = lProblemCount + 1
+                sMsg = sMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — primary key has " & lPkFieldCount & " fields"
+            ElseIf lPkFieldType <> dbLong And lPkFieldType <> dbInteger And lPkFieldType <> dbByte Then
+                lProblemCount = lProblemCount + 1
+                sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, Integer or Byte field" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — primary key type is " & lPkFieldType
+            Else
+                Debug.Print tdef.Name & ": ready"
+            End If
+        End If
+    Next tdef
+
+    ' [SCAFFOLD] Nothing in scope means nothing was checked, and "every table checked is
+    '            ready" is true of an empty set and useless to the developer. This is the
+    '            worse of the two places to report success on nothing, because it is the
+    '            last thing asked before the tables are changed.
+    If lTablesInScope = 0 Then
+        sReport = "Stopped. No table in this file is in scope, so there was nothing to " & _
+            "check and there is nothing to build." & vbCrLf & vbCrLf & _
+            "The scope setting at the top of modAddDataMacros does not match the tables in " & _
+            "this file - it is set to """ & AUDIT_SCOPE_MODE & """. On the try-it-out path, " & _
+            "run Zero_CreateSampleTables first: it creates the tables this looks at. " & _
+            "Nothing has been changed."
+        If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing is in scope"
+        One_CheckAuditReadiness = sReport
+        GoTo Cleanup
+    End If
+
+    If lProblemCount = 0 Then
+        sReport = "Every table checked is ready — each has one auto-number primary key. " & _
+            "Safe to run Four_GenerateAllAuditDataMacros."
+    Else
+        sReport = lProblemCount & " table(s) are NOT ready yet:" & vbCrLf & vbCrLf & sMsg & vbCrLf & _
+            "This system only works on tables with one auto-number (or plain number) " & _
+            "primary key field. Either fix that table's primary key, or leave it out — set " & _
+            "IsAuditable to No for all of that table's rows in tblAuditLogConfig — before you " & _
+            "run Four_GenerateAllAuditDataMacros."
+    End If
+
+    If Not bSilent Then MsgBox sReport, IIf(lProblemCount = 0, vbInformation, vbExclamation)
+    One_CheckAuditReadiness = sReport
+
+Cleanup:
+    Set idx = Nothing
+    Set tdef = Nothing
+    Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block
+    One_CheckAuditReadiness = "Error checking audit readiness: " & Err.Number & " - " & Err.Description
+    If Not bSilent Then MsgBox One_CheckAuditReadiness, vbCritical
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### Two_CreateAuditTables — `Public Function` → `String` (setup step 2)
 
 Creates the three system tables via DAO, idempotently — an existing table is reported and
 skipped, so it is safe to re-run. Field-by-field DAO `CreateField` (never `CREATE TABLE`
@@ -1208,7 +1370,7 @@ version of this scaffold. If you have such a build, add the secondary and unique
 hand, or start fresh in a copy.
 
 ```vba
-Public Function One_CreateAuditTables(Optional bSilent As Boolean = False) As String
+Public Function Two_CreateAuditTables(Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Creates tblAuditLog, tblLongTextBackup, tblAuditLogConfig (schema template
     '            entities). Idempotent: each block is skipped if its table already exists.
     '            Passing bSilent:=True suppresses the message box and returns the same text,
@@ -1432,7 +1594,7 @@ Cleanup:
     Set idx = Nothing
     Set tdf = Nothing
     Set db = Nothing
-    One_CreateAuditTables = sReport
+    Two_CreateAuditTables = sReport
     ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
     '            both. Building the report first and showing it here is what prevents that.
     If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
@@ -1447,7 +1609,7 @@ errHandler:
 End Function
 ```
 
-### Two_PopulateConfigTable — `Public Function` → `String` (setup step 2)
+### Three_PopulateConfigTable — `Public Function` → `String` (setup step 3)
 
 Scans the schema into `tblAuditLogConfig`: **every field of every candidate table**, with its
 ordinal position, DAO type code, a flag on the table's PK field, and `IsAuditable`. Nothing is
@@ -1460,7 +1622,7 @@ running, open the config table and review the flags** — that review, in data, 
 net is drawn (schema Business Rule 5).
 
 **Two field types are seeded off and stay off**, whatever that review says — `IsUnauditableFieldType`
-decides, and `Three_GenerateAllAuditDataMacros` asks it again rather than trusting the switch. An
+decides, and `Four_GenerateAllAuditDataMacros` asks it again rather than trusting the switch. An
 **Attachment** field cannot be read or written by a Data Macro at all, so a macro referencing one
 does not work. A **calculated** field is never edited by anyone: its value is derived from other
 fields in the same row, and those fields are audited themselves, so a row in the log for it would
@@ -1476,15 +1638,15 @@ to you.
 
 Takes one optional Yes/No setting that decides the starting point for everything else:
 
-- **Path A (try-it-out build):** run `Two_PopulateConfigTable` with nothing after it. Every
+- **Path A (try-it-out build):** run `Three_PopulateConfigTable` with nothing after it. Every
   field starts switched ON, and you switch OFF the few you don't want tracked.
-- **Path B (a database you already use):** run `Two_PopulateConfigTable False`. Every field
+- **Path B (a database you already use):** run `Three_PopulateConfigTable False`. Every field
   starts switched OFF, and you switch ON — table by table — only what you actually want a
   history of. This is the safer starting point on tables this system wasn't designed around,
   where "track everything" could sweep in more than you meant.
 
 ```vba
-Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True, _
+Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True, _
                                         Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Rebuild the audit configuration from the live schema. Scope decisions
     '            live in the IsAuditable flags afterward, not in this code.
@@ -1493,7 +1655,7 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
     '            bDefaultAuditable sets the starting point for ordinary fields only:
     '            True  (preferred; demo build) — everything starts switched ON, you switch OFF
     '                  what you don't want tracked.
-    '            False (Path B — call as Two_PopulateConfigTable(False)) — everything
+    '            False (Path B — call as Three_PopulateConfigTable(False)) — everything
     '                  starts switched OFF, you switch ON what you do want tracked.
     '            The three system tables and the noisy always-changing fields below are
     '            always switched OFF, no matter which way this is called.
@@ -1523,7 +1685,7 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
 
     For Each tdef In db.TableDefs
         ' [BUSINESS LOGIC — scan boundary] Which tables are candidates at all. The test lives
-        ' in IsAuditCandidateTable, which CheckAuditReadiness calls as well, so the two cannot
+        ' in IsAuditCandidateTable, which One_CheckAuditReadiness calls as well, so the two cannot
         ' disagree about what is in scope. It reads AUDIT_SCOPE_MODE; change that, not this.
         ' A table the developer named that turns out to be linked is collected here and named
         ' in the report below, so a table asked for by name is never dropped in silence.
@@ -1589,7 +1751,7 @@ Public Function Two_PopulateConfigTable(Optional bDefaultAuditable As Boolean = 
                     '            each one is impossible or pointless rather than merely
                     '            unwanted. Seeded off here so the developer can see them in
                     '            the config table and know they were considered; enforced
-                    '            again in Three_GenerateAllAuditDataMacros, because this
+                    '            again in Four_GenerateAllAuditDataMacros, because this
                     '            table is meant to be edited and a switch that can be turned
                     '            back on will be.
                     Case IsUnauditableFieldType(fld)
@@ -1646,7 +1808,7 @@ Cleanup:
     Set fld = Nothing
     Set tdef = Nothing
     Set db = Nothing
-    Two_PopulateConfigTable = sReport
+    Three_PopulateConfigTable = sReport
     ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
     '            both. Building the report first and showing it here is what prevents that.
     If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
@@ -1663,8 +1825,8 @@ End Function
 
 ### IsAuditCandidateTable — `Private Function` → `Boolean`
 
-**The one place that decides whether a table is in scope at all.** `Two_PopulateConfigTable` and
-`CheckAuditReadiness` both call it, so the scan and the safety check cannot disagree about which
+**The one place that decides whether a table is in scope at all.** `Three_PopulateConfigTable` and
+`One_CheckAuditReadiness` both call it, so the scan and the safety check cannot disagree about which
 tables they are talking about — a disagreement that shows up as a table reported ready and then never
 scanned, or the reverse.
 
@@ -1759,8 +1921,8 @@ End Function
 
 ### IsUnauditableFieldType — `Private Function` → `Boolean`
 
-**The one place that decides whether a field can be audited at all.** `Two_PopulateConfigTable`
-calls it to seed the switch off, and `Three_GenerateAllAuditDataMacros` calls it again to enforce
+**The one place that decides whether a field can be audited at all.** `Three_PopulateConfigTable`
+calls it to seed the switch off, and `Four_GenerateAllAuditDataMacros` calls it again to enforce
 that whatever the switch now says — so the scan and the generator cannot disagree.
 
 **Two types, for two different reasons.** An **Attachment** field cannot be read or written by a
@@ -1863,163 +2025,14 @@ Public Function ListOpenObjects() As String
 End Function
 ```
 
-### CheckAuditReadiness — `Public Function` → `String` (safety check — run before step 3, required for Path B)
-
-A read-only check you can run any time, at no risk — it doesn't change anything. It looks at each
-table you might track and tells you whether this system will actually work on it: **every table
-needs one, single number field as its primary key, set to auto-number** (schema Business Rule 4).
-Most tables you design yourself already look like this. Older or borrowed tables sometimes
-don't — a table with no primary key set, one that uses two or more fields together as its key,
-or one that uses a text code instead of a number, will not work with this system as-is.
-
-Run this after `Two_PopulateConfigTable` and before `Three_GenerateAllAuditDataMacros`. This
-step is **required for Path B**, since a database you didn't design the audit system around is
-far more likely to have a table shaped this way. It's optional on Path A, where the sample
-tables are already known to be shaped correctly.
-
-If a table isn't ready, you have two choices: fix that table's primary key, or leave it out —
-open `tblAuditLogConfig` and switch `IsAuditable` to No for every row belonging to that table.
-
-**Returns the same report it shows in the message box, as text.** Called as a bare statement
-(`CheckAuditReadiness`) it behaves exactly as before — it pops the `MsgBox` for a person sitting
-at the keyboard. Called as `sResult = CheckAuditReadiness(True)`, the same text comes back as a
-`String` and no dialog is shown — for a script, a test harness, or an AI assistant facilitating a
-build to read directly, rather than needing to add its own throwaway diagnostic to see the
-verdict. **The `True` is what suppresses the dialog**, not the assignment: VBA cannot tell whether
-a procedure was called as a function or as a statement.
-
-```vba
-Public Function CheckAuditReadiness(Optional bSilent As Boolean = False) As String
-    ' [SCAFFOLD] Read-only pre-flight check. Looks at the real table definitions (not the
-    '            config table) so a multi-field primary key is never missed. Run after
-    '            Two_PopulateConfigTable and before Three_GenerateAllAuditDataMacros —
-    '            required on Path B, where tables were not designed around this system.
-    '            Returns the report as a String. Pass bSilent:=True to suppress the MsgBox so
-    '            an automated caller is never left waiting on a dialog nobody can dismiss.
-    Dim db As DAO.Database
-    Dim tdef As DAO.TableDef
-    Dim idx As DAO.Index
-    Dim lPkFieldCount As Long
-    Dim lPkFieldType As Long
-    Dim lProblemCount As Long
-    Dim lTablesInScope As Long
-    Dim sMsg As String
-    Dim sReport As String
-    Dim sOpen As String
-
-    On Error GoTo errHandler
-    Set db = CurrentDb
-    lProblemCount = 0
-    lTablesInScope = 0
-    sMsg = ""
-
-    ' [SCAFFOLD] The database has to be closed for the whole run, not only at the start, so
-    '            every step that needs it asks again rather than trusting an earlier answer.
-    '            Between the numbered steps the developer is expected to go and edit the
-    '            config table, and opening something to look at it is the ordinary thing to
-    '            do next.
-    sOpen = ListOpenObjects()
-    If Len(sOpen) > 0 Then
-        sReport = "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
-            sOpen & vbCrLf & _
-            "Close it and run this again. Everything has to stay closed until the whole " & _
-            "run is finished, not just when it starts."
-        If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
-        CheckAuditReadiness = sReport
-        GoTo Cleanup
-    End If
-
-    For Each tdef In db.TableDefs
-        ' [BUSINESS LOGIC — scan boundary] The same test Two_PopulateConfigTable uses, from the
-        ' one place it lives. The three system tables are excluded here as well: they are
-        ' scanned into the config table but never get macros (schema Business Rule 5).
-        If IsAuditCandidateTable(tdef) _
-            And tdef.Name <> "tblAuditLog" _
-            And tdef.Name <> "tblLongTextBackup" _
-            And tdef.Name <> "tblAuditLogConfig" Then
-
-            lTablesInScope = lTablesInScope + 1
-            lPkFieldCount = 0
-            lPkFieldType = -1
-            For Each idx In tdef.Indexes
-                If idx.Primary Then
-                    lPkFieldCount = idx.Fields.Count
-                    If lPkFieldCount = 1 Then
-                        lPkFieldType = tdef.Fields(idx.Fields(0).Name).Type
-                    End If
-                End If
-            Next idx
-
-            If lPkFieldCount = 0 Then
-                lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — no primary key is set" & vbCrLf
-                Debug.Print tdef.Name & ": NOT READY — no primary key"
-            ElseIf lPkFieldCount > 1 Then
-                lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
-                Debug.Print tdef.Name & ": NOT READY — primary key has " & lPkFieldCount & " fields"
-            ElseIf lPkFieldType <> dbLong And lPkFieldType <> dbInteger And lPkFieldType <> dbByte Then
-                lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, Integer or Byte field" & vbCrLf
-                Debug.Print tdef.Name & ": NOT READY — primary key type is " & lPkFieldType
-            Else
-                Debug.Print tdef.Name & ": ready"
-            End If
-        End If
-    Next tdef
-
-    ' [SCAFFOLD] Nothing in scope means nothing was checked, and "every table checked is
-    '            ready" is true of an empty set and useless to the developer. This is the
-    '            worse of the two places to report success on nothing, because it is the
-    '            last thing asked before the tables are changed.
-    If lTablesInScope = 0 Then
-        sReport = "Stopped. No table in this file is in scope, so there was nothing to " & _
-            "check and there is nothing to build." & vbCrLf & vbCrLf & _
-            "Run Two_PopulateConfigTable first. If you already have, the scope setting at " & _
-            "the top of modAddDataMacros does not match the tables in this file - it is " & _
-            "set to """ & AUDIT_SCOPE_MODE & """. Nothing has been changed."
-        If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing is in scope"
-        CheckAuditReadiness = sReport
-        GoTo Cleanup
-    End If
-
-    If lProblemCount = 0 Then
-        sReport = "Every table checked is ready — each has one auto-number primary key. " & _
-            "Safe to run Three_GenerateAllAuditDataMacros."
-    Else
-        sReport = lProblemCount & " table(s) are NOT ready yet:" & vbCrLf & vbCrLf & sMsg & vbCrLf & _
-            "This system only works on tables with one auto-number (or plain number) " & _
-            "primary key field. Either fix that table's primary key, or leave it out — set " & _
-            "IsAuditable to No for all of that table's rows in tblAuditLogConfig — before you " & _
-            "run Three_GenerateAllAuditDataMacros."
-    End If
-
-    If Not bSilent Then MsgBox sReport, IIf(lProblemCount = 0, vbInformation, vbExclamation)
-    CheckAuditReadiness = sReport
-
-Cleanup:
-    Set idx = Nothing
-    Set tdef = Nothing
-    Set db = Nothing
-    Exit Function
-
-errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    CheckAuditReadiness = "Error checking audit readiness: " & Err.Number & " - " & Err.Description
-    If Not bSilent Then MsgBox CheckAuditReadiness, vbCritical
-    Resume Cleanup
-    Resume
-End Function
-```
-
-### Three_GenerateAllAuditDataMacros — `Public Function` → `String` (setup step 3)
+### Four_GenerateAllAuditDataMacros — `Public Function` → `String` (setup step 4)
 
 Reads the (reviewed) config, groups fields by table, and calls `CreateAllDataMacros` for each.
 Re-runnable: reloading a table's macro XML replaces what was there (schema Business Rule 7).
 
 **Returns a per-table report as text**, in addition to the summary `MsgBox` — one line per table
 (`OK`, `SKIPPED`, or `ERROR: ...`), the same detail `CreateAllDataMacros` sends to `Debug.Print`.
-Call it as `sResult = Three_GenerateAllAuditDataMacros(True)` to read that report directly with no
+Call it as `sResult = Four_GenerateAllAuditDataMacros(True)` to read that report directly with no
 dialog, so a script or an AI assistant facilitating the build can see which tables actually
 succeeded without adding a diagnostic wrapper of its own. `bSilent` is passed down into
 `CreateAllDataMacros`, so a per-table error can't strand an automated caller either.
@@ -2038,12 +2051,12 @@ before they ever reach this summary — so this is the message that has to agree
 just told, not the one that breaks the news.
 
 **It enforces the two unauditable field types rather than trusting the config table.** The switches
-were seeded in step 2, and between step 2 and step 3 the developer is expected to go and edit them;
+were seeded in step 3, and between step 3 and step 4 the developer is expected to go and edit them;
 `IsUnauditableFieldType` is asked again here so an Attachment field switched back on cannot produce
 a macro set that does not work.
 
 ```vba
-Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = False) As String
+Public Function Four_GenerateAllAuditDataMacros(Optional bSilent As Boolean = False) As String
     ' [SCAFFOLD] Generate and attach audit Data Macros for every configured table.
     '            Returns a per-table report so a caller — human or automated — can see exactly
     '            what happened to each table. Pass bSilent:=True to suppress every MsgBox,
@@ -2078,7 +2091,7 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     ' [SCAFFOLD] This is the step that actually fails on an open object, because it opens each
     '            table in design view to attach the macros. Stopping here costs one message;
     '            carrying on costs a partial run that has to be diagnosed from Access's own
-    '            lock error. Asked again rather than relying on CheckAuditReadiness, which
+    '            lock error. Asked again rather than relying on One_CheckAuditReadiness, which
     '            may have run some time ago and is optional on Path A.
     sOpen = ListOpenObjects()
     If Len(sOpen) > 0 Then
@@ -2087,7 +2100,7 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
             "Close it and run this again. Everything has to stay closed until the whole " & _
             "run is finished, not just when it starts."
         If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
-        Three_GenerateAllAuditDataMacros = sReport
+        Four_GenerateAllAuditDataMacros = sReport
         GoTo Cleanup
     End If
 
@@ -2119,10 +2132,10 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
                 Set fieldList = dictTables(sTableName)
             End If
             ' [SCAFFOLD] Hard guard above the flags, on the field this time. tblAuditLogConfig
-            '            exists to be edited, so a switch seeded off in step 2 may well be on
+            '            exists to be edited, so a switch seeded off in step 3 may well be on
             '            by the time this runs — and for two field types that is not a choice
             '            the developer gets to make (see IsUnauditableFieldType). Ask the same
-            '            function step 2 asked rather than trusting the row. A field that has
+            '            function step 3 asked rather than trusting the row. A field that has
             '            since been deleted leaves fldLive Nothing and is simply not enforced;
             '            the builders skip a field they cannot resolve anyway.
             If bFieldIsAuditable Then
@@ -2149,12 +2162,12 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     If dictTables.Count = 0 Then
         sReport = "Stopped. There is nothing to build - no table in tblAuditLogConfig has " & _
             "any field switched on." & vbCrLf & vbCrLf & _
-            "Run Two_PopulateConfigTable, then open tblAuditLogConfig and switch on the " & _
+            "Run Three_PopulateConfigTable, then open tblAuditLogConfig and switch on the " & _
             "fields you want a history of. If that table is empty rather than switched " & _
             "off, no table in this file was in scope: check the scope setting at the top " & _
             "of this module. Nothing has been changed."
         If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing to build"
-        Three_GenerateAllAuditDataMacros = sReport
+        Four_GenerateAllAuditDataMacros = sReport
         GoTo Cleanup
     End If
 
@@ -2202,7 +2215,7 @@ Public Function Three_GenerateAllAuditDataMacros(Optional bSilent As Boolean = F
     sReport = sSummary & vbCrLf & vbCrLf & sReport
 
     If Not bSilent Then MsgBox sSummary, IIf(lFailCount > 0, vbExclamation, vbInformation)
-    Three_GenerateAllAuditDataMacros = sReport
+    Four_GenerateAllAuditDataMacros = sReport
 
 Cleanup:
     Set fldLive = Nothing
@@ -2213,7 +2226,7 @@ Cleanup:
 
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
-    Three_GenerateAllAuditDataMacros = sReport & "ERROR: " & Err.Number & " - " & Err.Description
+    Four_GenerateAllAuditDataMacros = sReport & "ERROR: " & Err.Number & " - " & Err.Description
     If Not bSilent Then MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
     Resume
@@ -3246,7 +3259,7 @@ End Function
 
 The reset tool for regeneration (schema Business Rule 7): exports a table's current data macros to
 a timestamped XML backup, then strips them by loading an empty macro document. Run it before
-re-running `Three_GenerateAllAuditDataMacros` when the audit scope changes — the backups double as
+re-running `Four_GenerateAllAuditDataMacros` when the audit scope changes — the backups double as
 your archive of prior macro states.
 
 **It removes only the macros this generator created, and it never touches an Access system table.**
@@ -3505,7 +3518,7 @@ End Function
 - **Naming conventions** — the `Standard` scope setting is the naming convention made
   executable: `tbl` and `tlkp` tables, never `tmp`. It is one of the three answers Step 4 offers,
   not the only one. `AUDIT_SCOPE_MODE` holds the answer, `IsAuditCandidateTable` reads it, and both
-  the config scan and `CheckAuditReadiness` call that — so scope is one setting in one place
+  the config scan and `One_CheckAuditReadiness` call that — so scope is one setting in one place
   whichever answer was given. A practice on another convention answers `List` or `All` rather than
   editing a test.
 - **Design principles** — one job per procedure throughout: one sample-data setup (Path A only),
@@ -3562,6 +3575,6 @@ End Function
 
 - **Restore/undo tooling** — reconstructing a record from its `tblAuditLog` trail; the full
   (non-Lite) system's headline feature.
-- **Composite/text primary keys** — `CheckAuditReadiness` detects these and tells you to fix or
+- **Composite/text primary keys** — `One_CheckAuditReadiness` detects these and tells you to fix or
   exclude the table; the staging plumbing and macro XML themselves still assume one numeric PK
   and don't support them (schema Business Rule 4).

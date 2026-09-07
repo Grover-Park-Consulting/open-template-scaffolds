@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.4.0
+version: 0.4.1
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -36,7 +36,7 @@ warnings:
     audited has a different key design (composite, text, no PK, or a number that does not fit a
     Long Integer), stop and tell the developer this template will not work for that table out of
     the box — they are free to adapt it, but the adaptation is theirs. The paired scaffold's
-    CheckAuditReadiness procedure checks for this automatically. A Replication ID key is the one
+    One_CheckAuditReadiness procedure checks for this automatically. A Replication ID key is the one
     exception, and it is the developer's choice rather than a flat exclusion — see Business Rule 4.
   - Path B (adding this to a database you already use) is much less forgiving than the demo.
     Make a copy of the .accdb file before running any of the setup steps against it — Data
@@ -307,7 +307,7 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
    with any other key design (composite, text, no PK, or a number that does not fit a Long Integer)
    is called out at build time: the template will not work
    for it out of the box, and adapting it is the adopter's own project. The paired scaffold's
-   `CheckAuditReadiness` procedure checks every candidate table against this rule and lists any
+   `One_CheckAuditReadiness` procedure checks every candidate table against this rule and lists any
    that fail it, before macros are generated.
 
    **The exception is a Replication ID primary key, and two conditions gate it.** Where the

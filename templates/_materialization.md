@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.8.0
+version: 0.8.1
 status: draft
 ---
 
@@ -614,10 +614,10 @@ Treat it as a reconnect, not a rebuild.
 
 Three separate failures, each observed while driving a `vba-scaffold`'s staged procedures.
 
-**1. Never module-qualify the name.** `Application.Run "modAddDataMacros.One_CreateAuditTables"`
+**1. Never module-qualify the name.** `Application.Run "modAddDataMacros.Two_CreateAuditTables"`
 fails with "cannot find the procedure." `Application.Run` reads a dotted name as
 *project*.*procedure*, not *module*.*procedure*, so a module-qualified name is never found. Pass the
-procedure name on its own — `One_CreateAuditTables` — which resolves as long as that name is unique
+procedure name on its own — `Two_CreateAuditTables` — which resolves as long as that name is unique
 in the project.
 
 **2. To pass an argument, evaluate an expression instead of running a procedure.** A run-style tool
@@ -626,7 +626,7 @@ been seen to kill the COM session outright — leaving the database held and the
 the Access MCP server's **expression-evaluation** tool and write the call as ordinary VBA:
 
 ```vba
-Three_GenerateAllAuditDataMacros(True)    ' works — evaluated as an expression
+Four_GenerateAllAuditDataMacros(True)    ' works — evaluated as an expression
 ```
 
 This matters more than it looks. Staged procedures take an optional `bSilent` argument precisely so
