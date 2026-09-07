@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.3.4
+version: 0.4.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -36,7 +36,8 @@ warnings:
     audited has a different key design (composite, text, no PK, or a number that does not fit a
     Long Integer), stop and tell the developer this template will not work for that table out of
     the box — they are free to adapt it, but the adaptation is theirs. The paired scaffold's
-    CheckAuditReadiness procedure checks for this automatically.
+    CheckAuditReadiness procedure checks for this automatically. A Replication ID key is the one
+    exception, and it is the developer's choice rather than a flat exclusion — see Business Rule 4.
   - Path B (adding this to a database you already use) is much less forgiving than the demo.
     Make a copy of the .accdb file before running any of the setup steps against it — Data
     Macros get attached directly to your live tables.
@@ -49,7 +50,9 @@ house_assumptions:
   - tblAuditLogConfig.IsPrimaryKey — every audited table is assumed to have a single-column
     whole-number primary key that fits in a Long Integer (AutoNumber, Long Integer, Integer or
     Byte); the Long Text backup plumbing and the generated macro XML key on one such PK, so
-    composite, text, and larger-number keys are not supported
+    composite, text, and larger-number keys are not supported. A Replication ID key is supported
+    where the developer chooses it, which retypes the log's key column as text — Business Rule 4
+    states both conditions that choice requires
   - tblAuditLog — audited rows are referenced by name and key value (TableName + PrimaryKey),
     and nothing in the database enforces that reference. In Access terms, there is no relationship
     between the log and the audited table, so no referential integrity and no cascade delete. That
@@ -137,7 +140,7 @@ Grain: one row per **field affected** by one insert, update, or delete on an aud
 |---|---|---|---|
 | `AuditLogID` | AutoNumber | PK | Surrogate key |
 | `TableName` | Text(50) | Required | Audited table the change happened in |
-| `PrimaryKey` | Long | Required | Key value of the changed row in that table (Business Rule 4) |
+| `PrimaryKey` | Long | Required | Key value of the changed row in that table (Business Rule 4). `Text(50)` in the one case Business Rule 4 names, and only there |
 | `FieldName` | Text(50) | Required | The field this row records |
 | `OperationType` | Text(25) | Required | `Insert`, `Update`, or `Delete` — stamped by the macro |
 | `OldValue` | Memo | Nullable | Value before the change; Null on insert |
@@ -157,7 +160,7 @@ transient staging, not history (Business Rule 8).
 |---|---|---|---|
 | `LongTextBackupID` | AutoNumber | PK | Surrogate key |
 | `TableName` | Text(50) | Required | Source table |
-| `PrimaryKey` | Long | Required | Key value of the row being changed |
+| `PrimaryKey` | Long | Required | Key value of the row being changed. `Text(50)` in the one case Business Rule 4 names, and only there |
 | `FieldName` | Text(50) | Required | The Long Text field backed up |
 | `OldValue` | Memo | Nullable | The pre-change Long Text content |
 | `DateChanged` | Date/Time | Required | When the backup was taken |
@@ -298,13 +301,28 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
    old value lands in `tblLongTextBackup` → the After macro retrieves it with `LookupRecord`
    and writes it to `tblAuditLog.OldValue`. This is the workaround for the platform limit: a
    Data Macro cannot read `[Old].[LongTextField]`.
-4. **A single whole-number PK that fits a Long Integer, always.** Every audited table is expected
-   to have a single-column primary key of type AutoNumber, Long Integer, Integer or Byte, recorded
-   in `tblAuditLogConfig.IsPrimaryKey`. A table with any other key design (composite, text, no PK,
-   or a number that does not fit a Long Integer) is called out at build time: the template will not work
+4. **A single whole-number PK that fits a Long Integer, always — with one exception the developer
+   chooses.** Every audited table is expected to have a single-column primary key of type
+   AutoNumber, Long Integer, Integer or Byte, recorded in `tblAuditLogConfig.IsPrimaryKey`. A table
+   with any other key design (composite, text, no PK, or a number that does not fit a Long Integer)
+   is called out at build time: the template will not work
    for it out of the box, and adapting it is the adopter's own project. The paired scaffold's
    `CheckAuditReadiness` procedure checks every candidate table against this rule and lists any
    that fail it, before macros are generated.
+
+   **The exception is a Replication ID primary key, and two conditions gate it.** Where the
+   readiness check finds at least one table keyed by a Replication ID, the developer is offered the
+   choice of auditing those tables; where it finds none, the choice is never raised. Taking it
+   builds `tblAuditLog.PrimaryKey` and `tblLongTextBackup.PrimaryKey` as `Text(50)` rather than
+   `Long` — enough for the 38-character form with room to spare — and every key in the log is then
+   held as text, the ordinary whole-number keys included, so the log sorts by key as text rather
+   than by number. **Both conditions are required: such a key found, and the choice taken.** In
+   every other build those two columns are `Long`, exactly as stated above, and a build that
+   produces text columns without both conditions holding is wrong. Where the choice is declined,
+   tables keyed by a Replication ID are reported as not auditable before anything is changed and
+   are left alone. The macro writes the key into a text column with the string conversion forced
+   (`[Table].[Key] & ""`); assigning it bare copies the key's sixteen bytes in as eight characters
+   of unreadable text without raising an error.
 5. **Audit scope is data, not code.** The config scan writes every field of every candidate
    table; excluding a field or a whole table means flipping its `IsAuditable` flag, not editing
    code. What the flag starts as depends on which of the two build paths you're on: **Path A**
@@ -452,4 +470,6 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
   a field row of its own (Business Rule 5), which keeps it where a restore needs it — in the
   `WHERE`, never in the `SET`.
 - **Composite, text, or larger-than-Long-Integer primary keys** — would require reworking the
-  backup plumbing and macro XML (Business Rule 4).
+  backup plumbing and macro XML (Business Rule 4). A Replication ID key is no longer among them: it
+  is covered where the developer chooses it, under the two conditions Business Rule 4 states. The
+  rest of this list stands.

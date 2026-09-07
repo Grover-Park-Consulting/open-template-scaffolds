@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.7.2
+version: 0.8.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -136,7 +136,22 @@ leaves your data alone. Make a copy of the database once auditing has been built
 check on the copy, and keep your working file out of it. Where your database is split into two files,
 copy both and keep them together.
 
-1. **A change in one field is recorded as one row.**
+1. **A table that cannot be audited is reported as not auditable.**
+   Some tables cannot be audited: those whose primary key is text, those whose primary key is made
+   up of more than one field (composite keys), those which have no primary key, and those whose
+   primary key is a number that cannot be stored as a Long Integer, such as a Large Number, a
+   Decimal or a Double.
+   - Before anything is changed, the build shows you your tables, each marked auditable or not
+     auditable
+   - Each table marked not auditable comes with the reason
+   - If every table can be audited, the list says so
+   - **A table whose primary key is a Replication ID is the one case you decide.** You are offered
+     that choice under *Free to choose alternatives*, and only where your database has at least one
+     such table
+     - where you chose to audit them, they are marked auditable like any other table
+     - where you did not, they are marked not auditable, with that as the reason, and they are
+       left alone
+2. **A change in one field is recorded as one row.**
    - Open one of the audited tables
    - Change one field of one record
    - Save the record
@@ -148,7 +163,7 @@ copy both and keep them together.
      - marked as a change
      - showing what the field held before and what it holds now
      - stamped with the time and your name
-2. **Only what changed is recorded.**
+3. **Only what changed is recorded.**
    - Change two fields of one record at once
    - Open the log to confirm
      - it has exactly two rows for that change
@@ -157,14 +172,14 @@ copy both and keep them together.
    - Move off that record
    - Open the log to confirm
      - it has no new rows
-3. **A new record is recorded.**
+4. **A new record is recorded.**
    - Add a record to a table
    - Open the log to confirm
      - there is a row for each field that was filled in
      - each row is marked as a creation
      - the "before" column is empty
      - each row is stamped with the time and your name
-4. **A deleted record leaves its contents behind.**
+5. **A deleted record leaves its contents behind.**
    - Delete a record
    - Open the log to confirm
       - there is a row for every audited field the deleted record held, **including the fields that
@@ -178,17 +193,17 @@ copy both and keep them together.
      is gone, so there is nothing left to check it against, and the log says it outright instead.
    - **Adding a record works the other way** — rows only for the fields you filled in — because that
      record is still there to be looked at.
-5. **Long text survives being deleted.**
+6. **Long text survives being deleted.**
    - Repeat *A deleted record leaves its contents behind*, on a record with a long-text field which had
      something in it
    - Open the log to confirm
      - the log holds the full previous contents of the long-text field, not a blank and not a truncation of it
-6. **Long text survives being changed.**
+7. **Long text survives being changed.**
    - Edit a long-text field to something different and save
    - Open the log to confirm
      - the log shows the whole of what was in that long-text field before the edit
      - the log shows the whole of what is in that field after the edit
-7. **Stamping columns fill themselves.**
+8. **Stamping columns fill themselves.**
    - If your tables also carry their own stamping columns, confirm they were not changed.
    - Add a record without touching those four columns
      - the "created" pair fills in
@@ -208,7 +223,7 @@ copy both and keep them together.
      that came with this library say — a new record fills the created pair only. Where they say all
      four fill on creation, all four fill. **You are told which one your rules produce before
      anything is built**, so you can say at that point if you wanted the other.
-8. **A table for which you switched off audit logging is not logged, but stamping still works.**
+9. **A table for which you switched off audit logging is not logged, but stamping still works.**
    - Pick a table
    - Switch every one of its fields off in the configuration table
    - Build again
@@ -221,24 +236,24 @@ copy both and keep them together.
    - Confirm in the table itself
      - the same columns fill in as in *Stamping columns fill themselves* — switching audit logging
        off changes nothing about the stamping
-9. **Turn logging on again.**
-   - In that table switch a field back on
-   - Build again
-   - Change that field
-     - Open the log to confirm
-       - the change is recorded
-   - Nothing you did earlier has to be undone first.
-10. **Editing through a form is recorded the same way as editing in a table.**
+10. **Turn logging on again.**
+    - In that table switch a field back on
+    - Build again
+    - Change that field
+      - Open the log to confirm
+        - the change is recorded
+    - Nothing you did earlier has to be undone first.
+11. **Editing through a form is recorded the same way as editing in a table.**
     - Open a form bound to an audited table
     - Edit a record through it
     - Open the log to confirm
       - the log rows are the same as in *A change in one field is recorded as one row*
     - If your database is split, do this with a form in the front end.
-11. **A bulk update is recorded.**
+12. **A bulk update is recorded.**
     - Run an update query that changes several records at once
     - Open the log to confirm
       - every changed field of every changed record is in the log
-12. **The way back out works.**
+13. **The way back out works.**
     - Use a copy of the database you can throw away
     - Remove the audit logging Data Macros from the tables
     - Confirm
@@ -247,15 +262,6 @@ copy both and keep them together.
       - a table which had Data Macros of your own — unrelated to this template's Data Macros
         - if the build was stopped, those Data Macros are intact
         - if the build ran, those Data Macros are saved to a file you can read
-13. **A table that cannot be audited is reported as not auditable.**
-    Some tables cannot be audited: those whose primary key is text, those whose primary key is made
-    up of more than one field (composite keys), those which have no primary key, and those whose
-    primary key is a number that cannot be stored as a Long Integer, such as a Large Number, a
-    Decimal, a Double or a Replication ID.
-    - Before anything is changed, the build shows you your tables, each marked auditable or not
-      auditable
-    - Each table marked not auditable comes with the reason
-    - If every table can be audited, the list says so
 14. **When a build is blocked, it stops rather than leaving your tables half-finished.**
     An open table or form in the database to which you are adding audit logging blocks the template
     - Open the database
@@ -390,8 +396,10 @@ You can confirm these behaviors with the validation checks listed above.
 - Before running a build against a database in real use, best practice is to make a backup copy of the file.
   The template asks for one before changing anything.
 - Every audited table has a single-field primary key of a kind whose values fit in a Long Integer:
-  an AutoNumber, a Long Integer, an Integer or a Byte. The template reports tables that do not
-  qualify for audit before the build rather than failing during it.
+  an AutoNumber, a Long Integer, an Integer or a Byte. A Replication ID key qualifies as well, but
+  only where the developer was offered that choice — which happens only where the database has such
+  a key — and took it. The template reports tables that do not qualify for audit before the build
+  rather than failing during it.
 
 Lines marked **[your standards]** come from your standards layer rather than from this template, and
 move with that layer if your shop replaces it. Everything else in `standards/` applies here as it
@@ -427,6 +435,16 @@ alternatives for each and pick yourself. Seeing them takes longer, by about one 
   created-and-changed columns, where your standards layer asks for them: every save rewrites two of
   those four, so auditing them would add two rows to the log for every edit, saying what that edit's
   own log rows already say. You can switch them on yourself afterwards if you want them.
+- **Whether tables keyed by a Replication ID can be audited.** You are asked this only if your
+  database has at least one such table; otherwise it never comes up. Access stores a Replication ID
+  as a sixteen-byte value, and the log holds each audited row's key — normally as a whole number,
+  which is what every other kind of key it accepts is. Choose this and the log's key column is built
+  to hold text instead, so these tables can be audited like any other. The cost is that every key in
+  the log is then held as text, including the ordinary number keys — so sorting the log by key puts
+  `"10"` before `"2"`. Reading the log in the order things happened is unaffected: sort by the log's
+  own key instead. If you don't choose this, the log keeps its whole-number key column and tables
+  keyed by a Replication ID are reported as not auditable before anything is changed, and are left
+  alone.
 - The wording of everything the developer sees.
 - Whether the build reports in message boxes, as returned text, or both.
 - How the previous contents of a long-text field are held between the moment before a change and the
@@ -699,6 +717,21 @@ on its own, and nothing that binds is stated only there.
   holds. Name at the point of asking how many will be on, how many will be off, and why each group
   is off. An answer of "everything on" followed by a table with a fifth of its rows off is a
   surprise the developer had no way to see coming.
+- **The Replication ID entry under *Free to choose alternatives* is raised only where it applies.**
+  Where the readiness check finds no table keyed by a Replication ID, that entry is not offered, not
+  mentioned, and not among the alternatives the `Explore options` step covers. Where it finds one or
+  more, offer it like any other entry on that list. **The log's key column is built to hold text only
+  where both of those hold: such a key was found, and the developer chose to audit those tables. In
+  every other build it is a whole number, exactly as it is today** — no such key in the database, or
+  one found and the choice declined. A build that produces a text key column without both conditions
+  holding is wrong.
+- **The expression follows the column, not the key's type.** Where the log's key column holds whole
+  numbers — which is every build but the one above — the macro writes the key bare, as it does today.
+  **Where the column holds text, the macro writes the key with the string conversion forced** —
+  `[Table].[Key] & ""`, or `CStr([Table].[Key])`. Assigning the key bare into a text column copies
+  its sixteen bytes in as eight characters of unreadable text. Nothing raises an error, the log row
+  is still written, and it still names the table, the field and the new value — so every check in
+  this file passes over it. This is the one fault here that no check will catch for you.
 - **Every check is attempted, and that is a gate, not advice.** You do not decide that a check is not
   run, and nothing in this file, in the standards layer, or in anything said during the run relieves
   you of one. A check whose attempt stopped short is not passed, and its entry says what you did and
