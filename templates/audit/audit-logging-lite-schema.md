@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.4.1
+version: 0.5.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -341,13 +341,8 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
    stamps `OperationType` (`Insert` / `Update` / `Delete`); an insert row leaves `OldValue`
    Null and a delete row leaves `NewValue` Null. On update, the macro compares old and new
    values (`StrComp` on `Nz`-wrapped values) and logs only fields that actually changed. Long
-   Text fields are always logged on update — the comparison cannot be done in the macro.
-   **Practical effect, so this doesn't read as a bug:** every update to a row that contains a
-   Long Text field writes an audit row for that field, even when the field did not change — the
-   macro cannot compare Long Text values, so it logs the value as it stands. Change one ordinary
-   field and expect two rows: the field you changed, and the Long Text field with the same
-   content in `OldValue` and `NewValue` (both empty if the field is empty). Those rows are
-   correct, not an error.
+   Text is compared the same way, against the value staged before the change, because the macro
+   cannot read the old value directly.
 7. **Regenerate after schema change — and regeneration replaces, it never merges.** Adding a
    table or field, or changing a field's type to or from Long Text, requires re-running the
    config scan and regenerating the macros. The macros are point-in-time artifacts of the schema.

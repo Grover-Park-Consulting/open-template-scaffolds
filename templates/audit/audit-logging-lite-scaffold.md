@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.13.1
+version: 0.14.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -2785,9 +2785,9 @@ End Function
 ### BuildAfterUpdateMacro — `Private Function` → `String`
 
 Emits the AfterUpdate fragment. Ordinary fields: log only when the value actually changed
-(`GetComparisonExpression`), reading the old value from `[Old]`. Long Text fields: always log
-(schema Business Rule 6), retrieving the old value from `tblLongTextBackup` via `LookUpRecord` —
-the BeforeChange macro put it there (schema Business Rule 3).
+(`GetComparisonExpression`), reading the old value from `[Old]`. Long Text fields: the same test,
+against the value the BeforeChange macro staged in `tblLongTextBackup` (schema Business Rule 3) —
+so the lookup that retrieves it wraps the test rather than sitting inside it.
 
 ```vba
 Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collection, sPrimaryKeyField As String) As String
@@ -2815,11 +2815,9 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
 
         ' Auditable fields only (schema Business Rule 5); PK never changes, skip it
         If fieldInfo(3) = True And sFieldName <> sPrimaryKeyField Then
-            sXml = sXml & "<ConditionalBlock><If>"
-            sXml = sXml & "<Condition>" & GetComparisonExpression(sTableName, sFieldName, lFldType) & "</Condition>"
-            sXml = sXml & "<Statements>"
-
-            ' Long Text: fetch the backed-up old value (schema Business Rule 3)
+            ' [BUSINESS LOGIC — schema Business Rule 3] Long Text: the staged old value is
+            '                 fetched FIRST, because the change test compares against it. The
+            '                 lookup wraps the test; the test does not wrap the lookup.
             If bIsLongText Then
                 sXml = sXml & "<LookUpRecord>"
                 sXml = sXml & "<Data Alias=""BackupRec"">"
@@ -2832,6 +2830,10 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
                 sXml = sXml & "</Data>"
                 sXml = sXml & "<Statements>"
             End If
+
+            sXml = sXml & "<ConditionalBlock><If>"
+            sXml = sXml & "<Condition>" & GetComparisonExpression(sTableName, sFieldName, lFldType) & "</Condition>"
+            sXml = sXml & "<Statements>"
 
             sXml = sXml & "<CreateRecord>"
             If bIsLongText Then
@@ -2928,12 +2930,11 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
             sXml = sXml & "</Action>"
 
             sXml = sXml & "</Statements></CreateRecord>"
+            sXml = sXml & "</Statements></If></ConditionalBlock>"
 
             If bIsLongText Then
                 sXml = sXml & "</Statements></LookUpRecord>"
             End If
-
-            sXml = sXml & "</Statements></If></ConditionalBlock>"
         End If
     Next fieldInfo
 
@@ -3408,14 +3409,20 @@ are fixing it.
 Private Function GetComparisonExpression(sTableName As String, sFieldName As String, lFldType As Long) As String
     ' [SCAFFOLD] Per-type change test for the AfterUpdate conditional block.
     Dim sNotEqual As String
+    ' Built from Chr(38), not typed as a literal &lt;&gt; — see the note above this block.
+    ' This is XML for "<>"; the expression lives inside <Condition>...</Condition>.
+    sNotEqual = Chr(38) & "lt;" & Chr(38) & "gt;"
     Select Case lFldType
         Case dbMemo
-            ' Long Text: always log (cannot compare the old value in-macro)
-            GetComparisonExpression = "True"
+            ' [BUSINESS LOGIC — schema Business Rule 6] Long Text: the old value cannot be
+            '                 read from [Old], so it is compared against the row staged in
+            '                 tblLongTextBackup. The caller emits this inside the LookUpRecord
+            '                 that reads that row, which is what makes [BackupRec] resolve.
+            '                 NZ on both sides, exactly as below: a staged Null against a new
+            '                 empty string would otherwise make the whole expression Null, the
+            '                 condition would not pass, and a real edit would go unlogged.
+            GetComparisonExpression = "StrComp(NZ([" & sTableName & "].[" & sFieldName & "],""""),NZ([BackupRec].[OldValue],""""),0)" & sNotEqual & "0"
         Case Else
-            ' Built from Chr(38), not typed as a literal &lt;&gt; — see the note above this
-            ' block. This is XML for "<>"; the expression lives inside <Condition>...</Condition>.
-            sNotEqual = Chr(38) & "lt;" & Chr(38) & "gt;"
             GetComparisonExpression = "StrComp(NZ([" & sTableName & "].[" & sFieldName & "],""""),NZ([Old].[" & sFieldName & "],""""),0)" & sNotEqual & "0"
     End Select
 End Function
@@ -3497,9 +3504,12 @@ Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Var
 
     ' [SCAFFOLD] A key was supplied, so the row it names has to exist — it is the row being
     '            changed or deleted, and it is locked inside this transaction. Finding nothing
-    '            means the literal above did not match, which would otherwise stage no backup
-    '            and log the old value as empty without a word. Raise it instead: the handler
-    '            below stays quiet for the person editing, and a house logger sees it.
+    '            means the literal above did not match, so no backup is staged. The delete
+    '            above has already removed any earlier one, and the After macro creates its
+    '            log row inside the LookUpRecord that reads this table — so the field is not
+    '            logged at all, rather than logged wrongly. Raise it so the failure is not
+    '            merely silent: the handler below stays quiet for the person editing, and a
+    '            house logger sees it where the standards layer provides one.
     If rsOldValue.EOF Then
         rsOldValue.Close
         Err.Raise vbObjectError + 514, "BackupLongTextFieldsDM", _
