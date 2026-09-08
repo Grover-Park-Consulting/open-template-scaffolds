@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.8.1
+version: 0.9.0
 status: draft
 ---
 
@@ -332,6 +332,31 @@ database:
    then `db.Execute "INSERT INTO … (…, CreatedBy) VALUES (…, '" & sUser & "')", dbFailOnError`.
    (`CurrentUser()` *is* engine-known, but returns `"Admin"` without workgroup security — the
    resolved Windows user name is preferred.)
+
+**One more rule, and the only one here not learned by running the Sub.** The five above are about
+the build finishing. This one is about what the tables have to hold afterwards, and it applies in
+every template that creates a column receiving values from other columns.
+
+6. **A field that is a sink takes the widest thing it can be sent.** The developer's formulation:
+   *when a field is a sink for values it receives from elsewhere, it must be as broad as necessary.*
+   A **sink** is a field whose contents arrive from other fields whose type and width this design
+   does not decide — an audit log's before-and-after value columns, a staging column, an import
+   holding area. Two things follow.
+   - **Width.** Size it for the widest value any of its sources can hold, not the widest anyone
+     expects to see. Where a source has no fixed limit, the sink has none either.
+   - **The empty string.** A text or long-text field either accepts a zero-length string or refuses
+     one. On an ordinary field that is the developer's preference and nothing here settles it —
+     Access developers genuinely disagree, and many disallow it and specify a default value
+     instead. **On a sink it is settled by what a sink is:** a source that permits the empty string
+     can send one, so the sink accepts it. Set it explicitly at the sink rather than leaving it to
+     whatever a field created in code inherits.
+
+   **A foreign key is not a sink**, and neither is any other field with a single source of known
+   type. Its contents come from one column whose type it already matches, so its width is settled
+   by that column and there is nothing here to decide. The test is the sources: one, of a type this
+   design knows, is not a sink; many, whose types this design cannot constrain, is. **Nothing here
+   asks you to widen a field that has one source, and nothing here asks the developer a new
+   question.**
 
 **Both index orders are valid.** The sample above appends indexes to `tdf.Indexes` *before*
 `db.TableDefs.Append`; `templates/errors/error-logging-scaffold.md` appends the table first and builds

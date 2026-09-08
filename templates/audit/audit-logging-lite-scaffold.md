@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.12.1
+version: 0.13.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -39,6 +39,7 @@ new_procedures:
   - BuildBeforeDeleteMacro
   - AuditSetField
   - AuditKeyExpression
+  - AuditValueExpression
   - AuditKeyLocalVar
   - GetComparisonExpression
   - AuditUser (not built when the host's own identity function is used)
@@ -1504,10 +1505,17 @@ Public Function Two_CreateAuditTables(Optional bSilent As Boolean = False) As St
     fld.Required = True
     tdf.Fields.Append fld
 
+    ' [_materialization.md rule 6] OldValue and NewValue are sinks: every audited field in
+    '            every audited table writes into them, whatever its own type and width. dbMemo
+    '            is the widest text ACE has, and AllowZeroLength is True because an audited
+    '            field that permits the empty string can send one — a log that refused it would
+    '            drop exactly the change it exists to record.
     Set fld = tdf.CreateField("OldValue", dbMemo)
+    fld.AllowZeroLength = True
     tdf.Fields.Append fld
 
     Set fld = tdf.CreateField("NewValue", dbMemo)
+    fld.AllowZeroLength = True
     tdf.Fields.Append fld
 
     Set fld = tdf.CreateField("DateChanged", dbDate)
@@ -1581,7 +1589,10 @@ CreateLongTextBackup:
     fld.Required = True
     tdf.Fields.Append fld
 
+    ' [_materialization.md rule 6] OldValue is a sink, for the same reason and with the same
+    '            settings as the log table's — see the comment there.
     Set fld = tdf.CreateField("OldValue", dbMemo)
+    fld.AllowZeroLength = True
     tdf.Fields.Append fld
 
     Set fld = tdf.CreateField("DateChanged", dbDate)
@@ -2692,6 +2703,7 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
     Dim sXml As String
     Dim fieldInfo As Variant
     Dim sFieldName As String
+    Dim lFldType As Long
 
     sXml = "<DataMacro Event=""AfterInsert""><Statements>"
     sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
@@ -2706,6 +2718,7 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
     For Each fieldInfo In fieldList
       If fieldInfo(3) = True Then    ' auditable fields only (schema Business Rule 5)
         sFieldName = fieldInfo(0)
+        lFldType = fieldInfo(1)
 
         sXml = sXml & "<CreateRecord>"
         sXml = sXml & "<Data Alias=""NewAudit""><Reference>tblAuditLog</Reference></Data>"
@@ -2734,9 +2747,13 @@ Private Function BuildAfterInsertMacro(sTableName As String, fieldList As Collec
         sXml = sXml & "<Argument Name=""Value"">""Insert""</Argument>"
         sXml = sXml & "</Action>"
 
+        ' [BUSINESS LOGIC — schema Business Rule 4] Through AuditValueExpression: NewValue is
+        '                 a text column, and this loop includes the primary key, so on a
+        '                 Replication ID it is the key's own log row that goes in unreadable.
         sXml = sXml & "<Action Name=""SetField"">"
         sXml = sXml & "<Argument Name=""Field"">NewAudit.NewValue</Argument>"
-        sXml = sXml & "<Argument Name=""Value"">[" & sTableName & "].[" & sFieldName & "]</Argument>"
+        sXml = sXml & "<Argument Name=""Value"">" & _
+            AuditValueExpression("[" & sTableName & "].[" & sFieldName & "]", lFldType) & "</Argument>"
         sXml = sXml & "</Action>"
 
         sXml = sXml & "<Action Name=""SetField"">"
@@ -2863,14 +2880,18 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
             sXml = sXml & "<Argument Name=""Value"">""Update""</Argument>"
             sXml = sXml & "</Action>"
 
-            ' OldValue — from the backup for Long Text, from [Old] otherwise
+            ' OldValue — from the backup for Long Text, from [Old] otherwise. The backup
+            ' column is already text; the [Old] reference goes through AuditValueExpression
+            ' (schema Business Rule 4) because OldValue is a text column and the field may
+            ' be a Replication ID that is not this table's key.
             sXml = sXml & "<Action Name=""SetField"">"
             If bIsLongText Then
                 sXml = sXml & "<Argument Name=""Field"">tblAuditLog.OldValue</Argument>"
                 sXml = sXml & "<Argument Name=""Value"">[BackupRec].[OldValue]</Argument>"
             Else
                 sXml = sXml & "<Argument Name=""Field"">NewAudit.OldValue</Argument>"
-                sXml = sXml & "<Argument Name=""Value"">[Old].[" & sFieldName & "]</Argument>"
+                sXml = sXml & "<Argument Name=""Value"">" & _
+                    AuditValueExpression("[Old].[" & sFieldName & "]", lFldType) & "</Argument>"
             End If
             sXml = sXml & "</Action>"
 
@@ -2880,7 +2901,8 @@ Private Function BuildAfterUpdateMacro(sTableName As String, fieldList As Collec
             Else
                 sXml = sXml & "<Argument Name=""Field"">NewAudit.NewValue</Argument>"
             End If
-            sXml = sXml & "<Argument Name=""Value"">[" & sTableName & "].[" & sFieldName & "]</Argument>"
+            sXml = sXml & "<Argument Name=""Value"">" & _
+                AuditValueExpression("[" & sTableName & "].[" & sFieldName & "]", lFldType) & "</Argument>"
             sXml = sXml & "</Action>"
 
             sXml = sXml & "<Action Name=""SetField"">"
@@ -3010,13 +3032,17 @@ Private Function BuildAfterDeleteMacro(sTableName As String, fieldList As Collec
         sXml = sXml & "<Argument Name=""Value"">""Delete""</Argument>"
         sXml = sXml & "</Action>"
 
+        ' [BUSINESS LOGIC — schema Business Rule 4] Through AuditValueExpression: OldValue is
+        '                 a text column, this loop includes the primary key, and a delete is
+        '                 the other place a Replication ID key reaches a value column.
         sXml = sXml & "<Action Name=""SetField"">"
         If bIsLongText Then
             sXml = sXml & "<Argument Name=""Field"">tblAuditLog.OldValue</Argument>"
             sXml = sXml & "<Argument Name=""Value"">[BackupRec].[OldValue]</Argument>"
         Else
             sXml = sXml & "<Argument Name=""Field"">NewAudit.OldValue</Argument>"
-            sXml = sXml & "<Argument Name=""Value"">[Old].[" & sFieldName & "]</Argument>"
+            sXml = sXml & "<Argument Name=""Value"">" & _
+                AuditValueExpression("[Old].[" & sFieldName & "]", lFldType) & "</Argument>"
         End If
         sXml = sXml & "</Action>"
 
@@ -3298,6 +3324,40 @@ Private Function AuditKeyExpression(ByVal sKeyRef As String) As String
         AuditKeyExpression = sKeyRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
     Else
         AuditKeyExpression = sKeyRef
+    End If
+End Function
+```
+
+### AuditValueExpression — `Private Function` → `String`
+
+**The log's before-and-after columns are text too, and they take a Replication ID by the same
+route the key column does.** `AuditKeyExpression` above covers the column holding the audited
+row's key. It is not the only text column a Replication ID can reach: `OldValue` and `NewValue`
+are Long Text, and every audited field's value passes through them.
+
+**This one asks the field's own type, where `AuditKeyExpression` asks the build setting.** The
+two questions are different. Whether the key column holds text is a build-wide answer, which is
+what `AUDIT_GUID_KEYS_AUDITED` records. Whether *this* field is a Replication ID is a per-field
+answer, and `IsUnauditableFieldType` does not exclude the type — so **a Replication ID that is
+not a primary key is audited in every build, including one where `AUDIT_GUID_KEYS_AUDITED` is
+`False`**. Gating this function on the build setting would leave that field wrong.
+
+**The `&` is built from `Chr(38)`, not typed** — same rule and same reason as
+`AuditKeyExpression`, and the same check after import.
+
+```vba
+Private Function AuditValueExpression(ByVal sFieldRef As String, ByVal lFldType As Long) As String
+    ' [BUSINESS LOGIC — schema Business Rule 4] A field's value as it has to be written into
+    '                 OldValue or NewValue. A Replication ID assigned bare into a text column
+    '                 copies its sixteen bytes in as eight characters of unreadable text:
+    '                 nothing raises an error and the log row is still written, so no check
+    '                 catches it. Every other type renders correctly on its own, so only this
+    '                 one is converted — asked per field, because a Replication ID that is not
+    '                 a primary key is audited whatever AUDIT_GUID_KEYS_AUDITED says.
+    If lFldType = dbGUID Then
+        AuditValueExpression = sFieldRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
+    Else
+        AuditValueExpression = sFieldRef
     End If
 End Function
 ```

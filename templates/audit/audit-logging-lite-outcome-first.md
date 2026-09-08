@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.8.0
+version: 0.10.0
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -605,9 +605,14 @@ You need to provide information about seven things; we make no assumptions or gu
    tables. If you tell the template there is no backup, the build stops rather than continuing. We won't risk your data.
 4. **Which tables to audit.** You confirm the list before we make changes. We do not work out what to audit
    from what your tables are called. A shop's tables may be named anything at all and any guess we make would fail silently.
-5. **Which fields within the audited tables to audit.** The selection of fields to audit is switched on or off one at a time.
-   You do this by manually editing the settings table rather than by answering a question. Nothing else does it
-   for you. If you skip this step in a build, it audits everything or nothing.
+5. **Which fields within the audited tables to audit.** The selection of fields to audit is switched on or off
+   one field at a time. You do this by editing the settings table yourself rather than by answering a question.
+   Nothing else does it for you. **The build stops here and waits until you say the switches are how you want
+   them.** There is no preferred answer and the step is never skipped: only you know what that list should say.
+   Until you have been through it the switches stand as the earlier answer left them — everything that can be
+   audited on, or everything off — and neither of those is a selection anybody made. Where the build is being
+   carried out for you, it hands the database back so you can open that table, and waits for you to say you
+   are done.
 6. **Confirmation that the long-text fields found are the ones you expected.** Hyperlink fields also appear
    here, because Access holds them as long text; that is not an error. You confirm that the build has correctly identified those fields in your database.
 7. **Permission to change your tables.** We ask you immediately before changing anything.
@@ -694,7 +699,13 @@ on its own, and nothing that binds is stated only there.
   result. **Read them for the shape of the document and nothing else.** How the work divides, what
   the procedures are called, where things live, and what the build does are yours, exactly as
   declared under *Free to choose alternatives* — reading that file settles none of them, and copying
-  its decomposition would be importing a route you were not given.
+  its decomposition would be importing a route you were not given. **One thing in
+  `templates/_materialization.md` is outside that narrowing and does bind here: rule 6, about a
+  field that receives values from other fields.** The log's before-and-after value columns are such
+  a field — every audited field in the database writes into them — so they hold the widest text the
+  engine has and they accept a value set to nothing at all. That is not a route decision and it is
+  not open under *Free to choose alternatives*; a log that cannot record a field emptied is a log
+  that loses the change it exists to record.
 - **Read every file in `standards/` and apply it.** Naming, the audit column names, error handling and
   query style all come from there and never from this file. Lines marked **[your standards]** in
   *The same behavior every time, not the same structure* are outcomes that layer requires; they are
@@ -704,9 +715,10 @@ on its own, and nothing that binds is stated only there.
   it is called, and where things live are declared free above. Do not import a decomposition from
   anywhere else, and do not treat the count of anything in this file as a count of procedures to write.
 - **Ask for the seven things under *Information and conditions you need to supply*,** one at a time, through the interactive
-  selection control where the answer is a choice and as a plain question where it is a name. Two of
-  them are gates: a database in real use with no backup stops the build, and permission to change the
-  tables is asked immediately before anything is changed.
+  selection control where the answer is a choice and as a plain question where it is a name. Three of
+  them are gates: a database in real use with no backup stops the build, the field selection is confirmed
+  by the developer before any Data Macro is built, and permission to change the tables is asked
+  immediately before anything is changed.
 - **After the seventh thing and before you present the design, offer the `Explore options` step**
   (`_template-schema.md` §12.5) over the list under *Free to choose alternatives*, and nothing
   outside it. The Data Macro is not on that list and is never offered an alternative. A pick made
@@ -717,6 +729,16 @@ on its own, and nothing that binds is stated only there.
   holds. Name at the point of asking how many will be on, how many will be off, and why each group
   is off. An answer of "everything on" followed by a table with a fifth of its rows off is a
   surprise the developer had no way to see coming.
+- **The field selection is a gate. It has no preferred answer and it is never skipped.** Ask whether the
+  switches are the way the developer wants them, and build nothing onto a table until they answer. There is
+  no preferred choice to fall back on here — what that list should say is theirs alone to know — and a build
+  that carries on because the switches looked reasonable has skipped the one review the whole design exists
+  to enable. This is a separate question from what the settings table started as: that one settles how the
+  rows arrive, this one asks whether they are right. **If you are building the database yourself rather than
+  handing over a script, you are holding the file open and the developer cannot open it.** Close it, say that
+  you have, and wait for them; reopen it to carry on. That applies wherever you ask them to go and look at a
+  table, not only here — telling somebody to open something they are locked out of reads as the build being
+  broken.
 - **The Replication ID entry under *Free to choose alternatives* is raised only where it applies.**
   Where the readiness check finds no table keyed by a Replication ID, that entry is not offered, not
   mentioned, and not among the alternatives the `Explore options` step covers. Where it finds one or
