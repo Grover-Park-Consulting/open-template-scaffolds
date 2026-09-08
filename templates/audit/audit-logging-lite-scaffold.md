@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.13.0
+version: 0.13.1
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -1507,9 +1507,9 @@ Public Function Two_CreateAuditTables(Optional bSilent As Boolean = False) As St
 
     ' [_materialization.md rule 6] OldValue and NewValue are sinks: every audited field in
     '            every audited table writes into them, whatever its own type and width. dbMemo
-    '            is the widest text ACE has, and AllowZeroLength is True because an audited
-    '            field that permits the empty string can send one — a log that refused it would
-    '            drop exactly the change it exists to record.
+    '            is the widest text ACE has. AllowZeroLength is True and stays True: a source
+    '            that permits an empty string sends one, and AuditValueExpression's & "" yields
+    '            one from a Null whatever the source permits.
     Set fld = tdf.CreateField("OldValue", dbMemo)
     fld.AllowZeroLength = True
     tdf.Fields.Append fld

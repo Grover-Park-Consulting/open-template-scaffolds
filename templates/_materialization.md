@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.9.0
+version: 0.9.1
 status: draft
 ---
 
@@ -344,12 +344,9 @@ every template that creates a column receiving values from other columns.
    holding area. Two things follow.
    - **Width.** Size it for the widest value any of its sources can hold, not the widest anyone
      expects to see. Where a source has no fixed limit, the sink has none either.
-   - **The empty string.** A text or long-text field either accepts a zero-length string or refuses
-     one. On an ordinary field that is the developer's preference and nothing here settles it —
-     Access developers genuinely disagree, and many disallow it and specify a default value
-     instead. **On a sink it is settled by what a sink is:** a source that permits the empty string
-     can send one, so the sink accepts it. Set it explicitly at the sink rather than leaving it to
-     whatever a field created in code inherits.
+   - **The empty string.** A text or long-text sink accepts a zero-length string. Always, with
+     nothing to decide: where its sources refuse one, nothing empty ever arrives; where they permit
+     one, the sink has to record it.
 
    **A foreign key is not a sink**, and neither is any other field with a single source of known
    type. Its contents come from one column whose type it already matches, so its width is settled
