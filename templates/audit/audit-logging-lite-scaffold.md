@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.14.0
+version: 0.15.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -32,6 +32,7 @@ new_procedures:
   - Four_GenerateAllAuditDataMacros
   - CreateAllDataMacros
   - MacroBackupIsOurs
+  - RemoveDataMacrosForTable
   - BuildAfterInsertMacro
   - BuildAfterUpdateMacro
   - BuildAfterDeleteMacro
@@ -2479,9 +2480,24 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     '            Turning auditing off for a table is the normal Path B workflow, so it must
     '            never break writing to that table: the audit actions are skipped, the
     '            stamping macro is still emitted. Only a table that needs neither is skipped.
+    '
+    ' [SCAFFOLD] "Nothing to build" is not the same question as "nothing to do." A table can
+    '            arrive here with every field just switched off and no audit columns, while
+    '            still carrying the macros a PRIOR run attached when some field was on.
+    '            Exiting unconditionally would leave that table auditing exactly as before,
+    '            while reporting SKIPPED — which reads as "no change" when the true state is
+    '            "still logging." So: before reporting SKIPPED, check whether this table
+    '            already carries OUR OWN macros, and if it does, remove them and say so.
     If lAuditableCount = 0 And Len(sBeforeChange) = 0 Then
-        Debug.Print "  - Skipped (nothing to audit, and no audit columns to stamp)"
-        CreateAllDataMacros = "SKIPPED (nothing to audit, no audit columns to stamp)"
+        Dim sRemovalResult As String
+        sRemovalResult = RemoveDataMacrosForTable(sTableName)
+        If Left$(sRemovalResult, 2) = "OK" Then
+            Debug.Print "  - Removed (nothing to audit or stamp; a prior run's macros were still attached)"
+            CreateAllDataMacros = "REMOVED (nothing to audit or stamp; previous macros removed) - " & sRemovalResult
+        Else
+            Debug.Print "  - Skipped (nothing to audit, and no audit columns to stamp)"
+            CreateAllDataMacros = "SKIPPED (nothing to audit, no audit columns to stamp)"
+        End If
         Exit Function
     End If
 
@@ -2689,6 +2705,93 @@ Public Function MacroBackupIsOurs(sBackupPath As String) As Boolean
     Set fso = Nothing
 
     MacroBackupIsOurs = (InStr(1, sContent, AUDIT_MACRO_MARKER, vbBinaryCompare) > 0)
+End Function
+```
+
+### RemoveDataMacrosForTable — `Public Function` → `String`
+
+**The per-table sibling of `BackupAndRemoveAllDataMacros`.** `CreateAllDataMacros` calls this when a
+table has nothing to build — no auditable fields and no audit columns to stamp — but already carries
+macros this generator wrote on an earlier run: rather than leaving that table's audit trail running
+under a stale configuration, this strips it and reports `REMOVED` instead of `SKIPPED`. A table that
+has never carried this generator's macros is left alone and reported `SKIPPED`, unchanged.
+
+**Same recognition, same backup, same empty-document technique as `BackupAndRemoveAllDataMacros` —
+just scoped to one table instead of every table in the database.** It exists as its own callable
+function, not only as an internal helper of `CreateAllDataMacros`, because it is also the right tool
+for a developer who wants to strip one table's audit macros by hand without touching any other
+table — the way `BackupAndRemoveAllDataMacros` is the tool for stripping all of them.
+
+```vba
+Public Function RemoveDataMacrosForTable(ByVal sTableName As String) As String
+    ' [SCAFFOLD] Strip one table's Data Macros, but only if they are this generator's own —
+    '            same recognition and backup technique as BackupAndRemoveAllDataMacros, scoped
+    '            to a single table. Returns "OK ...", "SKIPPED ...", or "ERROR: ...".
+    Dim db As DAO.Database
+    Dim rsCheck As DAO.Recordset
+    Dim bHasMacros As Boolean
+    Dim sBackupFolder As String
+    Dim sBackupPath As String
+    Dim sEmptyPath As String
+    Dim fso As Object
+    Dim txtFile As Object
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+
+    Set rsCheck = db.OpenRecordset( _
+        "SELECT Name FROM MSysObjects WHERE Name='" & sTableName & "' AND Type=1 AND Not IsNull(LvExtra)", _
+        dbOpenSnapshot)
+    bHasMacros = Not rsCheck.EOF
+    rsCheck.Close
+    Set rsCheck = Nothing
+
+    If Not bHasMacros Then
+        RemoveDataMacrosForTable = "SKIPPED - " & sTableName & " carries no Data Macros"
+        GoTo Cleanup
+    End If
+
+    sBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
+    If Dir(sBackupFolder, vbDirectory) = "" Then MkDir sBackupFolder
+    sBackupPath = sBackupFolder & sTableName & "_PreRemoval_" & Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+    Application.SaveAsText acTableDataMacro, sTableName, sBackupPath
+
+    ' [SCAFFOLD] Same guard as BackupAndRemoveAllDataMacros: a macro set that is not this
+    '            generator's own is backed up (so the developer has a record) and left in
+    '            place. Business logic of the developer's own is not this tool's to throw away.
+    If Not MacroBackupIsOurs(sBackupPath) Then
+        RemoveDataMacrosForTable = "SKIPPED - " & sTableName & _
+            "'s Data Macros are not this generator's own work (backed up to " & sBackupPath & _
+            " and left in place)"
+        GoTo Cleanup
+    End If
+
+    sEmptyPath = Environ("TEMP") & "\" & sTableName & "_EmptyDataMacros.xml"
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set txtFile = fso.CreateTextFile(sEmptyPath, True, True)
+    txtFile.Write "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>" & _
+        "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application""></DataMacros>"
+    txtFile.Close
+    Set txtFile = Nothing
+
+    DoCmd.OpenTable sTableName, acViewDesign, acHidden
+    Application.LoadFromText acTableDataMacro, sTableName, sEmptyPath
+    DoCmd.Close acTable, sTableName, acSaveYes
+    fso.DeleteFile sEmptyPath
+
+    RemoveDataMacrosForTable = "OK - Data Macros removed from " & sTableName & " (backed up to " & sBackupPath & ")"
+
+Cleanup:
+    On Error Resume Next
+    Set rsCheck = Nothing
+    Set txtFile = Nothing
+    Set fso = Nothing
+    Set db = Nothing
+    Exit Function
+
+errHandler:
+    RemoveDataMacrosForTable = "ERROR: " & Err.Number & " - " & Err.Description
+    Resume Cleanup
 End Function
 ```
 

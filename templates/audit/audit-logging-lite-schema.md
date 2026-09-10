@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.5.0
+version: 0.5.1
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -364,6 +364,13 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
    macro set before overwriting it and exports a timestamped backup automatically, but it does not
    merge that logic into the new macros. Re-implementing anything lost is the developer's call,
    and is worth checking for specifically on Path B, where the tables have a history.
+
+   **A table switched down to nothing does not keep its old macros.** Turning every field off, on
+   a table with no house audit columns to stamp, means there is nothing left to build — but that is
+   not the same as nothing to do. The generator checks, in that exact case, whether the table
+   already carries this system's own macros; if it does, it strips them the same way the removal
+   tool would and reports `REMOVED` rather than `SKIPPED`. `SKIPPED` means only this: the table has
+   never had macros from this system, so there is nothing to undo.
 8. **The backup table is staging, not history.** `tblLongTextBackup` may be cleared at any time;
    the durable record is `tblAuditLog`, which is append-only. Retention/archival policy for the
    log is the adopter's call.
