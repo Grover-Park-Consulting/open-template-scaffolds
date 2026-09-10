@@ -61,6 +61,16 @@ practices.** These are among the very few absolute statements you'll find in our
 - **Always keep before and after master copies of your databases**, so you can compare what changed
   and go back if you need to.
 
+## Check that every validation check ran
+
+**Each template lists validation checks under *How you validate the template's output*. Before you
+trust a build, look at that list and make sure your AI assistant ran every single one — not most, not
+"the ones that still applied."** An AI session checking its own work will sometimes skip one and report
+the skip as a considered decision rather than a gap — that can read as reasonable in the moment, and it
+only shows if you compare what actually ran against the full list the template names. Ask directly:
+*"Did you run every check listed, and did each one pass?"* If the answer is anything but yes, ask why
+before you treat the build as validated.
+
 ## Try it in 15 minutes
 
 *For your first try, we set up a quick path. **There is nothing to install for this.** (The library also ships an

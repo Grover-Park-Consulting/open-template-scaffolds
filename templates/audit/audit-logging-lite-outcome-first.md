@@ -128,6 +128,9 @@ It is data, not code. Changing your mind later means editing rows and running th
 
 ### How you validate the template's output
 
+**Before you trust this build: confirm every one of these ran, not just the ones the AI mentions
+running.** See `README.md`, "Check that every validation check ran."
+
 You can validate that the template produced the results we promised. Perform each of these checks. Successfully completing these checks indicates the template ran as expected. Each validation check can be expressed as a yes/no question. **Validate by asking: Does this happen or not?**
 
 **Do these on a copy, and stop if you do not have one.** The checks add records, change fields and

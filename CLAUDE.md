@@ -168,6 +168,25 @@ one of two ways, at their direction:
   > you choose it. Taking the files means you import and run them yourself, at whatever pace you
   > like. Either way the result is the same, and either way you approve the design first.
 
+  **Before the first open of the target file, check for it being held by a process with no visible
+  lock file.** On Windows, a prior Access session can crash or hang and leave `MSACCESS.EXE` running
+  with the file open but no `.laccdb` beside it — the next exclusive-open attempt then fails with no
+  obvious cause. Check for this before attempting to open, not after a failed attempt: list
+  `MSACCESS.EXE` processes, and where one's command line names the target file (or an ambiguous
+  `-Embedding` instance can't be ruled out), ask the developer whether to end it before proceeding.
+  Never end a process without asking — an untitled instance is often the developer's own hung work,
+  not a stray one.
+
+  **Diagnostic VBA written to debug a build in progress must guard itself.** A throwaway probe run
+  live against the developer's own Access session can trigger the VBE's debugger if the machine is
+  set to break on all errors rather than unhandled ones — a setting outside this library's control,
+  and outside the developer's expectation. Automation can dismiss the resulting dialog but cannot
+  clear the paused state; only the developer can, by closing or resetting the project themselves,
+  which stops their build until they do. Wrap every such probe in its own resumable error handler
+  (`On Error Resume Next`, or equivalent) so it cannot trigger a break regardless of that machine's
+  setting — never rely on first setting the project's own error-trapping option, since a probe run
+  before that fix takes effect is exactly what causes this.
+
   Then **ask which platform the tables are for**, and generate the matching artifact (keys,
   relationships, indexes, lookup tables, and **seed rows** throughout):
   - **Access (ACE) local tables** → a **VBA `Sub` using DAO** (`CreateTableDef` / `CreateField` /

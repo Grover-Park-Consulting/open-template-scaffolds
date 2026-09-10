@@ -920,7 +920,7 @@ In addition to the common core (§3), an outcome-first template **must** contain
 
 | Section | Holds |
 |---|---|
-| `## What you end up with` | The specification: what the database does once this is built, in terms the developer can check without reading any code. Carries the checks that confirm it and the behaviours that must hold however the work was divided up. |
+| `## What you end up with` | The specification: what the database does once this is built, in terms the developer can check without reading any code. Carries the checks that confirm it and the behaviours that must hold however the work was divided up. Its checklist subsection opens with a line telling the developer to confirm every check ran, not only the ones the AI mentions running, pointing to `README.md`, "Check that every validation check ran." |
 | `## Information and conditions you need to supply` | Everything only the developer can answer, and which of those are gates that stop a build. |
 | `## To the AI assistant building this` | The build instruction, addressed to the assistant and marked as such where it starts. |
 
