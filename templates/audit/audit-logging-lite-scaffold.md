@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.15.0
+version: 0.16.0
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -53,6 +53,16 @@ build_paths:
     you (Zero_CreateSampleTables). Nothing real is touched."
   - "Path B — Add it to a real database you already have: skip Zero_CreateSampleTables and point
     the generator at your own existing tables instead. Back up the file first (see warnings)."
+house_assumptions:
+  - Audit scope (AUDIT_SCOPE_MODE) — chosen by the developer at wizard Step 4, never inferred from
+    what the tables are called without being told to. The Standard answer matches tbl/tlkp naming,
+    but only because the developer picked that answer over List or All, which are offered equally.
+  - Identity source (AuditUser) — the Windows account name is the preferred choice for the name
+    recorded against a change, and what this template ships with. The developer can override it
+    before generating — with the database's own identity function, where one already tracks the
+    signed-in person by their real name, or with CurrentUser() for the Access-session identity
+    instead. Both alternatives are asked for at "Before you write the modules" and named under
+    Extra Options — this is a default offered, never a choice made for the developer.
 warnings:
   - Data Macros cannot audit Long Text (Memo) fields on their own. Before building, list every
     Long Text field in the tables to be audited and confirm the list with the developer — any
@@ -382,6 +392,34 @@ everything fixes it.
 
 `BackupAndRemoveAllDataMacros`, `DumpTableMacros` and `ListMacroEvents` are optional tools, not
 steps — say what each is for and that a normal run never calls them.
+
+## Validating the build
+
+**To the AI assistant.** This template and `audit-logging-lite-outcome-first` promise the identical
+result — the same audit trail, produced by a different route — and each says so where it names the
+other. That promise is what gets checked, not which route built it, so there is one checklist for
+both rather than two.
+
+**Run every entry under `audit-logging-lite-outcome-first.md`'s "How you validate the template's
+output" against this build, on a copy, exactly as that template requires.** Do this whether you
+generated the code yourself or handed the developer the files to run — the checks read the database
+this build produced, not the procedures that produced it. Report against that same numbered list in
+the build record: one entry per check, what was done and what was observed, passed or not passed.
+An entry with neither outcome is a check that was not run, and the record is not complete until it
+has one.
+
+Two things follow from this being working code rather than a generated route:
+
+- **The checks that distinguish a Data-Macro recording from one that runs in VBA** — *The recording
+  happens entirely in the Data Macro, not in code the macro calls* and *Auditing cannot be got
+  around by moving the database somewhere Access does not trust* — apply here exactly as written.
+  Complete, working VBA is not an exemption from either: it is this scaffold's `Build*` functions
+  that write the XML the table loads, and the check confirms what actually landed on the table, not
+  what the generator intended.
+- **Where a check's wording assumes house_assumptions the developer changed** — the identity source,
+  chiefly — read the check against whichever function this build actually used. A check that says
+  "your name" means whoever `AuditUser()`, the host's own identity function, or `CurrentUser()`
+  resolves to, not a specific one of the three.
 
 ## Standards Gate
 
