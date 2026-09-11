@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.3.0
+version: 0.4.0
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -14,7 +14,7 @@ requires_tables:
   - StockTakeScan
   - ScanStatus
   - RemediationStatus
-  - ProductShrinkageAllowance
+  - ProductVarianceAllowance
   - SystemSettings
 standards_layer:
   - error-handling
@@ -28,7 +28,7 @@ new_procedures:
   - DetectDuplicateScan
   - RecordScan
   - RefreshCountRollup
-  - EvaluateShrinkage
+  - EvaluateVariance
 ---
 
 # Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
@@ -43,7 +43,7 @@ Realize the scan-processing logic that the Northwind stocktake **table** templat
 (`northwind-stocktake-schema`) defers "to the coding section." This scaffold supplies the
 **procedure skeletons** — signatures, recordset plumbing, control flow, and error-handling
 structure — for resolving a scan to a product, recording it, rolling the scans up into the stored
-count, and evaluating shrinkage. It does **not** write the domain logic itself: each procedure
+count, and evaluating the variance. It does **not** write the domain logic itself: each procedure
 marks where that goes, sourced from the table template's numbered **Business Rules**. House style
 (the central error logger, how SQL is written) is deferred to the standards layer.
 
@@ -57,9 +57,9 @@ Three layers, kept distinct throughout:
 
 | Object | Role |
 |---|---|
-| `northwind-stocktake-schema` tables | The scaffold runs against the tables that template creates (`StockTakeSession`/`StockTakeCount`/`StockTakeScan`, the lookups, `ProductShrinkageAllowance`) |
+| `northwind-stocktake-schema` tables | The scaffold runs against the tables that template creates (`StockTakeSession`/`StockTakeCount`/`StockTakeScan`, the lookups, `ProductVarianceAllowance`) |
 | `Products.SKUBarCode`, `Products.QuantityInPackage` | Scan resolution + package quantity |
-| `SystemSettings.DefaultAllowableShrinkageRate` | Fallback shrinkage rate |
+| `SystemSettings.DefaultAllowableShortageRate`, `SystemSettings.DefaultAllowableOverageRate` | Fallback variance rates |
 | `SystemSettings.DuplicateScanWindowSeconds` | Duplicate-scan detection window |
 | A central error logger | `error-handling.md` |
 
@@ -127,7 +127,7 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
     ' [BUSINESS LOGIC #2] RecordScan resolves Valid vs. Duplicate itself, via DetectDuplicateScan
     RecordScan lCountID, sScanCode, lScanQuantity
     RefreshCountRollup lCountID
-    EvaluateShrinkage lCountID
+    EvaluateVariance lCountID
 
 Cleanup:
     Exit Sub
@@ -316,20 +316,30 @@ errHandler:
 End Sub
 ```
 
-### EvaluateShrinkage — `Private Sub`
+### EvaluateVariance — `Private Sub`
 
 ```vba
-Private Sub EvaluateShrinkage(ByVal lCountID As Long)
+Private Sub EvaluateVariance(ByVal lCountID As Long)
     ' [SCAFFOLD] Set the remediation flag for one count line after its rollup.
     Dim db As DAO.Database
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    ' [BUSINESS LOGIC #7,#8] effective rate = ProductShrinkageAllowance.AllowableShrinkageRate if a row
-    '            exists, else SystemSettings.DefaultAllowableShrinkageRate / 1000.
-    '            shortfall = (ExpectedQuantity - CountedQuantity) / ExpectedQuantity.
-    '            if shortfall > effective rate, set RemediationStatusID = Flagged, else None.
+    ' [BUSINESS LOGIC #7,#8] VarianceQuantity = CountedQuantity - ExpectedQuantity (signed).
+    '            Where ExpectedQuantity = 0, this rule is not yet defined — see the table
+    '            template's Business Rule 8, "Unresolved in this template".
+    '            Where VarianceQuantity < 0 (shortfall): effective rate =
+    '            ProductVarianceAllowance.AllowableShortageRate if that row/column holds a value,
+    '            else SystemSettings.DefaultAllowableShortageRate / 1000; compare
+    '            (ExpectedQuantity - CountedQuantity) / ExpectedQuantity against it.
+    '            Where VarianceQuantity > 0 (overage): same resolution against
+    '            AllowableOverageRate / DefaultAllowableOverageRate, comparing
+    '            (CountedQuantity - ExpectedQuantity) / ExpectedQuantity.
+    '            Either comparison exceeding its rate sets RemediationStatusID = Flagged, else
+    '            None. Do not write which direction tripped it anywhere — RemediationStatus does
+    '            not record that (table template's house_assumptions); a reviewer reads the sign
+    '            of VarianceQuantity instead.
     ' >>> read values, compute, update RemediationStatusID, per query-style.md <<<
 
 Cleanup:

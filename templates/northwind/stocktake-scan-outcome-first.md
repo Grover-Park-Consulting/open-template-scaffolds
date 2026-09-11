@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.1.0
+version: 0.2.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -25,6 +25,11 @@ house_assumptions:
     scan detail is later edited or archived. This mirrors the table template's own declared
     assumption; a build that instead computes the count on demand from the scan log has changed
     that promise."
+  - "A count line's flag says only that it needs review, not which direction — shortfall or overage
+    — tripped it. That is answered by the sign of the counted-versus-expected variance, read at
+    review time; it is not stored a second time on the count line itself. This mirrors the table
+    template's own declared assumption; a build that stores the direction on the count line has
+    added something this template does not ask for."
 warnings:
   - "Products.SKUBarCode is a Memo field, and Access cannot put an index on a Memo field. Every
     scan resolution scans that field without one. On a small Products table this is not
@@ -36,6 +41,10 @@ warnings:
     turn that refusal into 'use the line the other counter just created', not let it reach the
     counter as a failure. Checking for an existing line first narrows the window; it does not
     close it."
+  - "The table template this realizes leaves one case of the variance check unresolved: a count
+    line whose ExpectedQuantity is zero makes both the shortfall and the overage fraction divide by
+    zero. Ask the developer what should happen then — no variance is possible, or any nonzero count
+    is a full overage — before building a check that runs unconditionally into that division."
 ---
 
 # Northwind Scanned Stocktake — outcome-first method
@@ -102,12 +111,18 @@ one.
 — minus the repeats.** Not every scan on file; every scan that was not identified as a repeat of an
 earlier one.
 
-**Where a product falls short of what the system expected, and the shortfall is more than the
-allowed tolerance, it is flagged for review.** Every product has an allowable tolerance for
-shortfall — theft, damage, and misplacement are expected in small amounts, so a small shortfall is
-not itself a problem. A product can have its own tolerance; where it doesn't, the database-wide
-default applies. A shortfall inside the tolerance passes unremarked. One beyond it is flagged, so
-somebody looks at it.
+**Where a product's count strays too far from what the system expected — short or over — it is
+flagged for review.** A count can come in low or high, and each direction has its own allowable
+tolerance: theft, damage, and misplacement produce small shortfalls that are expected and not
+themselves a problem; a receiving error, a return posted wrong, or a miscount produces small
+overages the same way. A product can have its own tolerance for either direction; where it doesn't,
+the matching database-wide default applies, and a product can override one direction without
+overriding the other. A count inside its tolerance passes unremarked, in either direction. One
+beyond it is flagged, so somebody looks at it.
+
+**The flag says a count line needs review. It does not say which direction sent it there.** Whether
+it was a shortfall or an overage that tripped the flag is not recorded a second time — it is read
+off the sign of the variance you already have, the moment somebody reviews it.
 
 **Two people can count different products, or the same product, in the same session at the same
 time, without stepping on each other's work.** A stocktake with several counters working the floor
@@ -144,18 +159,28 @@ Perform each of these checks against a copy of your database with the tables alr
    - Scan a product's package barcode, where one exists
    - Confirm the counted quantity increased by that product's package quantity, not by one
 6. **A shortfall beyond the allowed tolerance is flagged.**
-   - Count a product to fewer than expected, by more than its allowable shrinkage rate
+   - Count a product to fewer than expected, by more than its allowable shortage rate
    - Confirm that product's count line is flagged for review
 7. **A shortfall within the allowed tolerance is not flagged.**
-   - Count a product to fewer than expected, by less than its allowable shrinkage rate
+   - Count a product to fewer than expected, by less than its allowable shortage rate
    - Confirm that product's count line is not flagged
-8. **Two counters, one product, the same moment, do not collide.**
-   - This one needs two people, or two sessions open at once, counting the same product for the
-     first time in the same stocktake within a second or two of each other
-   - Confirm both scans succeed
-   - Confirm they land against one count line for that product, not two
-   - This is the check named in the warning about concurrent counters — it is worth trying
-     deliberately, not just trusting the design
+8. **An overage beyond the allowed tolerance is flagged.**
+   - Count a product to more than expected, by more than its allowable overage rate
+   - Confirm that product's count line is flagged for review
+9. **An overage within the allowed tolerance is not flagged.**
+   - Count a product to more than expected, by less than its allowable overage rate
+   - Confirm that product's count line is not flagged
+10. **The flag does not say which direction, but the variance does.**
+    - Flag one count line by shortfall (check 6) and a different one by overage (check 8)
+    - Confirm both count lines show the same flag, with nothing on either one distinguishing them
+    - Confirm the counted and expected quantities on each still tell you which is which
+11. **Two counters, one product, the same moment, do not collide.**
+    - This one needs two people, or two sessions open at once, counting the same product for the
+      first time in the same stocktake within a second or two of each other
+    - Confirm both scans succeed
+    - Confirm they land against one count line for that product, not two
+    - This is the check named in the warning about concurrent counters — it is worth trying
+      deliberately, not just trusting the design
 
 ### The same behavior every time, not the same structure
 
@@ -172,11 +197,17 @@ database that behaves the same way. The following must be true of every build:
   for it (declared in `house_assumptions`).
 - Whether a scan is a repeat is judged only against other scans on the same count line — the same
   product, the same session — never across products or across sessions.
-- A shortfall check uses the product's own tolerance where one is set, and the database-wide default
-  otherwise. Both are expressed the same way once found, so the comparison never has to know which
-  source supplied the number.
-- A product within tolerance is never flagged, and a build does not flag it "for visibility" or any
-  reason beyond the rule stated above.
+- A shortfall check uses the product's own shortage tolerance where one is set, and the matching
+  database-wide default otherwise; an overage check does the same against the overage tolerance,
+  independently — a product can override one direction without touching the other. Both are
+  expressed the same way once found, so the comparison never has to know which source supplied the
+  number.
+- A product within tolerance, in either direction, is never flagged, and a build does not flag it
+  "for visibility" or any reason beyond the rule stated above.
+- The flag itself never records which direction tripped it. A build that adds a second flag value,
+  a direction column, or anything else naming shortfall vs. overage on the count line has added
+  something this template does not promise (declared in `house_assumptions`) — the sign of the
+  variance is what a reviewer reads instead.
 - Two counters racing to be first on the same product never produce two count lines. One creates it;
   the other finds and uses what the first created.
 - Nothing here interrupts a counter mid-scan with a message they cannot act on. A repeat is recorded
@@ -214,13 +245,14 @@ you have.
 - **Deciding, for a scanned barcode, whether it names a package or a single unit.** That
   determination is not settled by this template or by the table template it realizes — see *Parked /
   future considerations*.
-- **A screen for reviewing unmatched scans or flagged shortfalls.** Both are recorded. Building a
-  screen to work through them is yours to add.
-- **Anything about overage — a count that comes in higher than expected.** Only shortfall is
-  evaluated against a tolerance here, matching the table template it realizes. See *Parked / future
-  considerations*.
+- **A screen for reviewing unmatched scans or flagged count lines.** All of these are recorded.
+  Building a screen to work through them is yours to add.
 - **Choosing the duplicate-detection window for you.** You supply the number of seconds; see
   *Information and conditions you need to supply*.
+- **Deciding what a count line with no expected quantity means.** Where `ExpectedQuantity` is zero,
+  neither a shortfall fraction nor an overage fraction can be computed — both divide by zero. This
+  template does not resolve that case; the warning in the front matter says so, and the developer's
+  answer is asked before it is built.
 
 ---
 
@@ -297,8 +329,8 @@ binds is stated only there.
 - **Read `northwind-stocktake-schema.md`, the table template this realizes, for the tables, the
   Business Rules, and the seed values this build reads and writes** — in particular Business Rule 2
   (scan resolution and the duplicate check), Business Rule 3 (the rollup), and Business Rules 7 and 8
-  (the shrinkage tolerance). This file restates their outcome; that file is where the field names and
-  table shapes live.
+  (the variance tolerances, in both directions, and the unresolved zero-expected-quantity case).
+  This file restates their outcome; that file is where the field names and table shapes live.
 - **Read every file in `standards/` and apply it.** Error handling, query style, naming, and how the
   work divides into procedures all come from there and never from this file.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
@@ -319,11 +351,13 @@ binds is stated only there.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like,
   not from reasoning that makes an answer seem obvious. Where a check exists to answer a question,
   run the check at the point the sequence calls for it rather than working the answer out yourself.
-- **Surface the warnings in the front matter** and get the developer's answer on each before
-  building. Neither is a preference to note in passing — the Memo-barcode warning changes what you
-  tell the developer about scan-resolution performance on their catalog, and the race-condition
-  warning is a requirement you build to, restated under *The same behavior every time, not the same
-  structure* as "two counters racing... never produce two count lines."
+- **Surface all three warnings in the front matter** and get the developer's answer on each before
+  building. None is a preference to note in passing — the Memo-barcode warning changes what you
+  tell the developer about scan-resolution performance on their catalog, the race-condition warning
+  is a requirement you build to (restated under *The same behavior every time, not the same
+  structure* as "two counters racing... never produce two count lines"), and the zero-expected-
+  quantity warning is a gate: get the developer's answer on what it means before you build a check
+  that would otherwise divide by zero, and restate their answer in the design you present.
 - **The build record reports against *How you validate the template's output*, one entry per check,
   each saying what was done and what was observed** — a completed check list, not a narrative. Passed
   and not passed are the only outcomes. An entry with neither is a check that was not run, and the
@@ -351,8 +385,5 @@ developer's own library, not committed here.*
 - **Indexed barcode field** — `Products.SKUBarCode` is a Memo field and Access cannot index it; the
   warning above surfaces the consequence, but adding an indexed text barcode field is a change to
   `Products` outside this template's scope.
-- **Symmetric variance (overage)** — this template evaluates shortfall only, matching the table
-  template's Business Rule 8. Whether an overage — a count that comes in *higher* than expected —
-  should carry its own tolerance and its own flag is an open question, raised alongside this build and
-  not yet settled. It would need a schema change (a second rate, or a direction on the existing one)
-  before a build could realize it, so it belongs to `northwind-stocktake-schema` first, not here.
+- **A zero expected quantity** — the table template's Business Rule 8 leaves this case open; see the
+  warning above. Resolving it belongs to `northwind-stocktake-schema` first, not here.

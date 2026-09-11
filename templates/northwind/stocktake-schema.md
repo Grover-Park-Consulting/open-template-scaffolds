@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.3.0
+version: 0.4.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -25,13 +25,16 @@ new_tables:
   - StockTakeStatus
   - StockTakeCountMethod
   - ScanStatus
-  - ProductShrinkageAllowance
+  - ProductVarianceAllowance
   - RemediationStatus
 seeds:
-  - SystemSettings.DefaultAllowableShrinkageRate
+  - SystemSettings.DefaultAllowableShortageRate
+  - SystemSettings.DefaultAllowableOverageRate
   - SystemSettings.DuplicateScanWindowSeconds
 house_assumptions:
   - "StockTakeCount.CountedQuantity stored, not derived — a reconciled count is a durable audit fact business decisions rely on; it must not change if scan detail is later edited or archived. Stored despite being derivable; the alternative is to compute it on demand."
+  - "RemediationStatus records that a count line needs review, not which direction (shortage or overage) tripped it. The signed VarianceQuantity (Business Rule 6) already answers that at review time, by its sign — a practice wanting the direction stored on the count line itself, rather than read from a query, changes this."
+  - "ProductVarianceAllowance renames the table formerly called ProductShrinkageAllowance, now that it holds an overage tolerance as well as a shortage one — 'shrinkage' names loss specifically and would misname the overage column. A practice already using the old name changes this back."
 ---
 
 # Northwind Scanned Stocktake — Table Schema
@@ -96,7 +99,7 @@ must confirm these exist and wire the new tables to them:
 | `Products.SKUBarCode` (Memo) | Scan-resolution target | A scanned code is matched against this to resolve `ProductID`. **Standards/implementation note:** a Memo cannot be indexed; for production scan performance the standards layer may call for an indexed Text barcode field. The template depends on the field but does not alter `Products`. |
 | `Products.QuantityInPackage` (Long) | Package-scan multiplier | When a package barcode is scanned, units added = `QuantityInPackage` (see Business Rules) |
 | `Employees.EmployeeID` (AutoNumber PK) | Who conducted the session | `StockTakeSession.ConductedByEmployeeID` FK |
-| `SystemSettings` (key/value) | Default allowable shrinkage rate | Seed row `DefaultAllowableShrinkageRate`; follows the host `[percent*1000]` convention used by `TaxRate` (e.g. `"50"` = 0.05 = 5%). Per-product values in `ProductShrinkageAllowance` override it. |
+| `SystemSettings` (key/value) | Default allowable variance rates | Seed rows `DefaultAllowableShortageRate` and `DefaultAllowableOverageRate`; both follow the host `[percent*1000]` convention used by `TaxRate` (e.g. `"50"` = 0.05 = 5%). Per-product values in `ProductVarianceAllowance` override either one independently. |
 | `SystemSettings` (key/value) | Duplicate-scan detection window | Seed row `DuplicateScanWindowSeconds`; a plain integer count of seconds (e.g. `"120"`), not the `[percent*1000]` convention above — this key holds a duration, not a rate. See Business Rule 2. |
 
 ## Entities
@@ -134,7 +137,7 @@ product, regardless of which method produced it.
 | `StockTakeCountMethodID` | Long | FK → StockTakeCountMethod, Required | How this line was counted (Manual / Scan) |
 | `ExpectedQuantity` | Long | Nullable | System on-hand snapshotted when the session opened |
 | `CountedQuantity` | Long | Nullable | The counted result. Manual: entered directly. Scan: maintained as `SUM(StockTakeScan.ScanQuantity)` for this line |
-| `RemediationStatusID` | Long | FK → RemediationStatus, Required | Outcome of the shrinkage reality check; defaults to None. Set to Flagged when variance exceeds the effective allowable shrinkage rate (logic in the coding section) |
+| `RemediationStatusID` | Long | FK → RemediationStatus, Required | Outcome of the variance reality check; defaults to None. Set to Flagged when the shortfall or the overage exceeds its effective allowable rate (logic in the coding section). Does not record which direction tripped it — see Business Rule 8 |
 
 Indexes: PK on `StockTakeCountID`; **unique index on (`StockTakeSessionID`, `ProductID`)** — enforces one count
 line per product per session; non-unique index on `ProductID` (FK); non-unique index on
@@ -158,16 +161,19 @@ Grain: one row per physical scan. Present only for scanned counts (Level 2).
 
 Indexes: PK on `StockTakeScanID`; non-unique index on `StockTakeCountID` (FK).
 
-### ProductShrinkageAllowance — per-product shrinkage tolerance (admin-managed)
+### ProductVarianceAllowance — per-product variance tolerance (admin-managed)
 
-Grain: at most one row per product, holding a non-default allowable shrinkage tolerance.
-A 1:1 extension of `Products` — it adds stocktake-specific configuration without altering the
-host table. Products without a row inherit the `SystemSettings` default.
+Grain: at most one row per product, holding non-default allowable variance tolerances — a
+shortage tolerance, an overage tolerance, or both. A 1:1 extension of `Products` — it adds
+stocktake-specific configuration without altering the host table. A product with no row, or a
+row with one of the two rates left blank, inherits the matching `SystemSettings` default for
+that rate; the two directions fall back independently of each other.
 
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
 | `ProductID` | Long | PK + FK → Products | Shared primary key (1:1 with `Products`) |
-| `AllowableShrinkageRate` | Single | Required | Allowable shortfall as a **fraction** (`0.0500` = 5%) |
+| `AllowableShortageRate` | Single | Nullable | Allowable shortfall as a **fraction** (`0.0500` = 5%). Blank falls back to `SystemSettings.DefaultAllowableShortageRate` |
+| `AllowableOverageRate` | Single | Nullable | Allowable overage as a **fraction** (`0.0500` = 5%). Blank falls back to `SystemSettings.DefaultAllowableOverageRate` |
 
 Indexes: PK on `ProductID` (also the FK to `Products`).
 
@@ -193,7 +199,7 @@ New (within this template):
 Hooks into existing Northwind schema:
 - `Products (1) → (∞) StockTakeCount` on `ProductID` — **no cascade** (never delete count
   history when a product changes)
-- `Products (1) → (0..1) ProductShrinkageAllowance` on `ProductID` — cascade delete (the
+- `Products (1) → (0..1) ProductVarianceAllowance` on `ProductID` — cascade delete (the
   tolerance is pure config for that product, meaningless without it)
 - `Employees (1) → (∞) StockTakeSession` on `ConductedByEmployeeID` — no cascade
 
@@ -227,13 +233,25 @@ Hooks into existing Northwind schema:
 5. **Expected quantity** — `ExpectedQuantity` is snapshotted from the system's computed on-hand
    at the moment the session opens, so variance reflects the count against a fixed baseline.
 6. **Variance** — computed as `CountedQuantity − ExpectedQuantity` in queries/reports; not stored.
-7. **Effective shrinkage rate** — for a product, use `ProductShrinkageAllowance.AllowableShrinkageRate`
-   (a fraction) if a row exists; otherwise fall back to `SystemSettings.DefaultAllowableShrinkageRate`
-   ÷ 1000 (the `[percent*1000]` host convention). Both normalize to a fraction before comparison.
-8. **Shrinkage reality check** *(logic deferred to the coding section; schema support only)* — when a
-   count line shows a shortfall, compute shortfall fraction = `(ExpectedQuantity − CountedQuantity) /
-   ExpectedQuantity`. If it exceeds the effective allowable rate, set `RemediationStatusID = Flagged`
-   for review; otherwise leave it `None`. Shrinkage = damage, misplacement, or theft.
+7. **Effective variance rates** — for a product, use `ProductVarianceAllowance.AllowableShortageRate`
+   (a fraction) if a row exists and that column holds a value; otherwise fall back to
+   `SystemSettings.DefaultAllowableShortageRate` ÷ 1000 (the `[percent*1000]` host convention). The
+   same resolution applies independently to `AllowableOverageRate` / `DefaultAllowableOverageRate` —
+   a product can override one direction's tolerance without overriding the other. Both normalize to a
+   fraction before comparison.
+8. **Variance reality check** *(logic deferred to the coding section; schema support only)* — using
+   the signed `VarianceQuantity` from Business Rule 6: where it is negative (a shortfall), compute
+   shortfall fraction = `(ExpectedQuantity − CountedQuantity) / ExpectedQuantity` and compare it to
+   the effective shortage rate; where it is positive (an overage), compute overage fraction =
+   `(CountedQuantity − ExpectedQuantity) / ExpectedQuantity` and compare it to the effective overage
+   rate. Either comparison exceeding its rate sets `RemediationStatusID = Flagged` for review;
+   otherwise it stays `None`. **`RemediationStatus` does not record which direction tripped it** — the
+   sign of `VarianceQuantity`, read at review time, already answers that, so nothing is stored
+   redundantly (declared in `house_assumptions`). Shortfall = damage, misplacement, or theft; overage =
+   a receiving, return, or count error that inflated the figure. **Unresolved in this template:**
+   `ExpectedQuantity = 0` makes both fractions above divide by zero; the coding section has to decide
+   what that case means (no variance possible, or any nonzero count is a full overage) before it can
+   run this check unconditionally.
 
 ## Standards Layer (supplied externally, not in this template body)
 
