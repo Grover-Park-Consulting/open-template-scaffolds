@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.4.0
+version: 0.5.0
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -327,17 +327,25 @@ Private Sub EvaluateVariance(ByVal lCountID As Long)
     Set db = CurrentDb
 
     ' [BUSINESS LOGIC #7,#8] VarianceQuantity = CountedQuantity - ExpectedQuantity (signed).
-    '            Where ExpectedQuantity = 0, this rule is not yet defined — see the table
-    '            template's Business Rule 8, "Unresolved in this template".
+    '            Compare QUANTITIES, never a fraction — do not write ExpectedQuantity into a
+    '            denominator anywhere in this procedure. See the table template's Business Rule 8
+    '            for why: the fraction form (variance / ExpectedQuantity > rate) divides by zero
+    '            the moment a count line's ExpectedQuantity is 0. Multiplying both sides of that
+    '            comparison by ExpectedQuantity gives the same result wherever ExpectedQuantity > 0
+    '            and never divides at all, which is the form below.
     '            Where VarianceQuantity < 0 (shortfall): effective rate =
     '            ProductVarianceAllowance.AllowableShortageRate if that row/column holds a value,
-    '            else SystemSettings.DefaultAllowableShortageRate / 1000; compare
-    '            (ExpectedQuantity - CountedQuantity) / ExpectedQuantity against it.
+    '            else SystemSettings.DefaultAllowableShortageRate / 1000; flag when
+    '            (ExpectedQuantity - CountedQuantity) > effective rate * ExpectedQuantity.
     '            Where VarianceQuantity > 0 (overage): same resolution against
-    '            AllowableOverageRate / DefaultAllowableOverageRate, comparing
-    '            (CountedQuantity - ExpectedQuantity) / ExpectedQuantity.
-    '            Either comparison exceeding its rate sets RemediationStatusID = Flagged, else
-    '            None. Do not write which direction tripped it anywhere — RemediationStatus does
+    '            AllowableOverageRate / DefaultAllowableOverageRate; flag when
+    '            (CountedQuantity - ExpectedQuantity) > effective rate * ExpectedQuantity.
+    '            Either comparison holding sets RemediationStatusID = Flagged, else None.
+    '            At ExpectedQuantity = 0 this needs no special case: CountedQuantity can't be
+    '            negative, so the shortfall line can never hold, and the overage line reduces to
+    '            "CountedQuantity > 0" — any nonzero count where none was expected gets flagged,
+    '            which is the correct answer, not a worked-around one.
+    '            Do not write which direction tripped it anywhere — RemediationStatus does
     '            not record that (table template's house_assumptions); a reviewer reads the sign
     '            of VarianceQuantity instead.
     ' >>> read values, compute, update RemediationStatusID, per query-style.md <<<

@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.4.0
+version: 0.5.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -240,18 +240,37 @@ Hooks into existing Northwind schema:
    a product can override one direction's tolerance without overriding the other. Both normalize to a
    fraction before comparison.
 8. **Variance reality check** *(logic deferred to the coding section; schema support only)* — using
-   the signed `VarianceQuantity` from Business Rule 6: where it is negative (a shortfall), compute
-   shortfall fraction = `(ExpectedQuantity − CountedQuantity) / ExpectedQuantity` and compare it to
-   the effective shortage rate; where it is positive (an overage), compute overage fraction =
-   `(CountedQuantity − ExpectedQuantity) / ExpectedQuantity` and compare it to the effective overage
-   rate. Either comparison exceeding its rate sets `RemediationStatusID = Flagged` for review;
-   otherwise it stays `None`. **`RemediationStatus` does not record which direction tripped it** — the
-   sign of `VarianceQuantity`, read at review time, already answers that, so nothing is stored
-   redundantly (declared in `house_assumptions`). Shortfall = damage, misplacement, or theft; overage =
-   a receiving, return, or count error that inflated the figure. **Unresolved in this template:**
-   `ExpectedQuantity = 0` makes both fractions above divide by zero; the coding section has to decide
-   what that case means (no variance possible, or any nonzero count is a full overage) before it can
-   run this check unconditionally.
+   the signed `VarianceQuantity` from Business Rule 6, compare **quantities, never fractions:**
+   - Where `VarianceQuantity` is negative (a shortfall): flag when
+     `ExpectedQuantity − CountedQuantity  >  effective shortage rate × ExpectedQuantity`.
+   - Where `VarianceQuantity` is positive (an overage): flag when
+     `CountedQuantity − ExpectedQuantity  >  effective overage rate × ExpectedQuantity`.
+
+   Either comparison holding sets `RemediationStatusID = Flagged` for review; otherwise it stays
+   `None`. **`RemediationStatus` does not record which direction tripped it** — the sign of
+   `VarianceQuantity`, read at review time, already answers that, so nothing is stored redundantly
+   (declared in `house_assumptions`). Shortfall = damage, misplacement, or theft; overage = a
+   receiving, return, or count error that inflated the figure.
+
+   **Why quantities, not the shortfall/overage fraction used in earlier drafts of this rule.** The
+   natural way to state a tolerance is as a percentage — "flag a shortfall over 5% of what was
+   expected" — which reads as *fraction exceeds rate*: `(ExpectedQuantity − CountedQuantity) /
+   ExpectedQuantity > rate`. That is exactly the earlier form of this rule, and it divides by
+   `ExpectedQuantity` — undefined the moment a count line's expected quantity is zero. **Multiplying
+   both sides of that comparison by `ExpectedQuantity` produces the form given above: the same
+   comparison, for every count line where `ExpectedQuantity > 0`, with no division anywhere.** (The
+   direction of the inequality is unaffected — `ExpectedQuantity` is positive whenever it appears in
+   a denominator here, so multiplying by it never flips which side is larger.) A comparison that
+   was never dividing has nothing to break when `ExpectedQuantity` reaches zero: the right-hand side
+   of each line above becomes `rate × 0 = 0`, and the comparison still runs.
+   **What that means at zero is the correct answer on its own terms, not a worked-around edge
+   case.** `CountedQuantity` cannot be negative, so where `ExpectedQuantity = 0`,
+   `CountedQuantity ≥ ExpectedQuantity` always — the shortfall line can never hold, only the overage
+   line can, and it reduces to `CountedQuantity − 0 > 0`: **flag any nonzero count.** That is the
+   right outcome stated in its own right — a count line where the system expected nothing and a
+   counter found something is not a rounding error near a percentage threshold, it is the most
+   notable thing this check can find, and this form flags it without inventing a substitute value
+   for `ExpectedQuantity` to divide by.
 
 ## Standards Layer (supplied externally, not in this template body)
 

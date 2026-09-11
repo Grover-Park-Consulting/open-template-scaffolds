@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.2.0
+version: 0.3.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -41,10 +41,6 @@ warnings:
     turn that refusal into 'use the line the other counter just created', not let it reach the
     counter as a failure. Checking for an existing line first narrows the window; it does not
     close it."
-  - "The table template this realizes leaves one case of the variance check unresolved: a count
-    line whose ExpectedQuantity is zero makes both the shortfall and the overage fraction divide by
-    zero. Ask the developer what should happen then — no variance is possible, or any nonzero count
-    is a full overage — before building a check that runs unconditionally into that division."
 ---
 
 # Northwind Scanned Stocktake — outcome-first method
@@ -124,6 +120,15 @@ beyond it is flagged, so somebody looks at it.
 it was a shortfall or an overage that tripped the flag is not recorded a second time — it is read
 off the sign of the variance you already have, the moment somebody reviews it.
 
+**A product the system expected to find none of, and a counter found some of anyway, is always
+flagged.** A tolerance stated as a percentage — "flag a shortfall over 5%" — has nothing to be a
+percentage *of* when the expected quantity is zero: 5% of zero is zero, so there is no band of
+"small and expected" for a percentage tolerance to describe. Rather than pick a stand-in number to
+measure against, the check is built so that this case needs no special handling at all — see *To
+the AI assistant building this* for the reasoning — and what falls out of it is the plainly correct
+answer: any count found where none was expected is notable on its own, not a rounding error near a
+threshold, so it is flagged every time.
+
 **Two people can count different products, or the same product, in the same session at the same
 time, without stepping on each other's work.** A stocktake with several counters working the floor
 at once is the ordinary case this exists for, not an edge case it merely tolerates. Two counters
@@ -174,7 +179,12 @@ Perform each of these checks against a copy of your database with the tables alr
     - Flag one count line by shortfall (check 6) and a different one by overage (check 8)
     - Confirm both count lines show the same flag, with nothing on either one distinguishing them
     - Confirm the counted and expected quantities on each still tell you which is which
-11. **Two counters, one product, the same moment, do not collide.**
+11. **A count found where none was expected is always flagged.**
+    - Find a count line whose `ExpectedQuantity` is zero, or set one up on a product with no
+      system on-hand quantity at the moment a session opens
+    - Count any nonzero quantity for it
+    - Confirm that count line is flagged for review, however small the count
+12. **Two counters, one product, the same moment, do not collide.**
     - This one needs two people, or two sessions open at once, counting the same product for the
       first time in the same stocktake within a second or two of each other
     - Confirm both scans succeed
@@ -204,6 +214,11 @@ database that behaves the same way. The following must be true of every build:
   number.
 - A product within tolerance, in either direction, is never flagged, and a build does not flag it
   "for visibility" or any reason beyond the rule stated above.
+- **The tolerance comparison never divides by the expected quantity, in code or in a query.** A
+  count line whose expected quantity is zero is not a special case that needs its own branch — it
+  is an ordinary input to a comparison that was never dividing by anything. See *To the AI assistant
+  building this* for the reasoning. What that produces is stated as its own behaviour, not derived
+  from it: a nonzero count against a zero expected quantity is always flagged, in every build.
 - The flag itself never records which direction tripped it. A build that adds a second flag value,
   a direction column, or anything else naming shortfall vs. overage on the count line has added
   something this template does not promise (declared in `house_assumptions`) — the sign of the
@@ -249,10 +264,6 @@ you have.
   Building a screen to work through them is yours to add.
 - **Choosing the duplicate-detection window for you.** You supply the number of seconds; see
   *Information and conditions you need to supply*.
-- **Deciding what a count line with no expected quantity means.** Where `ExpectedQuantity` is zero,
-  neither a shortfall fraction nor an overage fraction can be computed — both divide by zero. This
-  template does not resolve that case; the warning in the front matter says so, and the developer's
-  answer is asked before it is built.
 
 ---
 
@@ -329,8 +340,28 @@ binds is stated only there.
 - **Read `northwind-stocktake-schema.md`, the table template this realizes, for the tables, the
   Business Rules, and the seed values this build reads and writes** — in particular Business Rule 2
   (scan resolution and the duplicate check), Business Rule 3 (the rollup), and Business Rules 7 and 8
-  (the variance tolerances, in both directions, and the unresolved zero-expected-quantity case).
-  This file restates their outcome; that file is where the field names and table shapes live.
+  (the variance tolerances, in both directions). This file restates their outcome; that file is where
+  the field names and table shapes live.
+- **Write the variance check as a comparison of quantities, never as a fraction with
+  `ExpectedQuantity` in a denominator — anywhere, in code or in a saved query.** The natural way to
+  state a percentage tolerance is `(ExpectedQuantity − CountedQuantity) / ExpectedQuantity > rate`,
+  and it divides by zero the moment a count line's `ExpectedQuantity` is zero. Multiplying both
+  sides of that comparison by `ExpectedQuantity` — which does not change which side is larger,
+  because `ExpectedQuantity` is positive whenever it would otherwise be a denominator here — gives
+  `ExpectedQuantity − CountedQuantity > rate × ExpectedQuantity`: the same comparison wherever
+  `ExpectedQuantity > 0`, with no division anywhere. Business Rule 8 states both directions in this
+  form; build to that form, not the fraction form, even though the fraction form is the more natural
+  way to *describe* a percentage tolerance in conversation. **This is not a guard clause to add on
+  top of the fraction form — it replaces it.** A build that computes the fraction and then checks
+  `ExpectedQuantity <> 0` before using it has reintroduced the division the rewritten form exists to
+  avoid; it will divide by zero the one time this matters, on the one input path the fraction form
+  cannot survive.
+- **What this produces at `ExpectedQuantity = 0` is a stated behaviour, not an inference you are
+  asked to draw.** Confirm it rather than deriving it: `CountedQuantity` cannot be negative, so the
+  shortfall comparison can never hold when `ExpectedQuantity = 0`, and the overage comparison reduces
+  to `CountedQuantity > 0`. **Any nonzero count against a zero expected quantity is flagged, every
+  time** — this is check 11 under *How you validate the template's output*, and the corresponding
+  line under *The same behavior every time, not the same structure*.
 - **Read every file in `standards/` and apply it.** Error handling, query style, naming, and how the
   work divides into procedures all come from there and never from this file.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
@@ -351,13 +382,11 @@ binds is stated only there.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like,
   not from reasoning that makes an answer seem obvious. Where a check exists to answer a question,
   run the check at the point the sequence calls for it rather than working the answer out yourself.
-- **Surface all three warnings in the front matter** and get the developer's answer on each before
-  building. None is a preference to note in passing — the Memo-barcode warning changes what you
-  tell the developer about scan-resolution performance on their catalog, the race-condition warning
-  is a requirement you build to (restated under *The same behavior every time, not the same
-  structure* as "two counters racing... never produce two count lines"), and the zero-expected-
-  quantity warning is a gate: get the developer's answer on what it means before you build a check
-  that would otherwise divide by zero, and restate their answer in the design you present.
+- **Surface both warnings in the front matter** and get the developer's answer on each before
+  building. Neither is a preference to note in passing — the Memo-barcode warning changes what you
+  tell the developer about scan-resolution performance on their catalog, and the race-condition
+  warning is a requirement you build to, restated under *The same behavior every time, not the same
+  structure* as "two counters racing... never produce two count lines."
 - **The build record reports against *How you validate the template's output*, one entry per check,
   each saying what was done and what was observed** — a completed check list, not a narrative. Passed
   and not passed are the only outcomes. An entry with neither is a check that was not run, and the
@@ -385,5 +414,3 @@ developer's own library, not committed here.*
 - **Indexed barcode field** — `Products.SKUBarCode` is a Memo field and Access cannot index it; the
   warning above surfaces the consequence, but adding an indexed text barcode field is a change to
   `Products` outside this template's scope.
-- **A zero expected quantity** — the table template's Business Rule 8 leaves this case open; see the
-  warning above. Resolving it belongs to `northwind-stocktake-schema` first, not here.
