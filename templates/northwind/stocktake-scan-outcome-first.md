@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.3.0
+version: 0.3.1
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -319,8 +319,9 @@ they do, which is the point of keeping the two apart.
 **Two sections are the specification, and only those two: *What you end up with* and *The same
 behavior every time, not the same structure*, both under that heading above.** Build a system that
 satisfies every promise there and passes every entry under *How you validate the template's output*.
-Then run every one of those checks yourself, on a copy, and record what each one did. The checks bind
-you twice: the build has to pass them, and you have to run them. How you build is yours to decide,
+Then run every one of those checks yourself, on a copy, and record what each one did — in
+`build-record.md`, written before you report the build finished, never afterward and never only
+when asked for it. The checks bind you twice: the build has to pass them, and you have to run them. How you build is yours to decide,
 within *Free to choose alternatives*. Which checks you run is not — all of them, every build. Every
 other section in this file — *Intent*, *What the template does not do*, *Parked / future
 considerations* — is context for reading those two. None of it binds on its own, and nothing that

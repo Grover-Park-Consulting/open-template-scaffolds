@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.9.3
+version: 0.9.4
 status: draft
 ---
 
@@ -925,6 +925,14 @@ In addition to the common core (§3), an outcome-first template **must** contain
 | `## To the AI assistant building this` | The build instruction, addressed to the assistant and marked as such where it starts. |
 
 There is **no `## Procedures` section**, and `validate` rejects one.
+
+**This section restates the build record's timing rule in its own words — it does not rely on
+`_materialization.md` alone to carry it.** Per §12.4, a requirement stated outside the sections this
+heading names is context, not specification, so `_materialization.md`'s *"write it before you say the
+build is finished, not when you are asked for it"* does not reach the build unless this section says
+so too. Tie the restatement to the checks this section already requires the builder to run: the build
+record is where each result is recorded, it exists before the build is reported finished, and it is
+never written later, only when asked for.
 
 ### 12.3 `validate` rules for `outcome-first`
 

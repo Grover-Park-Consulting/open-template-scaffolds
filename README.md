@@ -34,6 +34,8 @@ All of that is yours to pick.
 
  **The library's responsibility is this: Whichever AI assistant and working environment you choose, you end up with something that meets the same description.** That is not a promise that any two runs produce identical code; they will not. That's the probabilistic nature of AI. Each template says where it leaves the builder free to choose an appropriate path. However, we do promise that both runs satisfy everything the template says it delivers.
 
+**What we can currently report:** our own trials have run heavily on Claude Code. Our results there have been reliable. However, we haven't put the same volume of runs behind other AI assistants, so we can't yet make the same claim about them. That's a gap in our testing, not a claim that they don't work. In fact, if you use one of the other AIs, we'd love feedback from you about how your AI assistant performed.
+
 **You only need two things to use OTS:** an AI assistant you can run somewhere, and the willingness to work with it. If you don't have one yet, **[`WELCOME.md`](WELCOME.md)** walks you through getting set up. Beyond that the library takes no view — it doesn't recommend an assistant, doesn't recommend where to run it, and doesn't ask you to understand how any of it works underneath.
 
 ## What the templates build

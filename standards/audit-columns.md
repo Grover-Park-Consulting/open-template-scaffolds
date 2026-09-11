@@ -88,3 +88,10 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
   via data macros. A template that declares `standards_layer: [audit-columns]` inherits whatever
   *this* file specifies — replace the file, and tables built from then on carry your house's audit
   columns.
+- **Check the target database's own existing tables before naming new audit columns, even when
+  `standards/` was never forked.** A database that predates this library may already carry an
+  informal audit convention on its own hand-built tables — never written down anywhere in
+  `standards/`, because nobody had reason to. This file's names are the fallback, not the first
+  answer: look at how the database's existing tables already stamp who and when, and match that,
+  before creating a single new audit column. Only use this file's names when no existing convention
+  is present to match.
