@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.2.1
+version: 0.3.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -29,6 +29,7 @@ new_tables:
   - RemediationStatus
 seeds:
   - SystemSettings.DefaultAllowableShrinkageRate
+  - SystemSettings.DuplicateScanWindowSeconds
 house_assumptions:
   - "StockTakeCount.CountedQuantity stored, not derived — a reconciled count is a durable audit fact business decisions rely on; it must not change if scan detail is later edited or archived. Stored despite being derivable; the alternative is to compute it on demand."
 ---
@@ -96,6 +97,7 @@ must confirm these exist and wire the new tables to them:
 | `Products.QuantityInPackage` (Long) | Package-scan multiplier | When a package barcode is scanned, units added = `QuantityInPackage` (see Business Rules) |
 | `Employees.EmployeeID` (AutoNumber PK) | Who conducted the session | `StockTakeSession.ConductedByEmployeeID` FK |
 | `SystemSettings` (key/value) | Default allowable shrinkage rate | Seed row `DefaultAllowableShrinkageRate`; follows the host `[percent*1000]` convention used by `TaxRate` (e.g. `"50"` = 0.05 = 5%). Per-product values in `ProductShrinkageAllowance` override it. |
+| `SystemSettings` (key/value) | Duplicate-scan detection window | Seed row `DuplicateScanWindowSeconds`; a plain integer count of seconds (e.g. `"120"`), not the `[percent*1000]` convention above — this key holds a duration, not a rate. See Business Rule 2. |
 
 ## Entities
 
@@ -201,10 +203,16 @@ Hooks into existing Northwind schema:
    (`StockTakeSessionID`, `ProductID`). A product is counted at most once per event, by one method.
 2. **Scan resolution** — on each scan, match `ScanCode` against `Products.SKUBarCode` to find
    `ProductID`. Find or create the `StockTakeCount` line for (`StockTakeSessionID`, `ProductID`), then
-   insert the `StockTakeScan` against that `StockTakeCountID`. Unmatched codes are stored with
-   `ScanStatusID = Unmatched` and no `StockTakeCountID` resolution (held for review).
+   check the scans already on that `StockTakeCountID` for one with the same `ScanQuantity` and a
+   `ScannedOn` within `SystemSettings.DuplicateScanWindowSeconds` of the new scan. If one is found,
+   the new scan is inserted with `ScanStatusID = Duplicate`; otherwise `Valid`. A duplicate is still
+   inserted and still resolves to the count line — it is excluded from the rollup (Business Rule 3),
+   not discarded. Unmatched codes are stored with `ScanStatusID = Unmatched` and no `StockTakeCountID`
+   resolution (held for review) — the duplicate check does not apply to them, since they never reach a
+   count line.
 3. **Rollup** — for scanned lines, `StockTakeCount.CountedQuantity = SUM(ScanQuantity)` across
-   the line's scans, maintained as scans are added or removed.
+   the line's scans **where `ScanStatusID = Valid`**, maintained as scans are added or removed. A scan
+   marked `Duplicate` (Business Rule 2) is never counted twice.
    **Why stored, not derived:** `CountedQuantity` is deliberately a stored value, not a figure
    computed on demand. A reconciled stocktake count is a durable audit fact — business decisions
    are made from it, and accountability is lost if it later changes. Storing it fixes the official
