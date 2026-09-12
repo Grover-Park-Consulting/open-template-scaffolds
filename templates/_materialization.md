@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.9.1
+version: 0.9.2
 status: draft
 ---
 
@@ -469,6 +469,57 @@ two separately: per rule 3 the second `LoadFromText` replaces the whole set, tak
 Generate both jobs **together**, into one document, with the stamping actions and the
 change-auditing actions sharing the same `IsNull([Old].[<PK>])` branch. The audit-logging scaffold's
 `BuildBeforeChangeMacro` is the worked example.
+
+### ACE rejects an aggregate subquery in an UPDATE's SET clause, and a self-referencing alias
+
+Two failures found writing scan-processing VBA against a real Access database, both in ordinary
+`db.Execute` SQL rather than in the table-build Sub — record them here because the next
+scaffold that writes a rollup or a variance query will hit the same engine, not because they are
+part of the DAO table build above.
+
+**1. An aggregate subquery in an `UPDATE`'s `SET` clause fails with error 3073** ("Operation must
+use an updateable query"). The natural way to write a rollup reads as one statement:
+
+```sql
+UPDATE StockTakeCount
+SET CountedQuantity = Nz((SELECT SUM(ScanQuantity) FROM StockTakeScan
+                           WHERE StockTakeCountID = 5 AND ScanStatusID = 1), 0)
+WHERE StockTakeCountID = 5
+```
+
+ACE refuses to treat a query built this way as updateable. **Compute the sum first, with `DSum`,
+then write a plain literal `UPDATE`:**
+
+```vba
+Dim lngSum As Long
+lngSum = Nz(DSum("ScanQuantity", "StockTakeScan", _
+                  "StockTakeCountID=" & lngCountID & " AND ScanStatusID=1"), 0)
+db.Execute "UPDATE StockTakeCount SET CountedQuantity=" & lngSum & _
+           " WHERE StockTakeCountID=" & lngCountID, dbFailOnError
+```
+
+This is the same two-step idiom (`DSum`/`DLookup` first, plain `UPDATE` second) already used
+elsewhere for on-hand calculations — reach for it whenever a rollup or aggregate feeds an
+`UPDATE`, not only in this template.
+
+**2. Aliasing an expression to the same name as its source field fails with error 3103**
+("Circular reference caused by … in query definition expression"). Given a query already
+selecting `ExpectedQuantity`, wrapping it for null-safety and keeping the same name —
+
+```sql
+SELECT Nz(ExpectedQuantity, 0) AS ExpectedQuantity FROM StockTakeCount
+```
+
+— reads as a straightforward null-safe rename, and ACE reads it as the field referring to
+itself. **Alias to a different name:**
+
+```sql
+SELECT Nz(ExpectedQuantity, 0) AS ExpectedQty, Nz(CountedQuantity, 0) AS CountedQty
+FROM StockTakeCount
+```
+
+Any `Nz()`/`IIf()`/expression wrapper needs a name distinct from the field it wraps, not the
+field's own name repeated after `AS`.
 
 ### VBA code import — an import path can corrupt XML entities, in either direction
 

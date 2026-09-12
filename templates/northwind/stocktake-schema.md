@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.5.0
+version: 0.5.1
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -153,7 +153,7 @@ Grain: one row per physical scan. Present only for scanned counts (Level 2).
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
 | `StockTakeScanID` | AutoNumber | PK | Surrogate key (replaces the Dataverse GUID key entirely) |
-| `StockTakeCountID` | Long | FK → StockTakeCount, Required | The count line this scan contributes to — the structural rollup link |
+| `StockTakeCountID` | Long | FK → StockTakeCount, Nullable | The count line this scan contributes to — the structural rollup link. Null for an Unmatched scan (Business Rule 2), which never resolves to a count line. |
 | `ScanCode` | Text(255) | Required | Raw barcode string as scanned; resolved against `Products.SKUBarCode` |
 | `ScanQuantity` | Long | Required | Units this scan adds to the count line (see package rule) |
 | `ScanStatusID` | Long | FK → ScanStatus, Required | Valid / Unmatched / Duplicate |
