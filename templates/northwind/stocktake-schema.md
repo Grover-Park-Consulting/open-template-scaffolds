@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.5.1
+version: 0.6.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -12,6 +12,7 @@ requires_tables:
   - SystemSettings
 requires_fields:
   - Products.ProductID
+new_fields:
   - Products.SKUBarCode
   - Products.QuantityInPackage
 standards_layer:
@@ -79,13 +80,22 @@ cannot be created.
 This template does not stand alone; it extends an existing Northwind database. The generator
 must confirm these exist and wire the new tables to them:
 
-> **Out of the box, Northwind Dev doesn't have two of the fields this template relies on.**
-> `Products.SKUBarCode` and `Products.QuantityInPackage` exist only in modified copies of Northwind —
-> they were added for the scan workflow this template was shaped from. If your copy doesn't have
-> them, **they need to be added to `Products` as part of building this template** — unless you've
-> already added them yourself (possibly under different names, which the design should then use
-> instead). The `check_compatibility` tool reports exactly which required pieces your database
-> already has.
+> **This template adds two fields to `Products`, and that is the only change it makes to a table
+> you already have.** A scanned stocktake needs somewhere to hold the code that is scanned and, for
+> products that ship in packages, how many units a package holds. Northwind Dev has neither out of
+> the box, so **building this template creates them:**
+>
+> - `SKUBarCode` — Short Text, 50 characters, optional, with an index on it
+> - `QuantityInPackage` — Long, optional
+>
+> **The index is the point of the Short Text field.** Every scan resolves a code by looking it up in
+> this field, which makes it the most frequently read field in the whole design, and a field Access
+> cannot index makes every one of those lookups read the entire product list. A barcode is short —
+> 50 characters is generous for one — so keeping the field small enough to index gives nothing up.
+>
+> **If you have already added your own barcode or package-quantity field, say so** — possibly under
+> different names, which the design then uses instead of creating new ones. The one thing the design
+> needs of an existing barcode field is that it can carry an index.
 >
 > **If the host is split, adding those fields is a back-end change**, made once in the file that
 > holds `Products`. A front end does not pick up a new field on its own — its link still describes
@@ -96,8 +106,8 @@ must confirm these exist and wire the new tables to them:
 | Existing object | Used as | Notes |
 |---|---|---|
 | `Products.ProductID` (AutoNumber PK) | Parent of every count line | The primary connection (graft) point |
-| `Products.SKUBarCode` (Memo) | Scan-resolution target | A scanned code is matched against this to resolve `ProductID`. **Standards/implementation note:** a Memo cannot be indexed; for production scan performance the standards layer may call for an indexed Text barcode field. The template depends on the field but does not alter `Products`. |
-| `Products.QuantityInPackage` (Long) | Package-scan multiplier | When a package barcode is scanned, units added = `QuantityInPackage` (see Business Rules) |
+| `Products.SKUBarCode` (Short Text, 50, indexed) | Scan-resolution target | A scanned code is matched against this to resolve `ProductID`. **Created by this template where the host doesn't already have it** — see the note above. The index is required rather than an optimization: scan resolution is the most frequent read in the design |
+| `Products.QuantityInPackage` (Long) | Package-scan multiplier | When a package barcode is scanned, units added = `QuantityInPackage` (see Business Rules). **Created by this template where the host doesn't already have it** |
 | `Employees.EmployeeID` (AutoNumber PK) | Who conducted the session | `StockTakeSession.ConductedByEmployeeID` FK |
 | `SystemSettings` (key/value) | Default allowable variance rates | Seed rows `DefaultAllowableShortageRate` and `DefaultAllowableOverageRate`; both follow the host `[percent*1000]` convention used by `TaxRate` (e.g. `"50"` = 0.05 = 5%). Per-product values in `ProductVarianceAllowance` override either one independently. |
 | `SystemSettings` (key/value) | Duplicate-scan detection window | Seed row `DuplicateScanWindowSeconds`; a plain integer count of seconds (e.g. `"120"`), not the `[percent*1000]` convention above — this key holds a duration, not a rate. See Business Rule 2. |
@@ -230,8 +240,24 @@ Hooks into existing Northwind schema:
    it on demand is the cleaner choice. (Declared in `house_assumptions`.)
 4. **Package scanning** — if a scanned code denotes a package rather than a unit, `ScanQuantity`
    for that scan = `Products.QuantityInPackage`. Unit scans contribute 1 (or the entered count).
-5. **Expected quantity** — `ExpectedQuantity` is snapshotted from the system's computed on-hand
-   at the moment the session opens, so variance reflects the count against a fixed baseline.
+5. **Expected quantity, and the baseline it belongs to** — opening a session **creates a count
+   line for every product the session covers**, each one carrying `ExpectedQuantity` snapshotted from
+   the system's computed on-hand at that moment. Variance is then measured against a baseline that is
+   fixed for the life of the session and does not move as stock transactions carry on around it.
+
+   **Creating those lines when the session opens, rather than as scans arrive, is what this rule is
+   for.** A stocktake exists to find the difference between what the system believes is on hand and
+   what is actually on the floor, and the largest difference it can find is a product the system
+   expected to have and the counters found none of. A build that creates a count line only when
+   something is scanned cannot report that product at all: no scan, no line, so it appears in no
+   variance report and the loss is invisible. With the lines created up front, that product ends the
+   session counted zero against its expected quantity and is flagged by Business Rule 8 like any
+   other shortfall.
+
+   **Which products a session covers** is the engagement's to decide; the default is every product
+   not marked discontinued. A product added to the catalog *after* the session opened has no line and
+   gets one on first scan, carrying the on-hand of that moment — the same path that handles two
+   counters reaching a new product at once (Business Rule 1).
 6. **Variance** — computed as `CountedQuantity − ExpectedQuantity` in queries/reports; not stored.
 7. **Effective variance rates** — for a product, use `ProductVarianceAllowance.AllowableShortageRate`
    (a fraction) if a row exists and that column holds a value; otherwise fall back to
@@ -258,9 +284,9 @@ Hooks into existing Northwind schema:
    ExpectedQuantity > rate`. That is exactly the earlier form of this rule, and it divides by
    `ExpectedQuantity` — undefined the moment a count line's expected quantity is zero. **Multiplying
    both sides of that comparison by `ExpectedQuantity` produces the form given above: the same
-   comparison, for every count line where `ExpectedQuantity > 0`, with no division anywhere.** (The
-   direction of the inequality is unaffected — `ExpectedQuantity` is positive whenever it appears in
-   a denominator here, so multiplying by it never flips which side is larger.) A comparison that
+   comparison, for every count line where `ExpectedQuantity > 0`, with no division anywhere.**
+   (Multiplying by a positive number leaves which side is larger unchanged, and a positive
+   `ExpectedQuantity` is the only case the fraction form could be evaluated on at all.) A comparison that
    was never dividing has nothing to break when `ExpectedQuantity` reaches zero: the right-hand side
    of each line above becomes `rate × 0 = 0`, and the comparison still runs.
    **What that means at zero is the correct answer on its own terms, not a worked-around edge
@@ -271,6 +297,15 @@ Hooks into existing Northwind schema:
    counter found something is not a rounding error near a percentage threshold, it is the most
    notable thing this check can find, and this form flags it without inventing a substitute value
    for `ExpectedQuantity` to divide by.
+
+   **A negative expected quantity is flagged every time, and that is deliberate.** Where the host's
+   on-hand calculation can return a negative number — Northwind's can, when recorded sales run ahead
+   of recorded receipts — a count line can open with a negative `ExpectedQuantity`. The overage
+   comparison above then holds for any count at all, including a count of zero, so the line is
+   flagged and somebody looks at it. That is the right answer on its own terms: the system's own
+   figure was impossible before anybody counted anything. **Do not add a branch for this case**, and
+   in particular do not guard the comparison with a test on `ExpectedQuantity` — that puts back the
+   division this form exists to remove.
 
 ## Standards Layer (supplied externally, not in this template body)
 

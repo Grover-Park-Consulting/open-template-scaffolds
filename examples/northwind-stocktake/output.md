@@ -11,6 +11,11 @@ override for high-value items (the template's existing shrinkage tolerance, set 
 
 This is presented for your review — approve it, or tell me what to change.
 
+> **This example predates two changes to the template**, and differs from what you would get today
+> on both: the per-product tolerance table is now called `ProductVarianceAllowance` and carries an
+> overage tolerance alongside the shortage one, so a count that comes in *high* is flagged on the
+> same footing as one that comes in low. Everything else here is current.
+
 ## The tables, at a glance
 
 ```mermaid
@@ -99,8 +104,10 @@ produced it.
 Indexes: PK on `StockTakeCountID`; **unique on (`StockTakeSessionID`, `ProductID`)**; index on
 `ProductID`; index on `RemediationStatusID`.
 
-Derived (not stored): `VarianceQuantity = CountedQuantity − ExpectedQuantity`; shrinkage % =
-`(ExpectedQuantity − CountedQuantity) / ExpectedQuantity`.
+Derived (not stored): `VarianceQuantity = CountedQuantity − ExpectedQuantity`. A shortfall is a
+negative `VarianceQuantity` and its size is what the flag is decided on — **compared as a quantity,
+never as a percentage of `ExpectedQuantity`**, which would divide by zero on any line the system
+expected none of. See the table template's Business Rule 8.
 
 ### StockTakeScan — individual scans that roll up into a count line
 
@@ -155,9 +162,12 @@ row inherit the default.
 4. A package scan adds `Products.QuantityInPackage`; a unit scan adds 1.
 5. `ExpectedQuantity` is snapshotted when the session opens, so variance is measured against a
    fixed baseline.
-6. **Shrinkage % = (Expected − Counted) ÷ Expected**, shown on the count line.
-7. **Your 5% rule:** if shrinkage exceeds the product's allowed rate — the per-product override if
-   one exists, otherwise the 5% default from `SystemSettings` — the line is **Flagged** for review.
+6. **Variance = Counted − Expected**, read off the count line; negative is a shortfall.
+7. **Your 5% rule:** the line is **Flagged** for review when the shortfall is larger than the
+   product's allowed rate applied to what was expected — the per-product override if one exists,
+   otherwise the 5% default from `SystemSettings`. Stated as a comparison of quantities
+   (`Expected − Counted > rate × Expected`) rather than as a percentage, so a product the system
+   expected none of needs no special handling: any count found against it is flagged.
    (The flagging logic lives in code; these tables hold everything it needs.)
 
 ---

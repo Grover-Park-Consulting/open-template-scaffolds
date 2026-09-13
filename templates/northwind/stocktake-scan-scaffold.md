@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.7.1
+version: 0.8.0
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -22,6 +22,7 @@ standards_layer:
   - naming-conventions
 target_module: modStockTakeScan
 new_procedures:
+  - OpenStockTakeSession
   - ProcessScan
   - ResolveScanCode
   - EnsureCountLine
@@ -119,7 +120,7 @@ one of the two that is validation. So a build has passed when it has passed thos
 report saying validation passed means those checks and no others — name the list you ran, so the
 developer can see which one it was.
 
-Six things follow from this being procedure skeletons rather than an open route.
+Seven things follow from this being procedure skeletons rather than an open route.
 
 - **Drive every check through `ProcessScan`.** Each one is written as something the developer does
   with a scanner; here the equivalent is a call to `ProcessScan` with a session, a code, and a
@@ -145,12 +146,21 @@ Six things follow from this being procedure skeletons rather than an open route.
   check 3 in particular: widening the transaction moves `DetectDuplicateScan`'s read inside it.
 
 - **Check 12 tests the outcome of the `EnsureCountLine` race, and this template names the
-  mechanism.** Where the build creates a count line on demand, the check confirms the duplicate-key
-  refusal was turned into "use the line the other counter just created" — trapped and re-read, not
-  surfaced to the counter as a failure. Where the build instead pre-creates every count line when
-  the session opens, the race is gone by construction, and the check confirms that: two counters
-  scanning the same product both find a line already there and neither creates one. Run it either
-  way. Which of the two shapes the build used is part of what the entry records.
+  mechanism.** `OpenStockTakeSession` pre-creates a count line for every product the session covers
+  (Business Rule 5), so for those products two counters both find a line already there and neither
+  creates one — the check confirms that. The race is still reachable and `EnsureCountLine` still has
+  to handle it: a product added to the catalog after the session opened has no line, and two counters
+  can reach it at the same moment. There the check confirms the duplicate-key refusal was turned into
+  "use the line the other counter just created" — trapped and re-read, not surfaced to the counter as
+  a failure. **Run it against a product with no line**, or it tests nothing; which path the check
+  exercised is part of what the entry records.
+
+- **Check 13 is the one that catches a missing baseline, and it is the check this route is most
+  likely to fail.** The skeletons below are a scan path: everything in them starts from a scan
+  arriving, and a build that lets `EnsureCountLine` do all the count-line creating passes checks 1
+  through 12 without ever opening a session properly. Check 13 asks about a product nobody scanned,
+  which that build has no row for at all. `OpenStockTakeSession` is in this scaffold for exactly this
+  reason — run it before any check, and give check 13 a product you deliberately leave unscanned.
 
 - **Check 5 needs Business Rule 4, which this template marks without deciding.** `RecordScan`'s
   `[BUSINESS LOGIC #4]` marker says a package scan adds `Products.QuantityInPackage` and a unit scan
@@ -159,13 +169,15 @@ Six things follow from this being procedure skeletons rather than an open route.
   engagement decides there are no package barcodes at all, check 5 has no input to run against, and
   its entry records that decision and names whose it was.
 
-- **Confirm a raised error reaches the logger at every frame it passes through, as a thirteenth
-  entry.** The `errHandler` block sits in every procedure by design, and `EnsureCountLine` raises
-  when a product has no count line. That should leave a log entry from the procedure that raised
-  *and* from `ProcessScan`, roll the transaction back, and leave no scan row behind. This is this
-  route's own behaviour rather than anything the outcome-first list promises, so it is recorded
-  after the twelve, not folded into them. Adding to that list is allowed; substituting for it is
-  not.
+- **Confirm a raised error reaches the logger at every frame it passes through, as a fourteenth
+  entry.** The `errHandler` block sits in every procedure by design, so an error raised deep in the
+  call chain should be logged by the procedure that raised it *and* by every procedure it passes
+  through on the way out, and leave no scan row behind. **Raise one deliberately rather than waiting
+  for one:** calling `ProcessScan` with a `StockTakeSessionID` that does not exist makes the count-line
+  insert violate referential integrity, which raises from inside `EnsureCountLine` — three frames of
+  log entries for the one error, and a scan count unchanged before and after. This is this route's own
+  behaviour rather than anything the outcome-first list promises, so it is recorded after the
+  thirteen, not folded into them. Adding to that list is allowed; substituting for it is not.
 
 ## Procedures
 
@@ -173,6 +185,58 @@ Each procedure shows its scope, signature, and an annotated skeleton. **Every pr
 the same `errHandler` block** — shown in full in `ProcessScan` and referenced thereafter, because
 the VBE-reflection form (`error-handling.md`) is *identical* in every procedure by design. Line
 numbers are deliberately absent (house-specific; see `error-handling.md`).
+
+### OpenStockTakeSession — `Public Function` → `Long`
+
+**Run this before anything else in a stocktake, and before any check.** It is what takes the
+baseline: Business Rule 5 says every count line exists, carrying the expected quantity of the moment
+the session opened, before a single code is scanned. Without it the only count lines that ever exist
+are for products somebody scanned, and a product that has gone missing entirely — the most serious
+thing a stocktake can find — leaves no row anywhere to report it.
+
+```vba
+Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, _
+                                     Optional ByVal lConductedByEmployeeID As Long = 0) As Long
+    ' [SCAFFOLD] Create a stocktake session and take its baseline; return StockTakeSessionID.
+    Dim db   As DAO.Database
+    Dim rs   As DAO.Recordset
+    Dim sSql As String
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+
+    ' [BUSINESS LOGIC #5] ONE: insert the StockTakeSession row (status = Open; the date defaults to
+    '            today where none was passed; ConductedByEmployeeID left null where 0 was passed)
+    '            and read back its StockTakeSessionID into OpenStockTakeSession.
+    ' >>> session insert, per query-style.md <<<
+
+    ' [BUSINESS LOGIC #5] TWO: create one StockTakeCount line for every product the session covers —
+    '            by default every product not marked discontinued — each carrying
+    '            ExpectedQuantity = the host's computed on-hand for that product AT THIS MOMENT,
+    '            CountedQuantity = 0, count method = Scan, RemediationStatusID = None.
+    '            The whole point of the rule is that this happens once, here. Taking the figure
+    '            later, as each scan arrives, measures every product against a different moment and
+    '            leaves an unscanned product with no line at all.
+    ' [SCAFFOLD] Where the host computes on-hand with a VBA function rather than a query, this is a
+    '            loop over the product list calling it per product, not a single INSERT ... SELECT.
+    '            Which it is depends on the host; both satisfy the rule.
+    ' >>> baseline creation, per query-style.md <<<
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then rs.Close
+    Set rs = Nothing: Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block (see ProcessScan)
+    Resume Cleanup
+End Function
+```
+
+*(A session that failed partway through its baseline is a session with an incomplete baseline, which
+no later scan repairs. Where the standards layer supplies a transaction guard, the session row and
+its count lines belong inside one — and see the Extra Option below before widening it further.)*
 
 ### ProcessScan — `Public Sub` (entry point)
 
@@ -257,6 +321,11 @@ Private Function EnsureCountLine(ByVal lSessionID As Long, _
     Set db = CurrentDb
 
     ' [BUSINESS LOGIC #1] one count line per (StockTakeSessionID, ProductID)
+    ' [SCAFFOLD] In an ordinary session the line is already here — OpenStockTakeSession created one
+    '            for every product the session covers. The create branch below is for a product
+    '            added to the catalog after the session opened, and it is where two counters can
+    '            collide. It is NOT the place the baseline gets taken; a build that leans on it for
+    '            that has no line for any product nobody scanned. See Business Rule 5.
     ' >>> lookup query for an existing line, per query-style.md <<<
     sSql = vbNullString
     Set rs = db.OpenRecordset(sSql, dbOpenDynaset)
@@ -429,6 +498,12 @@ Private Sub EvaluateVariance(ByVal lCountID As Long)
     '            negative, so the shortfall line can never hold, and the overage line reduces to
     '            "CountedQuantity > 0" — any nonzero count where none was expected gets flagged,
     '            which is the correct answer, not a worked-around one.
+    '            Where the host's on-hand figure can come back negative, a count line can carry a
+    '            negative ExpectedQuantity. The overage line then holds for any count at all,
+    '            including zero, and the line is flagged. Leave that alone — the system's own
+    '            figure was impossible before anyone counted. Do NOT add a branch for it and do
+    '            NOT guard these comparisons with a test on ExpectedQuantity: that is the division
+    '            coming back by another route.
     '            Do not write which direction tripped it anywhere — RemediationStatus does
     '            not record that (table template's house_assumptions); a reviewer reads the sign
     '            of VarianceQuantity instead.

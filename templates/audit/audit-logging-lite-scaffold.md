@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.16.0
+version: 0.16.1
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -4036,7 +4036,7 @@ End Function
   stamped `CreatedBy`/`ModifiedBy`, and this scaffold's stamping macro follows that file. If you
   change the four sites above and leave the standards layer alone, the **log** will say `Admin` while
   the **record** says the real user, for the same change — a trail that disagrees with the row it
-  describes. A live trial hit exactly that. Two coherent ways to hold it:
+  describes. Two coherent ways to hold it:
 
   - **`CurrentUser()` everywhere** — also point your forked `audit-columns.md` at `CurrentUser()`, so
     stamping and logging agree. Fully dependency-free for identity.

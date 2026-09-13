@@ -91,7 +91,8 @@ present on every template; conditional keys are required when their condition ho
 | `status` | required | enum | `draft` \| `review` \| `stable` |
 | `extends` | conditional | string | Required when the template grafts onto an existing database; names the host (e.g. `Northwind (Access Developer Edition)`) |
 | `requires_tables` | conditional | list[string] | Existing tables the template hooks into. Required when `extends` is present |
-| `requires_fields` | optional | list[string] | Specific existing fields relied on, as `Table.Field` |
+| `requires_fields` | optional | list[string] | Specific existing fields relied on, as `Table.Field`. **Fields the host must already have** — a template that creates a field on an existing table declares it under `new_fields` instead |
+| `new_fields` | optional | list[string] | Fields the template **adds to a table the host already has**, as `Table.Field`. Keeping these out of `requires_fields` matters to both readers: `check_compatibility` stops reporting them as missing pieces the developer has to go and add, and the AI assistant reads them as work the build does rather than a precondition it has to verify |
 | `standards_layer` | required | list[enum] | Which standards-layer concerns this template defers; values from §6 |
 | `new_tables` | conditional | list[string] | Tables the template defines. Required for `type: table-schema`; must match the `## Entities` headings exactly |
 | `implements` | conditional | string | For `type: vba-scaffold` and `form-spec`: the `table-schema` template (by slug) the scaffold realizes / the form edits |
@@ -114,7 +115,8 @@ present on every template; conditional keys are required when their condition ho
 4. Every entry in `new_tables` is documented under `## Entities` — either as its own `### <name>`
    heading or as a named row in a grouped lookup sub-table (§4) — and vice versa; the declared and
    documented table sets are identical.
-5. `requires_fields` / `seeds` entries are well-formed `Table.Field` / `Table.RowKey`.
+5. `requires_fields` / `new_fields` / `seeds` entries are well-formed `Table.Field` /
+   `Table.Field` / `Table.RowKey`.
 6. Every `house_assumptions` entry is well-formed (`Target — rationale`), and each `Target`
    resolves to an entity, field, or rule named in this template. (Format check only — `validate`
    cannot judge whether something *should* have been declared; that stays the human review gate.)

@@ -3,13 +3,14 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.3.2
+version: 0.4.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
 requires_fields:
   - Products.ProductID
+new_fields:
   - Products.SKUBarCode
   - Products.QuantityInPackage
 standards_layer:
@@ -31,10 +32,6 @@ house_assumptions:
     template's own declared assumption; a build that stores the direction on the count line has
     added something this template does not ask for."
 warnings:
-  - "Products.SKUBarCode is a Memo field, and Access cannot put an index on a Memo field. Every
-    scan resolution scans that field without one. On a small Products table this is not
-    noticeable; on a large one it slows every scan. Ask the developer whether an indexed text
-    barcode field already exists, or should be added, before building against a live catalog."
   - "Two counters can scan the same product, for the first time in a session, at the same moment.
     Both can find no count line for it and both try to create one — the schema's own unique index
     on (session, product) then refuses the second attempt with an engine error. The build must
@@ -129,6 +126,17 @@ the AI assistant building this* for the reasoning — and what falls out of it i
 answer: any count found where none was expected is notable on its own, not a rounding error near a
 threshold, so it is flagged every time.
 
+**A stocktake starts from a baseline, taken once, covering every product it is counting — not
+only the products somebody gets round to scanning.** Opening a stocktake writes down what the system
+believes is on hand for every product in it, at that one moment, and every variance is measured
+against those figures for the rest of the session. Two things follow, and both matter on the floor.
+**Stock going on being sold and received while the counting happens does not move the target** — the
+figures were taken once and stay put. And **a product nobody scans is still counted**: it ends the
+session at zero against whatever the system expected, which is a shortfall of everything, and it is
+flagged like any other. A product the system thought you had a hundred of and the counters never
+found is the most serious thing a stocktake can turn up, and it is exactly the product that produces
+no scans at all.
+
 **Two people can count different products, or the same product, in the same session at the same
 time, without stepping on each other's work.** A stocktake with several counters working the floor
 at once is the ordinary case this exists for, not an edge case it merely tolerates. Two counters
@@ -191,6 +199,15 @@ Perform each of these checks against a copy of your database with the tables alr
     - Confirm they land against one count line for that product, not two
     - This is the check named in the warning about concurrent counters — it is worth trying
       deliberately, not just trusting the design
+13. **A product nobody scans is still counted, and shows up as missing.**
+    - Open a stocktake and count your way through some but not all of the products, exactly as a
+      real one would go
+    - Pick a product you know the system expected stock of and that nobody scanned
+    - Confirm it has a count line in that session anyway, counted zero against what was expected
+    - Confirm that line is flagged for review
+    - **This check is the one that fails when the baseline was never taken.** A build that creates a
+      count line only when a scan arrives passes checks 1 through 12 and fails this one, because the
+      product it is asking about is invisible to it
 
 ### The same behavior every time, not the same structure
 
@@ -199,6 +216,10 @@ database that behaves the same way. The following must be true of every build:
 
 - One count line exists per product per session, never more than one — regardless of how many
   counters scan that product or how close together they do it.
+- A count line exists for **every product the session covers**, created when the session opens,
+  carrying the expected quantity of that moment — not only for the products that were scanned. The
+  baseline is taken once and never retaken during the session. A product added to the catalog after
+  the session opened is the one case that gets its line later, on first scan.
 - A scan is always saved. Matched, unmatched, or a recognized repeat — every one leaves a row behind.
 - A recognized repeat is excluded from the counted quantity, never from the scan record. The two
   questions — "was this scanned?" and "does this count?" — have separate, visible answers.
@@ -243,6 +264,9 @@ choose based on the rules built into it. The template's promise holds either way
 - How the race between two counters on the same product is resolved — checking first and catching the
   resulting error, or a different way of making the second counter's attempt land safely. What must
   hold is stated above: one line, however it gets there.
+- Which products a stocktake covers, where you want less than all of them. The build takes the
+  baseline over every product not marked discontinued unless you say otherwise; what must hold is
+  that the baseline is taken over all of them at once, when the session opens.
 - Names for anything not already named by the table template.
 - Whether the build reports in message boxes, as returned text, or both.
 - How the code is laid out and commented, within whatever your standards already require.
@@ -349,8 +373,8 @@ binds is stated only there.
   `ExpectedQuantity` in a denominator — anywhere, in code or in a saved query.** The natural way to
   state a percentage tolerance is `(ExpectedQuantity − CountedQuantity) / ExpectedQuantity > rate`,
   and it divides by zero the moment a count line's `ExpectedQuantity` is zero. Multiplying both
-  sides of that comparison by `ExpectedQuantity` — which does not change which side is larger,
-  because `ExpectedQuantity` is positive whenever it would otherwise be a denominator here — gives
+  sides of that comparison by `ExpectedQuantity` — which does not change which side is larger for
+  any count line the fraction form could be evaluated on at all — gives
   `ExpectedQuantity − CountedQuantity > rate × ExpectedQuantity`: the same comparison wherever
   `ExpectedQuantity > 0`, with no division anywhere. Business Rule 8 states both directions in this
   form; build to that form, not the fraction form, even though the fraction form is the more natural
@@ -365,6 +389,13 @@ binds is stated only there.
   to `CountedQuantity > 0`. **Any nonzero count against a zero expected quantity is flagged, every
   time** — this is check 11 under *How you validate the template's output*, and the corresponding
   line under *The same behavior every time, not the same structure*.
+- **A negative expected quantity is flagged every time, and that is also stated rather than
+  derived.** A host's on-hand calculation can return a negative number where recorded sales have run
+  ahead of recorded receipts, so a count line can open with a negative `ExpectedQuantity`. The
+  overage comparison then holds for any count at all, including zero, and the line is flagged. Leave
+  it that way: the system's own figure was impossible before anybody counted anything, which is worth
+  a human looking at. **Do not add a branch for it and do not guard the comparison with a test on
+  `ExpectedQuantity`** — that is the division coming back by another route.
 - **Read every file in `standards/` and apply it.** Error handling, query style, naming, and how the
   work divides into procedures all come from there and never from this file.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
@@ -414,6 +445,9 @@ developer's own library, not committed here.*
 - **Package-vs-unit disambiguation** — *how* a scan is known to name a package rather than a single
   unit is undecided in the table template this realizes, and stays undecided here; lives in this
   template when it is resolved there.
-- **Indexed barcode field** — `Products.SKUBarCode` is a Memo field and Access cannot index it; the
-  warning above surfaces the consequence, but adding an indexed text barcode field is a change to
-  `Products` outside this template's scope.
+- **A stocktake that records the scope it was opened for.** You can ask for the baseline to be
+  taken over fewer than all the products — one aisle, one category, one supplier — and the build will
+  do it. What is missing is the session remembering that afterwards: nothing on the session says
+  which products were in scope, so later on a product that was never meant to be counted and a
+  product that was in scope and never found look the same. Deciding what a session covers, and
+  holding it, is a design this template does not carry.

@@ -239,7 +239,19 @@ exception"). **Never** in main logic.
 
 ## Transaction guard
 
+**The transaction and every write inside it must be on one connection.** A transaction is begun on a
+`Workspace`; the writes are made through a `Database`. They are the same transaction only if that
+`Database` came from that `Workspace` — so take it from there, as the first two lines below do, and
+never from `CurrentDb`.
+
 ```vba
+Dim ws       As DAO.Workspace
+Dim db       As DAO.Database
+Dim bInTrans As Boolean
+
+Set ws = DBEngine.Workspaces(0)
+Set db = ws.Databases(0)          ' NOT CurrentDb - see below
+
 ws.BeginTrans
 bInTrans = True
 db.Execute strSQL, dbFailOnError + dbSeeChanges
@@ -252,6 +264,23 @@ errHandler:
       Resume Cleanup
       Resume
 ```
+
+**Why `CurrentDb` cannot be used here.** It returns a **new** `Database` object on every call, on
+Access's own separate connection. A transaction begun on `ws` does not cover it. Write through
+`CurrentDb` inside the guard above and the writes commit whatever happens next — `ws.Rollback` rolls
+back an empty transaction — while reads made inside the transaction cannot see the transaction's own
+uncommitted work. **Nothing is raised and nothing is logged**, which is what makes this worth a rule:
+the code looks correct, compiles, and runs, and the damage is a wrong number rather than an error.
+
+**The same applies to every read inside the transaction.** Domain functions — `DLookup`, `DSum`,
+`DCount` — run on a connection of their own and never see uncommitted work. Inside a transaction,
+read with a recordset on the same `db`, or the value that comes back is the last committed one and
+the code proceeds on it.
+
+**One thing the compiler catches and one it does not.** `BeginTrans`, `CommitTrans` and `Rollback`
+belong to `Workspace`; a `Database` has none of them, so calling them on the wrong object fails to
+compile and you find it in seconds. Obtaining `db` from the wrong place compiles cleanly. Compile
+every build, and check this by reading.
 
 **Reader: the AI assistant, and a shop replacing this file.**
 
@@ -268,3 +297,6 @@ replacing this file replaces these conditions with its own.
 5. `On Error Resume Next` appears only inside a `Cleanup:` block and inside the logger.
 6. Every procedure with an `errHandler:` block is line-numbered; every procedure without one is not.
 7. Every logger the generated code calls exists in the built database.
+8. Where a transaction is used, the `Database` object every write inside it goes through was
+   obtained from the same `Workspace` the transaction was begun on — never from `CurrentDb` — and no
+   domain function is read inside the transaction.

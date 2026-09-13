@@ -221,7 +221,7 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
             errors.append(f"FM2: template slug '{slug}' does not end with filename stem '{stem}'")
     if front.get("extends") and not front.get("requires_tables"):
         errors.append("FM3: 'extends' is set but 'requires_tables' is empty")
-    for key in ("requires_fields", "seeds"):
+    for key in ("requires_fields", "new_fields", "seeds"):
         for entry in front.get(key) or []:
             if "." not in str(entry):
                 errors.append(f"FM5: {key} entry '{entry}' is not a well-formed Table.Field")
