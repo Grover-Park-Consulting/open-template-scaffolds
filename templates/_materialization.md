@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.9.2
+version: 0.10.1
 status: draft
 ---
 
@@ -487,20 +487,27 @@ SET CountedQuantity = Nz((SELECT SUM(ScanQuantity) FROM StockTakeScan
 WHERE StockTakeCountID = 5
 ```
 
-ACE refuses to treat a query built this way as updateable. **Compute the sum first, with `DSum`,
-then write a plain literal `UPDATE`:**
+ACE refuses to treat a query built this way as updateable. **Compute the sum first, then write a
+plain literal `UPDATE` — and read that sum through the same `DAO.Database` object you write with,
+never with `DSum`:**
 
 ```vba
+Dim rs     As DAO.Recordset
 Dim lngSum As Long
-lngSum = Nz(DSum("ScanQuantity", "StockTakeScan", _
-                  "StockTakeCountID=" & lngCountID & " AND ScanStatusID=1"), 0)
+Set rs = db.OpenRecordset( _
+    "SELECT SUM(ScanQuantity) AS SumScanQuantity FROM StockTakeScan" & _
+    " WHERE StockTakeCountID=" & lngCountID & " AND ScanStatusID=1", dbOpenSnapshot)
+lngSum = Nz(rs!SumScanQuantity, 0)
+rs.Close
+Set rs = Nothing
 db.Execute "UPDATE StockTakeCount SET CountedQuantity=" & lngSum & _
            " WHERE StockTakeCountID=" & lngCountID, dbFailOnError
 ```
 
-This is the same two-step idiom (`DSum`/`DLookup` first, plain `UPDATE` second) already used
-elsewhere for on-hand calculations — reach for it whenever a rollup or aggregate feeds an
-`UPDATE`, not only in this template.
+The two-step shape — read the aggregate first, then a plain literal `UPDATE` carrying the number —
+is what error 3073 forces, and it applies to any rollup or aggregate that feeds an `UPDATE`, not only
+in this template. **What the first step must not use is a domain function**, for the reason in the
+next section.
 
 **2. Aliasing an expression to the same name as its source field fails with error 3103**
 ("Circular reference caused by … in query definition expression"). Given a query already
@@ -520,6 +527,56 @@ FROM StockTakeCount
 
 Any `Nz()`/`IIf()`/expression wrapper needs a name distinct from the field it wraps, not the
 field's own name repeated after `AS`.
+
+### A domain function cannot see the work of the transaction it is called inside
+
+`DSum`, `DLookup`, `DCount` and the other domain functions do not run on the `DAO.Database` object
+the calling code holds. They run on the Access session's own separate connection to the same file,
+which is outside any transaction the code began on `DBEngine.Workspaces(0)`. A row written inside
+that transaction and not yet committed is invisible to them.
+
+**Nothing reports this.** The domain function returns the total of the rows committed *before* the
+transaction opened, the `UPDATE` that follows writes that number successfully, and the transaction
+commits. The stored value is wrong by exactly the work the transaction has done so far, with no
+error, no warning, and no failing check unless some check compares the stored value against the rows
+on disk.
+
+**Observed**, against a real Access database: a procedure that inserted one scan row and then rolled
+the scans up, one transaction per scan, with `DSum` doing the rollup.
+
+| Scans recorded | True sum of the rows on disk | Value the rollup stored |
+|---|---|---|
+| 1 | 1 | 0 |
+| 1, then 2 | 3 | 1 |
+
+The rollup ran exactly one scan behind for the life of the session. Every scan row was present and
+correct on disk, and the error log was empty.
+
+**The rule: inside a transaction, never read through a domain function any table the transaction
+itself writes.** Read it with a recordset on the same `DAO.Database` object the transaction was begun
+on — that read is inside the transaction and sees its uncommitted work:
+
+```vba
+Set rs = db.OpenRecordset( _
+    "SELECT SUM(ScanQuantity) AS SumScanQuantity FROM StockTakeScan" & _
+    " WHERE StockTakeCountID=" & lngCountID & " AND ScanStatusID=1", dbOpenSnapshot)
+lngSum = Nz(rs!SumScanQuantity, 0)
+```
+
+Two things this is **not**. It is not about opening and closing connections during a transaction: a
+single cached `CurrentDb` object shared by every procedure in a module behaves correctly, and the
+defect above was found in code doing exactly that. And it is not confined to aggregates — `DLookup`
+reading a row the transaction just inserted or updated is the same defect with a different symptom.
+
+**A domain function reading a table the transaction does not write is safe** and needs no change: a
+lookup against `Products` from inside a transaction that writes only count and scan rows returns the
+right answer. The question to ask at each call site is not "is a transaction open?" but "does this
+transaction write the table I am about to read?"
+
+**Widening a transaction widens the answer to that question.** Code that is correct with one
+transaction per unit of work can break unchanged when the transaction is widened to cover a batch,
+because reads that previously saw only committed rows now sit inside the transaction that wrote them.
+Re-ask the question at every call site whenever a transaction's scope changes.
 
 ### VBA code import — an import path can corrupt XML entities, in either direction
 
