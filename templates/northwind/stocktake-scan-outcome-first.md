@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.4.0
+version: 0.4.2
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -199,6 +199,15 @@ Perform each of these checks against a copy of your database with the tables alr
     - Confirm they land against one count line for that product, not two
     - This is the check named in the warning about concurrent counters — it is worth trying
       deliberately, not just trusting the design
+    - **Where the tool building this cannot produce two literally simultaneous processes against
+      the file** — a single-threaded automation tool, or a machine that opens Access exclusively so
+      a second process cannot reach it while a call is in flight — that is not evidence this check
+      cannot run. Open a second, independent connection to the same file (a second DAO or ADODB
+      connection, not the one the build already holds), and use it to insert the competing row
+      between the first connection's own check and its own insert. That forces the engine to raise
+      the real collision error rather than asking you to infer one from documentation, and lets you
+      confirm the recovery path returns the other connection's row, not a duplicate. See
+      `_template-schema.md` §12.2 for the rule this follows
 13. **A product nobody scans is still counted, and shows up as missing.**
     - Open a stocktake and count your way through some but not all of the products, exactly as a
       real one would go
@@ -399,11 +408,13 @@ binds is stated only there.
 - **Read every file in `standards/` and apply it.** Error handling, query style, naming, and how the
   work divides into procedures all come from there and never from this file.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
-  through the interactive selection control where the answer is a choice and as a plain question
-  where it is a number or a name. Two of them are gates: a database in real use with no backup stops
-  the build, and permission to change the tables is asked immediately before anything is changed.
+  through the interactive selection control where the answer is a choice and as a question phrased
+  in plain language where it is a number or a name. Two of them are gates: a database in real use
+  with no backup stops the build, and permission to change the tables is asked immediately before
+  anything is changed.
 - **The duplicate-detection window is a value question, not a choice among named options — ask it as
-  a plain question with the suggested number stated, and accept whatever the developer answers.**
+  a question phrased in plain language, with the suggested number stated, and accept whatever the
+  developer answers.**
   120 is what the template suggests; it is not a default that applies on its own, and a developer who
   says nothing has not agreed to it. Restate the number they gave (or confirmed) in the design you
   present for approval, in seconds, next to what it does — "two scans of the same product, for the
@@ -422,9 +433,10 @@ binds is stated only there.
   warning is a requirement you build to, restated under *The same behavior every time, not the same
   structure* as "two counters racing... never produce two count lines."
 - **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed** — a completed check list, not a narrative. Passed
-  and not passed are the only outcomes. An entry with neither is a check that was not run, and the
-  record is not complete until it has one.
+  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
+  including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
+  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and what
+  to do before settling for a soft result.
 - **While the build runs, do not narrate it.** Say once that it has started and what it will produce;
   say anything the developer must act on, as a question; say when it is finished, what was built, and
   where the build record is. Everything else — every procedure written, every check that passed —

@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.10.0
+version: 0.10.2
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -718,7 +718,8 @@ on its own, and nothing that binds is stated only there.
   it is called, and where things live are declared free above. Do not import a decomposition from
   anywhere else, and do not treat the count of anything in this file as a count of procedures to write.
 - **Ask for the seven things under *Information and conditions you need to supply*,** one at a time, through the interactive
-  selection control where the answer is a choice and as a plain question where it is a name. Three of
+  selection control where the answer is a choice and as a question phrased in plain language where
+  it is a name. Three of
   them are gates: a database in real use with no backup stops the build, the field selection is confirmed
   by the developer before any Data Macro is built, and permission to change the tables is asked
   immediately before anything is changed.
@@ -787,11 +788,11 @@ on its own, and nothing that binds is stated only there.
   mark inside the attachment is the only thing that survives every naming convention. Verified: such a
   mark survives being loaded and read back unchanged.
 - **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed** — a completed check list, not a narrative. Passed
-  and not passed are the only outcomes. A check is passed when every line under it was observed. An
-  entry that is not passed says what was done and what stopped it. An entry with neither outcome is a
-  check that was not run, and the record is not complete until it has one. Anything you verified
-  along the way goes there rather than into the conversation.
+  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
+  including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
+  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and what
+  to do before settling for a soft result. Anything you verified along the way goes there rather than
+  into the conversation.
 
 ## Extra options
 

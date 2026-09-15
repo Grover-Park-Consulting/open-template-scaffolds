@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.9.4
+version: 0.9.5
 status: draft
 ---
 
@@ -935,6 +935,27 @@ build is finished, not when you are asked for it"* does not reach the build unle
 so too. Tie the restatement to the checks this section already requires the builder to run: the build
 record is where each result is recorded, it exists before the build is reported finished, and it is
 never written later, only when asked for.
+
+**The build-record checklist rule — stated once here, canonical for every template type that carries
+a checklist, `vba-scaffold` included. A template of either type points to this rule rather than
+restating it.** The build record reports against the template's own checklist section, one entry per
+check, each saying what was done and what was observed — a completed check list, not a narrative.
+Passed and not passed are the only outcomes; there is no third. Each entry opens with a literal
+`Result: PASSED` or `Result: NOT PASSED`, so the verdict is visible at a glance rather than buried
+inside a sentence, followed by what was done and what was observed. A check is passed when every line
+under it was observed; an entry that is not passed says what was done and what stopped it. An entry
+with neither outcome is a check that was not run, and the record is not complete until it has one.
+
+**An obstacle to one method of running a check is not evidence the check cannot run — it is evidence
+that method cannot.** "Partially verified," "verified by review instead," "the structural guarantee
+holds," or any other soft middle ground is not a third outcome; it is not passed, full stop, unless a
+genuinely different method is tried first. A tool boundary, a locked resource, or a platform default
+that blocks the first approach does not license a weaker one in its place — look for a structurally
+different method that still exercises the real condition before settling for less. A second,
+independent connection to the resource under test, opened separately from whatever route is blocked,
+can often force the real condition (a genuine engine-raised error, not an inferred one) even where the
+first route a builder reaches for cannot. Exhaust that kind of alternative before a check is recorded
+as anything but passed or not passed.
 
 ### 12.3 `validate` rules for `outcome-first`
 

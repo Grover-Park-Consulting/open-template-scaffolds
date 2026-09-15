@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.16.1
+version: 0.16.2
 status: draft
 wizard: true
 implements: audit-logging-lite-schema
@@ -404,9 +404,10 @@ both rather than two.
 output" against this build, on a copy, exactly as that template requires.** Do this whether you
 generated the code yourself or handed the developer the files to run — the checks read the database
 this build produced, not the procedures that produced it. Report against that same numbered list in
-the build record: one entry per check, what was done and what was observed, passed or not passed.
-An entry with neither outcome is a check that was not run, and the record is not complete until it
-has one.
+the build record: one entry per check, what was done and what was observed. Passed and not passed are
+the only outcomes, including where the first method to run a check hits an obstacle — see
+`_template-schema.md` §12.2 for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every
+entry opens with, and what to do before settling for a soft result.
 
 Two things follow from this being working code rather than a generated route:
 

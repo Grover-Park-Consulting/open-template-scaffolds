@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.8.0
+version: 0.8.1
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -109,9 +109,10 @@ one checklist for both rather than two.
 template's output" against this build, on a copy, exactly as that template requires.** Do this
 whether you generated the code yourself or handed the developer the files to import — the checks
 read the database this build produced, not the procedures that produced it. Report against that same
-numbered list in the build record: one entry per check, what was done and what was observed, passed
-or not passed. An entry with neither outcome is a check that was not run, and the record is not
-complete until it has one.
+numbered list in the build record: one entry per check, what was done and what was observed. Passed
+and not passed are the only outcomes, including where the first method to run a check hits an
+obstacle — see `_template-schema.md` §12.2 for the full rule, the `Result: PASSED` / `Result: NOT
+PASSED` line every entry opens with, and what to do before settling for a soft result.
 
 **Do not devise your own list in place of that one.** Reading the procedures below and working out
 a plausible set of checks from them is easy to do and produces a list that tests what this code
