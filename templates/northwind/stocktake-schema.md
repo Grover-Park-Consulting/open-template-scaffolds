@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: northwind
 type: table-schema
-version: 0.6.0
+version: 0.6.1
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -253,6 +253,15 @@ Hooks into existing Northwind schema:
    variance report and the loss is invisible. With the lines created up front, that product ends the
    session counted zero against its expected quantity and is flagged by Business Rule 8 like any
    other shortfall.
+
+   **That flag has to be set when the line is created, not left for a scan that may never come.**
+   Business Rule 8 decides whether a count line is flagged by comparing `CountedQuantity` against
+   `ExpectedQuantity` — but nothing runs that comparison on its own. A build that creates the
+   baseline lines and moves on, leaving the flag to be set only when a scan for that product arrives,
+   satisfies the letter of "a count line for every product" while missing the point of it: the one
+   line this rule exists to protect is exactly the one that never gets a scan, so it would sit
+   unflagged for the entire session. Evaluate Business Rule 8 against each line at the moment it is
+   created, before the baseline step is considered finished.
 
    **Which products a session covers** is the engagement's to decide; the default is every product
    not marked discontinued. A product added to the catalog *after* the session opened has no line and

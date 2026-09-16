@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.8.1
+version: 0.8.2
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -222,6 +222,14 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     '            loop over the product list calling it per product, not a single INSERT ... SELECT.
     '            Which it is depends on the host; both satisfy the rule.
     ' >>> baseline creation, per query-style.md <<<
+
+    ' [BUSINESS LOGIC #5] THREE: evaluate EACH line just created, immediately, in this same
+    '            procedure — do not leave this for ProcessScan. A product nobody ever scans never
+    '            reaches ProcessScan, so if evaluation is left to it, that line's RemediationStatusID
+    '            stays at None for the entire session no matter how large the shortfall. At this
+    '            point CountedQuantity is 0 for every line, so this is just Business Rule 8 run
+    '            against each line's own ExpectedQuantity, the same call ProcessScan makes later.
+    ' >>> call EvaluateVariance once per newly created StockTakeCountID <<<
 
 Cleanup:
     On Error Resume Next

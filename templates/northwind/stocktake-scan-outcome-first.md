@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.4.2
+version: 0.4.3
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -135,7 +135,10 @@ figures were taken once and stay put. And **a product nobody scans is still coun
 session at zero against whatever the system expected, which is a shortfall of everything, and it is
 flagged like any other. A product the system thought you had a hundred of and the counters never
 found is the most serious thing a stocktake can turn up, and it is exactly the product that produces
-no scans at all.
+no scans at all. **That flag has to be set at the moment the baseline line is created, not deferred
+until a scan for that product happens to arrive** — a build that only evaluates a line when a scan
+comes in leaves the never-scanned product unflagged for the whole session, which is the one outcome
+this rule exists to prevent.
 
 **Two people can count different products, or the same product, in the same session at the same
 time, without stepping on each other's work.** A stocktake with several counters working the floor
@@ -214,9 +217,13 @@ Perform each of these checks against a copy of your database with the tables alr
     - Pick a product you know the system expected stock of and that nobody scanned
     - Confirm it has a count line in that session anyway, counted zero against what was expected
     - Confirm that line is flagged for review
-    - **This check is the one that fails when the baseline was never taken.** A build that creates a
-      count line only when a scan arrives passes checks 1 through 12 and fails this one, because the
-      product it is asking about is invisible to it
+    - **This check is the one that fails when the baseline was never taken, and it is also the one
+      that fails when the baseline was taken but never evaluated.** A build that creates a count line
+      only when a scan arrives passes checks 1 through 12 and fails this one, because the product it
+      is asking about is invisible to it. A build that creates the line up front but leaves it to be
+      flagged only when a scan for that product arrives also passes checks 1 through 12 — the line
+      exists — and still fails this one, because it stays unflagged for a product that never gets a
+      scan. Both are the same underlying gap: something about the never-scanned product never runs
 
 ### The same behavior every time, not the same structure
 
@@ -229,6 +236,9 @@ database that behaves the same way. The following must be true of every build:
   carrying the expected quantity of that moment — not only for the products that were scanned. The
   baseline is taken once and never retaken during the session. A product added to the catalog after
   the session opened is the one case that gets its line later, on first scan.
+- Every baseline line's flag is evaluated at the moment it is created, not deferred until a scan for
+  that product arrives. A product nobody ever scans still gets its Business Rule 8 evaluation, at
+  baseline, against a counted quantity of zero.
 - A scan is always saved. Matched, unmatched, or a recognized repeat — every one leaves a row behind.
 - A recognized repeat is excluded from the counted quantity, never from the scan record. The two
   questions — "was this scanned?" and "does this count?" — have separate, visible answers.
