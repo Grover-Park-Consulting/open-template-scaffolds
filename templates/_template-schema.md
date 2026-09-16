@@ -35,8 +35,8 @@ This file contains the specifications for the OTS Template format. You may also 
 existing template files to see how they are applied as an example. However, **be careful not to unintentionally change an existing template.**
 
 > **Scope note (build order).** The common core below is proven against real templates:
-> `templates/northwind/stocktake-schema.md` (`type: table-schema`),
-> `templates/northwind/stocktake-scan-scaffold.md` (`type: vba-scaffold`),
+> `templates/stocktakescan/stocktake-schema.md` (`type: table-schema`),
+> `templates/stocktakescan/stocktake-scan-scaffold.md` (`type: vba-scaffold`),
 > `templates/library/publication-form.md` (`type: form-spec`), and
 > `templates/audit/audit-logging-lite-outcome-first.md` (`type: outcome-first`). **All four type
 > sections (§4, §8, §9, §12) are authoritative — the template format is complete**, each proven by
@@ -85,7 +85,7 @@ present on every template; conditional keys are required when their condition ho
 |---|---|---|---|
 | `template` | required | string (kebab-case) | Unique slug; matches the filename stem |
 | `title` | required | string | Human-readable title |
-| `domain` | required | string | Domain folder name (e.g. `northwind`, `sales`, `hr`); `_meta` reserved for infra |
+| `domain` | required | string | Domain folder name (e.g. `stocktakescan`, `sales`, `hr`); `_meta` reserved for infra |
 | `type` | required | enum | `table-schema` \| `vba-scaffold` \| `outcome-first` \| `form-spec` \| `spec` |
 | `version` | required | semver string | Template version, counted per template and independent of any library version. **Bump it in the same commit as any change to what the template produces** — patch for a correction an adopter needn't act on, minor for anything they would (a new or renamed field, a changed default, an added rule or section), major for a redesign an existing build can't absorb. It is the only thing that distinguishes a copy someone took earlier from the current file; see `CONTRIBUTING.md` → *Versioning a change* for why this is a rule and not a nicety |
 | `status` | required | enum | `draft` \| `review` \| `stable` |

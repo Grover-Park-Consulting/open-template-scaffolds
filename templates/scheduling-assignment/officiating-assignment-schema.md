@@ -1,7 +1,7 @@
 ---
 template: sports-officiating-assignment-schema
 title: Sports Officiating Assignment — Table Schema
-domain: sports
+domain: scheduling-assignment
 type: table-schema
 version: 0.3.0
 status: draft

@@ -820,7 +820,7 @@ for any other table, but run it **in the front end**, and leave it unlinked. Fou
 the path itself. `USys` is the naming-conventions prefix for a configuration table, and it has a
 visible effect worth expecting: **Access hides objects whose names begin with `USys` from the
 navigation pane** until *Show System Objects* is turned on. The runnable code that uses it is
-`templates/startup/app-startup-scaffold.md`.
+`templates/app-startup/app-startup-scaffold.md`.
 
 **External file assets — create the folder *and* copy the file in.** When a template stores a
 **two-part reference** to an external asset — a file **name** in a table plus a folder from a

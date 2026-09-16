@@ -1,7 +1,7 @@
 ---
 template: sports-officiating-assignment-form
 title: Sports Officiating Assignment — Game Assignment Form
-domain: sports
+domain: scheduling-assignment
 type: form-spec
 version: 0.3.1
 status: draft

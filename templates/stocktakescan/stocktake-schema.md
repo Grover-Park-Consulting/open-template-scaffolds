@@ -1,7 +1,7 @@
 ---
 template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
-domain: northwind
+domain: stocktakescan
 type: table-schema
 version: 0.6.1
 status: draft

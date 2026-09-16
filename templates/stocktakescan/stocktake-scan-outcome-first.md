@@ -1,7 +1,7 @@
 ---
 template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
-domain: northwind
+domain: stocktakescan
 type: outcome-first
 version: 0.5.0
 status: draft

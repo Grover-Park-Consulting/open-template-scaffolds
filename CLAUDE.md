@@ -413,7 +413,7 @@ the developer directs you to** — from-scratch work included.
 | Path | What it is |
 |---|---|
 | `templates/_template-schema.md` | The canonical format every template follows |
-| `templates/<domain>/` | The templates, grouped by domain (e.g. `northwind/`, `library/`) |
+| `templates/<domain>/` | The templates, grouped by domain (e.g. `stocktakescan/`, `library/`) |
 | `standards/` | The active standards layer — naming, audit columns, error handling |
 | `prompts/BuildNewTables-StartHere.md` | The copy-paste form of the workflow above |
 | `examples/northwind-stocktake/` | A complete worked example (filled prompt + generated output) |

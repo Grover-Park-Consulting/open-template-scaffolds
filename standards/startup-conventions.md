@@ -163,4 +163,4 @@ failure and the person sees neither message. A log file beside the front end, or
 survive it.
 
 The runnable code — the reconnect sequence, the file-picker prompt, and the check that a chosen file
-is the right one — is `templates/startup/app-startup-scaffold.md`.
+is the right one — is `templates/app-startup/app-startup-scaffold.md`.

@@ -1,7 +1,7 @@
 ---
 template: school-district-asset-tracking-schema
 title: School District Capital Asset Tracking
-domain: school-district
+domain: asset-tracking
 type: table-schema
 version: 0.3.0
 status: draft

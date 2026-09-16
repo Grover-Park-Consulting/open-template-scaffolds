@@ -1,7 +1,7 @@
 ---
 template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
-domain: northwind
+domain: stocktakescan
 type: vba-scaffold
 version: 0.8.3
 status: draft

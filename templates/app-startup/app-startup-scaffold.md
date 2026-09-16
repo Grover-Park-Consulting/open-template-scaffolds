@@ -1,7 +1,7 @@
 ---
 template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
-domain: startup
+domain: app-startup
 type: vba-scaffold
 version: 0.1.3
 status: draft
@@ -115,7 +115,7 @@ nothing here changes it.
 Indexes: PK on `LocalSettingID`; unique on `SettingName`.
 
 **Why this table is local and not shared.** A settings table in the back end — the pattern
-`templates/sports/officiating-assignment-schema.md` uses for `tblAppSetting` — is right for settings
+`templates/scheduling-assignment/officiating-assignment-schema.md` uses for `tblAppSetting` — is right for settings
 everybody must share, because changing one row changes it for everyone at once. It is exactly wrong
 here: **a setting stored in the back end cannot tell you where the back end is.** When the back end
 is unreachable, that is the one table you cannot read. So this one lives in the front end, is never

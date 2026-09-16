@@ -1,7 +1,7 @@
 ---
 template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
-domain: sports
+domain: scheduling-assignment
 type: vba-scaffold
 version: 0.3.0
 status: draft

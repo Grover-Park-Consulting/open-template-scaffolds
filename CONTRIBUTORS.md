@@ -11,10 +11,10 @@ history whether or not the library later consolidates siblings.
 With thanks:
 
 - **Richard Erd** — the school-district capital asset-tracking template
-  ([`templates/school-district/asset-tracking-schema.md`](templates/school-district/asset-tracking-schema.md)).
+  ([`templates/asset-tracking/asset-tracking-schema.md`](templates/asset-tracking/asset-tracking-schema.md)).
   The library's first outside contribution.
 - **Hazel June Finkbiner** (June7) — the sports officiating template set
-  ([`templates/sports/`](templates/sports/)), shaped from a contributed umpire-assignment database.
+  ([`templates/scheduling-assignment/`](templates/scheduling-assignment/)), shaped from a contributed umpire-assignment database.
 
 Want to see your name here? Contributing a template is how you land on this list — see
 [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
