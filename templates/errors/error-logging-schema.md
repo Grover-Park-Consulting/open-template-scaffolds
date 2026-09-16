@@ -1,5 +1,5 @@
 ---
-template: error-log-schema
+template: error-logging-schema
 title: Error Log Table
 domain: errors
 type: table-schema

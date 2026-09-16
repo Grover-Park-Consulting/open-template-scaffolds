@@ -5,7 +5,7 @@ domain: errors
 type: vba-scaffold
 version: 0.6.1
 status: draft
-implements: error-log-schema
+implements: error-logging-schema
 requires_tables:
   - tblErrorLog
 standards_layer:
@@ -90,7 +90,7 @@ commented out.
 
 | Object | Role |
 |---|---|
-| `error-log-schema`'s `tblErrorLog` | The table `LogError` writes to. `CreateErrorLogTable` below builds it; the paired template describes it |
+| `error-logging-schema`'s `tblErrorLog` | The table `LogError` writes to. `CreateErrorLogTable` below builds it; the paired template describes it |
 | A Trusted Location | VBA does not run outside one, and there is no error message when it doesn't |
 | **Trust access to the VBA project object model** | Only for Step 2's "look the names up while the code runs" option. Off by default; per machine |
 
