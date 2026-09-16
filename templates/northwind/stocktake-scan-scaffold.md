@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: northwind
 type: vba-scaffold
-version: 0.8.2
+version: 0.8.3
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -199,12 +199,25 @@ thing a stocktake can find — leaves no row anywhere to report it.
 Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, _
                                      Optional ByVal lConductedByEmployeeID As Long = 0) As Long
     ' [SCAFFOLD] Create a stocktake session and take its baseline; return StockTakeSessionID.
-    Dim db   As DAO.Database
-    Dim rs   As DAO.Recordset
-    Dim sSql As String
+    '            ONE, TWO and THREE below run inside a single transaction — a session that failed
+    '            partway through its baseline is a session with an incomplete baseline, which no
+    '            later scan repairs, so all three either land together or not at all.
+    Dim ws       As DAO.Workspace
+    Dim db       As DAO.Database
+    Dim rs       As DAO.Recordset
+    Dim sSql     As String
+    Dim bInTrans As Boolean
 
     On Error GoTo errHandler
-    Set db = CurrentDb
+    ' [STANDARDS — error-handling.md, "Transaction guard"] the Database used for every write and
+    '            every read below must come from the same Workspace the transaction is begun on —
+    '            never from CurrentDb, which is a different connection and does not see this
+    '            transaction's own uncommitted work.
+    Set ws = DBEngine.Workspaces(0)
+    Set db = ws.Databases(0)          ' NOT CurrentDb - see error-handling.md
+
+    ws.BeginTrans
+    bInTrans = True
 
     ' [BUSINESS LOGIC #5] ONE: insert the StockTakeSession row (status = Open; the date defaults to
     '            today where none was passed; ConductedByEmployeeID left null where 0 was passed)
@@ -229,23 +242,27 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     '            stays at None for the entire session no matter how large the shortfall. At this
     '            point CountedQuantity is 0 for every line, so this is just Business Rule 8 run
     '            against each line's own ExpectedQuantity, the same call ProcessScan makes later.
-    ' >>> call EvaluateVariance once per newly created StockTakeCountID <<<
+    ' [SCAFFOLD] Pass db through to EvaluateVariance — do not let it open its own CurrentDb. Every
+    '            line it reads here is one TWO just wrote, inside this same still-open transaction.
+    ' >>> call EvaluateVariance(lNewCountID, db) once per newly created StockTakeCountID <<<
+
+    ws.CommitTrans
+    bInTrans = False
 
 Cleanup:
     On Error Resume Next
     If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    Set rs = Nothing: Set db = Nothing: Set ws = Nothing
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see ProcessScan)
+    ' [STANDARDS — error-handling.md] standard errHandler block (see ProcessScan), plus the
+    '            transaction guard's own rollback: an error partway through ONE, TWO or THREE must
+    '            not leave a session row with some, but not all, of its baseline lines.
+    If bInTrans Then ws.Rollback: bInTrans = False
     Resume Cleanup
 End Function
 ```
-
-*(A session that failed partway through its baseline is a session with an incomplete baseline, which
-no later scan repairs. Where the standards layer supplies a transaction guard, the session row and
-its count lines belong inside one — and see the Extra Option below before widening it further.)*
 
 ### ProcessScan — `Public Sub` (entry point)
 
@@ -253,35 +270,72 @@ its count lines belong inside one — and see the Extra Option below before wide
 Public Sub ProcessScan(ByVal lSessionID As Long, _
                        ByVal sScanCode As String, _
                        ByVal lScanQuantity As Long)
-    ' [SCAFFOLD] Process one scan end to end for a session.
+    ' [SCAFFOLD] Process one scan end to end for a session, inside one transaction: the scan row,
+    '            the rollup, and the variance evaluation either all land or none do. See "Point of
+    '            the transaction, and where it stops" below the code for what this buys and what it
+    '            deliberately does not cover.
+    Dim ws         As DAO.Workspace
+    Dim db         As DAO.Database
     Dim lProductID As Long
     Dim lCountID   As Long
+    Dim bInTrans   As Boolean
 
     On Error GoTo errHandler
+    ' [STANDARDS — error-handling.md, "Transaction guard"] db comes from the same Workspace the
+    '            transaction is begun on, never from CurrentDb — see that section for why a wrong
+    '            source here compiles cleanly and still produces a silently wrong number.
+    Set ws = DBEngine.Workspaces(0)
+    Set db = ws.Databases(0)          ' NOT CurrentDb - see error-handling.md
+
+    ws.BeginTrans
+    bInTrans = True
 
     lProductID = ResolveScanCode(sScanCode)
     If lProductID = 0 Then
         ' [BUSINESS LOGIC #2] unmatched code: record for review, no count line
-        RecordScan 0, sScanCode, lScanQuantity
-        GoTo Cleanup
+        RecordScan 0, sScanCode, lScanQuantity, db
+        GoTo Commit
     End If
 
-    lCountID = EnsureCountLine(lSessionID, lProductID)
+    lCountID = EnsureCountLine(lSessionID, lProductID, db)
     ' [BUSINESS LOGIC #2] RecordScan resolves Valid vs. Duplicate itself, via DetectDuplicateScan
-    RecordScan lCountID, sScanCode, lScanQuantity
-    RefreshCountRollup lCountID
-    EvaluateVariance lCountID
+    RecordScan lCountID, sScanCode, lScanQuantity, db
+    ' [SCAFFOLD] RefreshCountRollup and EvaluateVariance both take db, not CurrentDb, and neither
+    '            reads its numbers with a domain function (DSum/DLookup/DMax). A domain function
+    '            runs on Access's own separate connection, outside the transaction this procedure
+    '            just began, so it cannot see the StockTakeScan row RecordScan inserted moments ago
+    '            — see each procedure's own note, and _materialization.md, "A domain function
+    '            cannot see the work of the transaction it is called inside."
+    RefreshCountRollup lCountID, db
+    EvaluateVariance lCountID, db
+
+Commit:
+    ws.CommitTrans
+    bInTrans = False
 
 Cleanup:
+    Set db = Nothing: Set ws = Nothing
     Exit Sub
 
 errHandler:
-    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer.
+    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer, plus the
+    '            transaction guard's own rollback: a scan that failed partway through must not leave
+    '            a scan row, a rollup, or a flag written without the other two.
+    If bInTrans Then ws.Rollback: bInTrans = False
     MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
     Resume Cleanup
     Resume
 End Sub
 ```
+
+**Point of the transaction, and where it stops.** Wrapping one scan's writes in a transaction makes
+that scan atomic — the scan row, the rollup, and the flag either all commit or none do, so a failure
+partway through never leaves `CountedQuantity` out of step with the scan record it was computed from.
+It says nothing about the scan before it or the scan after it; each call to `ProcessScan` opens and
+closes its own transaction, and nothing here holds one open across scans, across a counting session,
+or across a batch. That wider scope is deliberately not built here — see the Batch / session
+transaction Extra Option below for what changes if a developer wants to widen it, and why this
+template stops at one scan.
 
 *(`scanStatusValid` / `scanStatusUnmatched` / `scanStatusDuplicate` resolve to `ScanStatus` seed rows — wired per engagement.)*
 
@@ -320,14 +374,18 @@ End Function
 
 ```vba
 Private Function EnsureCountLine(ByVal lSessionID As Long, _
-                                 ByVal lProductID As Long) As Long
+                                 ByVal lProductID As Long, _
+                                 ByVal db As DAO.Database) As Long
     ' [SCAFFOLD] Find the count line for (session, product) or create it; return StockTakeCountID.
-    Dim db   As DAO.Database
+    ' [SCAFFOLD] db is passed in from ProcessScan's own transaction — do not Set db = CurrentDb
+    '            here. This runs inside that transaction, and a line created at THREE below must be
+    '            visible to RecordScan/RefreshCountRollup/EvaluateVariance later in the same call,
+    '            which only holds if every one of them is reading and writing through the one
+    '            Database object the transaction was begun on.
     Dim rs   As DAO.Recordset
     Dim sSql As String
 
     On Error GoTo errHandler
-    Set db = CurrentDb
 
     ' [BUSINESS LOGIC #1] one count line per (StockTakeSessionID, ProductID)
     ' [SCAFFOLD] In an ordinary session the line is already here — OpenStockTakeSession created one
@@ -348,7 +406,7 @@ Private Function EnsureCountLine(ByVal lSessionID As Long, _
 Cleanup:
     On Error Resume Next
     If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    Set rs = Nothing
     Exit Function
 
 errHandler:
@@ -361,17 +419,18 @@ End Function
 
 ```vba
 Private Function DetectDuplicateScan(ByVal lCountID As Long, _
-                                     ByVal lScanQuantity As Long) As Boolean
+                                     ByVal lScanQuantity As Long, _
+                                     ByVal db As DAO.Database) As Boolean
     ' [SCAFFOLD] True if an existing scan on lCountID matches this one closely enough to be
     '            the same physical item scanned twice. Called only when lCountID <> 0 — the
     '            duplicate check does not apply to unmatched scans (Business Rule 2).
-    Dim db     As DAO.Database
+    ' [SCAFFOLD] db is the same Database object ProcessScan opened its transaction on — see
+    '            EnsureCountLine's note above; the reason is the same one here.
     Dim rs     As DAO.Recordset
     Dim sSql   As String
     Dim lWindow As Long
 
     On Error GoTo errHandler
-    Set db = CurrentDb
 
     ' [BUSINESS LOGIC #2] lWindow = SystemSettings.DuplicateScanWindowSeconds (plain integer
     '            seconds — not the [percent*1000] convention used elsewhere in SystemSettings).
@@ -388,7 +447,7 @@ Private Function DetectDuplicateScan(ByVal lCountID As Long, _
 Cleanup:
     On Error Resume Next
     If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    Set rs = Nothing
     Exit Function
 
 errHandler:
@@ -402,21 +461,22 @@ End Function
 ```vba
 Private Function RecordScan(ByVal lCountID As Long, _
                             ByVal sScanCode As String, _
-                            ByVal lScanQuantity As Long) As Long
+                            ByVal lScanQuantity As Long, _
+                            ByVal db As DAO.Database) As Long
     ' [SCAFFOLD] Insert one StockTakeScan row; return the new StockTakeScanID.
     '            lCountID = 0 for an unmatched scan (no count line).
-    Dim db           As DAO.Database
+    ' [SCAFFOLD] db is the same Database object ProcessScan opened its transaction on — passed on
+    '            to DetectDuplicateScan below rather than let it open its own CurrentDb.
     Dim lScanStatusID As Long
 
     On Error GoTo errHandler
-    Set db = CurrentDb
 
     ' [BUSINESS LOGIC #2] resolve the status: Unmatched when there is no count line, else
     '            Duplicate when DetectDuplicateScan says so, else Valid. A duplicate is still
     '            inserted here — RefreshCountRollup (Business Rule 3) is what excludes it.
     If lCountID = 0 Then
         lScanStatusID = scanStatusUnmatched
-    ElseIf DetectDuplicateScan(lCountID, lScanQuantity) Then
+    ElseIf DetectDuplicateScan(lCountID, lScanQuantity, db) Then
         lScanStatusID = scanStatusDuplicate
     Else
         lScanStatusID = scanStatusValid
@@ -428,7 +488,6 @@ Private Function RecordScan(ByVal lCountID As Long, _
 
 Cleanup:
     On Error Resume Next
-    Set db = Nothing
     Exit Function
 
 errHandler:
@@ -440,13 +499,11 @@ End Function
 ### RefreshCountRollup — `Private Sub`
 
 ```vba
-Private Sub RefreshCountRollup(ByVal lCountID As Long)
+Private Sub RefreshCountRollup(ByVal lCountID As Long, ByVal db As DAO.Database)
     ' [SCAFFOLD] Recompute the stored rollup for one count line.
-    Dim db As DAO.Database
     Dim rs As DAO.Recordset
 
     On Error GoTo errHandler
-    Set db = CurrentDb
 
     ' [BUSINESS LOGIC #3] StockTakeCount.CountedQuantity = SUM(StockTakeScan.ScanQuantity) for
     '            lCountID, counting only scans where ScanStatusID = scanStatusValid — a scan
@@ -456,20 +513,23 @@ Private Sub RefreshCountRollup(ByVal lCountID As Long)
     '            ONE: read the sum into a variable. ACE refuses an aggregate subquery in an
     '            UPDATE's SET clause (error 3073), so the sum cannot stay inside the UPDATE.
     '            TWO: write a plain UPDATE carrying that number as a literal.
-    '            Read the sum with a recordset on db — NEVER with DSum. A domain function runs on
-    '            Access's own separate connection, outside the transaction ProcessScan opened, so
-    '            it cannot see the StockTakeScan row RecordScan inserted moments earlier. The sum
-    '            comes back as the previously committed total, this UPDATE succeeds with that wrong
-    '            number, the transaction commits, and CountedQuantity runs exactly one scan behind
-    '            for the life of the session. Nothing is raised and nothing is logged. See
-    '            _materialization.md, "A domain function cannot see the work of the transaction it
-    '            is called inside," for the measured behaviour and the general rule.
+    '            Read the sum with a recordset on db — the same Database object ProcessScan passed
+    '            in, opened on the transaction's own Workspace — NEVER with DSum, and never on a
+    '            fresh CurrentDb. Either of those runs on Access's own separate connection, outside
+    '            the transaction ProcessScan opened, so it cannot see the StockTakeScan row
+    '            RecordScan inserted moments earlier. The sum comes back as the previously committed
+    '            total, this UPDATE succeeds with that wrong number, the transaction commits, and
+    '            CountedQuantity runs exactly one scan behind for the life of the session. Nothing is
+    '            raised and nothing is logged. See _materialization.md, "A domain function cannot see
+    '            the work of the transaction it is called inside," for the measured behaviour and the
+    '            general rule, and error-handling.md's "Transaction guard" for the db-vs-CurrentDb
+    '            half of the same mistake.
     ' >>> SELECT SUM(...) into a snapshot recordset on db, then the UPDATE — both per query-style.md <<<
 
 Cleanup:
     On Error Resume Next
     If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    Set rs = Nothing
     Exit Sub
 
 errHandler:
@@ -481,12 +541,16 @@ End Sub
 ### EvaluateVariance — `Private Sub`
 
 ```vba
-Private Sub EvaluateVariance(ByVal lCountID As Long)
+Private Sub EvaluateVariance(ByVal lCountID As Long, ByVal db As DAO.Database)
     ' [SCAFFOLD] Set the remediation flag for one count line after its rollup.
-    Dim db As DAO.Database
+    ' [SCAFFOLD] db is the same Database object the caller's transaction is open on — read the
+    '            row's current CountedQuantity/ExpectedQuantity with a recordset on db, never with
+    '            DLookup. The same reasoning as RefreshCountRollup's note applies: this runs inside
+    '            the caller's own still-open transaction (ProcessScan for an ordinary scan,
+    '            OpenStockTakeSession for a freshly created baseline line), and a domain function
+    '            would read the last committed value instead of what that transaction just wrote.
 
     On Error GoTo errHandler
-    Set db = CurrentDb
 
     ' [BUSINESS LOGIC #7,#8] VarianceQuantity = CountedQuantity - ExpectedQuantity (signed).
     '            Compare QUANTITIES, never a fraction — do not write ExpectedQuantity into a
@@ -520,7 +584,6 @@ Private Sub EvaluateVariance(ByVal lCountID As Long)
 
 Cleanup:
     On Error Resume Next
-    Set db = Nothing
     Exit Sub
 
 errHandler:
@@ -544,15 +607,18 @@ End Sub
 *Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the
 developer's own library, not committed here.*
 
-- **Batch / session transaction** — wrap a whole counting session's scans in one transaction (the
-  `error-handling.md` transaction guard). **Taking this option changes which reads are safe, so
-  re-check every one of them.** With one transaction per scan, `RefreshCountRollup` is the only
-  procedure here that reads a table its own transaction has already written. With one transaction per
-  session, every scan after the first reads scan rows and count lines that the same still-open
-  transaction wrote — so `DetectDuplicateScan` and `EnsureCountLine` must come off domain functions
-  as well, or they silently stop seeing the session's own work. Same rule, more call sites: see
-  `_materialization.md`, "A domain function cannot see the work of the transaction it is called
-  inside."
+- **Batch / session transaction** — widen `ProcessScan`'s one-transaction-per-scan (built into this
+  scaffold by default) to cover a whole counting session's scans in one transaction instead (the
+  `error-handling.md` transaction guard). This template deliberately stops at one scan — the library
+  is *open*, so widening scope from here, if a developer wants it, is theirs or their own AI
+  assistant's to build against the same rule this scaffold already follows. **Taking this option
+  changes which reads are safe, so re-check every one of them.** With one transaction per scan,
+  `RefreshCountRollup` and `EvaluateVariance` are the only procedures here that read a table their own
+  transaction has already written. With one transaction per session, every scan after the first reads
+  scan rows and count lines that the same still-open transaction wrote — so `DetectDuplicateScan` and
+  `EnsureCountLine` must come off domain functions as well, or they silently stop seeing the session's
+  own work. Same rule, more call sites: see `_materialization.md`, "A domain function cannot see the
+  work of the transaction it is called inside."
 - **Unmatched-scan review queue** — route `scanStatusUnmatched` scans to a review surface instead of
   leaving them parked.
 

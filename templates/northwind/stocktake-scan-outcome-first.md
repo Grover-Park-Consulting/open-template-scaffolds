@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: northwind
 type: outcome-first
-version: 0.4.3
+version: 0.5.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -224,6 +224,19 @@ Perform each of these checks against a copy of your database with the tables alr
       flagged only when a scan for that product arrives also passes checks 1 through 12 — the line
       exists — and still fails this one, because it stays unflagged for a product that never gets a
       scan. Both are the same underlying gap: something about the never-scanned product never runs
+14. **A scan that fails partway through leaves nothing behind.**
+    - Force a scan to fail after it has started but before it would normally finish — set up a
+      condition that makes one of the scan's own writes fail, for example a session that is already
+      closed, or a count line's foreign key pointing at a session that no longer exists, so the
+      failure lands between the point the scan is accepted and the point every one of its writes
+      would ordinarily land
+    - Confirm no `StockTakeScan` row was left behind for that attempt
+    - Confirm the count line's `CountedQuantity` and `RemediationStatusID` are exactly what they were
+      before the attempt, not partially updated
+    - This is the check named in *the same behavior every time* as "a single scan's writes are
+      atomic" — a build with nothing tying a scan's writes together will pass every check above and
+      fail only this one, because a partial failure there leaves some of a scan's writes landing and
+      others not
 
 ### The same behavior every time, not the same structure
 
@@ -268,6 +281,13 @@ database that behaves the same way. The following must be true of every build:
 - Nothing here interrupts a counter mid-scan with a message they cannot act on. A repeat is recorded
   quietly; a shortfall flag is something reviewed later, not something that stops a scan from being
   entered.
+- **A single scan's writes are atomic.** The scan row, the count line's updated quantity, and its
+  review flag either all reflect that scan, or none of them do. A failure partway through recording
+  one scan — a locked table, a dropped connection, an unexpected error — never leaves the counted
+  quantity out of step with the scan record it was computed from, and never leaves a scan recorded
+  without its rollup and flag updated to match. This holds for one scan at a time; nothing here says
+  two different scans, or a whole counting session, share that guarantee — see the Batch / session
+  transaction Extra Option before widening it.
 
 ### Free to choose alternatives
 
@@ -417,6 +437,19 @@ binds is stated only there.
   `ExpectedQuantity`** — that is the division coming back by another route.
 - **Read every file in `standards/` and apply it.** Error handling, query style, naming, and how the
   work divides into procedures all come from there and never from this file.
+- **A single scan's writes need to be atomic (see the corresponding line under *The same behavior
+  every time* and check 14).** This template names no mechanism for it, for the same reason it names
+  no mechanism for anything else — see *Intent*. The direct way to get it in Access/DAO is the
+  transaction guard `error-handling.md` documents: begin on a `Workspace`, take the `Database` you
+  read and write through from that same `Workspace` (`ws.Databases(0)`), never from `CurrentDb`, and
+  wrap one scan's writes and reads in it. **If you use a transaction, the same domain-function caveat
+  applies here as everywhere else in this library:** a `DLookup`/`DSum`/`DMax` call made inside that
+  transaction reads the last *committed* value, not what the transaction itself just wrote, so a read
+  that needs to see this scan's own work needs a recordset on the same `Database` object instead — see
+  `_materialization.md`, "A domain function cannot see the work of the transaction it is called
+  inside." **Nothing here asks you to hold a transaction open across more than one scan** — that is
+  the Batch / session transaction Extra Option, not the base build, and see that option's note before
+  taking it.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a question phrased
   in plain language where it is a number or a name. Two of them are gates: a database in real use
@@ -457,8 +490,16 @@ binds is stated only there.
 *Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the
 developer's own library, not committed here.*
 
-- **Batch / session transaction** — wrap a whole counting session's scans in one transaction (the
-  `error-handling.md` transaction guard).
+- **Batch / session transaction** — widen the per-scan atomicity this template already requires (see
+  *The same behavior every time* and check 14) to cover a whole counting session's scans in one
+  transaction instead (the `error-handling.md` transaction guard). This template deliberately stops
+  at one scan — the library is *open*, so widening scope from here, if a developer wants it, is
+  theirs or their own AI assistant's to build. **Taking this option changes which reads are safe:**
+  with one transaction per session, every scan after the first reads scan rows and count lines that
+  the same still-open transaction wrote, so anything reading a table that transaction has already
+  written needs to come off domain functions and onto a recordset on the same `Database` object — see
+  `_materialization.md`, "A domain function cannot see the work of the transaction it is called
+  inside."
 - **Unmatched-scan review queue** — route unmatched scans to a review surface instead of leaving them
   parked in the scan record.
 
