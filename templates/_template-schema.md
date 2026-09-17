@@ -296,7 +296,7 @@ annotation:
 
 - **No line numbers.** Scaffolds never hard-code line numbers; numbering is house-specific and
   deferred to `error-handling.md` (which may number via `Erl`, or not at all).
-- **The `errHandler` block is shown once and referenced.** Because the VBE-reflection form in
+- **The `errHandler` block is shown once and referenced.** Because the errHandler block's form in
   `error-handling.md` is identical in every procedure, show it in full in the first procedure and
   reference it (`standard errHandler block`) thereafter.
 - **Scope is explicit.** Each procedure is `Public` or `Private` as its usage requires; a sub
@@ -690,7 +690,7 @@ mattered. The disclosure line gives an anchor instead — everything you must ac
    A description may carry a consequence the developer needs *at the moment of choosing* ("any Data
    Macros those tables already have are replaced"), but never the reasoning behind it.
 5. **Error numbers, engine limits, version caveats, and internal names never appear outside *Tell
-   me more*.** Someone who meets "error 3870", "VBE reflection", or "`Application.LoadFromText`" in
+   me more*.** Someone who meets "error 3870" or "`Application.LoadFromText`" in
    a question they are being asked to answer learns one thing: this was not written for them. Put
    it one click away, where the person who wants it will find it and nobody else has to.
 6. **Every step names a preferred choice — never a "default".** See §10.7. The `**Preferred:**`

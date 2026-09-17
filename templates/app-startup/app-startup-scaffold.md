@@ -167,7 +167,7 @@ by drive letter, one by network path — and each front end keeps the route that
 ## Procedures
 
 Each procedure shows its scope, signature, and an annotated skeleton. The **`errHandler` block is
-shown in full in `Startup` and referenced thereafter** — the VBE-reflection form
+shown in full in `Startup` and referenced thereafter** — the errHandler block's form
 (`error-handling.md`) is identical in every procedure by design. Line numbers are deliberately
 absent (house-specific; see `error-handling.md`).
 

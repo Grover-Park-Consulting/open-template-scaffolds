@@ -34,11 +34,6 @@ warnings:
     lines, BEFORE its own On Error Resume Next guard. Putting the guard first — the natural
     instinct when hardening a logger — silently records error 0 with an empty description on
     every single call. Do not reorder those lines.
-  - The "look the names up while the code runs" option (Step 2) reads the Visual Basic Editor,
-    which requires "Trust access to the VBA project object model" in Trust Center - Macro
-    Settings. That setting is OFF by default and is per machine, not per file, so code that works
-    on the machine it was written on can fail on someone else's. Confirm it is on everywhere the
-    application runs before choosing that option.
   - VBA does not run at all outside a Trusted Location — Access silently disables it and nothing
     happens, with no error to explain why. In a split application this applies to every file that
     runs code, on every machine, so a front end copied somewhere untrusted fails for that one
@@ -92,7 +87,6 @@ commented out.
 |---|---|
 | `error-logging-schema`'s `tblErrorLog` | The table `LogError` writes to. `CreateErrorLogTable` below builds it; the paired template describes it |
 | A Trusted Location | VBA does not run outside one, and there is no error message when it doesn't |
-| **Trust access to the VBA project object model** | Only for Step 2's "look the names up while the code runs" option. Off by default; per machine |
 
 ### Where this module goes in a split database
 
@@ -165,10 +159,9 @@ Nothing here is permanent. Run the wizard again later and answer differently.
 | Option | Short description |
 |---|---|
 | `Write the names into the code` | Each module and procedure carries its own name, written at the same time as the code. |
-| `Look the names up while the code runs` | The code finds out for itself which module and procedure failed, so there is nothing to keep current. |
 | `Show a message box, keep no record` | Tells the person something went wrong and records nothing. |
 
-**Preferred:** `Write the names into the code` — the first of the three ways to report an error,
+**Preferred:** `Write the names into the code` — the first of the two ways to report an error,
 in the order the standards these templates follow rank them.
 
 **Skip when:** Step 1 was answered "No".
@@ -176,28 +169,15 @@ in the order the standards these templates follow rank them.
 <details>
 <summary>Tell me more about how the handler reports an error</summary>
 
-These are the three options `standards/error-handling.md` ranks, where they are called **named
-constants**, **VBE reflection**, and the plain **message box**. The first two do the same thing and
-differ only in how the handler learns which module and procedure it is sitting in; both call
-`LogError`. The third does not record anything at all.
+These are the two options `standards/error-handling.md` ranks, where they are called **named
+constants** and the plain **message box**. The first calls `LogError`. The second does not record
+anything at all.
 
 **Writing the names into the code.** A generator writes `MODULE_NAME` and `PROC_NAME` at the same
 moment it writes the procedure, so they cannot be out of step with it — there is no point at which
 the wrong name could be produced. It needs nothing installed, nothing enabled, and nothing
 configured on the machine it runs on, so it behaves identically for everyone. If somebody renames a
 procedure later, `PROC_NAME` is one line above the thing they renamed.
-
-**Looking the names up while the code runs.** Nothing to keep current when a procedure is renamed,
-because nothing is stored. The cost is a dependency: it reads the Visual Basic Editor's own object
-model, which requires **Trust access to the VBA project object model** (Trust Center → Macro
-Settings). That setting is **off by default**, and it is a per-machine Access setting rather than a
-property of your file — so this can work perfectly on the machine you wrote it on and fail on
-somebody else's, for a reason nothing in the code hints at. Confirm it is on everywhere the
-application will run before choosing this.
-
-Both options put the **same thing** in the log: a bare module name such as `modInventory`. The
-lookup form has been run and checked against this, so the log carries one format either way and you
-can change your mind later without splitting your history.
 
 **The message box.** Once the person closes the box there is no trace the error happened — no
 record to search, nothing to count, no way to find out afterward how often it occurs. Reasonable
@@ -969,7 +949,7 @@ End Function
 
 - **Error handling** — the handler pattern the generated code follows comes from
   `standards/error-handling.md`: the `errHandler:` and `Cleanup:` labels, the `LogError` call, and
-  the `Resume Cleanup` / `Resume` chain. Wizard Step 2 chooses among the three reporting options
+  the `Resume Cleanup` / `Resume` chain. Wizard Step 2 chooses among the two reporting options
   that file ranks; Step 5 answers its line-numbering question. `LogError` itself is the one
   documented exception to the pattern, for the reason given at that procedure.
 - **Naming conventions** — module, table, and field names follow OTS house style. A forked practice

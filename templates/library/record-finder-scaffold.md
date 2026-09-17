@@ -93,7 +93,7 @@ link. See Parked for the trade-off.
 ## Procedures
 
 Each procedure shows its scope, signature, and an annotated skeleton. The **`errHandler` block is
-shown in full in `FinderRowSource` and referenced thereafter** — the VBE-reflection form
+shown in full in `FinderRowSource` and referenced thereafter** — the errHandler block's form
 (`error-handling.md`) is identical in every procedure by design. The two pure string helpers
 (`WithAllRow`, `RewriteWhere`) have **no** `errHandler` — nothing in them can raise a trappable data
 error — and so, per `error-handling.md`, no line numbers. Line numbers are otherwise deliberately

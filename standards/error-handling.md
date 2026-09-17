@@ -49,10 +49,9 @@ behaving in a way the standard never describes, so nobody reading it thinks to c
 
 Always these exact spellings: `errHandler:` and `Cleanup:` (never `ErrorHandler`, `err_handler`).
 
-## Three ways to report an error — pick one and use all of it
+## Two ways to report an error — pick one and use all of it
 
-Options 1 and 2 both call the same logger, `LogError`, and differ only in how the handler learns
-which module and procedure it sits in. Option 3 doesn't log at all.
+Option 1 calls the logger, `LogError`. Option 2 doesn't log at all.
 
 **`LogError` also tells the user** — it is not the silent alternative to a message
 box. It records the error *and* reports it to them, and **what they see is settled once, when the
@@ -61,7 +60,7 @@ they can quote back, the full technical detail, or — if that is deliberately c
 all. Deciding it in one place is why no option below puts a `MsgBox` in the handler itself.
 
 > **`LogError` is built by `templates/errors/error-logging-scaffold.md`**, along with the table it
-> writes to. That template asks which of these three options you want — and where the record goes,
+> writes to. That template asks which of these two options you want — and where the record goes,
 > what the user sees, and the rest — one question at a time. Choosing between
 > them here, from this file, works just as well; the template exists so you don't have to.
 
@@ -94,30 +93,7 @@ too: any `Debug.Print` or status message can reference them.
 
 If someone later renames a procedure, `PROC_NAME` is one line directly above the thing they renamed.
 
-### Option 2 — VBE reflection
-
-```vba
-errHandler:
-240       LogError Application.VBE.ActiveCodePane.CodeModule, _
-              Application.VBE.ActiveCodePane.CodeModule.ProcOfLine(Erl, 0), Erl
-250       Resume Cleanup
-260       Resume
-```
-
-Rather than storing the names, this asks the Visual Basic Editor which module and procedure the
-failing line belongs to, so there is nothing to keep current.
-
-**This option depends on a development environment that supports it.** Reading the Visual Basic
-Editor's object model requires **Trust access to the VBA project object model** (Trust Center →
-Macro Settings), which is off by default and is a per-machine Access setting rather than a property
-of your file — so this can work on the machine you wrote it on and fail on someone else's. Whether
-your environment supports it is worth establishing for yourself before you adopt it, and worth
-reading up on beyond what's here; this library offers no guarantees on that point. If you'd rather
-not take that on, use option 1. Nothing else about your code changes: both options call the same
-logger, only the call site differs, and both put the same bare module name (`modInventory`) in the
-log.
-
-### Option 3 — message box, no logging
+### Option 2 — message box, no logging
 
 ```vba
 errHandler:
@@ -143,19 +119,19 @@ needs **capture `Erl`, report, `Resume Cleanup`** and **`Resume`**.
 ### Which one to use — and who decides
 
 **Option 1 is the preferred choice.** "Preferred" means the one to put first when offering the
-three; it does **not** mean the one to use without asking (see
+two; it does **not** mean the one to use without asking (see
 `templates/_template-schema.md` §10.7).
 
 **To the AI generating code: this is a question for the developer, not a rule you apply.** Ask
-which of the three they want, offer all three, and say which is preferred and why. Ask it even when
+which of the two they want, offer both, and say which is preferred and why. Ask it even when
 the answer looks settled — a shop with its own house handler will say so, and it is the only moment
 they get to.
 
 One hard constraint bounds the answer, and it is not a preference: **generated code must compile on
 the machine it lands on, so never emit a call to a logger that isn't installed.** Where `LogError`
 is absent — no `templates/errors/error-logging-scaffold.md` build, no logger of the developer's
-own — options 1 and 2 are not available yet. **Say that, and offer the two real choices:** install
-the logger first, or use option 3 now. Do not quietly pick option 3 and report it afterward; that
+own — option 1 is not available yet. **Say that, and offer the two real choices:** install
+the logger first, or use option 2 now. Do not quietly pick option 2 and report it afterward; that
 is a decision the developer never made.
 
 ## The logger itself is the one exception

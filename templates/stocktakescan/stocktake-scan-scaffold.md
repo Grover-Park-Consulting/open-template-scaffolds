@@ -184,7 +184,7 @@ Seven things follow from this being procedure skeletons rather than an open rout
 
 Each procedure shows its scope, signature, and an annotated skeleton. **Every procedure ends with
 the same `errHandler` block** — shown in full in `ProcessScan` and referenced thereafter, because
-the VBE-reflection form (`error-handling.md`) is *identical* in every procedure by design. Line
+the errHandler block's form (`error-handling.md`) is *identical* in every procedure by design. Line
 numbers are deliberately absent (house-specific; see `error-handling.md`).
 
 ### OpenStockTakeSession — `Public Function` → `Long`

@@ -96,7 +96,7 @@ home are both making assignments into the one back end, and that changes two thi
 
 Each procedure shows its scope, signature, and an annotated skeleton. **Every procedure ends
 with the same `errHandler` block** — shown in full in `AssignOfficial` and referenced
-thereafter, because the VBE-reflection form (`error-handling.md`) is *identical* in every
+thereafter, because the errHandler block's form (`error-handling.md`) is *identical* in every
 procedure by design. Line numbers are deliberately absent (house-specific; see
 `error-handling.md`).
 
