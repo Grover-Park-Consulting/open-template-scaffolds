@@ -5,7 +5,8 @@ item are recognized and not double-counted, a barcode that matches nothing known
 rather than guessed at or discarded, and any product whose count strays outside its tolerance —
 including one nobody scanned at all — is flagged for review.
 
-Resources (library root): templates/stocktakescan/stocktake-scan-outcome-first.md (the template),
+Resources — these files are inside the Open Template Scaffolds library folder; the paths below are
+relative to that folder's root: templates/stocktakescan/stocktake-scan-outcome-first.md (the template),
 templates/stocktakescan/stocktake-schema.md (paired tables), standards/ (my conventions),
 README.md and templates/_template-schema.md for the rest.
 
