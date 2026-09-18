@@ -3,7 +3,7 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.1.1
+version: 0.1.2
 status: draft
 implements: error-logging-schema
 standards_layer:
@@ -32,10 +32,12 @@ warnings:
     and is per machine, not per file, so a build that works where it was written can fail silently
     elsewhere. This is a route choice under *Free to choose alternatives*; the warning travels with it.
 related:
-  - app-startup-outcome-first — app-startup's back-end-unreachable case is one of the more valuable
-    scenarios to have this log actually catch.
-  - standards/error-handling.md — check which option (logger vs. message box) you chose; building
-    this template is what makes Option 1 available.
+  - "app-startup-outcome-first — worth considering if you haven't built it yet. The
+    back-end-unreachable case it handles is one of the more valuable situations to have this log
+    actually catch."
+  - "standards/error-handling.md — worth a second look now that you have a logger. It offers two
+    ways to report an error, and building this template is what makes the preferred one, calling a
+    shared logger, available to you."
 ---
 
 # Error Logging — outcome-first method

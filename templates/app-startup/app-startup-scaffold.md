@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.2.1
+version: 0.2.2
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -32,10 +32,13 @@ seeds:
 house_assumptions:
   - USysLocalSetting — a name/value settings table rather than one column per setting, mirroring the shared tblAppSetting so both read the same way; a practice preferring one column per setting changes the two accessor procedures and nothing else
 related:
-  - error-logging-scaffold — you now have a place your application starts from; error logging gives
-    unhandled errors somewhere to go.
-  - "standards/error-handling.md — this scaffold's own entry adds one hard constraint worth
-    confirming your logger honors: never write to the back end."
+  - "error-logging-scaffold — worth adding once app-startup is built: your application now has a
+    place it starts from, and this template gives the errors it runs into somewhere to go instead
+    of nowhere."
+  - "standards/error-handling.md — worth a second look once you're building error logging. This
+    template's own entry adds a constraint that would not be obvious from the standards file alone:
+    whatever logs errors here must never write to the back end, because that is exactly the
+    situation this template exists to handle."
 ---
 
 # Application Startup and Back-End Relinking — VBA Scaffold

@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.10.0
+version: 0.10.1
 status: draft
 ---
 
@@ -275,6 +275,15 @@ directions deliberately where one makes sense — never automatically, and never
 because two templates share a domain word. A missing or stale entry is a defect to notice and fix
 when found, the same way an undeclared `house_assumptions` entry is; nothing enforces it
 mechanically beyond `validate`'s format/existence check (§2, rule 7).
+
+**Write the rationale for the developer reading it, not as a terse instruction to a machine.**
+Say why it might be worth their time, in plain, warm prose — "worth adding once X is built: you
+now have Y, and this gives Z somewhere to go" reads as a person explaining something; "you now have
+Y; consider Z" reads as AI-speak. Where two templates solve a similar-looking problem for different
+purposes (e.g. two domains that both reconcile a table of items against barcode scans), say what's
+actually shared and say plainly that the mechanism isn't — don't let the resemblance imply a
+crossover that isn't there. The `Target — rationale` dash is the one structural exception to
+keeping this dash-free; nothing else in the sentence should lean on one.
 
 ---
 

@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.1.1
+version: 0.1.2
 status: draft
 standards_layer:
   - design-principles
@@ -16,10 +16,13 @@ house_assumptions:
     folders are dealt with after the data connection and not before. A practice that keeps folder
     locations somewhere else — beside the front end, or in the code — changes that ordering.
 related:
-  - error-logging-outcome-first — you now have a place your application starts from; error logging
-    gives unhandled errors somewhere to go.
-  - "standards/error-handling.md — this template's own entry adds one hard constraint worth
-    confirming your logger honors: never write to the back end."
+  - "error-logging-outcome-first — worth adding once app-startup is built: your application now has
+    a place it starts from, and this template gives the errors it runs into somewhere to go instead
+    of nowhere."
+  - "standards/error-handling.md — worth a second look once you're building error logging. This
+    template's own entry adds a constraint that would not be obvious from the standards file alone:
+    whatever logs errors here must never write to the back end, because that is exactly the
+    situation this template exists to handle."
 ---
 
 # Application Startup and Back-End Relinking — outcome-first method
