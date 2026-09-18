@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.1.3
+version: 0.2.0
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -60,6 +60,11 @@ answer, and say something a person can act on when it can't. It also carries `En
 the folder-ensure slot `startup-conventions.md` §2 names — because the two are ordered: the folder
 paths are settings **in the back end**, so folders cannot be ensured until the connection works.
 
+**The other version of this template — the outcome-first method, `app-startup-outcome-first` —
+produces the same result from a specification rather than working code.** Either one can be built
+against your own database, and they can be built one after the other, against separate copies, to
+compare.
+
 **On a single-file database this scaffold does nothing.** One .accdb holding everything is an
 acceptable choice for one user; it has no linked tables, so the relink check finds nothing to check
 and returns immediately. Nothing here needs to be removed for that case.
@@ -86,11 +91,17 @@ Three layers, kept distinct throughout:
 
 ### Ask before building
 
+**Access has two different things called a password, and this scaffold cares about only one of
+them.** *User-level security* is the older mechanism, and it applies only to the `.mdb` file format
+— rare to meet today. What's meant here is a **database password**: either file, front end or back
+end, can have one set on it independently, and each matters on its own terms. **This scaffold cares
+specifically about the back end's password**, because that's what `EnsureBackEndLink` needs to open
+the back end and confirm it's the right file before relinking to it.
+
 **Where the back end has a database password, ask for it before building anything.** Two questions,
 in this order:
 
-1. *"How this handles a data file kept behind a database password differs from how it handles one
-   without. Does the back end you want this built against have a password?"*
+1. *"Does the back end you want this built against have a database password?"*
 2. Where the answer is yes: *"Supply that password and the build continues. Decline, and it stops."*
 
 **Stop and build nothing if they decline.** The password is used while building — opening the back
@@ -99,9 +110,26 @@ it anywhere. At run time `BackEndExtras` reads what it needs out of the links th
 holds. Requiring the password up front also means nobody uses this scaffold to reach a database they
 were not meant to open.
 
-**Say plainly what it does not buy.** A link to a password-protected file already carries that
-password in clear text, readable by anyone who can open the front end. That is Access's doing, and
-nothing here changes it.
+**One thing worth knowing, briefly.** A link to a password-protected back end carries that password
+in plain text inside the link, readable by anyone who can open the front end — that's Access's own
+doing, not this scaffold's. It rarely matters for what this scaffold is used for: someone with the
+access and intent to go after a password would not route through a startup template to do it.
+
+### Two things Access does on its own, outside this scaffold
+
+**Holding Shift while opening a file tells Access to skip the `AutoExec` macro and the startup
+settings altogether.** That's a legitimate recovery path — it's how a developer gets back into a
+front end whose `Startup()` is broken — and it is also a way past every check this scaffold makes,
+so some engagements want it closed. **It can be**, per file, by setting the database property
+`AllowBypassKey` to `False` — see *Extra Options*, below. Closing it removes the same recovery path
+it removes for anyone trying to get around this scaffold's checks, so it is a deliberate trade-off,
+not a pure hardening step: keep another way in (a backup front end, a documented repair procedure)
+before you close it.
+
+**Access has a startup setting of its own** — *Display Form*, under Options → Current Database, and
+`StartUpForm` where the file's own properties are listed — naming a form to open when the file
+opens. It is separate from everything this scaffold builds and isn't covered by anything it checks.
+Leave it empty; a form opened that way bypasses `Startup()` entirely, silently.
 
 ### `USysLocalSetting` — the front end's own memory
 
@@ -801,6 +829,12 @@ End Sub
 *Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's own
 library, not committed here.*
 
+- **Close the Shift-key bypass.** Turn `AllowBypassKey` off, per file, so holding Shift no longer
+  skips `AutoExec` — see *Two things Access does on its own, outside this scaffold*, above, for the
+  trade-off. `templates/_materialization.md` → *The `AllowBypassKey` gotcha* carries the proven
+  procedure: why the check has to come before the set rather than be caught as an error, and why
+  `CreateProperty`'s `DDL:=True` argument matters. Run it once, by hand, from the Immediate window,
+  against the front end — it is a deployment step, never something `Startup()` calls.
 - **Close the application instead of sitting idle.** As written, a failed relink opens no form and
   leaves Access open with nothing in it. `Application.Quit acQuitSaveNone` after the final message
   is the firmer alternative — it removes any chance of someone poking at a half-started application,

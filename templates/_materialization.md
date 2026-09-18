@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.10.1
+version: 0.11.0
 status: draft
 ---
 
@@ -879,6 +879,75 @@ and opening the file. The eight-line classic text **without** the `_AXL:` block 
 Access MCP server's code-setting tool (proven with object type `macro`) and **fails** through
 `LoadFromText`. Where a template hands the developer files to import rather than building through an
 Access MCP server, the `_AXL:` block is required.
+
+**The `AllowBypassKey` gotcha.** Closing Access's own Shift-key bypass — so holding Shift while
+opening a file no longer skips `AutoExec` and the startup settings — means setting the database
+property `AllowBypassKey` to `False`. Two things about it are not obvious from the property's own
+name, and getting either wrong either throws an avoidable error or silently does nothing:
+
+1. **A fresh database has no row for this property at all.** Every Access database behaves as
+   though `AllowBypassKey` were `True` until something creates it — reading or setting it before
+   that raises error **3270**, "Property not found." `error-handling.md`'s own handler never
+   branches on `Err.Number` to recover and carry on (see its conformance rule 3): every
+   `errHandler:` block reports and stops. So the check belongs in the main logic, **before** the
+   set is attempted, not inside the handler: loop `db.Properties` for a property named
+   `AllowBypassKey`, and only call `CreateProperty` when that loop finds nothing.
+2. **`CreateProperty`'s fourth argument, `DDL:=True`, is not optional in practice.** Omit it and
+   the property is created but any code (or person) can flip it straight back — including, on a
+   database with no workgroup security, from Access's own interface. `DDL:=True` restricts changing
+   it again to a database administrator, which is the entire point of closing the bypass in the
+   first place.
+
+```vba
+Public Function SetAllowBypassKey(ByVal fAllow As Boolean) As Boolean
+    ' fAllow:=True restores the bypass (Access's default on every database).
+    ' fAllow:=False closes it: holding Shift while opening this file no longer
+    ' skips AutoExec or the startup settings.
+    Dim db As DAO.Database
+    On Error GoTo errHandler
+    Set db = CurrentDb
+
+    If AllowBypassKeyExists(db) Then
+        db.Properties("AllowBypassKey") = fAllow
+    Else
+        db.Properties.Append db.CreateProperty("AllowBypassKey", dbBoolean, fAllow, True)
+    End If
+    SetAllowBypassKey = True
+
+Cleanup:
+    On Error Resume Next
+    Set db = Nothing
+    Exit Function
+errHandler:
+    Resume Cleanup
+    Resume
+End Function
+
+Private Function AllowBypassKeyExists(ByVal db As DAO.Database) As Boolean
+    Dim prp As DAO.Property
+    On Error GoTo errHandler
+    For Each prp In db.Properties
+        If prp.Name = "AllowBypassKey" Then
+            AllowBypassKeyExists = True
+            Exit For
+        End If
+    Next prp
+Cleanup:
+    On Error Resume Next
+    Set prp = Nothing
+    Exit Function
+errHandler:
+    Resume Cleanup
+    Resume
+End Function
+```
+
+**Provenance.** Adapted from a Shift-key bypass toggle once shared on the Utter Access forum, now
+offline; the original author was never recorded. The shape above — the existence check ahead of the
+set, and `DDL:=True` on creation — is the part proven by two decades of use; the `errHandler` blocks
+shown are this library's standard, not the source's own. Read it for that shape; the decomposition
+(one procedure per template, or two, or folded into one) is `design-principles.md`'s to decide, same
+as everywhere else in this file.
 
 ---
 
