@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.3.0
+version: 0.4.0
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -25,6 +25,17 @@ new_procedures:
   - ValidateAssignment
   - GetApplicablePayRate
   - GetAppSetting
+  - EnsureGameValidationRule
+  - GameLevelID
+  - OfficialAge
+  - EnsurePhotoFolder
+  - SetOfficialPhoto
+warnings:
+  - "This build's active-official check (Business Rule 3, inside ValidateAssignment) only covers
+    assignments made through AssignOfficial. An assignment inserted directly into tblGameOfficial, or
+    by an import, is not checked. This is the VBA route named in
+    sports-officiating-assignment-outcome-first — that template's Data Macro route closes this gap,
+    at greater build cost. Choosing this scaffold is choosing this trade-off."
 ---
 
 # Sports Officiating Assignment — Assignment & Pay VBA Scaffold
@@ -35,13 +46,24 @@ new_procedures:
 
 ## Intent
 
-Realize the assignment and pay logic the officiating **table** template
-(`sports-officiating-assignment-schema`) defers to code: assigning an official to a game
-position with friendly validation, resolving the effective-dated pay rate, and reading
-application settings. As with every scaffold, this supplies **procedure skeletons** —
-signatures, recordset plumbing, control flow, error structure — with the domain logic marked
-against the table template's numbered **Business Rules**, and house style deferred to the
-standards layer.
+Realize seven of the officiating **table** template's (`sports-officiating-assignment-schema`)
+nine Business Rules in code: assigning an official to a game position with friendly validation
+and an active-official check (Rules 2, 3), resolving the effective-dated pay rate (Rule 6),
+keeping a game internally consistent — two different teams, an end time after the start
+(Rules 4, 7) — deriving a game's play level and an official's age rather than storing either
+(Rules 5, 8), and handling a photo as a file name plus one shared, confirmed folder (Rule 9).
+The other two — the crew being a junction, and assignment uniqueness — are already complete the
+moment the table template's tables are built; nothing here touches them. As with every scaffold,
+this supplies **procedure skeletons** — signatures, recordset plumbing, control flow, error
+structure — with the domain logic marked against the table template's numbered **Business
+Rules**, and house style deferred to the standards layer.
+
+**The other version of this template — the outcome-first method,
+`sports-officiating-assignment-outcome-first` — produces the same result from a specification
+rather than working code, and offers a genuine choice for Rule 3** (a Data Macro that closes the
+coverage gap named in the warning above, or this scaffold's own VBA route). Either can be built
+against your own database, and they can be built one after the other, against separate copies, to
+compare.
 
 A query-style note worth keeping: the source database this domain was shaped from stored the
 crew as two hardcoded columns and needed a `UNION ALL` query to un-pivot them into
@@ -60,7 +82,8 @@ Three layers, kept distinct throughout:
 | Object | Role |
 |---|---|
 | `sports-officiating-assignment-schema` tables | The scaffold runs against the tables that template creates (`tblGame`/`tblOfficial`/`tblGameOfficial`, the lookups, `tblPositionRate`, `tblAppSetting`) |
-| `tblAppSetting.OfficialPhotoFolder` seed row | Read by `GetAppSetting` for the photo feature (schema Business Rule 9) |
+| `tblAppSetting.OfficialPhotoFolder` seed row | Read by `GetAppSetting`, `EnsurePhotoFolder`, and `SetOfficialPhoto` (Business Rule 9). **In a split database this must be an absolute shared path**, e.g. `\\server\share\OfficialPhotos\` — the schema's own seeded value is relative, which only suits a single-file database. |
+| A photo picker | The screen that calls `SetOfficialPhoto` with the file the person chose — a form concern, deferred to a `form-spec` template. |
 | A central error logger | `error-handling.md` |
 
 ### Where this module goes in a split database
@@ -208,8 +231,9 @@ errHandler:
 End Function
 ```
 
-*(The game's play level is derived through its home team — schema Business Rule 5 — so a
-caller resolves `lPlayLevelID` from `tblGame → tblTeam.PlayLevelID` before calling.)*
+*(The game's play level is derived through its home team — schema Business Rule 5 —
+so `GetApplicablePayRate`'s `lPlayLevelID` argument is resolved by calling `GameLevelID`,
+below, rather than read from anywhere stored.)*
 
 ### GetAppSetting — `Public Function` → `String`
 
@@ -241,6 +265,198 @@ Cleanup:
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
     Resume Cleanup
+End Function
+```
+
+### EnsureGameValidationRule — `Public Sub`
+
+```vba
+Public Sub EnsureGameValidationRule()
+    ' [SCAFFOLD] Attach the row-level Validation Rule enforcing Business Rules 4 and 7 to
+    '            tblGame. Run once, after the schema's tables are built; safe to run again -
+    '            it overwrites the same text rather than layering a second copy.
+    Dim tdf As DAO.TableDef
+
+    On Error GoTo errHandler
+
+    Set tdf = CurrentDb.TableDefs("tblGame")
+
+    ' [BUSINESS LOGIC #4,#7] a team can't play itself; when GameEnd is present, it's later
+    '                        than GameStart
+    tdf.ValidationRule = "[HomeTeamID]<>[AwayTeamID] And " & _
+                          "([GameEnd] Is Null Or [GameEnd]>[GameStart])"
+    tdf.ValidationText = "A game needs two different teams, and an end time (if given) " & _
+                          "after the start time."
+
+Cleanup:
+    On Error Resume Next
+    Set tdf = Nothing
+    Exit Sub
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    Resume Cleanup
+    Resume
+End Sub
+```
+
+### GameLevelID — `Public Function` → `Long`
+
+```vba
+Public Function GameLevelID(ByVal lGameID As Long) As Long
+    ' [SCAFFOLD] A game's play level, read through its home team - never stored on the game
+    '            itself (schema Business Rule 5). Returns 0 when the game or its home team
+    '            can't be found.
+    Dim db   As DAO.Database
+    Dim rs   As DAO.Recordset
+    Dim sSql As String
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+
+    ' [BUSINESS LOGIC #5] tblGame -> tblTeam (on HomeTeamID) -> PlayLevelID
+    ' >>> join query per query-style.md <<<
+    sSql = vbNullString
+
+    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
+    If Not rs.EOF Then GameLevelID = Nz(rs!PlayLevelID, 0)
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then rs.Close
+    Set rs = Nothing: Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### OfficialAge — `Public Function` → `Variant`
+
+```vba
+Public Function OfficialAge(ByVal lOfficialID As Long) As Variant
+    ' [SCAFFOLD] An official's age, computed from BirthDate as of today - never stored
+    '            anywhere (schema Business Rule 8). Returns Null when BirthDate is unknown,
+    '            which is why this is a Variant rather than an Integer.
+    Dim db      As DAO.Database
+    Dim rs      As DAO.Recordset
+    Dim sSql    As String
+    Dim dtBirth As Variant
+
+    On Error GoTo errHandler
+    Set db = CurrentDb
+
+    ' [BUSINESS LOGIC #8] look up tblOfficial.BirthDate for lOfficialID
+    ' >>> lookup query per query-style.md <<<
+    sSql = vbNullString
+
+    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
+    If Not rs.EOF Then
+        dtBirth = rs!BirthDate
+        If Not IsNull(dtBirth) Then
+            ' Subtract a year when this year's birthday hasn't happened yet.
+            OfficialAge = DateDiff("yyyy", dtBirth, Date) - _
+                IIf(Format(Date, "mmdd") < Format(dtBirth, "mmdd"), 1, 0)
+        End If
+    End If
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then rs.Close
+    Set rs = Nothing: Set db = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### EnsurePhotoFolder — `Public Function` → `Boolean`
+
+```vba
+Public Function EnsurePhotoFolder() As Boolean
+    ' [SCAFFOLD] Confirm the shared folder named in tblAppSetting.OfficialPhotoFolder exists -
+    '            never create one locally in its place (schema Business Rule 9; see
+    '            templates/_materialization.md -> External file assets, "shared content
+    '            folders: VERIFY, never create"). Returns False, with a message naming the
+    '            folder, when it can't be reached.
+    Dim sFolder As String
+
+    On Error GoTo errHandler
+
+    sFolder = GetAppSetting("OfficialPhotoFolder")
+
+    If Len(sFolder) = 0 Then
+        MsgBox "No photo folder is configured (OfficialPhotoFolder is blank).", vbExclamation
+        GoTo Cleanup
+    End If
+
+    If Len(Dir$(sFolder, vbDirectory)) = 0 Then
+        MsgBox "The shared photo folder cannot be reached:" & vbCrLf & sFolder, vbExclamation
+        GoTo Cleanup
+    End If
+
+    EnsurePhotoFolder = True
+
+Cleanup:
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    Resume Cleanup
+    Resume
+End Function
+```
+
+### SetOfficialPhoto — `Public Function` → `Boolean`
+
+```vba
+Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As String) As Boolean
+    ' [SCAFFOLD] Copy a picked photo into the shared folder under a controlled name, and
+    '            record that name on the official - never the source path, never the file
+    '            itself (schema Business Rule 9). The controlled name is always the same for
+    '            a given official, so a re-pick overwrites cleanly instead of leaving the old
+    '            file behind, orphaned.
+    Dim sFolder As String
+    Dim sExt    As String
+    Dim sName   As String
+    Dim lDot    As Long
+
+    On Error GoTo errHandler
+
+    If Not EnsurePhotoFolder() Then GoTo Cleanup
+
+    sFolder = GetAppSetting("OfficialPhotoFolder")
+    If Right$(sFolder, 1) <> "\" Then sFolder = sFolder & "\"
+
+    lDot = InStrRev(sSourcePath, ".")
+    sExt = IIf(lDot > 0, Mid$(sSourcePath, lDot), vbNullString)
+    sName = "Official_" & lOfficialID & sExt
+
+    FileCopy sSourcePath, sFolder & sName
+
+    ' [BUSINESS LOGIC #9] UPDATE tblOfficial SET PhotoFileName = sName WHERE OfficialID = lOfficialID
+    ' >>> update per query-style.md <<<
+
+    SetOfficialPhoto = True
+
+Cleanup:
+    Exit Function
+
+errHandler:
+    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    Resume Cleanup
+    Resume
 End Function
 ```
 
