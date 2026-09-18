@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.8.3
+version: 0.8.4
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -30,6 +30,12 @@ new_procedures:
   - RecordScan
   - RefreshCountRollup
   - EvaluateVariance
+related:
+  - "school-district-asset-tracking-outcome-first — a similar process for a different purpose:
+    reconciling a table of items against barcode scans. The purpose of asset-tracking is to account
+    for **fixtures and equipment** rather than **sale inventory**. The scan-resolution logic differs
+    between the two and they solve similar, but different, problems, so they do not share a
+    scan-resolution mechanism."
 ---
 
 # Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
@@ -601,6 +607,10 @@ End Sub
 - **Query style** — every `>>> ... per query-style.md <<<` marker is SQL written to the house query
   standard (aliasing, where querydefs live, formatting, safe criteria).
 - **Naming** — procedure, variable, and parameter names follow `naming-conventions.md`.
+
+**To the AI assistant: once the build is reported finished, and only then, mention each entry under
+`related` in the front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and
+why. This is not part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 

@@ -3,7 +3,7 @@ template: school-district-asset-tracking-outcome-first
 title: School District Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.1.0
+version: 0.1.1
 status: draft
 implements: school-district-asset-tracking-schema
 standards_layer:
@@ -31,6 +31,11 @@ warnings:
     no way to tell a backdated record from a new purchase that falls short today. A bulk migration of
     pre-existing assets needs a deliberate way around the check for that one import, arranged by the
     developer. This template does not supply one; see *What the template does not do*."
+related:
+  - "northwind-stocktake-scan-outcome-first — a similar process for a different purpose: reconciling
+    a table of items against barcode scans. The purpose of stocktake-scan is to account for **sale
+    inventory** rather than **fixtures and equipment**. The scan-resolution logic differs between the
+    two and they solve different problems, so they do not share a scan-resolution mechanism."
 ---
 
 # School District Capital Asset Tracking — outcome-first method
@@ -447,6 +452,9 @@ there.
   say anything the developer must act on, as a question; say when it is finished, what was built, and
   where the build record is. Everything else — every procedure written, every check that passed — goes
   to the build record.
+- **Once the build is reported finished, and only then, mention each entry under `related` in the
+  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
+  part of the build, never a gate, and never read before this point.
 
 ## Extra options
 

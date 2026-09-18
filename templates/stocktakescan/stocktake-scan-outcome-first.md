@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.5.0
+version: 0.5.1
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -38,6 +38,12 @@ warnings:
     turn that refusal into 'use the line the other counter just created', not let it reach the
     counter as a failure. Checking for an existing line first narrows the window; it does not
     close it."
+related:
+  - "school-district-asset-tracking-outcome-first — a similar process for a different purpose:
+    reconciling a table of items against barcode scans. The purpose of asset-tracking is to account
+    for **fixtures and equipment** rather than **sale inventory**. The scan-resolution logic differs
+    between the two and they solve similar, but different, problems, so they do not share a
+    scan-resolution mechanism."
 ---
 
 # Northwind Scanned Stocktake — outcome-first method
@@ -484,6 +490,9 @@ binds is stated only there.
   say anything the developer must act on, as a question; say when it is finished, what was built, and
   where the build record is. Everything else — every procedure written, every check that passed —
   goes to the build record.
+- **Once the build is reported finished, and only then, mention each entry under `related` in the
+  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
+  part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 
