@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — Set-up Wizard and Logger
 domain: errors
 type: vba-scaffold
-version: 0.6.1
+version: 0.6.2
 status: draft
 implements: error-logging-schema
 requires_tables:
@@ -44,6 +44,11 @@ warnings:
     link every call to LogError records nothing and reports no problem — the write is guarded so
     that it can never raise into the handler that called it, so a missing link looks exactly like
     a working logger. LinkErrorLogTable creates the link; run it once in every front end.
+related:
+  - app-startup-scaffold — app-startup's back-end-unreachable case is one of the more valuable
+    scenarios to have this logger actually catch.
+  - standards/error-handling.md — check which option (logger vs. message box) you chose; building
+    this template is what makes Option 1 available.
 ---
 
 # Error Logging — Set-up Wizard and Logger
@@ -959,6 +964,10 @@ End Function
 - **Design principles** — one job per procedure: read the error, write to a table, write to a file,
   work out a path, show a message, build a table. Each is separately replaceable, which is what
   makes the wizard's answers a matter of swapping one block rather than editing the logger.
+
+**To the AI assistant: once the build is reported finished, and only then, mention each entry under
+`related` in the front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and
+why. This is not part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 

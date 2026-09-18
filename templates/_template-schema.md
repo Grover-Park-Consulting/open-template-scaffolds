@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.9.5
+version: 0.10.0
 status: draft
 ---
 
@@ -104,6 +104,7 @@ present on every template; conditional keys are required when their condition ho
 | `house_assumptions` | optional | list[string] | House-particular modeling assumptions deliberately kept in the template body (the "Declared" tier) because they can't be moved to the standards layer or dropped. Each entry is `Target — rationale`, where `Target` names the entity, field, or rule carrying the assumption. Makes embedded house bias machine-visible to adopters and discovery tools. |
 | `warnings` | optional | list[string] | Hard **platform caveats** the AI builder must surface to the developer *before* building — engine limits, not house bias (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"). Surfaced alongside `house_assumptions` in the review step; each entry states the limit and what the developer must confirm or the build must branch on. |
 | `wizard` | optional | boolean | `true` when the template's set-up decisions are presented as an OTS wizard (§10). A wizard template surfaces its `warnings` and `house_assumptions` **at the step each one belongs to** rather than all at once before the first question |
+| `related` | optional | list[string] | Other templates or standards files worth considering next, once this one is built — never during it (see §7.1). Each entry is `Target — rationale`, where `Target` is a template slug or a `standards/<file>.md` path |
 
 **Rules the `validate` tool enforces on front-matter:**
 
@@ -120,6 +121,10 @@ present on every template; conditional keys are required when their condition ho
 6. Every `house_assumptions` entry is well-formed (`Target — rationale`), and each `Target`
    resolves to an entity, field, or rule named in this template. (Format check only — `validate`
    cannot judge whether something *should* have been declared; that stays the human review gate.)
+7. Every `related` entry is well-formed (`Target — rationale`), and each `Target` resolves —
+   either to another template's `template` slug, or to a file that exists under `standards/`.
+   (Format and existence only — `validate` cannot judge whether the relationship makes sense;
+   that stays the human review gate, same as `house_assumptions`.)
 
 **Scope of `validate` — format, not fitness.** `validate` confirms a template is internally
 well-formed: complete front-matter, `new_tables` matching the `### <name>` entity headings, every
@@ -242,6 +247,34 @@ listing named, optional extensions a developer fills per client engagement. The 
 copy is saved to the developer's own library — never committed back here. Extra Options are
 how a template absorbs natural depth without bloating the core (e.g. the stocktake template
 parks cloud/mobile migration and category-level shrinkage here).
+
+### 7.1 The `related` front-matter key
+
+Some templates solve problems that naturally follow from, or lead into, another template or a
+standards file — building `app-startup` leaves an application with nowhere for unhandled errors
+to go; building `error-logging` makes little sense without knowing what `error-handling.md`
+already decided. `related` is how a template names that, without turning it into route
+specification or a design-time input.
+
+**It is advisory, and it is timed.** A `related` entry is never read while a template is being
+designed or built, and it never changes what gets built. The AI assistant surfaces it exactly
+once, after the build is reported finished — wherever that template's own closing instruction to
+the AI assistant already lives (`## To the AI assistant building this` for `outcome-first`; the
+equivalent build-completion point for other types). One line per entry: what it is, why it might
+be worth considering next. **Not a gate, not a recommendation to act on now** — the developer
+either takes it up in a future session or doesn't.
+
+**This is what keeps it from becoming the thing `_template-schema.md` §12.4 and the library's own
+"providing extraneous information opens gates best left closed" lesson warn against.** A mechanism
+read during design can leak into the build; a mechanism read only after the build is already
+finished cannot.
+
+**Maintenance is a review step, not a mechanical rule.** When a new template is added, check
+existing templates for a plausible `related` entry pointing at it, and add entries in both
+directions deliberately where one makes sense — never automatically, and never on every pair just
+because two templates share a domain word. A missing or stale entry is a defect to notice and fix
+when found, the same way an undeclared `house_assumptions` entry is; nothing enforces it
+mechanically beyond `validate`'s format/existence check (§2, rule 7).
 
 ---
 

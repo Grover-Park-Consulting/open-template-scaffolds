@@ -3,7 +3,7 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.1.0
+version: 0.1.1
 status: draft
 implements: error-logging-schema
 standards_layer:
@@ -31,6 +31,11 @@ warnings:
     project object model" (Trust Center → Macro Settings) turned on. That setting is off by default
     and is per machine, not per file, so a build that works where it was written can fail silently
     elsewhere. This is a route choice under *Free to choose alternatives*; the warning travels with it.
+related:
+  - app-startup-outcome-first — app-startup's back-end-unreachable case is one of the more valuable
+    scenarios to have this log actually catch.
+  - standards/error-handling.md — check which option (logger vs. message box) you chose; building
+    this template is what makes Option 1 available.
 ---
 
 # Error Logging — outcome-first method
@@ -323,6 +328,9 @@ there.
   say anything the developer must act on, as a question; say when it is finished, what was built, and
   where the build record is. Everything else — every procedure written, every check that passed — goes
   to the build record.
+- **Once the build is reported finished, and only then, mention each entry under `related` in the
+  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
+  part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 

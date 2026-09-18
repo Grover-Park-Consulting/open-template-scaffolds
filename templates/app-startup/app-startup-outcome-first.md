@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.1.0
+version: 0.1.1
 status: draft
 standards_layer:
   - design-principles
@@ -15,6 +15,11 @@ house_assumptions:
   - The locations of any folders everybody shares are settings kept in the data file. That is why the
     folders are dealt with after the data connection and not before. A practice that keeps folder
     locations somewhere else — beside the front end, or in the code — changes that ordering.
+related:
+  - error-logging-outcome-first — you now have a place your application starts from; error logging
+    gives unhandled errors somewhere to go.
+  - "standards/error-handling.md — this template's own entry adds one hard constraint worth
+    confirming your logger honors: never write to the back end."
 ---
 
 # Application Startup and Back-End Relinking — outcome-first method
@@ -411,6 +416,9 @@ that binds is stated only there.
   say anything the developer must act on, as a question; say when it is finished, what was built, and
   where the build record is. Everything else — every procedure written, every check that passed — goes
   to the build record.
+- **Once the build is reported finished, and only then, mention each entry under `related` in the
+  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
+  part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 

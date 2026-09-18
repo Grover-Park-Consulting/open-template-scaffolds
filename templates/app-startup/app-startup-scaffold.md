@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.2.0
+version: 0.2.1
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -31,6 +31,11 @@ seeds:
   - USysLocalSetting.BackEndPath
 house_assumptions:
   - USysLocalSetting — a name/value settings table rather than one column per setting, mirroring the shared tblAppSetting so both read the same way; a practice preferring one column per setting changes the two accessor procedures and nothing else
+related:
+  - error-logging-scaffold — you now have a place your application starts from; error logging gives
+    unhandled errors somewhere to go.
+  - "standards/error-handling.md — this scaffold's own entry adds one hard constraint worth
+    confirming your logger honors: never write to the back end."
 ---
 
 # Application Startup and Back-End Relinking — VBA Scaffold
@@ -823,6 +828,10 @@ End Sub
 - **Audit columns** — `USysLocalSetting` carries none. `audit-columns.md` exempts `USys`
   configuration tables, which is the right answer twice over here: the house audit machinery lives
   in the back end, and this table has to work when the back end does not.
+
+**To the AI assistant: once the build is reported finished, and only then, mention each entry under
+`related` in the front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and
+why. This is not part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 
