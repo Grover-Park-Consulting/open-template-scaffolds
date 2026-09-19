@@ -205,6 +205,19 @@ Once you've used a template a few times and know it well, it's yours to customiz
 What if nothing in the library matches what you need? The AI will say so plainly — our intent is never to force a fit. If that happens, the AI is authorized to offer to design your tables from scratch, following the same conventions, with the same look-it-over-and-approve flow. Fair warning, though: without a template, you're outside the library's tested ground. The AI helps, and you still approve everything, but the design is your
 own. No template stands behind it.
 
+## Build records add up — keep them
+
+Every build produces a build record: what was built, what was checked, and anything that didn't go
+as the template described. Once you're past your own trial-and-error, don't discard these — your AI
+assistant puts them in `build-records/<template-name>/` in your copy of the library. **That folder
+holds one per template, not a new folder for every build** — a template's folder is where all of its
+history lives, so your AI assistant (yours, or the next person's) can read what past builds of that
+template ran into instead of repeating the work of finding out.
+
+This holds across templates too, not just within one. A build record for one template can save real
+time on another that shares a technique — a Data Macro convention, say. The library ships
+`build-records/` empty; it fills up as you use it.
+
 ## What's in here
 
 You only need to act on a few of these items. Your AI reads the rest for you or you can ignore them until later.
@@ -216,6 +229,7 @@ You only need to act on a few of these items. Your AI reads the rest for you or 
 | **`prompts/`** | The prompt you fill in and paste (`BuildNewTables-StartHere.md`) | **Yes, the one you use  to start** |
 | **`examples/`** | A finished example, to see it work first | Optional, read to learn |
 | `templates/` | The designs your AI builds from | Not necessary, only the AI reads these |
+| `build-records/` | Accumulated records from past builds, one folder per template | No, your AI reads it before building and adds to it after |
 | `standards/` | The default conventions your AI applies | Not necessary unless you edit or swap in your own (later) |
 | `CLAUDE.md` | Instructions your AI picks up on its own | No, leave it to the AI|
 | `mcp-server/` | An optional server that lets your AI look up templates and standards directly. It cannot change your database. | Only if you choose it. It has its own README; it's not needed to start |

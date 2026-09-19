@@ -45,6 +45,15 @@ reason the detail can stay out of the messages they read while they are still de
 `.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
 one record covers both.
 
+**A build record does not end its life with the build it documents.** In addition to the developer's
+own copy above, copy it into `build-records/<template-slug>/` in the library, named
+`YYYY-MM-DD-<short-description>.md`. One folder per template — every build of that template lands in
+the same folder, never a fresh one per run — because the folder's value is in what accumulates there,
+for this template and for any other template that later needs the same mechanism (see
+`CLAUDE.md`, "Build records accumulate"). Nothing about the record's content changes for this: it is
+written exactly as the six parts below already require, narrated with its false starts intact. Only
+its destination gains a second copy.
+
 Six parts, in this order:
 
 1. **What was built, and where.** Every object created, and which file it went into. The developer

@@ -16,3 +16,7 @@ __pycache__/
 
 # Per-machine editor config (not part of the library)
 .vscode/
+
+# Accumulated build records are per-developer history, not library content —
+# keep the folder and its README, ignore everything that fills it
+build-records/*/

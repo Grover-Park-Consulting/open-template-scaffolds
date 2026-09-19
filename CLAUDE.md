@@ -92,6 +92,13 @@ this same workflow.)
    from the template body.
 4. **Honor the template.** Its entities, fields, relationships, and Business Rules are decisions
    already made. Carry them through unless the developer overrides a specific point.
+
+   **Templates are complementary, not walled off.** A template's own body covers its domain, but a
+   mechanism it uses — a Data Macro event, an error-handling pattern, a wizard shape — may already
+   be documented more fully in another template, or in a prior build record for this one. Before
+   implementing a cross-cutting mechanism from scratch, check `build-records/` (see "Build records
+   accumulate" below) and any template whose domain overlaps for how it was already worked out, and
+   say so when you draw on one.
 5. **Surface every `house_assumptions` entry** the template declares in its front-matter. List them
    and ask the developer to confirm or override before you finalize. **Surface every `warnings`
    entry the same way** — those are hard platform limits, not preferences (e.g. Data Macros cannot
@@ -294,6 +301,24 @@ without reconstructing anything from earlier in the session: what the setting me
 produces at run time, and what changes if they choose the other way — at the point of asking, not
 on request. Never use one number for two quantities in the same message: if 11 fields are auditable
 and 11 macros will be generated, say which is which, or the reader will take them for the same 11.
+
+## Build records accumulate — read them before you build, add yours after
+
+`build-records/` holds one folder per template slug (e.g.
+`build-records/officiating-assignment-outcome-first/`), each containing every build record ever
+produced for that template — never one build's private scratch, always a shared resource for the
+next one, whatever template it's for.
+
+**Before building**, check the folder for the template you're about to build, and check any other
+template's folder for a mechanism you're about to reuse (see the complementary-templates rule under
+"The core workflow" above). Read what's there as a narrated account of what was tried, what failed,
+and what held — not a rule list to apply blindly. If a fact it records no longer holds in your
+environment, say so in your own record rather than assuming the old one is still current.
+
+**After building**, write the build record to the developer's own location as always, and also copy
+it into `build-records/<template-slug>/`, named `YYYY-MM-DD-<short-description>.md`. Create the
+template's folder if it doesn't exist yet. This is not optional housekeeping — it is the whole point
+of the folder existing.
 
 ## Write for someone who has never seen this before
 
