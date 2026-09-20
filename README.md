@@ -17,6 +17,9 @@ It's also more than a set of templates. It's a way to **shape** each one to the 
 that lets an AI assistant open your database and build in it directly. You do not need it to use this
 library; *About the two kinds of server* below says what it does, and how the library works without one.
 
+**Want to download the library and run your first build right now?** See
+**[`GETTING-STARTED.md`](GETTING-STARTED.md)** — five short steps, nothing to install.
+
 ## New to AI assisted development? We built OTS for you.
 
 You don't need to be an experienced database designer, although it can help if you are. If you've outgrown Excel and you're just starting out building Access applications — especially with an AI assistant helping — this library takes the hardest, most abstract part, designing the tables and logic, and gives you a running start. You describe what you want in plain words, the AI builds it, and you look it over and approve or adjust. That's the "Template" part of Open Template Scaffolds.
