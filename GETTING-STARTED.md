@@ -14,7 +14,7 @@ That unzipped folder is your copy of the library — everything you need is insi
 
 ## 2. Trust a folder for the database
 
-Templates work by having Access run VBA code, so the database the demo creates needs to
+Templates work by having Access run VBA code, so the database the template creates needs to
 sit in a Trusted Location. (The library folder itself is just text files — it needs no
 trust setting.)
 
@@ -30,35 +30,30 @@ How you do this depends on which assistant you use:
 - **A chat assistant that can read files on your computer** (Claude Desktop with folder
   access): tell it the full path — *"My template library is in
   `C:\Users\<yourname>\Documents\OpenTemplateScaffolds`. Read what you need from there."*
-- **A chat assistant in a browser** (Claude or ChatGPT on the web): skip to step 4, fill in
-  the form, and paste that whole file into the chat. The assistant will tell you, by name,
-  which other files it needs — open, copy, and paste each one in.
+- **A chat assistant in a browser** (Claude or ChatGPT on the web): skip to step 4, choose a
+  prompt and paste that whole file into the chat. The assistant will tell you,
+  by name, which other files it needs — open, copy, and paste each one in.
 
-## 4. Fill in four lines and send them
+## 4. Pick a prompt and send it
 
-Open [`prompts/BuildNewTables-StartHere.md`](prompts/BuildNewTables-StartHere.md). Near the
-top is a small form:
+Open the [`prompts/`](prompts/) folder. Each file there is a sample prompt — a starting point for a particular kind of build, not something you have to follow word for word. We crafted them after reviewing results of our own trial runs. We think they'll help you get started on the right foot.
 
-```text
-- Build: <what you want to make, in plain words — e.g. "add stocktake scanning to an inventory app">
-- Standards: default
-- Who this is for: <describe your client — what they call things, and how they want to report>
-- Extra options: none
-```
+Every prompt does two things:
 
-For your first try, leave **Standards** and **Extra options** as they are. Replace the two
-`<angle bracket>` lines. Copy the **whole** prompt — the form and the instructions below it
-— and paste it to your assistant.
+- **states the outcome** — what you want built, in plain words
+- **guides the template toward a good build** — your standards, who the build is for, and
+  any extra options
+
+Open the prompt closest to what you want to build. For your first trial, you can copy the **whole** file into your assistant. The prompts are editable; you might want to experiment with different wording as you become more familiar with the OTS method.
 
 ## 5. Review what it builds
 
-Your assistant produces a diagram of the tables and a field list. Approve it, or say what to
-change — as many rounds as you need. When it's done, read the build record it creates.
+Your assistant produces the design it proposes to build for the database it will deliver along with a diagram of the tables and a field list when appropriate. Approve the proposal, or say what to change. Go through as many rounds as you need to get the result you want. When it's done, read the build record it creates.
 
 ## Want to see it work first?
 
-Open [`examples/northwind-stocktake/`](examples/northwind-stocktake/) — the same prompt,
-already filled in, with the tables it produced. Compare it against your own first result.
+See **"A worked example for the quick start demo"** in [`README.md`](README.md) — a filled-in
+prompt and the tables it produced, to compare against your own first result.
 
 ## Working on a database you already have?
 
