@@ -12,6 +12,8 @@ find it again (your Documents folder is fine). If you use Git, you can fork and 
 
 That unzipped folder is your copy of the library — everything you need is inside it.
 
+![Two folders side by side: the unzipped library folder, and a separate folder holding the Access database](images/getting-started-folders.svg)
+
 ## 2. Trust a folder for the database
 
 Templates work by having Access run VBA code, so the database the template creates needs to
@@ -46,6 +48,8 @@ Every prompt does two things:
 
 Open the prompt closest to what you want to build. For your first trial, you can copy the **whole** file into your assistant. The prompts are editable; you might want to experiment with different wording as you become more familiar with the OTS method.
 
+![A prompt pasted into a chat window, ready to send but not yet sent](images/getting-started-prompt.svg)
+
 ## 5. Review what it builds
 
 Your assistant produces the design it proposes to build for the database it will deliver along with a diagram of the tables and a field list when appropriate. Approve the proposal, or say what to change. Go through as many rounds as you need to get the result you want. When it's done, read the build record it creates.
@@ -57,5 +61,7 @@ prompt and the tables it produced, to compare against your own first result.
 
 ## Working on a database you already have?
 
-This walkthrough builds new tables from scratch. To add features to an existing database
-instead, see **"Ready to work on a database you already have?"** in [`README.md`](README.md).
+This walkthrough covers your first build, using whichever sample prompt in `prompts/` fits what
+you want to build. To add a template's tables, VBA, forms, or reports to a database you already
+have, instead of starting fresh, see **"Ready to work on a database you already have?"** in
+[`README.md`](README.md).
