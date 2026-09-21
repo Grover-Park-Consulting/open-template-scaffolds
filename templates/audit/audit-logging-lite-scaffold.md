@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.16.5
+version: 0.17.0
 status: draft
 implements: audit-logging-lite-schema
 requires_tables:
@@ -115,8 +115,11 @@ warnings:
     local variable set with the conversion forced ([Key] & "" or CStr), declared before the
     LookUpRecord, and compare against that variable.
   - Path B (an existing accdb with real tables and real data) is much less forgiving than the
-    demo. Make a copy of the .accdb file before running any of these steps against it — Data
-    Macros get attached directly to your live tables, and this is not a step to redo casually.
+    demo. This scaffold attaches Data Macros to the tables the developer already has data in, and it
+    changes those tables rather than copies of them; a macro attached wrongly can start refusing
+    saves on a table people are using. A build against a database in real use is preceded by a
+    backup copy of the file, and the developer is asked for one before anything is changed. If they
+    say there is no copy, stop and build nothing.
   - A linked table cannot carry a Data Macro. Auditing is attached to the table itself, in the
     file where the table really lives, so a table that appears in this file only as a link is never
     in scope - whatever the scope setting says, and whether or not the developer named it.
@@ -235,6 +238,20 @@ Three layers, kept distinct throughout:
 | **Every object in the database closed** | Close every table, form, report and query before you run **any** of these procedures, and leave them closed until the whole run is finished. `Four_GenerateAllAuditDataMacros` opens each table in **design view** to attach its macros and cannot do that while anything is using the table, so it is the step that fails outright; the earlier steps do not fail, they rebuild the settings the already-attached macros read while someone could still be editing. This applies whether or not another copy of the database is open. |
 | **Every other copy of the database closed** | The same requirement, one file further out: another Access instance holding one of those tables blocks it too. In a split design that means the back end *and* every front end — see below. |
 | **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Four_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Where each module goes in a split database
 

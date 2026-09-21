@@ -3,7 +3,7 @@ template: library-record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.2.1
+version: 0.3.0
 status: draft
 implements: library-catalog-schema
 requires_tables:
@@ -21,6 +21,10 @@ new_procedures:
   - WithAllRow
   - JumpFormToRecord
   - RewriteWhere
+warnings:
+  - The finder itself is a new module, but wiring it up changes the code behind an entry form the
+    developer already has. A build against a database in real use is preceded by a backup copy of
+    the file, and the developer is asked for one before anything is changed.
 ---
 
 # Record Finder for an Entry Form — VBA Scaffold
@@ -59,6 +63,20 @@ Three layers, kept distinct throughout:
 | The form's base record source | A saved query (or its SQL) whose `WHERE` `JumpFormToRecord` rewrites to land on one record |
 | A sort-title column (e.g. `PubSort`) | The finder list and the jumped form order on it |
 | A central error logger | `error-handling.md` |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Where this module goes in a split database
 

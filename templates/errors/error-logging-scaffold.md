@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.7.0
+version: 0.8.0
 status: draft
 implements: error-logging-schema
 requires_tables:
@@ -43,6 +43,10 @@ warnings:
     link every call to LogError records nothing and reports no problem — the write is guarded so
     that it can never raise into the handler that called it, so a missing link looks exactly like
     a working logger. LinkErrorLogTable creates the link; run it once in every front end.
+  - This scaffold adds a table, a module, and a link rather than changing objects the developer
+    already has, so less can go wrong here than in most templates. It still writes into their file.
+    A build against a database in real use is preceded by a backup copy, and the developer is asked
+    for one before anything is changed.
 related:
   - "app-startup-scaffold — worth considering if you haven't built it yet. The back-end-unreachable
     case it handles is one of the more valuable situations to have this logger actually catch."
@@ -99,6 +103,20 @@ file carries it, and *Validating the build* below says how to run it against thi
 |---|---|
 | `error-logging-schema`'s `tblErrorLog` | The table `LogError` writes to. `CreateErrorLogTable` below builds it; the paired template describes it |
 | A Trusted Location | VBA does not run outside one, and there is no error message when it doesn't |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Where this module goes in a split database
 

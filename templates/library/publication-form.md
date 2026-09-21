@@ -3,12 +3,17 @@ template: library-catalog-publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.3.1
+version: 0.4.0
 status: draft
 implements: library-catalog-schema
 record_source: qryPublication_frm
 standards_layer: [form-conventions, naming-conventions]
 new_forms: [frmPublication_Edit, sfrmPublication_Creator, sfrmPublication_Genre]
+warnings:
+  - This template builds new forms and a query. Where the file already holds an object with one of
+    those names, building over it replaces what is there. A build against a database in real use is
+    preceded by a backup copy of the file, and the developer is asked for one before anything is
+    changed.
 ---
 
 # Library Catalog — Publication Entry Form
@@ -35,6 +40,20 @@ this template **names** the framework pieces it relies on, it does not redefine 
 | `form-conventions.md` | House design defaults **+** the named reusable patterns (layered selector, quick-add, validation highlights, audit display) |
 | `library-record-finder-scaffold` (companion `vba-scaffold`) | The record-finder engine — pick-list build (`FinderRowSource`) + jump-to-record (`JumpFormToRecord`) — realized as a paired scaffold, not redefined here |
 | Forms framework (deferred) | The `TempVars` wrappers and the audit / image / validation helpers — supplied by the host, **named not redefined** here |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Which file this form lives in
 

@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.5.0
+version: 0.6.0
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -36,6 +36,10 @@ warnings:
     by an import, is not checked. This is the VBA route named in
     sports-officiating-assignment-outcome-first — that template's Data Macro route closes this gap,
     at greater build cost. Choosing this scaffold is choosing this trade-off."
+  - EnsureGameValidationRule writes a validation rule onto tblGame itself, replacing any rule text
+    already there, and Access checks that rule against the rows already in the table.
+    SetOfficialPhoto writes to tblOfficial. A build against a database in real use is preceded by a
+    backup copy of the file, and the developer is asked for one before anything is changed.
 ---
 
 # Sports Officiating Assignment — Assignment & Pay VBA Scaffold
@@ -85,6 +89,20 @@ Three layers, kept distinct throughout:
 | `tblAppSetting.OfficialPhotoFolder` seed row | Read by `GetAppSetting`, `EnsurePhotoFolder`, and `SetOfficialPhoto` (Business Rule 9). **In a split database this must be an absolute shared path**, e.g. `\\server\share\OfficialPhotos\` — the schema's own seeded value is relative, which only suits a single-file database. |
 | A photo picker | The screen that calls `SetOfficialPhoto` with the file the person chose — a form concern, deferred to a `form-spec` template. |
 | A central error logger | `error-handling.md` |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Where this module goes in a split database
 

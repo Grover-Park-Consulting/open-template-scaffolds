@@ -3,12 +3,17 @@ template: sports-officiating-assignment-form
 title: Sports Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
-version: 0.3.1
+version: 0.4.0
 status: draft
 implements: sports-officiating-assignment-schema
 record_source: qryGame_frm
 standards_layer: [form-conventions, naming-conventions, startup-conventions]
 new_forms: [frmGame_Assignment, sfrmGame_Crew]
+warnings:
+  - This template builds new forms and a query. Where the file already holds an object with one of
+    those names, building over it replaces what is there. A build against a database in real use is
+    preceded by a backup copy of the file, and the developer is asked for one before anything is
+    changed.
 ---
 
 # Sports Officiating Assignment — Game Assignment Form
@@ -35,6 +40,20 @@ not redefines**.
 | `qryGame_frm` | The form's record source over `tblGame` |
 | `sports-officiating-assignment-scaffold` | The paired scaffold; the subform's validation calls its `ValidateAssignment`, the optional features call `GetAppSetting` / `GetApplicablePayRate` |
 | `form-conventions.md` | House design defaults + the named reusable patterns (validation highlights, quick-add, audit display) |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Which file this form lives in
 

@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.3.0
+version: 0.4.0
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -31,6 +31,12 @@ seeds:
   - USysLocalSetting.BackEndPath
 house_assumptions:
   - USysLocalSetting — a name/value settings table rather than one column per setting, mirroring the shared tblAppSetting so both read the same way; a practice preferring one column per setting changes the two accessor procedures and nothing else
+warnings:
+  - This scaffold changes the front end people already open. It adds code that runs the moment the
+    file opens, and it rewrites where the table links point. A build against an application in real
+    use is preceded by a backup copy of the front end, and the developer is asked for one before
+    anything is changed. The data file is read and never written to, so the front end is the file
+    that needs copying.
 related:
   - "error-logging-scaffold — worth adding once app-startup is built: your application now has a
     place it starts from, and this template gives the errors it runs into somewhere to go instead
@@ -98,6 +104,21 @@ Three layers, kept distinct throughout:
 | The back end's database password | Only where it has one. Asked before this is built, used while building, stored nowhere by this scaffold. |
 
 ### Ask before building
+
+**Where people are already using this application, ask for a backup copy of the front end before
+changing anything — before the password question below.** This template alters the file it is built
+into. The data file is only read, never written to, so the front end is the file that needs copying.
+Two questions, in this order:
+
+1. *"Is this an application people are using, or a copy you're trying this out on?"*
+2. Where people are using it: *"Make a copy of the front end before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back, and it is also the *"another way in"* that closing the Shift bypass depends on — see
+*Two things Access does on its own, outside this scaffold*, below.
+
+A copy they are trying this out on needs no backup — the question ends at step 1.
 
 **Access has two different things called a password, and this scaffold cares about only one of
 them.** *User-level security* is the older mechanism, and it applies only to the `.mdb` file format

@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.8.4
+version: 0.9.0
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -30,6 +30,11 @@ new_procedures:
   - RecordScan
   - RefreshCountRollup
   - EvaluateVariance
+warnings:
+  - These procedures write real rows into the stocktake tables as scans come in, and a run that goes
+    wrong leaves part of a count behind with no way to undo it. A build against a database in real
+    use is preceded by a backup copy of the file, and the developer is asked for one before anything
+    is changed.
 related:
   - "school-district-asset-tracking-outcome-first — a similar process for a different purpose:
     reconciling a table of items against barcode scans. The purpose of asset-tracking is to account
@@ -69,6 +74,20 @@ Three layers, kept distinct throughout:
 | `SystemSettings.DefaultAllowableShortageRate`, `SystemSettings.DefaultAllowableOverageRate` | Fallback variance rates |
 | `SystemSettings.DuplicateScanWindowSeconds` | Duplicate-scan detection window |
 | A central error logger | `error-handling.md` |
+
+### Ask before building
+
+**Where this is a database already in use, ask for a backup copy before changing anything.** This
+template alters the file it is built into. Two questions, in this order:
+
+1. *"Is this a database you already use, or a new one you're trying this out on?"*
+2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
+   the build continues; say there's no copy and it stops."*
+
+**Stop and build nothing if they say there is no copy.** A copy made before anything changes is the
+only way back.
+
+A new database, or one they are trying this out on, needs no copy — the question ends at step 1.
 
 ### Where this module goes in a split database
 
