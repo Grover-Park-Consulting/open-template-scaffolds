@@ -268,7 +268,7 @@ You only need to act on a few of these items. Your AI reads the rest for you or 
 |---|---|---|
 | **`README.md`** (this file) | Where you start | **Yes, you're reading it** |
 | **`WELCOME.md`** | If you have never used an AI assistant — how to get set up | **Yes, if you're new to AI** |
-| **`prompts/`** | The prompt you fill in and paste (`BuildNewTables-StartHere.md`) | **Yes, the one you use to start** |
+| **`prompts/`** | Sample prompts for the templates. Copy one and paste it to your AI to get started; change it to suit you. | **Yes, the one that fits what you're building** |
 | **`examples/`** | A finished example, to see it work first | Optional, read to learn |
 | `templates/` | The designs your AI builds from | Not necessary, only the AI needs to read these |
 | `build-records/` | Accumulated records from past builds, one folder per template | Not necessary, your AI reads it before building and adds to it after |
