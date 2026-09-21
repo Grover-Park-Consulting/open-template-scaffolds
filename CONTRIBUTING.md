@@ -51,8 +51,13 @@ Every contributed template must:
   correct by definition.
 - **Live at `templates/<domain>/<name>.md`** — a kebab-case filename matching the template's
   `template` slug, under its domain folder.
-- **Include the required sections** the format calls for (Intent, Standards Layer, Extra Options,
-  plus the table-schema sections: Prerequisites, Entities, Relationships, Business Rules).
+- **Include the required sections** the format calls for. Every template carries `## Intent`,
+  `## Standards Layer`, and `## Extra Options` ([§3](templates/_template-schema.md#3-body-sections--common-core-all-template-types)),
+  plus the sections its own type requires: an outcome-first template's `## What you end up with`,
+  `## Information and conditions you need to supply`, and `## To the AI assistant building this`
+  ([§12.2](templates/_template-schema.md#122-body-sections)); a paired table-schema's `## Entities`,
+  `## Relationships`, and `## Business Rules` ([§4](templates/_template-schema.md#4-body-sections-type-table-schema));
+  a paired vba-scaffold's `## Procedures` ([§8](templates/_template-schema.md#8-type-vba-scaffold)).
 - **Be genericized** — no client-confidential or proprietary schema. Use a recognizable public
   domain or invented data. (Our own first template took a real engagement and recast it onto the
   public Northwind sample; that's the discipline.)
@@ -70,6 +75,13 @@ Every contributed template must:
 `validate()` is **format-only**: it checks that a template is internally well-formed. It does not
 open any database, and it does not judge whether a template *fits* a given application — that
 always stays the adopter's call.
+
+**Before you submit, ask your own AI assistant to check your draft against a few templates already
+in the library** — one from the same domain if there is one, and its nearest sibling by type
+otherwise. `validate()` can tell you the sections are all there; it can't tell you whether the wording, the
+level of detail, or the shape of a `## Business Rules` entry reads like the rest of the library
+rather than like a first draft. Catching that yourself, before review, is the single biggest thing
+you can do to shorten the back-and-forth.
 
 ## Versioning a change
 
