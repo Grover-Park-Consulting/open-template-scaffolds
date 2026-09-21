@@ -3,7 +3,10 @@
 name: validate-templates
 
 on:
+  # Scoped to main: an unscoped push trigger fires a second, identical run
+  # alongside the pull_request one every time a branch with an open PR is pushed.
   push:
+    branches: [main]
   pull_request:
 
 jobs:
