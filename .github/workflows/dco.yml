@@ -13,8 +13,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The anchor is (^|\n), not ^. In jq's regex engine ^ matches only the
+          # start of the whole commit message, and the "m" flag means "dot matches
+          # newline" rather than "multiline anchors" as it does in Perl or Python.
+          # A sign-off is a trailer at the foot of the message, so a lone ^ rejects
+          # every correctly signed commit. Verified against a real pull request.
           bad=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits" --paginate \
-            --jq '.[] | select(.commit.message | test("^Signed-off-by: .+ <.+@.+>"; "im") | not) | .sha[0:7] + "  " + (.commit.message | split("\n")[0])')
+            --jq '.[] | select(.commit.message | test("(^|\\n)Signed-off-by: .+ <.+@.+>"; "i") | not) | .sha[0:7] + "  " + (.commit.message | split("\n")[0])')
           if [ -n "$bad" ]; then
             echo "Commits missing a Signed-off-by line (use: git commit -s):"
             echo "$bad"
