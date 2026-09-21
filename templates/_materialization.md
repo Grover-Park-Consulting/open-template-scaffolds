@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.12.0
+version: 0.12.1
 status: draft
 ---
 
@@ -96,16 +96,18 @@ is a new part of the record** — nothing here needs a seventh.
 
 ---
 
-## The runbook — every build the developer finishes themselves
-
-**A build the developer has to run any part of leaves a runbook**: one file, beside the code, saying
-what to run and in what order. It is not optional, and it is not the build record. The build record
-says what was done; the runbook says what they do next.
+## The runbook — the two builds that leave the developer something to run
 
 **When it applies:** any build that leaves a procedure for the developer to run — which the staged
 `vba-scaffold` sequences do by design — and any code handed over headed `UNVERIFIED` because the
 developer asked for it. Where you built everything directly and nothing is left to run, there is
-nothing to write.
+nothing to write. **It is not the packaging for a run with no Access MCP server connected.** That
+run ends at the approved design and generates no code at all, so there is nothing to write a runbook
+about.
+
+**A build the developer has to run any part of leaves a runbook**: one file, beside the code, saying
+what to run and in what order. It is not optional, and it is not the build record. The build record
+says what was done; the runbook says what they do next.
 
 **Why it exists.** You know the order because you generated the code. They have a folder of files. A
 procedure named `Three_…` tells them it is third; it does not tell them what the first two are,

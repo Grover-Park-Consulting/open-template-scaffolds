@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.16.4
+version: 0.16.5
 status: draft
 implements: audit-logging-lite-schema
 requires_tables:
@@ -347,8 +347,9 @@ accumulates), so the fix is to close everything and run it again.
 ## What the developer runs, and in what order
 
 **To the AI assistant.** This is the canonical sequence, and it is the source for the `runbook.md`
-that `_materialization.md` requires you to hand over with the files. **Write that runbook whenever
-the developer runs any of this themselves** — which this staged sequence has them do by design.
+that `_materialization.md` requires whenever the developer is left procedures to run. **Write that
+runbook whenever the developer runs any of this themselves** — which this staged sequence has them
+do by design.
 Naming the procedures
 `One_`, `Two_`, `Three_` does not tell anyone what the first two are, that the config table has to
 be reviewed in between, or that three of the twenty procedures are the only ones they ever call
