@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — Set-up Wizard and Logger
 domain: errors
 type: vba-scaffold
-version: 0.6.3
+version: 0.6.4
 status: draft
 implements: error-logging-schema
 requires_tables:
@@ -14,7 +14,6 @@ standards_layer:
   - query-style
   - design-principles
 target_module: modErrorLog
-wizard: true
 new_procedures:
   - LogError
   - WriteErrorToTable
@@ -69,10 +68,11 @@ Until now the reasoning behind those six decisions lived in prose that a reader 
 before they had chosen anything. The wizard does not remove any of it. It moves each piece to the
 step where it is actually actionable, and keeps it closed until the reader asks.
 
-**Nothing here is an Access wizard.** No form is built, nothing is installed in the database to run
-it, and no artifact is left behind afterward. The AI assistant asks the six questions in conversation;
-this file is where the questions, the options, and the explanations are written down. See
-`templates/_template-schema.md` §10 for the format.
+**It is named for the Access wizards you already know**, but nothing of it runs inside your
+database: no form is built, nothing is installed to run it, and nothing is left behind afterward.
+The AI assistant asks the six questions in conversation; this file is where the questions, the
+options, and the explanations are written down. See `templates/_template-schema.md` §10 for the
+format.
 
 **The procedures below are complete, working code, not skeletons.** Each one carries the wizard's
 alternatives as commented blocks, marked `[WIZARD Step n]`, with the preferred choice left uncommented — so

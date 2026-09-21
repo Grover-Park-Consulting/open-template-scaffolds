@@ -3,9 +3,8 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — rules-based method
 domain: audit
 type: vba-scaffold
-version: 0.16.2
+version: 0.16.3
 status: draft
-wizard: true
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -451,9 +450,9 @@ try-it-out demo that is Steps 2, 7, 8 and 9 — four questions instead of eight.
 already use it is those four and Step 3 as well — five instead of nine, because only you can say
 whether you have a copy to go back to. State the preferred choices being used before acting on them.
 
-This is a **presentation device, not a second build path** — the same decisions, the same
-generated result, met one at a time instead of all at once. Nothing is installed to run it and no
-form is built; the AI assistant asks the questions in conversation. See
+These questions are how the build gets from what you asked for to something that fits your own
+database: the parts only you can settle, asked one at a time, before anything is built. Nothing is
+installed to run them and no form is built; the AI assistant asks them in conversation. See
 `templates/_template-schema.md` §10.
 
 > **If an AI assistant is running this for someone:** ask each step and wait for the answer. Never

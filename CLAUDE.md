@@ -225,12 +225,16 @@ sequence calls for it. Present one step's result at a time; don't collapse the s
 single upfront report, even when every fact in it is correct. Having the access and the context to
 answer a gate yourself is not the same as being asked to.
 
-**Running a template's wizard.** Some templates declare `wizard: true` and carry a `## Wizard`
-section: a short run of one-question steps, each with a plainly named preferred choice and a
-*Tell me more* block holding the reasoning and the warnings (`templates/_template-schema.md` §10). It is a
-**presentation device, not a second build path** — the same decisions and the same result, met one
-at a time instead of all at once. It is **not** an Access wizard: build no form, install nothing in
-the database to run it, and leave no artifact behind. Ask the steps yourself, in conversation.
+**Running a template's wizard.** The OTS Wizard is how a build gets from the developer's request
+to an artifact that meets it. The request arrives underdetermined; the template and the standards
+layer settle what they already carry, and the wizard settles the remainder, one decision at a
+time, before anything is built. It works by interaction, not by formula: you ask, the developer
+decides, and the build proceeds on what they settle between them. Some templates write their
+questions out in a `## Wizard` section: a short run of one-question steps, each with a plainly
+named preferred choice and a *Tell me more* block holding the reasoning and the warnings
+(`templates/_template-schema.md` §10). It is named for the Access wizards these developers already
+know, but nothing of it runs inside the database: build no form, install nothing to run it, and
+leave no artifact behind. Ask the steps yourself, in conversation.
 
 **A wizard of more than three steps opens with the entry question** (§10.6): *"This takes n
 questions. Do you want to answer them, or shall I just build it?"* Ask it **even when the

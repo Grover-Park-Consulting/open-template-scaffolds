@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.10.1
+version: 0.11.0
 status: draft
 ---
 
@@ -103,7 +103,6 @@ present on every template; conditional keys are required when their condition ho
 | `seeds` | optional | list[string] | Seed data the template expects, as `Table.RowKey` |
 | `house_assumptions` | optional | list[string] | House-particular modeling assumptions deliberately kept in the template body (the "Declared" tier) because they can't be moved to the standards layer or dropped. Each entry is `Target — rationale`, where `Target` names the entity, field, or rule carrying the assumption. Makes embedded house bias machine-visible to adopters and discovery tools. |
 | `warnings` | optional | list[string] | Hard **platform caveats** the AI builder must surface to the developer *before* building — engine limits, not house bias (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"). Surfaced alongside `house_assumptions` in the review step; each entry states the limit and what the developer must confirm or the build must branch on. |
-| `wizard` | optional | boolean | `true` when the template's set-up decisions are presented as an OTS wizard (§10). A wizard template surfaces its `warnings` and `house_assumptions` **at the step each one belongs to** rather than all at once before the first question |
 | `related` | optional | list[string] | Other templates or standards files worth considering next, once this one is built — never during it (see §7.1). Each entry is `Target — rationale`, where `Target` is a template slug or a `standards/<file>.md` path |
 
 **Rules the `validate` tool enforces on front-matter:**
@@ -501,25 +500,36 @@ See `_materialization.md` for the full mapping rules and a hand-validated fragme
 
 ---
 
-## 10. Wizard steps (any template type)
+## 10. The OTS Wizard (any template type)
 
-A template may present its set-up decisions as an **OTS wizard**: a short run of one-question
-steps, asked one at a time, each naming a **preferred choice** (§10.7 — deliberately not called a
-"default") and carrying an explanation that stays closed until the reader opens it.
+**The OTS Wizard is the process by which a build moves from the developer's first request to an
+artifact that meets the request, converting what is unknown into what is known one decision at a time.** A
+request arrives underdetermined. The template carries decisions already made, the standards layer
+carries more, and what is left over is whatever only the developer can settle. The wizard is how
+that remainder gets settled, before anything is built.
 
-**It is a presentation device, not a second build path.** The decisions and the artifact they
-produce are exactly what they would have been without it. What changes is the order the developer
-meets things in: one question at a time, with the reasoning and the warnings available on request
-instead of fired at them before they have chosen anything.
+It works by interaction rather than by formula. No rule here computes an answer: the AI assistant
+asks, the developer decides, and the build proceeds on what they settle between them. That
+exchange is the point, and it is the thing a fixed procedure cannot reproduce.
 
-**It is not an Access wizard.** Nothing is installed in the developer's database to run it, and no
-form is left behind. The AI assistant asks the questions in conversation; this file is where the
-questions, the options, and the explanations are written down. The resemblance to an Access wizard
-is one of shape only.
+**It is implemented as a short run of one-question steps**, each naming a **preferred choice**
+(§10.7, deliberately not called a "default") and carrying an explanation that stays closed until
+the reader opens it. That shape was chosen because it is the most familiar one available, not
+because the process requires it. The unknowns, and the answers that resolve them, are the same
+whether the developer meets them one at a time or all at once.
 
-### 10.1 Front-matter
+**Access wizards are familiar to the developers this library serves, and that is why this process
+is called the OTS Wizard.**
 
-`wizard: true` (§2) marks a template whose set-up runs this way.
+### 10.1 What marks a template whose questions are written out
+
+The `## Wizard` section (§10.2), and nothing else. There is no front-matter key for it: a reader
+who has the template already has the section in front of them, so a flag announcing it would
+arrive at the same moment and say nothing the section does not.
+
+Where that section is present, the template's `warnings` and `house_assumptions` (§2) are
+surfaced **at the step each one belongs to**, rather than all at once before the first question.
+That is the one thing its presence changes outside the steps themselves.
 
 ### 10.2 The `## Wizard` section
 
