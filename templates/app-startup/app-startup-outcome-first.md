@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.1.2
+version: 0.2.0
 status: draft
 standards_layer:
   - design-principles
@@ -15,6 +15,12 @@ house_assumptions:
   - The locations of any folders everybody shares are settings kept in the data file. That is why the
     folders are dealt with after the data connection and not before. A practice that keeps folder
     locations somewhere else — beside the front end, or in the code — changes that ordering.
+warnings:
+  - This template changes the front end people already open. It adds code that runs the moment the
+    file opens, and it rewrites where the table links point. A build against an application in real
+    use is preceded by a backup copy of the front end, and the developer is asked for one before
+    anything is changed. The data file is read and never written to, so the front end is the file
+    that needs copying.
 related:
   - "error-logging-outcome-first — worth adding once app-startup is built: your application now has
     a place it starts from, and this template gives the errors it runs into somewhere to go instead
@@ -255,17 +261,23 @@ here does it, and nothing here tells you it isn't being done.
 
 ## Information and conditions you need to supply
 
-Five things, and nothing here can be guessed — the fifth applies only to some applications:
+Six things, and nothing here can be guessed — the sixth applies only to some applications:
 
-1. **Your startup form** — the switchboard, menu, or home form the application opens once everything
+1. **A backup copy of your front end**, if this is an application people are using. What gets built
+   here runs the moment the file opens, and it rewrites where your table links point, so a build that
+   goes wrong goes wrong at the one moment you need the file to work. A copy of the front end, made
+   before anything is changed, is what you go back to. Your data file is only read, never written to,
+   so the front end is the file that needs copying. **If you tell the template there is no backup,
+   the build stops rather than continuing.**
+2. **Your startup form** — the switchboard, menu, or home form the application opens once everything
    checks out.
-2. **A table your data file must contain.** Naming one is how a chosen file is tested: a file that
+3. **A table your data file must contain.** Naming one is how a chosen file is tested: a file that
    does not have it is not this application's data file. Pick one that no other database of yours
    would have.
-3. **What to call the application** in the messages people see.
-4. **Your folders, if the application uses any** — which of them everybody shares, and which belong
+4. **What to call the application** in the messages people see.
+5. **Your folders, if the application uses any** — which of them everybody shares, and which belong
    to one person. Say where the shared ones are, and where that location is recorded.
-5. **Whether your data file is kept behind a database password, and the password if it is.** Access
+6. **Whether your data file is kept behind a database password, and the password if it is.** Access
    has two different things called a password, and only one of them matters here. *User-level
    security* is the older mechanism, and it applies only to the `.mdb` file format — rare to meet
    today. What's meant here is a **database password**, which either the front end or the back end,
@@ -398,11 +410,13 @@ that binds is stated only there.
   count of procedures to write.
 - **Read every file in `standards/` and apply it.** Naming, error handling, query style, and the
   error-handling frame all come from there and never from this file.
-- **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
+- **Ask for the six things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a plain question where
-  it is a name. The fifth is a gate: if the developer says the data file has a database password and
-  then declines to supply it, stop and build nothing.
-- **After the fifth thing and before you present the design, offer the `Explore options` step**
+  it is a name. Two of them are gates. The first is asked before anything else in the list: an
+  application in real use with no backup copy of the front end stops the build. The sixth: if the
+  developer says the data file has a database password and then declines to supply it, stop and build
+  nothing.
+- **After the sixth thing and before you present the design, offer the `Explore options` step**
   (`_template-schema.md` §12.5) over the list under *Free to choose alternatives*, and nothing outside
   it. A pick made there is recorded in the build record, holds for the rest of the run, and is
   restated in the design you present.
@@ -432,7 +446,13 @@ that binds is stated only there.
   deliberate trade-off rather than a pure hardening step, and it isn't part of the base promise.
   `app-startup-scaffold`'s *Extra Options* carries one accepted way to do it, adapted for the same
   reason a route decision is: to `error-handling.md`. Run it once, by hand, as a deployment step —
-  never from inside `Startup()`.
+  never from inside `Startup()`. **Closing it can be undone, but not from inside the file it was
+  closed on.** Setting the property back needs code to run, and a front end whose startup is broken
+  is one you cannot get code to run in, which is the situation you would be undoing it for. The route
+  back is a second Access file, or a small script, that opens the closed file through the database
+  engine and sets the property to `True` from outside it. Tools that do exactly this exist; this
+  library does not supply one. The other route back is the backup copy you were asked for at the
+  start, which still has the bypass open.
 - **An explainer form with a *Try again* button**, so a failed start can be retried without closing
   and reopening the application. (Whether the words arrive on a form or in a message box is already
   free; the retry is the extra.)
