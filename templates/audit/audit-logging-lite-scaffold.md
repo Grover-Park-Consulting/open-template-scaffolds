@@ -1,9 +1,9 @@
 ---
 template: audit-logging-lite-scaffold
-title: Access Audit Logging (Lite) — rules-based method
+title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.16.3
+version: 0.16.4
 status: draft
 implements: audit-logging-lite-schema
 requires_tables:
@@ -136,7 +136,7 @@ warnings:
     logic afterward; re-adding it is the developer's call. Check for this specifically on Path B.
 ---
 
-# Access Audit Logging (Lite) — rules-based method
+# Access Audit Logging (Lite) — VBA Scaffold
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
