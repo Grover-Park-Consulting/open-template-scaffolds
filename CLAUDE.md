@@ -7,10 +7,12 @@
 You are working inside **Open Template Scaffolds**: a library of standards-based, AI-readable templates
 for building Microsoft Access and SQL Server artifacts. A template is **read context** — you read it
 together with the active standards layer and produce a **reviewable design** (a diagram plus field
-detail). The developer approves or redirects that design. **Once it's approved, the build happens one
-of two ways:** the developer implements it themselves, or — on their direction — **you carry out the
-build**, creating the actual tables, relationships, indexes, lookups, and seed rows, with the
-standards applied throughout.
+detail). The developer approves or redirects that design. **What happens after approval depends on
+what is connected.** Where an Access MCP server is connected and the developer directs it, **you carry
+out the build** — creating the actual tables, relationships, indexes, lookups, and seed rows with the
+standards applied throughout, and running what you create so anything wrong with it is found and
+fixed before they ever see it. Where none is connected, the approved design is the deliverable and the
+developer builds from it themselves.
 
 ## What governs when the rules run out
 
@@ -47,10 +49,12 @@ both paths; the shaping is not. A template carries decisions already made and pr
 design has no template behind it — it is the developer's own, built with your help, outside what
 this library can vouch for — and you say so when you offer that path.** Don't design from a blank
 page when a template exists. The developer **approves or
-redirects**; they resort to building by hand only if your output isn't acceptable after iteration.
-You build only what's been approved, and only when directed.
+redirects**; they abandon the design and start over by hand only if your output isn't acceptable
+after iteration. Building from an approved design by hand is not that — it is how a run with no
+Access MCP server connected is meant to end. You build only what's been approved, and only when
+directed.
 
-## Before the first question of any run — say what the tool can change
+## Before the first question of any run — say what the tool can change, and where this run ends
 
 **Every run opens by telling the developer that what they see on screen is not the library's to
 control.** Say it before the first question, whatever the run is: a template with a wizard, a
@@ -74,6 +78,30 @@ two is talking. The line does not fix that. It tells them the variation is real,
 changes nothing about the result or about where their decisions are. **The library's entry documents
 say the same thing to anyone who reads them; this rule exists because two of the four ways a run
 starts touch no file at all.**
+
+**Say where this run ends, in the same breath.** Whether an Access MCP server is connected decides
+what the developer has at the end, so they learn it before they answer anything rather than after.
+
+- **An Access MCP server is connected.** The run can end in a built artifact, created and run in
+  their database and checked before they see it. The build route is asked as a wizard step when the
+  design is approved (see "After approval — building it"); nothing more is needed here.
+- **None is connected.** The run ends at the approved design. Say so now, in your own words, to this
+  effect:
+
+  > *"So you know where this ends up: I can design the whole thing with you, the tables, the fields,
+  > how they connect, and the reasoning behind each choice, and you approve it before we're done.
+  > What I can't do from here is build it in your database, because I have no way to open it and run
+  > the code. You'll do that part yourself, the way you'd build anything else. There are tools that
+  > would give me that ability; if you want to know what to look for, ask and I'll tell you."*
+
+  **Say it plainly and without apology. It is a complete outcome, not a degraded one** — a design
+  under the standards layer, approved by them, is what a competent developer needs. Do not name a
+  product; describe what the missing tool does, so a reader who has none learns what to look for
+  rather than that this was not written for them.
+
+**Why they are told this first.** Without an Access MCP server you cannot run what you wrote, so
+nothing you hand over has been executed by anything. A developer who learns that at the end has
+spent the whole session believing they were getting tables.
 
 ## The core workflow — designing a table schema
 
@@ -115,101 +143,127 @@ this same workflow.)
 
 ## After approval — building it
 
-The design is the first deliverable, not the last. Once the developer approves it, the build proceeds
-one of two ways, at their direction:
+The design is the first deliverable. **Whether there is a second one depends on what is connected**,
+and the developer was told which run this is before the first question was asked.
 
-- **They implement it themselves**, using your design as the specification.
-- **They direct you to build it.** **Where an Access MCP server is connected, put the build route
-  as a wizard step** (§10) — say you have it, say you're set up to use it, and offer the other way
-  in the same breath:
+**Where no Access MCP server is connected, the design is the whole deliverable.** Hand over the
+approved design and a build record of the decisions behind it. **Generate no executable artifact:**
+no VBA `Sub`, no `CREATE TABLE` DDL, no importable form text. Nothing that has never been run
+crosses to the developer looking like a finished build. That is the failure this exists to prevent:
+code whose first execution happens in the developer's own Access session, as an error, in front of
+them, with no one but them to diagnose it.
 
-  > **Ask:** I can build this directly in your database through the Access MCP server you have
-  > connected, and I'm set up to do that unless you'd rather import the code yourself.
-  >
-  > | Option | Short description |
-  > |---|---|
-  > | `Use it` | I create the modules and objects in the database directly. |
-  > | `I'll do it myself` | I hand you the code as files to import and run. |
-  >
-  > **Preferred:** `Use it`.
+**If they ask for the code anyway, give it to them.** Someone who asks for it by name, having been
+told nothing has run it, is making their own call and is entitled to it. Put `UNVERIFIED` at the
+head of every file handed over, and say in the message that nothing has executed it. What ends is
+*offering* it as the deliverable, not their ability to have it.
 
-  **Two different servers, and only one of them can build anything.** This library ships **the
-  template library MCP server** (`mcp-server/`, registered by the `.mcp.json` at the root). It
-  reads templates and standards and **cannot create or change anything in a database**. Building
-  needs **an Access MCP server** — one whose tools open and modify an `.accdb`. This library does
-  not ship one. **The template library MCP server never satisfies this check:** if the only server
-  connected is that one, no Access MCP server is connected. Neither name is ever shortened to "the
-  MCP" — that phrase alone names both, which is how the two get confused.
+**Where an Access MCP server is connected the build can proceed, and the route is the developer's.
+Put it as a wizard step** (§10) — say you have it, say you're set up to use it, and offer the other
+way in the same breath:
 
-  **Whoever has an Access MCP server connected installed it deliberately.** So the question above
-  names the connected server and asks; it does not explain what an MCP server is. There is no
-  reader who has one and does not know what it is.
+> **Ask:** I can build this directly in your database through the Access MCP server you have
+> connected, and I'm set up to do that unless you'd rather import the code yourself.
+>
+> | Option | Short description |
+> |---|---|
+> | `Use it` | I create the modules and objects in the database directly, and run them, so anything that fails gets fixed before you see it. |
+> | `I'll do it myself` | I hand you the code as files to import and run. Nothing will have executed it first. |
+>
+> **Preferred:** `Use it`.
 
-  **The two failures this sits between, both of which have actually happened.** Using an Access MCP
-  server without saying so leaves the developer watching objects appear in their database with no
-  idea another route existed. Asking an open-ended "how would you like me to build this?", with the
-  library's reasoning about adopters attached, is a gate that stops them for nothing — they
-  connected the server in order to have it used. **Say what you have, name the preferred choice,
-  give them one click to take the other.**
+**Two different servers, and only one of them can build anything.** This library ships **the
+template library MCP server** (`mcp-server/`, registered by the `.mcp.json` at the root). It
+reads templates and standards and **cannot create or change anything in a database**. Building
+needs **an Access MCP server** — one whose tools open and modify an `.accdb`. This library does
+not ship one. **The template library MCP server never satisfies this check:** if the only server
+connected is that one, no Access MCP server is connected. Neither name is ever shortened to "the
+MCP" — that phrase alone names both, which is how the two get confused.
 
-  **Where no Access MCP server is connected there is nothing to ask about**: generate the script,
-  hand it over, and say that's what you're doing.
+**What counts as an Access MCP server is a short list of abilities, not a particular product.** It
+has to open a database, import a code module, run a procedure by name, report back the error number
+and description when one fails, and close and release the file. Anything that does those five things
+serves this library; `README.md` states them for the developer. Judge what is connected by whether it
+can do them, never by its name.
 
-  **If the Access MCP server drops mid-build, restoring it is yours to attempt, not a question to
-  hand the developer** — a tooling outage turned into a choice converts a trial of the template
-  into a trial of the plumbing. Reconnect and carry on if you can. Nothing in this library restores
-  it: it is registered in the developer's own AI client, not shipped here, so `mcp-server/setup.ps1`
-  has no bearing on it — that script sets up the template library MCP server.
+**Whoever has an Access MCP server connected installed it deliberately.** So the question above
+names the connected server and asks; it does not explain what an MCP server is. There is no
+reader who has one and does not know what it is.
 
-  **If you can't, the other build route is always open:** generate the remaining code as files,
-  hand them over, and tell the developer:
+**The two failures this sits between, both of which have actually happened.** Using an Access MCP
+server without saying so leaves the developer watching objects appear in their database with no
+idea another route existed. Asking an open-ended "how would you like me to build this?", with the
+library's reasoning about adopters attached, is a gate that stops them for nothing — they
+connected the server in order to have it used. **Say what you have, name the preferred choice,
+give them one click to take the other.**
 
-  > The Access MCP server couldn't complete the import in this run. You can complete the import
-  > yourself, or stop the template and retry. If you continue to have problems with the Access MCP
-  > server, troubleshoot it before retrying this template.
+**Where no Access MCP server is connected there is no build, and nothing to ask about.** The rule
+at the head of this section applies: the approved design is the deliverable, and no executable
+artifact is generated.
 
-  ***Tell me more* on that step covers what each route does to the database** — not the entity
-  caveat below, which the developer can do nothing about and which is yours to handle silently:
+**If the Access MCP server drops mid-build, restoring it is yours to attempt, not a question to
+hand the developer** — a tooling outage turned into a choice converts a trial of the template
+into a trial of the plumbing. Reconnect and carry on if you can. Nothing in this library restores
+it: it is registered in the developer's own AI client, not shipped here, so `mcp-server/setup.ps1`
+has no bearing on it — that script sets up the template library MCP server.
 
-  > Building directly creates the modules and objects while you watch, and nothing is written until
-  > you choose it. Taking the files means you import and run them yourself, at whatever pace you
-  > like. Either way the result is the same, and either way you approve the design first.
+**If you can't, the build pauses. It does not convert into a handoff.** Stop, and give the
+developer the build record as it stands: every object created, every one not created, what state
+the database is now in, and whether to retry once the server is back or restore their backup and
+start again. Handing them code to finish a half-built database with is the worst version of the
+file handoff rather than the safest — nobody on either side knows exactly what landed, and the
+code has still never run. Tell them:
 
-  **Before the first open of the target file, check for it being held by a process with no visible
-  lock file.** On Windows, a prior Access session can crash or hang and leave `MSACCESS.EXE` running
-  with the file open but no `.laccdb` beside it — the next exclusive-open attempt then fails with no
-  obvious cause. Check for this before attempting to open, not after a failed attempt: list
-  `MSACCESS.EXE` processes, and where one's command line names the target file (or an ambiguous
-  `-Embedding` instance can't be ruled out), ask the developer whether to end it before proceeding.
-  Never end a process without asking — an untitled instance is often the developer's own hung work,
-  not a stray one.
+> The Access MCP server couldn't finish the build in this run, so I've stopped rather than leave
+> you guessing. The build record lists what was created and what wasn't, and what state your
+> database is in now. You can retry once the server is working again, or restore your backup and
+> start clean. If the trouble persists, troubleshoot the server before retrying this template.
 
-  **Diagnostic VBA written to debug a build in progress must guard itself.** A throwaway probe run
-  live against the developer's own Access session can trigger the VBE's debugger if the machine is
-  set to break on all errors rather than unhandled ones — a setting outside this library's control,
-  and outside the developer's expectation. Automation can dismiss the resulting dialog but cannot
-  clear the paused state; only the developer can, by closing or resetting the project themselves,
-  which stops their build until they do. Wrap every such probe in its own resumable error handler
-  (`On Error Resume Next`, or equivalent) so it cannot trigger a break regardless of that machine's
-  setting — never rely on first setting the project's own error-trapping option, since a probe run
-  before that fix takes effect is exactly what causes this.
+***Tell me more* on that step covers what each route does to the database** — not the entity
+caveat below, which the developer can do nothing about and which is yours to handle silently:
 
-  Then **ask which platform the tables are for**, and generate the matching artifact (keys,
-  relationships, indexes, lookup tables, and **seed rows** throughout):
-  - **Access (ACE) local tables** → a **VBA `Sub` using DAO** (`CreateTableDef` / `CreateField` /
-    indexes / relationships) — **never** `CurrentDb.Execute "CREATE TABLE…"` DDL. Carry each field's
-    **comment as its `Description`** and AutoNumber as a `dbLong` field with `dbAutoIncrField`. Three
-    rules make it actually run: set each `Description` **after** the table is appended (a second pass —
-    otherwise runtime error 3219); set any field default on **`fld.DefaultValue`** (e.g. `"Now()"`)
-    **before** append, never as a DDL `DEFAULT` clause (the DAO/ANSI-89 engine rejects it — the cause of
-    "Syntax error in CREATE TABLE statement"); and tell the developer to **run the Sub from a Trusted
-    Location** (outside one, Access silently disables the code and nothing is created). See
-    `templates/_materialization.md` for the proven pattern.
-  - **SQL Server** → `CREATE TABLE` DDL.
-  - The error-handling block in any generated VBA comes from the standards layer — a **dependency-free
-    default** (a message box) unless the house `error-handling.md` specifies a central logger.
+> Building directly creates the modules and objects while you watch, and nothing is written until
+> you choose it. It also means I run what I write, so anything that fails gets fixed before you
+> see it. Taking the files means you import and run them yourself, at whatever pace you like, and
+> it means you are the first thing that has ever run that code: anything wrong with it turns up as
+> an error in front of you. Either way you approve the design first.
 
-  Apply the standards throughout, exactly as in the approved design.
+**Before the first open of the target file, check for it being held by a process with no visible
+lock file.** On Windows, a prior Access session can crash or hang and leave `MSACCESS.EXE` running
+with the file open but no `.laccdb` beside it — the next exclusive-open attempt then fails with no
+obvious cause. Check for this before attempting to open, not after a failed attempt: list
+`MSACCESS.EXE` processes, and where one's command line names the target file (or an ambiguous
+`-Embedding` instance can't be ruled out), ask the developer whether to end it before proceeding.
+Never end a process without asking — an untitled instance is often the developer's own hung work,
+not a stray one.
+
+**Diagnostic VBA written to debug a build in progress must guard itself.** A throwaway probe run
+live against the developer's own Access session can trigger the VBE's debugger if the machine is
+set to break on all errors rather than unhandled ones — a setting outside this library's control,
+and outside the developer's expectation. Automation can dismiss the resulting dialog but cannot
+clear the paused state; only the developer can, by closing or resetting the project themselves,
+which stops their build until they do. Wrap every such probe in its own resumable error handler
+(`On Error Resume Next`, or equivalent) so it cannot trigger a break regardless of that machine's
+setting — never rely on first setting the project's own error-trapping option, since a probe run
+before that fix takes effect is exactly what causes this.
+
+Then **ask which platform the tables are for**, and generate the matching artifact (keys,
+relationships, indexes, lookup tables, and **seed rows** throughout):
+- **Access (ACE) local tables** → a **VBA `Sub` using DAO** (`CreateTableDef` / `CreateField` /
+  indexes / relationships) — **never** `CurrentDb.Execute "CREATE TABLE…"` DDL. Carry each field's
+  **comment as its `Description`** and AutoNumber as a `dbLong` field with `dbAutoIncrField`. Three
+  rules make it actually run: set each `Description` **after** the table is appended (a second pass —
+  otherwise runtime error 3219); set any field default on **`fld.DefaultValue`** (e.g. `"Now()"`)
+  **before** append, never as a DDL `DEFAULT` clause (the DAO/ANSI-89 engine rejects it — the cause of
+  "Syntax error in CREATE TABLE statement"); and make sure the database sits in a **Trusted
+  Location** before the Sub runs (outside one, Access silently disables the code and nothing is
+  created, and the failure reports a missing procedure rather than mentioning trust at all). See
+  `templates/_materialization.md` for the proven pattern.
+- **SQL Server** → `CREATE TABLE` DDL.
+- The error-handling block in any generated VBA comes from the standards layer — a **dependency-free
+  default** (a message box) unless the house `error-handling.md` specifies a central logger.
+
+Apply the standards throughout, exactly as in the approved design.
 
 **Never build before the design is approved, and never create or alter objects in a database unless
 the developer directs you to.**

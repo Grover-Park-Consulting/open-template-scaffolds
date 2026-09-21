@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.11.0
+version: 0.12.0
 status: draft
 ---
 
@@ -22,7 +22,14 @@ It is meta, not a template
 - **Table-schema → tables** — Access local tables via a VBA DAO `Sub`, or SQL Server via `CREATE TABLE` DDL.
 - **Form-spec → a form** — importable Access form text (`SaveAsText` / `LoadFromText`).
 
-**A requirement before any of this runs: the database has to sit in a folder Access trusts.** Outside
+**A requirement before any of this runs: an Access MCP server has to be connected.** Everything in
+this file describes a build carried out through one — opening the database, creating the objects, and
+running what was created so that anything wrong with it is found here rather than by the developer.
+Where none is connected there is no build: the run ends at the approved design, and no executable
+artifact is generated. `CLAUDE.md` → "After approval — building it" is authoritative on that split,
+and on the one exception, which is a developer who asks for the code knowing nothing has run it.
+
+**And a second requirement: the database has to sit in a folder Access trusts.** Outside
 one, Access silently disables VBA — nothing is created, and the failure reports that a procedure
 cannot be found rather than mentioning trust at all. This is not a case to design around; it is a
 condition of using these templates, and a developer who cannot arrange it cannot use them. Say so
@@ -95,9 +102,10 @@ is a new part of the record** — nothing here needs a seventh.
 what to run and in what order. It is not optional, and it is not the build record. The build record
 says what was done; the runbook says what they do next.
 
-**When it applies:** the file-handoff route always, and any build that leaves a procedure for the
-developer to run. Where you built everything directly and nothing is left to run, there is nothing
-to write.
+**When it applies:** any build that leaves a procedure for the developer to run — which the staged
+`vba-scaffold` sequences do by design — and any code handed over headed `UNVERIFIED` because the
+developer asked for it. Where you built everything directly and nothing is left to run, there is
+nothing to write.
 
 **Why it exists.** You know the order because you generated the code. They have a folder of files. A
 procedure named `Three_…` tells them it is third; it does not tell them what the first two are,
@@ -618,18 +626,24 @@ never present as literal text for an importer to re-interpret. See
 **The build route is asked, never assumed.** Where an Access MCP server is connected, say you have
 it and ask — `CLAUDE.md` → "After approval — building it" carries the question, and its preferred
 answer is `Use it`. **A connected Access MCP server is not authorization to use one:** presence is
-not an answer, the developer's is. Where none is connected there is nothing to ask about — generate
-the script, hand it over, and say that is what you are doing. **The template library MCP server
-that ships in `mcp-server/` is not an Access MCP server** — it reads this library's files and
-cannot build anything.
+not an answer, the developer's is. **The template library MCP server that ships in `mcp-server/` is
+not an Access MCP server** — it reads this library's files and cannot build anything.
+
+**Where none is connected there is no build, and nothing to ask about.** The run ends at the approved
+design, the developer was told so before the first question, and **no executable artifact is
+generated**: no VBA `Sub`, no DDL, no importable form text. Everything below this line describes how a
+build is carried out through an Access MCP server. It is not a packaging guide for code handed to a
+developer to run, because that is not something this library produces on its own initiative. If the
+developer asks for the code knowing nothing has executed it, it goes to them headed `UNVERIFIED`.
 
 *This passage avoids the word "default" on purpose. It means both the route we would point at first
 and what happens when nobody chooses, and only the first is true here (`_template-schema.md` §10.7).*
 
-The entity corruption above is a reason to **check the imported source** where a scaffold warns
-about it, not a reason to steer away from that route. Handing the developer a script to import the
-ordinary way does avoid the failure mode entirely — but a scaffold that emits escaped XML should
-assemble entities from `Chr()` codes either way, as a second line of defence.
+The entity corruption above is a reason to **check the imported source** where a scaffold warns about
+it, and never a reason to steer away from building through the server. A scaffold that emits escaped
+XML should assemble entities from `Chr()` codes regardless, as a second line of defence — and that
+matters more now than when this was first written, because there is no longer another route to fall
+back on when it bites.
 
 ### Opening a host database that has a startup routine — it can block, and it is not a dropped connection
 
@@ -647,7 +661,9 @@ being broken. It has already been misread once, as a restriction on launching Ac
 process, in a build that then took the file-handoff route for the wrong reason. And `CLAUDE.md`
 tells you a dropped Access MCP server is yours to reconnect rather than a question to hand over —
 correct in general, and here it will put you in a retry loop against something that was never going
-to succeed. **Before you treat a failed open as a dropped connection, rule this out.**
+to succeed. **Before you treat a failed open as a dropped connection, rule this out.** The cost of
+misreading it has gone up rather than down: there is no longer a handoff route to divert into, so a
+wrong diagnosis here ends the build instead of rerouting it.
 
 **You may not be able to check first**, which is the awkward part: reading the startup settings
 means opening the database, and that is the thing that blocks. The system catalog is not a way
@@ -886,8 +902,8 @@ governs SharePoint / Access Services publishing and is the wrong document for th
 acMacro` and produces a working `AutoExec` — verified 2026-08-13 by building it into a real front end
 and opening the file. The eight-line classic text **without** the `_AXL:` block round-trips through an
 Access MCP server's code-setting tool (proven with object type `macro`) and **fails** through
-`LoadFromText`. Where a template hands the developer files to import rather than building through an
-Access MCP server, the `_AXL:` block is required.
+`LoadFromText`. In any file the developer imports themselves — a staged scaffold's own files, or code
+handed over `UNVERIFIED` at their request — the `_AXL:` block is required.
 
 **The `AllowBypassKey` gotcha.** Closing Access's own Shift-key bypass — so holding Shift while
 opening a file no longer skips `AutoExec` and the startup settings — means setting the database
@@ -1066,12 +1082,18 @@ confirms. A byte-perfect importable file is the generator's job in B3.)*
 
 ---
 
-## Alternative path — build live through an Access MCP server
+## Building the form live through an Access MCP server — the path this library takes
 
 The same mapping drives an Access MCP server's form-creation and control-creation tools: instead of
 emitting text for import, the generator creates the form and its controls directly, applying the same
 default-layout rule and wiring the same code-behind. The `form-spec` markdown remains the source of
-truth; both paths are generated targets.
+truth.
+
+**This is the path, not an alternative to one.** The importable text above is what a `form-spec`
+design consists of, and where no Access MCP server is connected it is as far as a run goes: the
+developer has the specification and builds from it. Importable text is never generated *for* the
+developer to import as though it were a finished form, because nothing will have opened it to check
+that it loads. If they ask for it anyway, it goes to them headed `UNVERIFIED`.
 
 **Create the label controls explicitly.** A control-creation tool makes only the control you name — it does
 **not** auto-create an attached label — so each data control needs a second call for

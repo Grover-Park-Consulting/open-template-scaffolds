@@ -50,9 +50,13 @@ Open the prompt closest to what you want to build. For your first trial, you can
 
 ![A prompt pasted into a chat window, ready to send but not yet sent](images/getting-started-prompt.svg)
 
-## 5. Review what it builds
+## 5. Review the design, then see what happens to it
 
-Your assistant produces the design it proposes to build for the database it will deliver along with a diagram of the tables and a field list when appropriate. Approve the proposal, or say what to change. Go through as many rounds as you need to get the result you want. When it's done, read the build record it creates.
+Your assistant produces the design it proposes to build for the database it will deliver, along with a diagram of the tables and a field list when appropriate. Approve the proposal, or say what to change. Go through as many rounds as you need to get the result you want.
+
+**What happens after you approve depends on one thing, and your assistant tells you which before it asks you anything.** If it has a tool connected that can open an Access file and build in it, it creates the tables for you and runs what it created, so that anything wrong is found and fixed before you see it. If it doesn't have that tool, the approved design is what you get, and you build from it yourself — the design is complete and yours to keep either way. `README.md` explains the tool under *About the two kinds of server*.
+
+When it's done, read the record it writes of what was decided and what was built.
 
 ## Want to see it work first?
 

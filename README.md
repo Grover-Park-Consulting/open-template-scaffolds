@@ -14,15 +14,16 @@ It's also more than a set of templates. It's a way to **shape** each one to the 
 — your client, your names, the specifics of this build.
 
 **Built and tested against [unmateria](https://github.com/unmateria)'s Access MCP server** — the tool
-that lets an AI assistant open your database and build in it directly. You do not need it to use this
-library; *About the two kinds of server* below says what it does, and how the library works without one.
+that lets an AI assistant open your database and build in it directly. You can use this library
+without one, and you get the design rather than the build: *About the two kinds of server* below says
+exactly what each of those means, and it is worth reading before you start.
 
 **Want to download the library and run your first build right now?** See
 **[`GETTING-STARTED.md`](GETTING-STARTED.md)** — five short steps, nothing to install.
 
 ## New to AI assisted development? We built OTS for you.
 
-You don't need to be an experienced database designer, although it can help if you are. If you've outgrown Excel and you're just starting out building Access applications — especially with an AI assistant helping — this library takes the hardest, most abstract part, designing the tables and logic, and gives you a running start. You describe what you want in plain words, the AI builds it, and you look it over and approve or adjust. That's the "Template" part of Open Template Scaffolds.
+You don't need to be an experienced database designer, although it can help if you are. If you've outgrown Excel and you're just starting out building Access applications — especially with an AI assistant helping — this library takes the hardest, most abstract part, designing the tables and logic, and gives you a running start. You describe what you want in plain words, the AI designs it, and you look it over and approve or adjust before anything is built. That's the "Template" part of Open Template Scaffolds. Whether the AI then builds it for you, or hands you the approved design to build yourself, depends on one tool being connected — *About the two kinds of server* below explains it, and your AI tells you which one you are in before it asks you anything.
 
 ## Which AI assistant you use, and where you run it, changes what you see during a build and how you experience it
 
@@ -109,6 +110,8 @@ Do these five things to set up and run the quick start demo build. If any of tho
 
 In your prompt, make sure the AI knows where to direct the database it creates.
 
+**One thing to know before you start: whether this ends in a real database depends on your setup.** If your AI has a tool connected that can open an Access file and build in it — see *About the two kinds of server* below — you finish with tables you can open, built and checked for you. If it doesn't, you finish with the completed design and you create the tables from it yourself. A chat assistant in a browser can never build directly, so that route always ends at the design. Your AI tells you which one you are in before it asks you anything, and either way you get a record of what was decided and why.
+
 1. **Your database has to sit in a trusted location because templates work by having Access run VBA code.**
     The library folder itself is nothing but text files, so it needs no trust setting. Put it wherever you like.
 
@@ -193,7 +196,11 @@ You may have heard references to MCP servers, and you may also be wondering if t
 
 We ship one in the library. The other is optional; you may already have one installed, or you may choose to install one if the benefits it offers seem worthwhile to you.
 
- **You need neither.** Everything above works with or without them. You only need to read this section if you already have one and want to know how it's used in the OTS library. Of course, you may want to read anyway to see what they are all about.
+ **Read this section.** It is short, and one thing in it decides what you have at the end of a run.
+
+The first server is genuinely optional. The second one is not, if you want your AI to do the building. **Without it you get the design — the tables, the fields, how they connect, and the reasoning behind every choice, yours to approve or change — and you build from it yourself, the way you build things today. With it, your AI builds it in your database and runs what it built, so anything wrong gets found and fixed before you ever see it.**
+
+Your AI tells you which of those two you are in before it asks you anything, so you are never surprised at the end.
 
 - **OTS's template library MCP server** ships with the library. Its job is to let your AI look up templates and
   standards without reading the files itself. It only reads this library's files; it **cannot create or change anything in your database.** The library ships a configuration file at its root that lets
@@ -203,8 +210,11 @@ We ship one in the library. The other is optional; you may already have one inst
   - register it by hand (`mcp-server/setup.ps1` prints exactly what to paste)
   - skip it. As previously stated, the library runs with or without it.
 
-- **An Access MCP server** is a separate tool. Its tools open your database and **build in it directly**. Some developers prefer this method; some don't. It's up to you.
-However, this library does not ship with one. We do look for one on your system, and if you have one connected, your AI will say so and ask if you want to use it. You can always say no. It's on you, then, to import the code produced by the library yourself instead. If you don't have one, your AI simply hands you the code and tells you how to run it.
+- **An Access MCP server** is a separate tool, and **this library does not ship with one**. Its tools open your database and **build in it directly**. This is what lets your AI run the code it wrote and fix what fails before you see it, which is the whole reason it matters: without it, the first thing to ever run that code would be you, in your own database, and a mistake would reach you as an error rather than as a finished table.
+
+  If you have one connected, your AI says so and asks whether to use it. You can always say no and import the code yourself; it will tell you plainly that nothing has run it first. **If you don't have one, the run ends at the design.** Your AI will not hand you code and call it a build.
+
+  **Any server that does these five things works.** We name a particular one below because we owe it, not because the library depends on it: open a database, import a code module, run a procedure by name, report back the error number and description when one fails, and close and release the file.
 
   **With thanks to [unmateria](https://github.com/unmateria).**
   [MCP-Access](https://github.com/unmateria/MCP-Access) is the Access MCP server this library is

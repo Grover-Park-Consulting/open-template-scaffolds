@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.11.0
+version: 0.12.0
 status: draft
 ---
 
@@ -480,12 +480,17 @@ in the spec. Hidden/internal controls (PK, sort key, image-link) are listed and 
 
 ### 9.4 Materialization
 
-A form-spec materializes as **importable Access form text** (`SaveAsText`/`LoadFromText`) with a
-default stacked layout and the code-behind wired to the named framework helpers (and any paired
-`vba-scaffold`). The markdown → Access-text mapping is proven by hand before a generator is built; the
-alternative path builds the form live through an Access MCP server's form-creation and
-control-creation tools. The markdown is the source of truth; the Access text is a generated target.
-See `_materialization.md` for the full mapping rules and a hand-validated fragment.
+A form-spec materializes by **building the form live through an Access MCP server's form-creation and
+control-creation tools**, with a default stacked layout and the code-behind wired to the named
+framework helpers (and any paired `vba-scaffold`). The markdown is the source of truth.
+
+The same design also expresses as **importable Access form text** (`SaveAsText`/`LoadFromText`), and
+the markdown → Access-text mapping is proven by hand before a generator is built. **That text is not
+a second build route.** Where no Access MCP server is connected the run ends at the approved design;
+importable text is not generated for the developer to import as though it were a finished form,
+because nothing will have opened it to confirm it loads. If they ask for it knowing that, it goes to
+them headed `UNVERIFIED`. See `_materialization.md` for the full mapping rules and a hand-validated
+fragment.
 
 ### 9.5 `validate` rules for `form-spec`
 
@@ -633,6 +638,10 @@ everything and are waiting. Three things are said at these moments and nothing e
 - Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
 - Anything that changes what they do next.
 - The disclosure line below, before the first question only.
+- Where this run ends, before the first question only: a build in their database, or the approved
+  design and nothing further. `CLAUDE.md` → "Before the first question of any run" carries the
+  wording and the reason. It qualifies under the second item above, since it changes what the
+  developer does when the run finishes.
 
 Everything else — what was checked, what was found, what it meant — goes to **the build record**.
 

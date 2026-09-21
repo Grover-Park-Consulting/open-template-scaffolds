@@ -348,7 +348,8 @@ accumulates), so the fix is to close everything and run it again.
 
 **To the AI assistant.** This is the canonical sequence, and it is the source for the `runbook.md`
 that `_materialization.md` requires you to hand over with the files. **Write that runbook whenever
-the developer runs any of this themselves** — the file-handoff route always. Naming the procedures
+the developer runs any of this themselves** — which this staged sequence has them do by design.
+Naming the procedures
 `One_`, `Two_`, `Three_` does not tell anyone what the first two are, that the config table has to
 be reviewed in between, or that three of the twenty procedures are the only ones they ever call
 directly. Turn the sequence below into their runbook in plain words; do not paste this section into

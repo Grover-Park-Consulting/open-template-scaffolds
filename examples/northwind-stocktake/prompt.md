@@ -74,8 +74,13 @@ Then produce the result in two parts:
 Present it for my review. I'll approve it or tell you what to change. This is never finished until
 I say so.
 
-Once I approve the design and ask you to build it, **first ask whether I want Access tables (a VBA
-sub) or SQL Server (DDL)**, then generate that — carrying the keys, indexes, relationships, and lookup
-seed rows. For the Access version, build the tables **in the VBA sub with DAO (`CreateTableDef`), not
-with `CREATE TABLE` statements** (the Access engine rejects a `DEFAULT` clause in DDL), and remind me to
-**run the sub from a Trusted Location**, or Access blocks the code.
+Once I approve the design, tell me whether you can build it. **If you have a tool connected that can
+open my Access file and build in it, ask whether I want you to use it**, then build the tables,
+carrying the keys, indexes, relationships, and lookup seed rows — and run what you build, so anything
+wrong is found and fixed before I see it. **If you have no such tool, say so and stop at the approved
+design**; I'll build from it myself, and you are not to hand me code and call it a build. If I ask
+you for the code anyway, mark it clearly as never having been run.
+
+For the Access version, build the tables **with DAO (`CreateTableDef`), not with `CREATE TABLE`
+statements** (the Access engine rejects a `DEFAULT` clause in DDL), and make sure the file sits in a
+**Trusted Location**, or Access blocks the code.

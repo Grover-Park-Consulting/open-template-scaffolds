@@ -9,6 +9,8 @@ The template library MCP server is a thin, dependency-light **Model Context Prot
 Building into a database is the job of **an Access MCP server**. An Access MCP Server is a different thing.
 This library does not ship one. However, if you already have one connected, your AI will say so and ask before using it.
 
+**Having this server connected is not the same as being able to build.** If the template library MCP server is the only one you have, your AI still cannot create anything in your database, and a run will end at the approved design for you to build from yourself. `README.md` at the root, under *About the two kinds of server*, says what changes and what an Access MCP server has to be able to do.
+
 ## Tools in the template library MCP server
 
 | Tool | Purpose |

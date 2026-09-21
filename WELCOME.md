@@ -12,9 +12,10 @@ you need to get started is there.
 ## Before you start — do you have an AI assistant?
 
 This tool, Open Template Scaffolds, works by having an AI assistant read the files you
-downloaded from GitHub, or received in a ZIP file. The AI assistant will do the design and build
-work for you. You'll be asked to provide details, make decisions, and approve the work the AI
-assistant does. If you already chat with Claude, ChatGPT, or Copilot, you know how it works and
+downloaded from GitHub, or received in a ZIP file. The AI assistant does the design work for you,
+and it builds the result in your database too when it has a tool connected that can open Access
+files — `README.md` explains that tool and what changes without it. Either way you'll be asked to
+provide details, make decisions, and approve the work before anything is built. If you already chat with Claude, ChatGPT, or Copilot, you know how it works and
 you can skip to the next section.  It wouldn't hurt, though, to familiarize yourself with our 
 assumptions about using OTS.
 

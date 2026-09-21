@@ -153,12 +153,13 @@ patterns; not baseline form features):*
 
 ## Materialization
 
-The form-spec materializes as importable Access form text (`LoadFromText`) with a default stacked
-layout and the code-behind wired in — event handlers calling the framework helpers (and any paired
-`vba-scaffold` procedures). The markdown → Access-text mapping is **defined and hand-validated** as
-part of this template type's proof; the actual generator is built in the template library MCP server
-phase (B3). Alternatively, the form is built live through an Access MCP server's form-creation and
-control-creation tools.
+The form-spec materializes by building the form live through an Access MCP server's form-creation and
+control-creation tools, with a default stacked layout and the code-behind wired in — event handlers
+calling the framework helpers (and any paired `vba-scaffold` procedures). The markdown → Access-text
+mapping is **defined and hand-validated** as part of this template type's proof; the actual generator
+is built in the template library MCP server phase (B3). Where no Access MCP server is connected the
+run ends at the approved design, and no importable form text is generated for the developer to import
+as though it were a finished form — see `_materialization.md`.
 
 ## Extra Options
 

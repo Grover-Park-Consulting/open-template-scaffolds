@@ -125,10 +125,11 @@ subform rows).
 
 ## Materialization
 
-The form-spec materializes as importable Access form text (`LoadFromText`) with a default
-stacked layout and the code-behind wired to the paired `vba-scaffold` procedures, or is built
-live through an Access MCP server's form-creation and control-creation tools. The markdown is the
-source of truth; see `_materialization.md` for the mapping rules.
+The form-spec materializes by building the form live through an Access MCP server's form-creation and
+control-creation tools, with a default stacked layout and the code-behind wired to the paired
+`vba-scaffold` procedures. Where no Access MCP server is connected the run ends at the approved
+design. The markdown is the source of truth; see `_materialization.md` for the mapping rules and for
+what is and is not handed over.
 
 ## Extra Options
 
