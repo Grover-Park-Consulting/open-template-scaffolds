@@ -1,4 +1,4 @@
-Build audit logging into my Access database using the set-up wizard.
+Build audit logging into my Access database using the scaffold approach.
 
 Outcome: every change to the tables I choose gets recorded automatically by the database itself —
 who, what field, before/after value — no matter how the change was made, with no way around it.

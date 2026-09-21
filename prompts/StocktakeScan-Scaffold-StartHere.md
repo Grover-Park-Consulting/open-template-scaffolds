@@ -1,4 +1,4 @@
-Build scan-driven stocktake counting into my Access database using the set-up wizard.
+Build scan-driven stocktake counting into my Access database using the scaffold approach.
 
 Outcome: every scan is recorded and nothing scanned is silently dropped, duplicate scans of the same
 item are recognized and not double-counted, a barcode that matches nothing known is held for review

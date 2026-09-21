@@ -1,9 +1,9 @@
 ---
 template: error-logging-scaffold
-title: Error Logging — Set-up Wizard and Logger
+title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.6.4
+version: 0.6.5
 status: draft
 implements: error-logging-schema
 requires_tables:
@@ -51,7 +51,7 @@ related:
     shared logger, available to you."
 ---
 
-# Error Logging — Set-up Wizard and Logger
+# Error Logging — VBA Scaffold
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

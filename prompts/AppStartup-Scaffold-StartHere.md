@@ -1,4 +1,4 @@
-Build application startup and back-end relinking into my Access database using the set-up wizard.
+Build application startup and back-end relinking into my Access database using the scaffold approach.
 
 Outcome: my front end opens by itself and finds its data file — reconnecting to it without saying
 anything if it moved, or asking me where it went if it can't find it on its own, and refusing a file

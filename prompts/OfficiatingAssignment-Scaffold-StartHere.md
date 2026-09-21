@@ -1,6 +1,6 @@
 Build the active-official check, team and game-time validation, derived play level and age, the
 applicable pay rate, and the photo file/folder handling into my sports officiating database using the
-set-up wizard.
+scaffold approach.
 
 Outcome: an assignment can never reference an official who isn't active, a game can never be saved
 against itself or with its end time before its start, a game's play level always reflects its home

@@ -1,4 +1,4 @@
-Build error logging into my Access database using the set-up wizard.
+Build error logging into my Access database using the scaffold approach.
 
 Outcome: every unhandled VBA error produces exactly one record, and the log can never refuse to
 accept it — the error's number, description, and failing line are captured before anything else in
