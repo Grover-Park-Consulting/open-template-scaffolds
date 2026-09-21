@@ -24,14 +24,23 @@ more readily the next colleague drops it into their own practice.
 
 ## What you can contribute
 
-Right now: **table-schema templates** — structured, AI-readable definitions of a domain's tables,
-relationships, and business rules. New business domains are especially welcome; the whole point of
-the library is breadth of domain coverage that an adopter can lean on at project kickoff.
+**What we ask for is an outcome-first template** — one that states a finished condition the build
+has to reach, checkable without reading any code, and leaves the route to get there to whoever
+builds it. That's the format we're targeting, and the one your submission should lead with. See
+[`_template-schema.md` §12](templates/_template-schema.md#12-type-outcome-first) for the format.
 
-Two other template types — **`vba-scaffold`** and **`form-spec`** — aren't open for contribution
-yet. Their formats are still being proven by hand, and we don't want submissions built against an
-unproven format. A *complete* library will carry all three types, so they're firmly on the
-roadmap — just not ready to accept yet.
+**Send a paired `table-schema` alongside it** whenever your template introduces new tables — an
+outcome-first template specifies behavior, not tables, and needs one to `implement`.
+
+**A paired `vba-scaffold` — working code that reaches the same outcome by one concrete route — is
+welcome but never required.** The two formats are complementary, not competing drafts of each other:
+an outcome-first template can point a developer at its domain's scaffold for a worked example, and a
+scaffold is also the fallback path where the AI assistant building it can't be trusted with an open
+route. If you have one, include it. If you don't, send the outcome-first template on its own — we'll
+add the scaffold during intake.
+
+New business domains are especially welcome; the whole point of the library is breadth of domain
+coverage that an adopter can lean on at project kickoff.
 
 ## How a template must be structured
 
@@ -180,8 +189,9 @@ ever grows.
 
 So when your template met something nothing covered and you handled it, **that is the argument against
 writing a rule, not for it.** Put what happened in the template's own text, where it binds your
-template and nothing else — `## Business Rules`, a wizard step, a `warnings` entry in the front matter
-— or leave it to the build record, which exists to carry exactly that.
+template and nothing else — `## Business Rules`, a step in your template's own `## Wizard` section, a
+`warnings` entry in the front matter — or leave it to the build record, which exists to carry exactly
+that.
 
 If it genuinely belongs in the shared layer, make the case in the pull request: what it prevents, what
 it costs, and **what it replaces.** A rule that retires an existing one is a far easier sell than one
@@ -196,6 +206,9 @@ Two gates, in this order:
    secrets.
 2. **Human** — we review for domain correctness, clean standards separation, no proprietary data,
    and fit with the rest of the library. Format is the machine's job; judgment is ours.
+
+If your outcome-first template arrives without a paired `vba-scaffold`, we add one during intake
+rather than asking you to — see "What you can contribute" above.
 
 Our ethos is **revise, don't reject**. If something needs another pass, we'll say what and why and
 work it out with you — the goal is to get your template landing well, not to turn submissions away.
