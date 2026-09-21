@@ -1,6 +1,6 @@
 Build the capitalization threshold, standing audit trail, computed depreciation, required disposal
 date, and inventory-scan resolution into my school district's capital asset tracking database, using
-the outcome-first method.
+the outcome-first route.
 
 Outcome: an asset can never be saved on file at or under the capitalization threshold, and editing an
 asset's room, custodian, department, funding source, or status always writes a row to its movement
@@ -10,10 +10,13 @@ goes stale. An asset can't be marked disposed without a disposal date. A scanned
 matched, unexpected, or duplicate on its own, and an asset nobody finds during a count is identifiable
 without anything being written to its own record.
 
-Resources — these files are inside the Open Template Scaffolds library folder; the paths below are
-relative to that folder's root: templates/asset-tracking/asset-tracking-outcome-first.md (the
-template), templates/asset-tracking/asset-tracking-schema.md (paired tables), standards/ (my
-conventions), README.md and templates/_template-schema.md for the rest.
+Outcome-first route: the template sets the finished condition and ships no code; you choose the
+structure and write it, under my standards. (Scaffold is the other route: the procedures come
+written, with the house-specific parts marked for you to fill in.)
 
-A build is successful when all validation checks run.
-A build is successful when all validation checks pass.
+Resources, relative to the Open Template Scaffolds folder:
+templates/asset-tracking/asset-tracking-outcome-first.md (the template),
+templates/asset-tracking/asset-tracking-schema.md (paired tables), standards/ (my conventions),
+README.md and templates/_template-schema.md for the rest.
+
+A build is successful when all validation checks run and pass.

@@ -1,6 +1,6 @@
 Build the active-official check, team and game-time validation, derived play level and age, the
 applicable pay rate, and the photo file/folder handling into my sports officiating database using the
-scaffold approach.
+scaffold route.
 
 Outcome: an assignment can never reference an official who isn't active, a game can never be saved
 against itself or with its end time before its start, a game's play level always reflects its home
@@ -9,10 +9,13 @@ rate resolved for an assignment is always the one in force on the game's date, a
 an official always lands in one shared, confirmed folder under a name that can't collide with anyone
 else's.
 
-Resources — these files are inside the Open Template Scaffolds library folder; the paths below are
-relative to that folder's root: templates/scheduling-assignment/officiating-assignment-scaffold.md
-(the template), templates/scheduling-assignment/officiating-assignment-schema.md (paired tables),
+Scaffold route: the template ships the procedures already written, with the house-specific parts
+marked for you to fill in under my standards. (Outcome-first is the other route: the template sets
+the finished condition and no code, and you choose the structure yourself.)
+
+Resources, relative to the Open Template Scaffolds folder:
+templates/scheduling-assignment/officiating-assignment-scaffold.md (the template),
+templates/scheduling-assignment/officiating-assignment-schema.md (paired tables),
 standards/ (my conventions), README.md and templates/_template-schema.md for the rest.
 
-A build is successful when all validation checks run.
-A build is successful when all validation checks pass.
+A build is successful when all validation checks run and pass.

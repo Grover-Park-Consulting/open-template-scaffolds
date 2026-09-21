@@ -85,7 +85,7 @@ These are among the very few absolute statements you'll find in our library, for
 
 **Each template lists validation checks under *How you validate the template's output*.** Before you
 trust a build, look at the build record and make sure your AI assistant ran every single one — not most, and not
-"the ones that still applied." All validation checks must be run and the results reported as "Pass", "Fail" or "Not applicable".
+"the ones that still applied." All validation checks must be run and each result reported as "PASSED" or "NOT PASSED".
 
 An AI session checking its own work can sometimes skip one check and report the skip as a considered decision rather than a gap.
 To the AI, that can seem reasonable in the moment. It only shows if you compare what actually ran against the full list the template names. 
