@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.12.0
+version: 0.13.0
 status: draft
 ---
 
@@ -102,7 +102,7 @@ present on every template; conditional keys are required when their condition ho
 | `new_forms` | conditional | list[string] | Required for `type: form-spec`; the forms/subforms defined — each subform appears as a `Subform` control in `## Layout` |
 | `seeds` | optional | list[string] | Seed data the template expects, as `Table.RowKey` |
 | `house_assumptions` | optional | list[string] | House-particular modeling assumptions deliberately kept in the template body (the "Declared" tier) because they can't be moved to the standards layer or dropped. Each entry is `Target — rationale`, where `Target` names the entity, field, or rule carrying the assumption. Makes embedded house bias machine-visible to adopters and discovery tools. |
-| `warnings` | optional | list[string] | Hard **platform caveats** the AI builder must surface to the developer *before* building — engine limits, not house bias (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"). Surfaced alongside `house_assumptions` in the review step; each entry states the limit and what the developer must confirm or the build must branch on. |
+| `warnings` | optional | list[string] | **Anything the AI builder must surface *before* building, and act on.** Each entry states the condition and what the developer must confirm or the build must branch on: a platform limit the build cannot get around (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"), or what the template does to a database the developer already has (e.g. the backup gate). **These are examples, not a test of what belongs.** Never skip or remove an entry because it does not resemble them. House bias goes in `house_assumptions`, the only exclusion. |
 | `related` | optional | list[string] | Other templates or standards files worth considering next, once this one is built — never during it (see §7.1). Each entry is `Target — rationale`, where `Target` is a template slug or a `standards/<file>.md` path |
 
 **Rules the `validate` tool enforces on front-matter:**
@@ -151,6 +151,12 @@ Optional-for-all:
 | Section | Purpose |
 |---|---|
 | `## Parked / future considerations` | Named directions explicitly **not** in the current design |
+
+**The backup gate.** A template that alters a database the developer already has asks for a backup
+copy before changing anything, and stops if there is none. It goes where that template states its
+preconditions — `## Prerequisites`, or *Information and conditions you need to supply* in an
+`outcome-first`. **The wording does not vary between templates:** the reason is always that the
+template alters the file it is built into, so a reason written per template is a defect, not detail.
 
 ---
 

@@ -129,9 +129,9 @@ this same workflow.)
    say so when you draw on one.
 5. **Surface every `house_assumptions` entry** the template declares in its front-matter. List them
    and ask the developer to confirm or override before you finalize. **Surface every `warnings`
-   entry the same way** — those are hard platform limits, not preferences (e.g. Data Macros cannot
-   audit Long Text fields): state each one, get the developer's answer to whatever it says must be
-   checked, and branch the build accordingly.
+   entry the same way** — those are conditions the build must act on, not suggestions (e.g. Data
+   Macros cannot audit Long Text fields): state each one, get the developer's answer to whatever it
+   says must be checked, and branch the build accordingly.
 6. **Fold in the developer's specifics** and any named extras from the template's
    `## Extra Options` section.
 7. **Don't invent domain content** beyond the template and what the developer supplied. If something
