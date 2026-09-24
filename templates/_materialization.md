@@ -374,6 +374,16 @@ every template that creates a column receiving values from other columns.
    asks you to widen a field that has one source, and nothing here asks the developer a new
    question.**
 
+   **One narrow exception, scoped to an error- or audit-logging table's own field:** a log field
+   whose single source is the engine or the runtime itself — `Err.Description`, a caught
+   exception's message — still needs `AllowZeroLength = True` even though it has one source. The
+   single-source carve-out above assumes the source's own rules already bounded what can arrive;
+   here they don't, because a log table has no say over what the runtime hands it and exists
+   specifically to record that, empty string included. This exception is scoped to this
+   arena — a table receiving values the application itself validates, from one source, stays
+   covered by the carve-out above. `templates/errors/error-logging-schema.md`'s `ErrorDescription`
+   is the proven case.
+
 **Both index orders are valid.** The sample above appends indexes to `tdf.Indexes` *before*
 `db.TableDefs.Append`; `templates/errors/error-logging-scaffold.md` appends the table first and builds
 its indexes after. Both are proven by running them. Neither corrects the other — **don't rewrite
@@ -526,6 +536,25 @@ developer built by hand outside any template. Guessing how to interleave two mac
 designed together risks a merged document that runs but does the wrong thing — silently, per rule 7
 above. State what each one currently does, propose how they'd combine, and get the developer's
 answer before writing over the existing document.
+
+### Reusing a host's own helper function — check what it was sized for, not just what it does
+
+A build that reuses a function already present in the target database — a row-availability check,
+a macro-detection helper, anything the host wrote before this template arrived — is reusing more
+than its behavior. It is also reusing whatever the helper's author sized it for, and a new template
+routinely asks it to measure something bigger than that.
+
+**Two confirmed breaks, same shape.** `modDAO.HasDataMacro` stored a macro's length in an `Integer`;
+an audit build's generated macro ran 15× larger than the helper was ever sized for, and the
+*second* run overflowed it (error 6). `ProductAvailable` returned an `Integer`, capped at 32,767,
+and every stocktake baseline ran through it. Neither helper was wrong for the job it was written
+for — the new template changed what it was being asked to measure, and nothing prompted a check.
+
+**Before reusing a host helper, ask: does this build make anything bigger, longer, more numerous,
+or differently typed than the helper was written to handle?** A macro that's larger than any this
+host has generated before, a count that can plausibly exceed a 16-bit range, a string that can run
+longer than the helper's own buffer — any of these is reason enough to check the helper's actual
+declared types and limits before trusting its return value, not after the second run fails.
 
 ### ACE rejects an aggregate subquery in an UPDATE's SET clause, and a self-referencing alias
 

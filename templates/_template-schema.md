@@ -132,6 +132,30 @@ database. That's a separate `check_compatibility(template, db_path)` tool. And n
 speaks to fitness: a passing `validate` means well-formed, never *suitable for purpose*. Confirming a
 template fits the intended application stays the adopter's responsibility.
 
+### `extends` and the host's own naming convention
+
+**This was an undecided question, not a documented rule, and three templates each answered it
+differently on their own** (`audit-logging-lite-scaffold` assumed `tbl…`/`tlkp…` naming that
+matches nothing in a non-OTS host; `library-catalog-schema` declared no host and collided with the
+collection it was shaped from; `record-finder-scaffold` named a field its own paired schema renames
+away). The decision:
+
+**Grafting onto an existing database (`extends` is set): the host's own naming convention wins over
+`standards/naming-conventions.md`, once found — but it has to be found first, and confirmed, never
+assumed.** Inspect the host's existing tables before naming a single new object. Where the host's
+own convention differs from this file's, ask the developer which one governs the new objects —
+state what was found, name the preferred choice as **keep the host's own convention**, and let them
+choose. Never silently apply the OTS standard onto a host that has already established its own,
+and never silently adopt whatever the host does without asking.
+
+**No host to inspect (a greenfield database, `extends` absent): default to
+`standards/naming-conventions.md`, but still ask.** There is no existing convention to defer to, so
+the OTS standard is the reasonable preferred choice — but it is still a choice the developer gets
+to confirm, not one settled by there being nothing to compare against.
+
+Either way, this is a single wizard-style step, asked once per build, not re-litigated per table or
+per template in a multi-template engagement.
+
 ---
 
 ## 3. Body sections — common core (all template types)
@@ -413,17 +437,19 @@ carry a recognizable mark, and a mark survives every naming convention.
 
 | Prefix | Whose it is | Rule |
 |---|---|---|
-| `MSys` | Access's own | Never touched, **not even read or exported**. No opt-in, no exception. |
+| `MSys` | Access's own | **Read it freely when the information is needed** — which tables carry a Data Macro, what objects exist, and the like. **Never insert, update, or delete anything in it**, and never let a discovery routine make one a target of a change or delete action. No opt-in, no exception to the write prohibition. |
 | `USys` | The developer's own hidden tables | Left alone **unless the developer opted that object in themselves**, by naming it in whatever list or configuration table the template uses for scope. |
 
 The `USys` rule is not the same rule with a softer edge. Creating a `USys` table is a deliberate
 act by someone who has taken responsibility for managing part of the database themselves; the
 template's business is to leave that alone until invited. `MSys` is not the developer's to opt in
-with in the first place.
+with in the first place — reading it for information is always allowed, but nothing about that
+information ever earns it a place on a list of things to change.
 
-**3. The name check has to come before the ownership test**, because the ownership test usually
-has to read the object to apply it, and reading is itself something that must not happen to
-Access's own tables. Order the guards accordingly.
+**3. The name check has to come before the ownership test**, because a discovery routine must never
+add an `MSys…` object to a change-or-delete list regardless of what the ownership test would say
+about it — the name alone disqualifies it, before any other reasoning runs. Order the guards
+accordingly.
 
 **4. Back up before removing, and keep the backup when you decline to remove.** A procedure that
 declines to touch something should still leave the developer a record of what it found.

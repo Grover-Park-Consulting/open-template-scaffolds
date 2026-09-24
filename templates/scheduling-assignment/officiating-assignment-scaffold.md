@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.6.0
+version: 0.8.0
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -219,10 +219,10 @@ errHandler:
 End Function
 ```
 
-### ValidateAssignment — `Private Function` → `Boolean`
+### ValidateAssignment — `Public Function` → `Boolean`
 
 ```vba
-Private Function ValidateAssignment(ByVal lGameID As Long, _
+Public Function ValidateAssignment(ByVal lGameID As Long, _
                                     ByVal lOfficialID As Long, _
                                     ByVal lOfficialPositionID As Long, _
                                     ByRef sRefusalReason As String) As Boolean
@@ -260,14 +260,20 @@ errHandler:
 End Function
 ```
 
-### GetApplicablePayRate — `Private Function` → `Currency`
+### GetApplicablePayRate — `Public Function` → `Variant`
 
 ```vba
-Private Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
-                                      ByVal lOfficialPositionID As Long, _
-                                      ByVal dtGameDate As Date) As Currency
+Public Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
+                                     ByVal lOfficialPositionID As Long, _
+                                     ByVal dtGameDate As Date) As Variant
     ' [SCAFFOLD] Resolve the effective-dated rate for (level, position) as of a game date.
-    '            Returns 0 when no rate row applies — caller surfaces a warning, never guesses.
+    '            Returns Null when no rate row applies — caller surfaces a warning, never
+    '            guesses a rate. The return type is Variant, not Currency, because VBA's own
+    '            Currency data type (unlike an Access table field of that type, which is
+    '            nullable) is a fixed-point numeric type and cannot hold Null - assigning Null
+    '            to it raises runtime error 94. A $0 rate and "no rate exists" must stay
+    '            distinguishable, matching what the paired outcome-first template's query
+    '            returns for the same case (Business Rule 6, "never silently a $0 rate").
     Dim db   As DAO.Database
     Dim rs   As DAO.Recordset
     Dim sSql As String
@@ -281,7 +287,11 @@ Private Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
     sSql = vbNullString
 
     Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
-    If Not rs.EOF Then GetApplicablePayRate = rs!PayRate
+    If rs.EOF Then
+        GetApplicablePayRate = Null
+    Else
+        GetApplicablePayRate = rs!PayRate
+    End If
 
 Cleanup:
     On Error Resume Next
@@ -294,6 +304,16 @@ errHandler:
     Resume Cleanup
 End Function
 ```
+
+**Every caller must guard for `Null` before doing arithmetic that feeds a typed variable.**
+Storing the return value directly — into another `Variant`, or into a control's bound property —
+needs no guard; `Null` displays as blank and propagates cleanly. But summing or otherwise combining
+it into a strictly-typed accumulator (`Currency`, `Long`, `Double`) raises runtime error 94 the
+moment one game has no applicable rate. Wrap it first: `curTotal = curTotal + Nz(GetApplicablePayRate(...), 0)`
+— and decide deliberately what the zero in that `Nz` means for whatever is being totaled, since it
+is exactly the silent-$0 conflation Business Rule 6 exists to prevent. This is the one hazard the
+**Compensation rollup** Extra Option below will hit on its first missing-rate row if built without
+this guard.
 
 *(The game's play level is derived through its home team — schema Business Rule 5 —
 so `GetApplicablePayRate`'s `lPlayLevelID` argument is resolved by calling `GameLevelID`,
@@ -487,24 +507,48 @@ End Function
 Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As String) As Boolean
     ' [SCAFFOLD] Copy a picked photo into the shared folder under a controlled name, and
     '            record that name on the official - never the source path, never the file
-    '            itself (schema Business Rule 9). The controlled name is always the same for
-    '            a given official, so a re-pick overwrites cleanly instead of leaving the old
-    '            file behind, orphaned.
-    Dim sFolder As String
-    Dim sExt    As String
-    Dim sName   As String
-    Dim lDot    As Long
+    '            itself (schema Business Rule 9). The controlled name carries the picked
+    '            file's own extension, which can change between picks for the same official
+    '            (a .jpg replaced by a .png) - so the new name is not always the old name.
+    '            Before writing the new file, this reads the official's CURRENT
+    '            PhotoFileName - the full stored name, extension included - and deletes
+    '            exactly that file if it differs from the name about to be written. Deleting
+    '            by the recorded full name, not by guessing the old extension matches the
+    '            new one, is what keeps this accurate across an extension change.
+    Dim db       As DAO.Database
+    Dim rs       As DAO.Recordset
+    Dim sSql     As String
+    Dim sFolder  As String
+    Dim sExt     As String
+    Dim sName    As String
+    Dim sOldName As String
+    Dim lDot     As Long
 
     On Error GoTo errHandler
+    Set db = CurrentDb
 
     If Not EnsurePhotoFolder() Then GoTo Cleanup
 
     sFolder = GetAppSetting("OfficialPhotoFolder")
     If Right$(sFolder, 1) <> "\" Then sFolder = sFolder & "\"
 
+    ' [BUSINESS LOGIC #9] read this official's current PhotoFileName (full name, with extension)
+    ' >>> lookup query per query-style.md <<<
+    sSql = vbNullString
+    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
+    If Not rs.EOF Then sOldName = Nz(rs!PhotoFileName, vbNullString)
+    rs.Close
+
     lDot = InStrRev(sSourcePath, ".")
     sExt = IIf(lDot > 0, Mid$(sSourcePath, lDot), vbNullString)
     sName = "Official_" & lOfficialID & sExt
+
+    ' Delete the superseded file, by its own recorded full name, before writing the new one.
+    ' Only when a prior file is on record and its name differs from the one about to be
+    ' written - never delete on a guess, and never delete when nothing changed.
+    If Len(sOldName) > 0 And sOldName <> sName Then
+        If Len(Dir$(sFolder & sOldName)) > 0 Then Kill sFolder & sOldName
+    End If
 
     FileCopy sSourcePath, sFolder & sName
 
@@ -514,6 +558,9 @@ Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As
     SetOfficialPhoto = True
 
 Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then rs.Close
+    Set rs = Nothing: Set db = Nothing
     Exit Function
 
 errHandler:

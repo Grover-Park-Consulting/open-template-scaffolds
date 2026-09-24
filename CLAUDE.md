@@ -523,7 +523,9 @@ them. This is what lets one template serve every shop.
   name.** A shop's tables may be `tblCompany`, `Company` or `CompanyT`, and their own housekeeping
   tables may be named anything; you cannot predict it, and guessing fails silently. Gate every
   destructive action on a list the developer confirmed, or on a test that the artifact is one this
-  template created. Two exceptions, both hard: a table named `MSys…` is Access's own and is
-  **never touched, not even read or exported**, and a table named `USys…` is the developer's own
+  template created. Two exceptions, both hard: a table named `MSys…` is Access's own —
+  **read it freely when the information is needed (which tables carry a Data Macro, which
+  objects exist), but never insert, update, or delete anything in it, and never make it the
+  target of a discovery-driven change or delete**. A table named `USys…` is the developer's own
   hidden table and is left alone **unless they opted it in themselves**. `templates/_template-schema.md`
   §8.6 is authoritative.

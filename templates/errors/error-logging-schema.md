@@ -76,7 +76,7 @@ Grain: one row per error reported to `LogError`.
 |---|---|---|---|
 | `ErrorLogID` | AutoNumber | PK | Surrogate key. Also serves as the **reference number** shown to the person at the keyboard, where the wizard's Step 6 includes one — so a support call can name the exact row. |
 | `ErrorNumber` | Long | Required | `Err.Number`, read on the logger's first line before anything can clear it. |
-| `ErrorDescription` | Text(255) | Required | `Err.Description`, **truncated** to fit rather than allowed to fail on length. A description longer than the field is a shortened record; a refused write is no record at all. |
+| `ErrorDescription` | Text(255) | Required, `AllowZeroLength = True` | `Err.Description`, **truncated** to fit rather than allowed to fail on length. A description longer than the field is a shortened record; a refused write is no record at all. **A real `Err.Description` can legitimately be an empty string** — this table has no control over what the engine supplies, and a log's job is to record whatever arrived, not to reject it. Without `AllowZeroLength = True`, `Required` on its own refuses that write outright. |
 | `ModuleName` | Text(100) | Required | The module the failing line sits in, supplied by whichever reporting method the wizard's Step 2 chose. Both methods produce the same bare module name, so this column carries one format. |
 | `ProcedureName` | Text(100) | Required | The procedure the failing line sits in. |
 | `ErrorLineNumber` | Long | Required | `Erl` — the last numbered line executed before the failure. **`0` where the procedure carries no line numbers**, which is a legitimate answer and not a missing value; the column is never Null. |
