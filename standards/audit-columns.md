@@ -48,6 +48,10 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
   `ModifiedDate` / `ModifiedBy` are stamped by an **AFTER UPDATE trigger** on every subsequent
   change — *never by application code*, so audit stamping cannot be bypassed through any interface.
   `AccessTS` is the SQL Server `TIMESTAMP` (rowversion).
+- **Before attaching this stamping macro to a table, check whether the table already carries a
+  Before Change macro of its own** (from an earlier build, or hand-built) — see
+  `templates/_materialization.md`'s merge rule. Loading a fresh one without checking replaces
+  whatever was already there.
 - **Access (local tables):** stamped by a **Before Change data macro** on the table — the
   interface-independent equivalent of the SQL Server trigger (it fires no matter how the row is
   written: form, query, direct edit, VBA, import). A default alone can't do it: `CreatedBy` needs the

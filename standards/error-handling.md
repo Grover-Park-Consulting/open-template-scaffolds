@@ -260,6 +260,70 @@ every build, and check this by reading.
 
 **Reader: the AI assistant, and a shop replacing this file.**
 
+## Errors from a called procedure must reach whoever depends on the outcome
+
+**The standard handler shape — log, `Resume Cleanup`, return normally — is correct only for a
+procedure that is itself the end of the line:** an event procedure with no caller relying on its
+result, or a genuinely fire-and-forget call where nothing afterward is conditioned on whether it
+worked. The moment a procedure is called as **one step inside something larger** — where the
+caller's own next action depends on whether that step succeeded — the same pattern becomes a
+defect. The callee logs the failure and returns exactly as it would on success; the caller has no
+way to tell the two apart, and proceeds as if the step worked.
+
+**The test is simple: does the caller do anything, next, that depends on this call having
+succeeded?** If yes, the callee must propagate its error rather than swallow it. If nothing after
+the call is conditioned on it — a status message, a log entry, cleanup that runs either way — the
+standard pattern is fine exactly as written above.
+
+**A transaction commit is the sharpest case, not a separate one.** A procedure called from inside
+another procedure's transaction is a caller that depends on the outcome in the most literal sense:
+if the nested call fails and the standard pattern swallows it, the procedure that began the
+transaction has no way to learn that, and commits anyway. But the same hole opens any time A calls
+B to do something A's own next step relies on — a validation check, a value B was supposed to
+produce, a row B was supposed to insert — whether or not a transaction is involved.
+
+**The fix is where the errHandler stops, not what it does first.** A procedure meant to be called
+as a dependent step still cleans up its own local resources (close a recordset, release an object)
+in its errHandler, but instead of swallowing the error, it hands it back:
+
+```vba
+errHandler:
+240       Set rs = Nothing                                    ' local cleanup only
+250       Err.Raise Err.Number, Err.Source, Err.Description   ' propagate - do not log, do not swallow
+```
+
+The procedure whose next action depends on this one is the one that logs — and, if it began a
+transaction, rolls back, per the transaction guard above (`If bInTrans Then ws.Rollback`). Logging
+the same failure twice — once in the called procedure, once in the caller — is not a safeguard; it
+is two records of one event, and whoever reads the log afterward cannot tell that from two separate
+failures.
+
+**A procedure with no local cleanup to do needs no `errHandler` of its own here at all** — an
+unhandled error already propagates to its caller by VBA's own default behavior, so the block above
+is only needed where there is something to release first.
+
+### Recovering from one expected error and passing every other one on
+
+Sometimes a procedure whose caller depends on its outcome must recover from one specific, expected
+engine error (e.g. 3022, a duplicate key it means to treat as "already there") and let every other
+error still reach the caller. The conditions above can't express this on their own: reading
+`Err.Number` requires an `errHandler` to run at all, and passing an error on means `Err.Raise` from
+that handler — which skips `Cleanup:` by design, so this idiom does its own local cleanup explicitly
+rather than routing through it:
+
+```vba
+errHandler:
+240       If Err.Number = 3022 Then
+250           Set rs = Nothing
+260           Resume Next
+270       End If
+280       Set rs = Nothing
+290       Err.Raise Err.Number, Err.Source, Err.Description   ' anything else: propagate, unlogged
+```
+
+Only the error number named as expected is ever recovered from inline; every other error takes the
+propagate path above, unlogged, for the dependent caller to log and act on.
+
 ## What a conforming build looks like
 
 A build conforms to this file when every one of these is true of the code it produced. A practice
@@ -276,3 +340,6 @@ replacing this file replaces these conditions with its own.
 8. Where a transaction is used, the `Database` object every write inside it goes through was
    obtained from the same `Workspace` the transaction was begun on — never from `CurrentDb` — and no
    domain function is read inside the transaction.
+9. A procedure whose caller depends on its outcome propagates its errors to that caller, rather than
+   logging and returning normally — only a procedure with no caller depending on the outcome, or the
+   caller itself once it has the error, logs the failure (and rolls back, if it began a transaction).

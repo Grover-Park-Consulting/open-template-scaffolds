@@ -479,15 +479,53 @@ End Function
    with `LookUpRecord` carrying a `<WhereCondition>` inside its `<Data>`. A record created inside a
    `LookUpRecord` takes no alias, and its fields are then named with the table rather than an alias.
    `templates/audit/audit-logging-lite-scaffold.md` holds a working generator for all five events.
+7. **Every reference inside a `LookUpRecord`'s `WhereCondition` must be qualified with an explicit
+   table name, on both sides, always.** An unqualified reference to the *outer* row's own field
+   fails loudly, error **3890**. But where the same field name exists on **both** the outer table
+   and the looked-up table, an unqualified reference resolves **silently** to the looked-up table's
+   own column instead — no error, just a tautology (`OfficialID = OfficialID`), which can match an
+   arbitrary row and make a check pass when it should have failed. Qualify both sides even where the
+   unqualified form happens to resolve correctly today: `[tblOfficial].[OfficialID]=[tblGameOfficial].[OfficialID]`,
+   never `[tblOfficial].[OfficialID]=[OfficialID]`.
+8. **Inside a `LookUpRecord` or `CreateRecord`, the triggering row's own fields and `[Old]` are out
+   of scope.** Once inside one of these, the "current record" context becomes the looked-up or
+   created table — a direct reference to the outer row's own field, or to `[Old]`, fails with error
+   **3890**. Lift whatever's needed from the outer row into a local variable with `SetLocalVar`
+   *before* entering the `LookUpRecord`/`CreateRecord`, and reference that local variable inside it —
+   never the outer row's field directly. (Rule 7 above is the further, quieter case: even a
+   qualified-looking reference can still resolve to the wrong place if both sides of a
+   `WhereCondition` aren't pinned to a real table.)
+9. **`CreateRecord` is not supported from a Before Change event — it fails at run time with error
+   3873.** `BeforeChange` is for stamping and staging Long Text values only; anything that creates a
+   row belongs in `AfterInsert`, `AfterUpdate`, or `AfterDelete` instead.
+10. **A string literal in a `SetField` value must be quoted, or the expression engine reads it as an
+    identifier and fails silently.** No error reaches the caller — the failure surfaces only as an
+    entry in `USysApplicationLog`, a table Access creates only when a Data Macro fails at run time.
+    Its **absence** after a build is the only positive evidence nothing failed silently this way; its
+    presence is worth checking for even when every check reported passing.
 
-**Stamping on its own vs. stamping alongside change-auditing.** The `BuildAuditStampMacro` above is the
-proven form for a table that needs **only** the audit-column stamping — it emits one Before Change
-event and nothing else. The moment a table also needs After Insert/Update/Delete macros (for example
-`templates/audit/audit-logging-lite-scaffold.md`, which logs every field change), you cannot load the
-two separately: per rule 3 the second `LoadFromText` replaces the whole set, taking the first with it.
-Generate both jobs **together**, into one document, with the stamping actions and the
-change-auditing actions sharing the same `IsNull([Old].[<PK>])` branch. The audit-logging scaffold's
-`BuildBeforeChangeMacro` is the worked example.
+**Before attaching any Data Macro to a table, read what's already there — never generate one on the
+assumption the slot is empty.** A table's whole Data Macro set for one event lives in **one
+document** (rule 3): loading a new one the obvious way — build it, `LoadFromText` — **replaces the
+whole document**, silently taking out whatever was already attached. `standards/audit-columns.md`
+attaches a Before Change macro to every table it touches for stamping alone; a second template
+adding its own Before Change logic to the same table, built without checking first, deletes that
+stamping macro and nothing says so anywhere until `CreatedBy`/`ModifiedBy` stop updating.
+
+**Read the existing macro (`SaveAsText`, or the equivalent inspection) before writing a new one to
+the same event on the same table.** Where the existing logic and the new logic serve the same or a
+compatible purpose — the common case is stamping alongside a business-rule check, both keyed off
+the same `IsNull([Old].[<PK>])` INSERT/UPDATE branch — merge them into one document, both sets of
+actions inside the same branch, exactly as the audit-logging scaffold's own stamping-plus-change-log
+macro does (`BuildBeforeChangeMacro` is the worked example).
+
+**Where they don't obviously share a branch or a purpose, don't force the merge — ask.** Two Before
+Change macros that run different, unrelated checks in the same event may need a specific order, may
+conflict on what they each assume `[Old]` still means at that point, or one may be something the
+developer built by hand outside any template. Guessing how to interleave two macros that weren't
+designed together risks a merged document that runs but does the wrong thing — silently, per rule 7
+above. State what each one currently does, propose how they'd combine, and get the developer's
+answer before writing over the existing document.
 
 ### ACE rejects an aggregate subquery in an UPDATE's SET clause, and a self-referencing alias
 
