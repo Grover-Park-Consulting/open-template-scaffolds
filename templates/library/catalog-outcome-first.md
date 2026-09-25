@@ -3,7 +3,7 @@ template: library-catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
-version: 0.1.0
+version: 0.1.1
 status: draft
 implements: library-catalog-schema
 standards_layer:
@@ -121,6 +121,10 @@ out of it. Where your database is split into two files, copy both and keep them 
 1. **A new title gets a correct sort title.**
    - Add a new publication titled "The Great Gatsby"
    - Confirm the sort title reads "Great Gatsby" — the leading noise word removed
+   - **Where your noise-word list carries house-specific additions** (Step 5 under *Information
+     and conditions you need to supply*), repeat this with a title starting with one of those
+     additions too — "The Great Gatsby" only exercises the default three words, and a custom
+     addition that doesn't work would still pass this check as written otherwise
 2. **A title with no leading noise word is stored as itself.**
    - Add a new publication with a title that carries no leading article
    - Confirm the sort title matches the title exactly

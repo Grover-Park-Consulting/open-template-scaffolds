@@ -93,6 +93,13 @@ few controls carry their own caption (a check box) and some are hidden and need 
 delete a label they don't want, but the build must never silently omit one: better to remove a spare
 than to notice one is missing and add it.
 
+**On a continuous subform's detail row, this rule does not mean one label per row.** A continuous
+form repeats its detail section once per visible record, so a label placed in the detail section
+alongside its control repeats with it — the same caption printed on every row, which is not what
+"its own caption label" is asking for. Put the label once, in the **Form Header**, positioned above
+its column, the same way a datasheet's own column headings work; the detail section carries the
+data control alone, with no attached label of its own.
+
 ---
 
 ## 6. Named reusable patterns

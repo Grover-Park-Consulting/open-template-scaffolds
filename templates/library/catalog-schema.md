@@ -3,7 +3,7 @@ template: library-catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
-version: 0.4.0
+version: 0.4.2
 status: draft
 standards_layer:
   - audit-columns
@@ -33,8 +33,12 @@ house_assumptions:
 
 A **standalone catalog** for a non-circulating reference library: books and other publications,
 their creators and publishers, subject genres, and a physical shelf location. Unlike the Northwind
-stocktake template, this one **builds on nothing existing** — it is a complete, self-contained schema
-(no `extends`, no host tables).
+stocktake template, this one **builds on no existing database** — it is a complete, self-contained
+schema (no `extends`, no host tables). **That is a statement about the schema, not about the
+collection.** A library adopting this template usually has a real collection already — a spreadsheet,
+a card catalog, an informal list — and building these tables is the first step of migrating that
+collection in, not a genuinely greenfield start. Ask whether prior data exists before building; where
+it does, importing it is a build step this template doesn't script for you.
 
 The model is **title-centric**: one row per title, never per physical copy. Duplicate copies and
 multi-volume sets are both expressed through a count (`NumberOfVolumes`) disambiguated by a boolean
@@ -63,6 +67,11 @@ All ten tables below — three entities, two junctions, and five lookups — are
 end** and linked into each front end. The paired entry form (`library-catalog-publication-form`)
 and the record-finder code (`library-record-finder-scaffold`) live in the **front end** and reach
 these tables through those links.
+
+**If the file that will hold the audit-stamping macro's `AuditUser()` function has its VBA project
+locked (password-protected), confirm before building that a Data Macro can still call into it.**
+This template hasn't verified that live; check it on the actual host rather than assuming either
+answer, and record what you found.
 
 ## Entities
 
@@ -230,9 +239,13 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
 1. **One record per title** — the catalog is title-centric (see the declared house assumption). A
    title with multiple duplicate copies remains one row.
 2. **Sort title is auto-derived** — `PublicationSortTitle` is maintained automatically from
-   `PublicationTitle`: leading noise words (`The`, `A`, `An`, …) are stripped and the result stored
-   (truncated to 255). It is set when a record is created and refreshed whenever the title is edited;
-   it is system-maintained, not user-entered. *(The derivation mechanism is platform-specific — an
+   `PublicationTitle`: leading noise words (`The`, `A`, `An`, …) are **stripped**, not moved to the
+   end of the title. A more traditional library convention writes the article back in after a comma
+   (`Odyssey, The`) rather than dropping it; this template drops it because the sort field exists
+   only to sort correctly, and nothing here displays `PublicationSortTitle` to a reader. A practice
+   that wants the comma form for display purposes changes this rule. The result is stored (truncated
+   to 255). It is set when a record is created and refreshed whenever the title is edited; it is
+   system-maintained, not user-entered. *(The derivation mechanism is platform-specific — an
    Access data macro, a SQL Server trigger, or compute-on-write — and is supplied by the
    implementation / standards layer, not specified here.)*
 
@@ -250,7 +263,12 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
      **1 … NumberOfVolumes**, and `NumberOfVolumes` must be **≥ 2** (a set has more than one volume).
    - When `MultiVolumeSet = False`: `PublicationVolume` must be **Null**.
    - *(The companion UI behavior — enabling/disabling the `PublicationVolume` control by
-     `MultiVolumeSet` — is a form concern, deferred to a `form-spec` template.)*
+     `MultiVolumeSet` — is a form concern, deferred to a `form-spec` template.* **Disabling the
+     control is not the same as clearing it.** A record switched from a multi-volume set back to a
+     single item keeps whatever value was last entered in `PublicationVolume` unless the form
+     explicitly sets it to Null at that transition — the validation rule above then refuses the
+     save until the user notices and clears it by hand. The form must clear the field, not merely
+     disable it, when `MultiVolumeSet` becomes False.*)*
 4. **No duplicate creator or genre links** — enforced by the unique indexes on
    (`PublicationID`, `CreatorID`) and (`PublicationID`, `GenreID`).
 5. **Deleting a publication** cascades to its creator and genre links, never to the looked-up
@@ -291,6 +309,12 @@ library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`
 
 *Named optional extensions, none of them filled in for an engagement; the filled copy is saved to the developer's own
 library, not committed here.*
+
+**"Optional" describes this generic template, not necessarily the developer's own collection.**
+Where a library already has an existing collection to migrate in (see *Intent* above), check
+whether it already carries something named here as future work — role distinctions folded into a
+free-text author field, a per-copy accession number, existing loan records — before treating the
+option as greenfield. Migrating that data in is different work from adding the structure fresh.
 
 - **Per-copy holdings** — for libraries that *do* track individual physical copies: add a `tblHolding`
   entity (one row per copy: own catalog/accession number, condition, location, acquisition date),

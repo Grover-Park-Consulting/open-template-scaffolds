@@ -3,7 +3,7 @@ template: library-catalog-publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.4.0
+version: 0.4.1
 status: draft
 implements: library-catalog-schema
 record_source: qryPublication_frm
@@ -79,7 +79,13 @@ materialization step's job (a default stacked layout, not pixel-placed).
 
 ### Form Header — the layered record selector
 
-*(See Features for the behavior. The alpha selector is a reusable framework component, named here, not defined by this template.)*
+*(See Features for the behavior. The alpha selector is named here as a reusable framework
+component, not built by this template — but "reusable" needs confirming against the actual host,
+not assumed. A live build found a host's existing alpha selector hard-wired to another form's own
+control names, so it could not be dropped in unmodified; building an adapted copy for this form was
+real work `new_forms` doesn't account for. Where that turns out to be true here too, this template
+needs a fourth form, not the three `new_forms` declares — check before building, and say so in the
+build record if a fourth form was needed.)*
 
 | Control | Type | Bound to | Notes |
 |---|---|---|---|
@@ -155,7 +161,13 @@ materialization step's job (a default stacked layout, not pixel-placed).
 patterns; not baseline form features):*
 
 - **Cover image** — `imgCoverImage` / `lblNoImage` display `CoverImageLink` via the framework's
-  `DisplayImage`. Not every catalog has cover images.
+  `DisplayImage`. Not every catalog has cover images. **Confirm what `CoverImageLink` actually
+  stores before wiring it straight to `DisplayImage`.** A link sourced from a third-party API (see
+  the Google Books provenance noted in the schema's Parked section) can carry a query parameter
+  controlling image size or zoom level; passed to `DisplayImage` unchanged, it may not be the
+  parameter value this form actually wants. Where the host applies its own transform to a link like
+  this before display — a `Replace()` on a zoom parameter, for example — that transform has to run
+  here too, not be assumed unnecessary because the field already holds *a* URL.
 - **Audit display** — a per-record audit summary, the form-side surfacing of the `audit-columns`
   standard. Fully supported here; non-mandatory.
 
