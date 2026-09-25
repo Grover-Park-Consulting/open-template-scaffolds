@@ -3,7 +3,7 @@ template: library-record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.3.0
+version: 0.4.0
 status: draft
 implements: library-catalog-schema
 requires_tables:
@@ -183,6 +183,11 @@ Public Sub JumpFormToRecord(ByVal frm As Access.Form, ByVal lRecordID As Long)
     '            by rewriting the form's record-source WHERE server-side (only the wanted
     '            row is fetched). Uses RewriteWhere so a base query with no WHERE, or a
     '            multi-line one, is handled safely.
+    ' [SCAFFOLD] This assumes ONE owner for the base query it rewrites. Where the same saved
+    '            query is also rewritten from somewhere else - a "recently edited" list, a
+    '            related form - this is not a hypothetical to plan for later: it has actually
+    '            happened in a real build of this pattern (see "One owner for the base query"
+    '            under Parked). Check for other rewriters of the same query before building.
     Dim sWhere As String
 
     On Error GoTo errHandler
@@ -229,12 +234,34 @@ Private Function RewriteWhere(ByVal sBaseSQL As String, _
 End Function
 ```
 
+**Two limits on the `>>>` block above, neither one this function can detect on its own.**
+Normalizing whitespace and searching for the earliest `WHERE`/`GROUP BY`/`ORDER BY` both scan the
+whole SQL string as plain text, with no awareness of where a string literal starts or ends:
+
+- **A tab or embedded line break inside a string literal in the base query gets normalized to a
+  space along with everything else**, silently changing that literal's actual content. Rare in
+  practice — most base queries carry no such literal — but real where one does.
+- **A subquery in the base query's `FROM` clause that has its own `WHERE`/`GROUP BY`/`ORDER BY`
+  gets cut at that inner keyword**, not at the outer query's own clause boundary, truncating the
+  `FROM` clause mid-subquery and producing broken SQL.
+
+Both are a property of scanning as plain text rather than parsing SQL, and this function is
+deliberately the plain-text version — a real parser is more than this pattern needs for an ordinary
+base query. Where the base query carries either case, check it before building: a literal with
+embedded whitespace can usually be rewritten to avoid one, and a subquery-based record source is
+outside what `RewriteWhere` safely handles as written.
+
 ## Form wiring
 
 The engine is only useful wired to the form's events, and that is the point of the pattern: each
 handler becomes a **thin delegate** — no domain logic, so (per `error-handling.md`) **no `errHandler`
 and no line numbers**. Control names follow `form-conventions.md`; these are *not* part of
 `new_procedures` (they live on the form, not in `modRecordFinder`).
+
+**Six entry points touch the finder's state, not four.** The four below rebuild or act on the
+pick-list itself. Two more, already on the paired `form-spec`'s own standard button set, have to
+reset or release that state and are just as much a part of wiring the finder in as the other four —
+leaving them out is how a form ends up showing a stale selection or a stale `TempVar`:
 
 ```vba
 ' Category changed -> rebuild the list for the new category + the current letter.
@@ -261,13 +288,25 @@ End Sub
 Private Sub cboFinder_AfterUpdate()
     JumpFormToRecord Me, Nz(Me.cboFinder, 0)
 End Sub
+
+' New record started -> the finder's selection no longer reflects what's on screen; blank it
+' rather than leave the last-picked entry showing against a record that isn't it.
+Private Sub cmdNew_Click()
+    Me.cboFinder = Null
+End Sub
+
+' Form closing -> release the TempVar the A-Z picker rode in on, so it doesn't leak a stale
+' letter into the next time this form (or another one reading the same TempVar name) opens.
+Private Sub Form_Close()
+    TempVars.Remove "Alpha1stChar"
+End Sub
 ```
 
 ## Standards Layer
 
 - **Error handling** — the `errHandler`/`Cleanup` structure, the error-reporting call, and the
-  line-number policy come from `error-handling.md`, which ranks three options and says when each
-  fits. The `MsgBox` block shown is option 3, which needs nothing installed; a practice with its own
+  line-number policy come from `error-handling.md`, which ranks two options and says when each
+  fits. The `MsgBox` block shown is option 2, which needs nothing installed; a practice with its own
   logger substitutes it at the call site, and may number lines or not. The two pure helpers carry no
   handler by the same standard.
 - **Query style** — every `>>> ... per query-style.md <<<` marker is SQL written to the house query
@@ -292,7 +331,9 @@ library, not committed here.*
 - **Server-side vs. client-side jump** — `JumpFormToRecord` refetches a single row server-side (best
   for a large, linked back end). A small, local record set could instead use the form's `Filter` /
   `FilterOn`, keeping the full set loaded; the choice is the adopter's, by data volume.
-- **One owner for the base query** — `JumpFormToRecord` assumes a stable base record source. If the
-  same saved query is rewritten from more than one place, a single owner (or a pristine base kept
-  untouched) avoids surprises. In the source database this pattern came from, the same rewrite
-  primitive was shared by a "recently edited" list and a related form — improved in place there.
+- **One owner for the base query** — `JumpFormToRecord` assumes a stable base record source. **This
+  is not a hypothetical:** in the source database this pattern came from, the same rewrite primitive
+  was actually shared by a "recently edited" list and a related form — a live condition, not a future
+  one, checked for before this scaffold's own build and flagged where `JumpFormToRecord` is defined
+  above. What's still open is the fix a different engagement might prefer: a single owner, or a
+  pristine base record source kept untouched, rather than the improve-in-place approach taken there.
