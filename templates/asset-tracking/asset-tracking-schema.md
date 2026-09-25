@@ -3,7 +3,7 @@ template: school-district-asset-tracking-schema
 title: School District Capital Asset Tracking
 domain: asset-tracking
 type: table-schema
-version: 0.4.0
+version: 0.5.0
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
@@ -74,9 +74,9 @@ Grain: one row per physical capital asset.
 | `AcquisitionCost` | Currency | Required | Must exceed the district's capitalization threshold (Business Rule 1) |
 | `VendorName` | Text(255) | Nullable | See `house_assumptions` — plain text, no vendor entity |
 | `PurchaseOrderNumber` | Text(50) | Nullable | |
-| `DepreciationMethodID` | Long | FK → tlkpDepreciationMethod, Required | Straight-line by default; see `house_assumptions` |
-| `UsefulLifeYears` | Integer | Required | Drives the depreciation schedule |
-| `SalvageValue` | Currency | Required | Floor for computed book value; default 0 |
+| `DepreciationMethodID` | Long | FK → tlkpDepreciationMethod, Nullable | Straight-line by default; see `house_assumptions`. Null on a non-depreciating asset (Business Rule 4) |
+| `UsefulLifeYears` | Integer | Nullable | Drives the depreciation schedule. Required unless the asset's category is non-depreciating (Business Rule 4) |
+| `SalvageValue` | Currency | Required | Floor for computed book value; default 0. On a non-depreciating asset this equals `AcquisitionCost` (Business Rule 4) |
 | `WarrantyStartDate` | Date/Time | Nullable | |
 | `WarrantyExpirationDate` | Date/Time | Nullable | |
 | `AssetStatusID` | Long | FK → tlkpAssetStatus, Required | Active / under repair / surplus / missing / disposed |
@@ -133,8 +133,8 @@ Grain: one row per barcode scan recorded within an inventory-audit session.
 | `InventoryAuditSessionID` | Long | FK → tblInventoryAuditSession, Required | Owning session |
 | `ScannedBarcode` | Text(50) | Required | Raw scanned value, before resolution |
 | `AssetID` | Long | FK → tblAsset, Nullable | Resolved asset; null if the barcode matched nothing on file |
-| `ScanResultID` | Long | FK → tlkpScanResult, Required | Matched / unexpected / duplicate (Business Rule 6) |
-| `ScannedRoomID` | Long | FK → tblRoom, Nullable | Room the asset was physically found in; flags a misplaced asset when it differs from `tblAsset.RoomID` |
+| `ScanResultID` | Long | FK → tlkpScanResult, Required | Matched / unexpected / duplicate / unmatched (Business Rule 6) |
+| `ScannedRoomID` | Long | FK → tblRoom, Nullable | Room the asset was physically found in; flags a misplaced asset when it differs from `tblAsset.RoomID`. This is independent of `ScanResultID` and never competes with it for precedence — see Business Rule 6 |
 | `ScannedOn` | Date/Time | Required | |
 
 Indexes: PK on `InventoryAuditScanID`; FK indexes on `InventoryAuditSessionID`, `AssetID`.
@@ -194,16 +194,19 @@ Indexes: PK on `CustodianID`; FK index on `DepartmentID`.
 ### Lookup tables
 
 Trivial, uniform lookups (`<name>ID` + descriptor + `SortOrder`), grouped here per §4 of the
-canonical format — each row is still its own discrete table.
+canonical format — each row is still its own discrete table. **One exception:**
+`tlkpAssetCategory` carries a fourth field, `IsDepreciable` (Boolean, Required, default `True`) —
+some capital-asset categories, land being the standard example, do not depreciate at all, and
+without this flag there is no way to say so (Business Rule 4).
 
 | Table | Seed rows |
 |---|---|
-| `tlkpAssetCategory` | Computers; Vehicles; Land; Cameras; Furniture; HVAC Equipment; Network Equipment |
+| `tlkpAssetCategory` | Computers (`IsDepreciable` = True); Vehicles (True); Land (**False**); Cameras (True); Furniture (True); HVAC Equipment (True); Network Equipment (True) |
 | `tlkpAssetStatus` | Active; Under Repair; Surplus; Missing; Disposed |
 | `tlkpFundingSource` | General Fund; Bond Measure; Categorical/Grant; Donation |
 | `tlkpDepreciationMethod` | Straight-Line |
 | `tlkpHistoryChangeType` | Location; Custodian; Department; Funding Source; Status |
-| `tlkpScanResult` | Matched; Unexpected; Duplicate |
+| `tlkpScanResult` | Matched; Unexpected; Duplicate; Unmatched |
 
 ## Relationships
 
@@ -257,14 +260,34 @@ canonical format — each row is still its own discrete table.
    `AcquisitionDate`, `UsefulLifeYears`, and `SalvageValue` using the method named by
    `DepreciationMethodID`; it is floored at `SalvageValue` and frozen once `UsefulLifeYears` has
    elapsed. Only Straight-Line is seeded (see `house_assumptions`).
+
+   **A non-depreciating asset (its category's `IsDepreciable` = False, land being the standard
+   case) is exempt from the Required fields this rule otherwise needs.** `DepreciationMethodID`
+   and `UsefulLifeYears` stay Null, `SalvageValue` is set equal to `AcquisitionCost`, and
+   `CurrentBookValue` is `AcquisitionCost` for the life of the asset — never computed, never
+   floored, never frozen by elapsed years, because there is no schedule to run. Validate at save
+   time against the asset's own `AssetCategoryID`, not against a value the developer might type
+   directly into `UsefulLifeYears`: the category decides whether depreciation applies at all.
 5. **Disposal** — `DisposalDate` is required once `AssetStatusID` = Disposed. Disposed assets are
    retained, never deleted, so the audit history and any prior inventory-scan history stay intact.
 6. **Inventory verification** — an `tblInventoryAuditScan` row resolves `ScannedBarcode` to
    `AssetID`. `ScanResultID` = Matched when the asset is on file as expected at the session's
    site; Unexpected when the asset's on-file room belongs to a different site; Duplicate on a
-   repeat scan of the same barcode within the same session. Assets expected at a site (Active
-   status, `tblRoom.SiteID` = the session's `SiteID`) with no Matched scan in the session are
-   reportable as missing — this is a query against the session, not a stored flag.
+   repeat scan of the same barcode within the same session; **Unmatched when the barcode resolves
+   to no asset on file at all** — `AssetID` stays Null for that row, and the scan is held for
+   review rather than discarded, the same as any other unresolved scan in this library. Assets
+   expected at a site (Active status, `tblRoom.SiteID` = the session's `SiteID`) with no Matched
+   scan in the session are reportable as missing — this is a query against the session, not a
+   stored flag.
+
+   **"Misplaced" (`ScannedRoomID ≠ tblAsset.RoomID`) is a room-level detail, not a fourth site-level
+   category, and it never needs to be weighed against `ScanResultID` for precedence.** The two
+   answer different questions: `ScanResultID` says whether the asset is at the *site* it's supposed
+   to be at; `ScannedRoomID` vs. `RoomID` says whether it's in the *room* it's supposed to be in.
+   They can and do co-occur — a Matched scan (right site) can still be misplaced (wrong room within
+   that site), and an Unexpected scan (wrong site entirely) is misplaced by definition, since a room
+   at a different site can never equal the on-file `RoomID`. Report both; neither overrides the
+   other.
 7. **No unassigned assets** — `RoomID`, `DepartmentID`, `CustodianID`, and `FundingSourceID` are
    required on every asset; an asset is never on file without a location, owning department,
    accountable custodian, and funding source.
@@ -283,7 +306,7 @@ fourteen tables.
 | 2 | Every `Required` field on every table refuses a missing value; no `AllowZeroLength` fields are declared in this schema, so that half of the check doesn't apply here. |
 | 3 | Each declared unique index refuses its duplicate: `tblAsset.AssetBarcode`; `tblSite.SiteCode`; `tblRoom` on (`SiteID`, `RoomNumber`); `tblDepartment.DepartmentName`. |
 | 4 | Sample the seventeen relationships in `## Relationships` by their two declared behaviors, not one at a time: a **restrict** relationship (e.g. `tblRoom → tblAsset`) refuses deleting the parent while a child row exists; a **cascade** relationship (`tblAsset → tblAssetHistory`, `tblInventoryAuditSession → tblInventoryAuditScan`) deletes the children when the parent goes. Confirm at least one of each kind actually behaves as declared, not only that `validate` resolved the table names. |
-| 5 | Every seed row in the six lookup tables (`## Entities → Lookup tables`) is present exactly as listed — all seven `tlkpAssetCategory` rows, all five `tlkpAssetStatus` rows, and so on. |
+| 5 | Every seed row in the six lookup tables (`## Entities → Lookup tables`) is present exactly as listed — all seven `tlkpAssetCategory` rows, all five `tlkpAssetStatus` rows, and so on. Confirm `tlkpAssetCategory.IsDepreciable` specifically: `Land` is `False`, every other seeded row is `True`. |
 | 6 | The house audit columns (`AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn`, from the host's audit convention) stamp correctly on every `tbl`/`tlkp` table, per Standards Layer below. |
 | 7 | An insert on the child side of a **restrict** relationship (e.g. a `tblAsset` row citing a `RoomID` that doesn't exist) is refused — the same sample used for check 4, tested from the other direction. |
 | 8 | An insert with `AssetDescription`, `SiteName`, or another `Text(n)` field longer than its declared width is refused, not silently truncated — no field in this schema documents truncation as intended behavior. |

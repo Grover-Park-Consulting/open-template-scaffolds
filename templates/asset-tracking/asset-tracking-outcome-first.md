@@ -3,7 +3,7 @@ template: school-district-asset-tracking-outcome-first
 title: School District Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.1.1
+version: 0.2.0
 status: draft
 implements: school-district-asset-tracking-schema
 standards_layer:
@@ -23,14 +23,15 @@ house_assumptions:
     because seed order is not guaranteed to put any status at a particular ID, on this build or the
     next."
 warnings:
-  - This template attaches Data Macros to live tables (Business Rules 1 and 3). A build against a
-    database in real use is preceded by a backup copy of the file, and the developer is asked for one
-    before anything is changed.
+  - "This template attaches Data Macros to live tables (Business Rules 1 and 3), which is why backup
+    is item 3 under *Information and conditions you need to supply* rather than a separate ask —
+    surfacing this warning and asking that item are the same step, not two."
   - "A historical or legacy import — assets acquired years ago, under a threshold since raised — is
     refused by the capitalization check exactly as any other insert would be, because the check has
-    no way to tell a backdated record from a new purchase that falls short today. A bulk migration of
-    pre-existing assets needs a deliberate way around the check for that one import, arranged by the
-    developer. This template does not supply one; see *What the template does not do*."
+    no way to tell a backdated record from a new purchase that falls short today. This is item 5
+    under *Information and conditions you need to supply*; surfacing this warning and asking that
+    item are the same step, not two. This template does not supply a way around the check; see
+    *What the template does not do*."
 related:
   - "northwind-stocktake-scan-outcome-first — a similar process for a different purpose: reconciling
     a table of items against barcode scans. The purpose of stocktake-scan is to account for **sale
@@ -125,6 +126,14 @@ whatever screen carries it, and the schema's own text already names the conseque
 a second form somebody writes later — any of them can move the asset and leave the trail silently
 incomplete. For a district asset register, where the point of the trail is accountability, that gap is
 not an acceptable trade against the convenience of writing the logic in VBA instead.
+
+**This one must be an `AfterUpdate` Data Macro, not a `BeforeChange` one — unlike Business Rule 1's
+check.** Writing the history row needs `CreateRecord` against `tblAssetHistory`, and `CreateRecord`
+is not supported from a `BeforeChange` event; it fails at run time with error 3873
+(`templates/_materialization.md`, the Data Macro platform facts). Comparing old and new values to
+decide *whether* a row is owed works the same way in `AfterUpdate` as it would in `BeforeChange` —
+both see `[Old]` and the current row — so nothing about the comparison logic is lost by the
+different event; only the event itself has to change.
 
 ### Business Rule 4 — depreciation, computed not stored
 
@@ -308,8 +317,10 @@ based on the rules built into it. The template's promise holds either way.
   a table of unresolved scans. Both produce the same recorded result.
 - Names for any settings table or column the build adds, within whatever your naming rules already
   require.
-- Where the capitalization threshold is stored, so long as it is read at the moment of each check
-  rather than baked in as a literal.
+- **Where** the capitalization threshold is stored — the storage location is the free choice here.
+  **That it is read live at the moment of each check, never baked in as a literal, is not a choice**
+  — that part is the declared house assumption above, restated here only as the constraint on the
+  free part, not reopened.
 - The wording of everything the developer sees.
 - Whether the build reports in message boxes, as returned text, or both.
 - How the code is laid out and commented, within whatever your standards already require.
@@ -432,7 +443,9 @@ there.
   through the interactive selection control where the answer is a choice and as a question phrased in
   plain language where it is a name. Two of them are gates: a database in real use with no backup
   stops the build, and permission to change the tables is asked immediately before anything is
-  changed.
+  changed. **Items 3 and 5 are also this template's two front-matter warnings** — asking those items
+  satisfies the instruction elsewhere to surface every `warnings` entry; do not additionally surface
+  them as a separate step before the numbered list, which would ask the same thing twice.
 - **After the sixth thing and before you present the design, offer the `Explore options` step**
   (`_template-schema.md` §12.5) over the list under *Free to choose alternatives*, and nothing outside
   it. The two named Data Macro mechanisms are not on that list and are never offered an alternative. A
