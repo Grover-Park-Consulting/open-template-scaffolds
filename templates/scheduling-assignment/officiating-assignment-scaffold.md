@@ -3,7 +3,7 @@ template: sports-officiating-assignment-scaffold
 title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.8.0
+version: 0.9.0
 status: draft
 implements: sports-officiating-assignment-schema
 requires_tables:
@@ -30,6 +30,7 @@ new_procedures:
   - OfficialAge
   - EnsurePhotoFolder
   - SetOfficialPhoto
+  - ListOpenObjects
 warnings:
   - "This build's active-official check (Business Rule 3, inside ValidateAssignment) only covers
     assignments made through AssignOfficial. An assignment inserted directly into tblGameOfficial, or
@@ -162,13 +163,18 @@ the two that is validation. So a build has passed when it has passed those check
 saying validation passed means those checks and no others — name the list you ran, so the developer
 can see which one it was.
 
-Three things follow from this being procedure skeletons rather than an open route.
+Four things follow from this being procedure skeletons rather than an open route.
 
 - **Run `EnsureGameValidationRule` before checks 3, 4, 8, 9 and 10.** All five test a game-level rule
   "whatever route you use," one of them through an append or import query — and nothing in VBA
   reaches a save made that way. The table-level Validation Rule does, which is what that procedure
   puts in place. It is a one-time setup call rather than part of the assignment path, so a build that
   never runs it fails all five at once with the wrong cause attached to each.
+
+- **Close everything before running `EnsureGameValidationRule`, and confirm `ListOpenObjects` reports
+  it clean if it stops you.** Altering `tblGame` needs the table to itself; something left open fails
+  with the engine's own error 3420, which names nothing about what is open. `ListOpenObjects` exists
+  to name it instead — run it yourself if the procedure stops, rather than guessing what to close.
 
 - **Drive checks 1 and 2 through `AssignOfficial`, not by inserting rows into `tblGameOfficial`.** An
   insert made directly bypasses `ValidateAssignment`, which on this route is the whole of what those
@@ -359,9 +365,22 @@ Public Sub EnsureGameValidationRule()
     ' [SCAFFOLD] Attach the row-level Validation Rule enforcing Business Rules 4 and 7 to
     '            tblGame. Run once, after the schema's tables are built; safe to run again -
     '            it overwrites the same text rather than layering a second copy.
-    Dim tdf As DAO.TableDef
+    ' [SCAFFOLD] Setting tdf.ValidationRule needs tblGame to itself, the same as any DAO
+    '            table alter - a bound form, an open datasheet, or a query holding it open
+    '            all refuse this with error 3420, which names nothing about what is open.
+    '            Check first and name it, rather than let the engine's own uninformative
+    '            error be the first thing the developer sees.
+    Dim tdf   As DAO.TableDef
+    Dim sOpen As String
 
     On Error GoTo errHandler
+
+    sOpen = ListOpenObjects()
+    If Len(sOpen) > 0 Then
+        MsgBox "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
+               sOpen & vbCrLf & "Close it and run this again.", vbExclamation
+        Exit Sub
+    End If
 
     Set tdf = CurrentDb.TableDefs("tblGame")
 
@@ -383,6 +402,58 @@ errHandler:
     Resume Cleanup
     Resume
 End Sub
+```
+
+### ListOpenObjects — `Public Function` → `String`
+
+**Names everything open in this database, and returns an empty string when nothing is.**
+`EnsureGameValidationRule` needs `tblGame` to itself to alter it, and Access refuses that while
+anything is using the table — a bound form being the usual cause, and one that never names the
+table it uses. This turns that prerequisite into something the code can check and report by name,
+rather than something a developer meets as error 3420 with no idea what to close.
+
+```vba
+Public Function ListOpenObjects() As String
+    ' [SCAFFOLD] Recognition only. Returns "" when nothing in this database is open, and
+    '            otherwise one indented line per open object for a caller to print.
+    '            Access's own tables are skipped: AllTables lists them, they are never this
+    '            system's business, and an open one is not something a developer would be
+    '            asked to close.
+    '            No errHandler and therefore no line numbers: an object that cannot be asked
+    '            is reported as not open, and the caller stops on whatever else it finds.
+    Dim obj   As Object
+    Dim sList As String
+
+    sList = ""
+
+    On Error Resume Next
+
+    For Each obj In CurrentProject.AllForms
+        If obj.IsLoaded Then sList = sList & "  Form: " & obj.Name & vbCrLf
+    Next obj
+
+    For Each obj In CurrentProject.AllReports
+        If obj.IsLoaded Then sList = sList & "  Report: " & obj.Name & vbCrLf
+    Next obj
+
+    For Each obj In CurrentData.AllTables
+        If Left$(obj.Name, 4) <> "MSys" Then
+            If SysCmd(acSysCmdGetObjectState, acTable, obj.Name) <> 0 Then
+                sList = sList & "  Table: " & obj.Name & vbCrLf
+            End If
+        End If
+    Next obj
+
+    For Each obj In CurrentData.AllQueries
+        If SysCmd(acSysCmdGetObjectState, acQuery, obj.Name) <> 0 Then
+            sList = sList & "  Query: " & obj.Name & vbCrLf
+        End If
+    Next obj
+
+    On Error GoTo 0
+
+    ListOpenObjects = sList
+End Function
 ```
 
 ### GameLevelID — `Public Function` → `Long`
