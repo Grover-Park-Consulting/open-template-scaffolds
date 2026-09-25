@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.7.0
+version: 0.8.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -85,13 +85,19 @@ must confirm these exist and wire the new tables to them:
 > products that ship in packages, how many units a package holds. Northwind Dev has neither out of
 > the box, so **building this template creates them:**
 >
-> - `SKUBarCode` — Short Text, 50 characters, optional, with an index on it
+> - `SKUBarCode` — Short Text, 50 characters, optional, with a **unique** index on it
 > - `QuantityInPackage` — Long, optional
 >
 > **The index is the point of the Short Text field.** Every scan resolves a code by looking it up in
 > this field, which makes it the most frequently read field in the whole design, and a field Access
 > cannot index makes every one of those lookups read the entire product list. A barcode is short —
 > 50 characters is generous for one — so keeping the field small enough to index gives nothing up.
+>
+> **The index must be unique, not merely present.** A barcode identifies one product; without a
+> unique index, two products could carry the same code and scan resolution would silently pick
+> whichever one its query happens to return first, with nothing refusing the second product's value
+> or flagging the collision. Access permits any number of Nulls in a unique index, so this does not
+> conflict with the field staying optional.
 >
 > **If you have already added your own barcode or package-quantity field, say so** — possibly under
 > different names, which the design then uses instead of creating new ones. The one thing the design
@@ -106,7 +112,7 @@ must confirm these exist and wire the new tables to them:
 | Existing object | Used as | Notes |
 |---|---|---|
 | `Products.ProductID` (AutoNumber PK) | Parent of every count line | The primary connection (graft) point |
-| `Products.SKUBarCode` (Short Text, 50, indexed) | Scan-resolution target | A scanned code is matched against this to resolve `ProductID`. **Created by this template where the host doesn't already have it** — see the note above. The index is required rather than an optimization: scan resolution is the most frequent read in the design |
+| `Products.SKUBarCode` (Short Text, 50, unique index) | Scan-resolution target | A scanned code is matched against this to resolve `ProductID`. **Created by this template where the host doesn't already have it** — see the note above. The index is required rather than an optimization: scan resolution is the most frequent read in the design, and uniqueness is required so a code never resolves to more than one product |
 | `Products.QuantityInPackage` (Long) | Package-scan multiplier | When a package barcode is scanned, units added = `QuantityInPackage` (see Business Rules). **Created by this template where the host doesn't already have it** |
 | `Employees.EmployeeID` (AutoNumber PK) | Who conducted the session | `StockTakeSession.ConductedByEmployeeID` FK |
 | `SystemSettings` (key/value) | Default allowable variance rates | Seed rows `DefaultAllowableShortageRate` and `DefaultAllowableOverageRate`; both follow the host `[percent*1000]` convention used by `TaxRate` (e.g. `"50"` = 0.05 = 5%). Per-product values in `ProductVarianceAllowance` override either one independently. |
@@ -144,7 +150,7 @@ product, regardless of which method produced it.
 | `StockTakeCountID` | AutoNumber | PK | Surrogate key for the count line |
 | `StockTakeSessionID` | Long | FK → StockTakeSession, Required | Owning stocktake event |
 | `ProductID` | Long | FK → Products, Required | Product being counted (hook into existing `Products`) |
-| `StockTakeCountMethodID` | Long | FK → StockTakeCountMethod, Required | How this line was counted (Manual / Scan) |
+| `StockTakeCountMethodID` | Long | FK → StockTakeCountMethod, Required | How this line was counted (Manual / Scan) — `Pending` at baseline creation, before either has happened (Business Rule 5) |
 | `ExpectedQuantity` | Long | Nullable | System on-hand snapshotted when the session opened |
 | `CountedQuantity` | Long | Nullable | The counted result. Manual: entered directly. Scan: maintained as `SUM(StockTakeScan.ScanQuantity)` for this line |
 | `RemediationStatusID` | Long | FK → RemediationStatus, Required | Outcome of the variance reality check; defaults to None. Set to Flagged when the shortfall or the overage exceeds its effective allowable rate (logic in the coding section). Does not record which direction tripped it — see Business Rule 8 |
@@ -192,7 +198,7 @@ Indexes: PK on `ProductID` (also the FK to `Products`).
 | Table | Rows (seed) |
 |---|---|
 | `StockTakeStatus` | Open; In Progress; Counted; Reconciled; Closed |
-| `StockTakeCountMethod` | Manual; Scan |
+| `StockTakeCountMethod` | Pending; Manual; Scan |
 | `ScanStatus` | Valid; Unmatched; Duplicate |
 | `RemediationStatus` | None; Flagged; Under Review; Resolved |
 
@@ -226,6 +232,16 @@ Hooks into existing Northwind schema:
    not discarded. Unmatched codes are stored with `ScanStatusID = Unmatched` and no `StockTakeCountID`
    resolution (held for review) — the duplicate check does not apply to them, since they never reach a
    count line.
+
+   **The window measures against the nearest existing scan, including one already marked
+   `Duplicate`, not against the original `Valid` scan that started the chain.** A steady drip of
+   scans on the same product and quantity, each arriving just inside the window of the one before
+   it, therefore stays one count for as long as the drip continues — the window never re-anchors to
+   when counting on that item actually began. This is accepted as-is: it protects against the
+   scenario the rule exists for (an accidental double-scan seconds apart) and a real chain of scans
+   that slow is unusual enough in practice not to warrant comparing against every prior scan instead
+   of the nearest one. A practice that wants the window anchored to the first `Valid` scan instead
+   changes this rule.
 3. **Rollup** — for scanned lines, `StockTakeCount.CountedQuantity = SUM(ScanQuantity)` across
    the line's scans **where `ScanStatusID = Valid`**, maintained as scans are added or removed. A scan
    marked `Duplicate` (Business Rule 2) is never counted twice.
@@ -244,6 +260,11 @@ Hooks into existing Northwind schema:
    line for every product the session covers**, each one carrying `ExpectedQuantity` snapshotted from
    the system's computed on-hand at that moment. Variance is then measured against a baseline that is
    fixed for the life of the session and does not move as stock transactions carry on around it.
+   **`StockTakeCountMethodID` is `Pending` on a baseline line** — `StockTakeCountMethod` is
+   Required, and at the moment a baseline line is created neither a manual entry nor a scan has
+   happened yet for that product, so neither existing value is true. The first thing that actually
+   counts the product — a manual entry or the first scan resolving to it — updates the line to
+   `Manual` or `Scan` at that point.
 
    **Creating those lines when the session opens, rather than as scans arrive, is what this rule is
    for.** A stocktake exists to find the difference between what the system believes is on hand and
@@ -287,6 +308,14 @@ Hooks into existing Northwind schema:
    (declared in `house_assumptions`). Shortfall = damage, misplacement, or theft; overage = a
    receiving, return, or count error that inflated the figure.
 
+   **This automatic evaluation only ever sets `None` or `Flagged`, and only where the line's
+   current status is already one of those two.** `Under Review` and `Resolved` are a reviewer's own
+   decision, made by a human outside this rule; a later scan against the same product (a recount,
+   or a late duplicate resolving) re-runs this evaluation, and without this guard would silently
+   revert that decision back to `Flagged` or `None` the moment the comparison above still holds or
+   stops holding. Leave `Under Review` and `Resolved` alone — the reviewer, not a recount, is what
+   moves a line off them.
+
    **Why quantities, not the shortfall/overage fraction used in earlier drafts of this rule.** The
    natural way to state a tolerance is as a percentage — "flag a shortfall over 5% of what was
    expected" — which reads as *fraction exceeds rate*: `(ExpectedQuantity − CountedQuantity) /
@@ -329,7 +358,7 @@ new tables, plus the two fields it grafts onto the existing `Products` table (ch
 | 4 | `StockTakeSession → StockTakeCount` and `StockTakeCount → StockTakeScan` cascade-delete as declared. `Products → StockTakeCount` does **not** — deleting a product with count history is refused, never silently dropping the history — and `Products → ProductVarianceAllowance` **does** cascade, removing the tolerance row when its product goes. Confirm both the cascading and the non-cascading case directly; they sit on opposite sides of the same host table. |
 | 5 | The three `SystemSettings` seed rows (`DefaultAllowableShortageRate`, `DefaultAllowableOverageRate`, `DuplicateScanWindowSeconds`) are present with their specified values, in the host's existing `[percent*1000]`/plain-integer conventions as documented. |
 | 6 | The house audit columns (`AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn`, per the Northwind data-macro pattern) stamp correctly on every new table, per Standards Layer below. |
-| 7 | **Graft-specific, not part of the generic baseline:** `Products.SKUBarCode` and `Products.QuantityInPackage` exist (created fresh, or confirmed against fields the developer already had), `SKUBarCode` carries its index, and — where the host is split — every front end's linked-table definition of `Products` was refreshed and shows both new fields. A front end that wasn't relinked is the specific, silent failure this template's own Prerequisites section warns about: code referencing either field fails with "item not found in this collection." |
+| 7 | **Graft-specific, not part of the generic baseline:** `Products.SKUBarCode` and `Products.QuantityInPackage` exist (created fresh, or confirmed against fields the developer already had), `SKUBarCode` carries its index and the index is **unique** — inserting or updating a second product to the same barcode as an existing one is refused — and, where the host is split, every front end's linked-table definition of `Products` was refreshed and shows both new fields. A front end that wasn't relinked is the specific, silent failure this template's own Prerequisites section warns about: code referencing either field fails with "item not found in this collection." |
 | 8 | A `StockTakeCount` insert citing a `StockTakeSessionID` or `ProductID` that doesn't exist is refused; likewise a `StockTakeScan` insert citing a `StockTakeCountID` that doesn't exist. |
 | 9 | An insert with `ScanCode` or another `Text(n)` field longer than its declared width is refused, not silently truncated. |
 | 10 | `Description` is present on every field of every new table, matching this template's own Purpose & rules text — and on `Products.SKUBarCode`/`QuantityInPackage`, where the two grafted fields carry their own descriptions. |

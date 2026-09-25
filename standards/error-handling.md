@@ -140,7 +140,9 @@ error logger doesn't also report to the user today, either add that to it or inc
 the user in the error handler beside the call to the error logger.
 
 If you do swap the error logger, be careful to replace only that part of the error handler. It still
-needs **capture `Erl`, report, `Resume Cleanup`** and **`Resume`**.
+needs **capture `Erl`, report, `Resume Cleanup`** and **`Resume`**. If your logger's own signature
+has nowhere to put `Erl`, working that in is yours to decide — this file deliberately doesn't
+prescribe it.
 
 ### Which one to use — and who decides
 
@@ -231,6 +233,10 @@ End Sub
 
 ## Resume chain
 
+This is the **reporting shape** — capture `Erl`, report, `Resume Cleanup`, `Resume` — used by a
+procedure that is itself the end of the line (see "What a conforming build looks like" for the
+other named shape, the propagating one).
+
 After the handler call: always `Resume Cleanup`, then `Resume`. The trailing `Resume` lets the
 debugger step back to the error line during diagnosis.
 
@@ -310,7 +316,9 @@ produce, a row B was supposed to insert — whether or not a transaction is invo
 
 **The fix is where the errHandler stops, not what it does first.** A procedure meant to be called
 as a dependent step still cleans up its own local resources (close a recordset, release an object)
-in its errHandler, but instead of swallowing the error, it hands it back:
+in its errHandler, but instead of swallowing the error, it hands it back. This is the
+**propagating shape** — local cleanup only, then `Err.Raise`, no `Erl` capture and no report — the
+second of the two shapes named in "What a conforming build looks like":
 
 ```vba
 errHandler:
@@ -358,7 +366,12 @@ replacing this file replaces these conditions with its own.
 1. Labels are spelled exactly `errHandler:` and `Cleanup:`.
 2. Every procedure with an `errHandler:` block reaches it from `On Error GoTo errHandler` as its
    first executable line.
-3. Every `errHandler:` block captures `Erl`, reports, then `Resume Cleanup`, then `Resume`.
+3. Every `errHandler:` block follows one of two named shapes, never a mix of the two: the
+   **reporting shape** — capture `Erl`, report, `Resume Cleanup`, then `Resume` — for a procedure
+   that is itself the end of the line; or the **propagating shape** — local cleanup only, then
+   `Err.Raise Err.Number, Err.Source, Err.Description`, no `Erl` capture and no report — for a
+   procedure whose caller depends on the outcome (see "Errors from a called procedure must reach
+   whoever depends on the outcome").
 4. No procedure with an `errHandler:` block exits by a route that skips `Cleanup:`.
 5. `On Error Resume Next` appears only inside a `Cleanup:` block and inside the logger.
 6. Every procedure with an `errHandler:` block is line-numbered; every procedure without one is not.

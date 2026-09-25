@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.8.0
+version: 0.9.0
 status: draft
 implements: error-logging-schema
 requires_tables:
@@ -143,8 +143,9 @@ whether you want to answer them at all. Each one changes what the generated code
 all six are used and nothing further is asked. State them before acting on them.
 
 **Before step 1**, surface the two build-wide warnings from this template's front-matter: VBA does
-not run outside a Trusted Location, and every file that runs code needs its own copy of this
-module. The other warnings belong to individual steps and appear there.
+not run outside a Trusted Location, and `LogError` is written so that no error inside it can ever
+escape into the handler that called it. The other warnings belong to individual steps and appear
+there.
 
 ### Step 1 — Do you want error handling and logging?
 
@@ -225,8 +226,9 @@ for a one-off utility; not reasonable for anything someone else depends on.
 | `A text file` | Errors are appended as lines of text to an external file. |
 | `The table, falling back to the text file` | Uses the table, and writes to the file when the table cannot be reached. |
 
-**Preferred:** `A table in this database` — this template's own; the standards layer settles the
-*shape* of a handler, not where its logger writes.
+**Preferred:** `The table, falling back to the text file` — a table alone cannot record the one
+error you would most want kept (the back end being unreachable), and the standards layer settles
+the *shape* of a handler, not where its logger writes.
 
 **Skip when:** Step 1 was answered "No", or Step 2 chose the message box — neither records
 anything.
@@ -494,19 +496,19 @@ Public Sub LogError(ByVal sModule As String, _
 
     ' [WIZARD Step 3 - where errors are recorded] >>> keep ONE of the three blocks <<<
 
-    ' --- "A table in this database" (preferred) ---
-    bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sModule, sProcedure, _
-                                  lLine, lLogID)
+    ' --- "A table in this database" ---
+    ' bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sModule, sProcedure, _
+    '                               lLine, lLogID)
 
     ' --- "A text file" ---
     ' bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sModule, sProcedure, lLine)
 
-    ' --- "The table, falling back to the text file" ---
-    ' bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sModule, sProcedure, _
-    '                               lLine, lLogID)
-    ' If Not bRecorded Then
-    '     bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sModule, sProcedure, lLine)
-    ' End If
+    ' --- "The table, falling back to the text file" (preferred) ---
+    bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sModule, sProcedure, _
+                                  lLine, lLogID)
+    If Not bRecorded Then
+        bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sModule, sProcedure, lLine)
+    End If
 
     ShowErrorToUser lErrNumber, sErrDescription, sModule, sProcedure, lLine, lLogID, bRecorded
 End Sub

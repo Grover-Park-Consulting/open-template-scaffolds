@@ -513,6 +513,13 @@ End Function
     entry in `USysApplicationLog`, a table Access creates only when a Data Macro fails at run time.
     Its **absence** after a build is the only positive evidence nothing failed silently this way; its
     presence is worth checking for even when every check reported passing.
+11. **A malformed Data Macro can pass both `LoadFromText` and a manual import with no warning, and
+    fail only at run time.** Neither route validates the macro's structure at load time; a bad one
+    loads clean and then fails when it actually runs, with error **3952** ("AXL definition was
+    invalid"). Don't take a clean import as proof the macro is well-formed — run it, or run the
+    build's own validation checklist, before treating the load as done.
+12. **`RaiseError`'s arguments are named `Number` and `Description`.**
+13. **`SetLocalVar`'s arguments are named `Name` and `Value`.**
 
 **Before attaching any Data Macro to a table, read what's already there — never generate one on the
 assumption the slot is empty.** A table's whole Data Macro set for one event lives in **one
@@ -694,7 +701,7 @@ transaction per unit of work can break unchanged when the transaction is widened
 because reads that previously saw only committed rows now sit inside the transaction that wrote them.
 Re-ask the question at every call site whenever a transaction's scope changes.
 
-### VBA code import — an import path can corrupt XML entities, in either direction
+### VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions
 
 Proven by two real failures, on the same kind of code, corrupted opposite ways.
 
@@ -715,12 +722,15 @@ a space inserted, as `& amp;`. Caught by reading the module back and fixed by re
 versions of the same server, so treat the direction as unpredictable rather than as a property of a
 particular route. The fix below covers both.
 
-**The rule this proves:** any scaffold whose VBA assembles XML (or HTML) containing escaped
-entities must build those entities from character codes at runtime — `Chr(38) & "lt;" & Chr(38) &
-"gt;"` for `&lt;&gt;`, for example — never write the escape sequence as literal text in the
-module's source. A `Chr(38)`-built entity exists only in memory as the string `&lt;&gt;`; it is
-never present as literal text for an importer to re-interpret. See
-`templates/audit/audit-logging-lite-scaffold.md`'s `GetComparisonExpression` for the worked fix.
+**The rule this proves:** any scaffold whose VBA assembles Data Macro XML containing a comparison
+expression — `<`, `>`, or `&` as literal content, as in `[Old].[Field]<[New].[Field]` — must build
+those entities from character codes at runtime — `Chr(38) & "lt;" & Chr(38) & "gt;"` for `&lt;&gt;`,
+for example — never write the escape sequence as literal text in the module's source. A
+`Chr(38)`-built entity exists only in memory as the string `&lt;&gt;`; it is never present as
+literal text for an importer to re-interpret. A Data Macro that only stamps fields — `SetField`,
+`LookUpRecord`, no comparison operators — never puts `<` or `>` into its XML as literal content and
+this rule doesn't apply to it. See `templates/audit/audit-logging-lite-scaffold.md`'s
+`GetComparisonExpression` for the worked fix.
 
 **The build route is asked, never assumed.** Where an Access MCP server is connected, say you have
 it and ask — `CLAUDE.md` → "After approval — building it" carries the question, and its preferred
@@ -739,10 +749,10 @@ developer asks for the code knowing nothing has executed it, it goes to them hea
 and what happens when nobody chooses, and only the first is true here (`_template-schema.md` §10.7).*
 
 The entity corruption above is a reason to **check the imported source** where a scaffold warns about
-it, and never a reason to steer away from building through the server. A scaffold that emits escaped
-XML should assemble entities from `Chr()` codes regardless, as a second line of defence — and that
-matters more now than when this was first written, because there is no longer another route to fall
-back on when it bites.
+it, and never a reason to steer away from building through the server. A scaffold whose Data Macro
+XML contains a comparison expression should assemble entities from `Chr()` codes regardless, as a
+second line of defence — and that matters more now than when this was first written, because there
+is no longer another route to fall back on when it bites.
 
 ### Opening a host database that has a startup routine — it can block, and it is not a dropped connection
 

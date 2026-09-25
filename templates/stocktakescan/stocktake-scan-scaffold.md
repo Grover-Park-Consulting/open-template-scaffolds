@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-scaffold
 title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.9.0
+version: 0.10.0
 status: draft
 extends: Northwind (Access Developer Edition)
 implements: northwind-stocktake-schema
@@ -195,15 +195,16 @@ Seven things follow from this being procedure skeletons rather than an open rout
   engagement decides there are no package barcodes at all, check 5 has no input to run against, and
   its entry records that decision and names whose it was.
 
-- **Confirm a raised error reaches the logger at every frame it passes through, as a fourteenth
-  entry.** The `errHandler` block sits in every procedure by design, so an error raised deep in the
-  call chain should be logged by the procedure that raised it *and* by every procedure it passes
-  through on the way out, and leave no scan row behind. **Raise one deliberately rather than waiting
-  for one:** calling `ProcessScan` with a `StockTakeSessionID` that does not exist makes the count-line
-  insert violate referential integrity, which raises from inside `EnsureCountLine` — three frames of
-  log entries for the one error, and a scan count unchanged before and after. This is this route's own
-  behaviour rather than anything the outcome-first list promises, so it is recorded after the
-  thirteen, not folded into them. Adding to that list is allowed; substituting for it is not.
+- **Check 14 ("a scan that fails partway through leaves nothing behind") also confirms a raised
+  error reaches the logger at every frame it passes through.** The `errHandler` block sits in every
+  procedure by design, so an error raised deep in the call chain should be logged by the procedure
+  that raised it *and* by every procedure it passes through on the way out, and leave no scan row
+  behind. **Raise one deliberately rather than waiting for one:** calling `ProcessScan` with a
+  `StockTakeSessionID` that does not exist makes the count-line insert violate referential
+  integrity, which raises from inside `EnsureCountLine` — three frames of log entries for the one
+  error, and a scan count unchanged before and after. The multi-frame logging is this route's own
+  behaviour rather than anything the outcome-first list promises, so record it as part of running
+  check 14, not as a separate entry — the list itself stays the fourteen it already is.
 
 ## Procedures
 
@@ -252,7 +253,9 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     ' [BUSINESS LOGIC #5] TWO: create one StockTakeCount line for every product the session covers —
     '            by default every product not marked discontinued — each carrying
     '            ExpectedQuantity = the host's computed on-hand for that product AT THIS MOMENT,
-    '            CountedQuantity = 0, count method = Scan, RemediationStatusID = None.
+    '            CountedQuantity = 0, count method = Pending (neither a manual entry nor a scan has
+    '            happened for this product yet — see the table template's Business Rule 5),
+    '            RemediationStatusID = None.
     '            The whole point of the rule is that this happens once, here. Taking the figure
     '            later, as each scan arrives, measures every product against a different moment and
     '            leaves an unscanned product with no line at all.
@@ -346,8 +349,13 @@ errHandler:
     ' [STANDARDS — error-handling.md] error reporting comes from the standards layer, plus the
     '            transaction guard's own rollback: a scan that failed partway through must not leave
     '            a scan row, a rollup, or a flag written without the other two.
+    ' [BUSINESS LOGIC — error-logging-outcome-first.md, "How this is built"] Option 2 (a message
+    '            box) is not available in this procedure: nothing in the scanning path may interrupt
+    '            a counter mid-scan with something they cannot act on. Option 1 (LogError) is the
+    '            only choice here — where it is not yet installed, build error-logging-scaffold.md
+    '            first rather than falling back to a message box in ProcessScan.
     If bInTrans Then ws.Rollback: bInTrans = False
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    LogError MODULE_NAME, PROC_NAME, Erl
     Resume Cleanup
     Resume
 End Sub
@@ -374,6 +382,11 @@ Private Function ResolveScanCode(ByVal sScanCode As String) As Long
     Dim sSql As String
 
     On Error GoTo errHandler
+    ' [STANDARDS — error-handling.md, "Transaction guard"] CurrentDb is fine here, unlike every
+    '            other read/write in this scaffold: ProcessScan's transaction never writes to
+    '            Products, so there is no uncommitted work on this table for a separate connection
+    '            to miss. Pass db in instead if a build ever adds a write against Products inside
+    '            the same transaction.
     Set db = CurrentDb
 
     ' [BUSINESS LOGIC #2] match sScanCode against Products.SKUBarCode
@@ -507,7 +520,13 @@ Private Function RecordScan(ByVal lCountID As Long, _
         lScanStatusID = scanStatusValid
     End If
 
-    ' [BUSINESS LOGIC #4] a package scan adds Products.QuantityInPackage; a unit scan adds 1.
+    ' [BUSINESS LOGIC #4] Business Rule 4: a package scan adds Products.QuantityInPackage; a unit
+    '            scan adds 1. This signature has no parameter telling RecordScan which case applies
+    '            — lScanQuantity is the caller-supplied scan quantity, not a package/unit flag — so
+    '            the rule as stated cannot be delivered from this code alone. How a scan is known to
+    '            be a package vs. a unit is parked (see "Validating the build," check 5, and
+    '            "Package-vs-unit disambiguation" below); settle it with the developer and extend
+    '            this signature (or resolve it inside the function) before writing the insert.
     '            ScannedOn = Now(); ScanStatusID = lScanStatusID.
     ' >>> insert the scan row, per query-style.md; set RecordScan = new StockTakeScanID <<<
 
@@ -534,6 +553,11 @@ Private Sub RefreshCountRollup(ByVal lCountID As Long, ByVal db As DAO.Database)
     '            lCountID, counting only scans where ScanStatusID = scanStatusValid — a scan
     '            marked Duplicate is excluded, never counted twice (stored, not derived — see the
     '            table template's house_assumptions).
+    ' [BUSINESS LOGIC #5] The same UPDATE also sets StockTakeCountMethodID = Scan. A scan reaching
+    '            this line means it is now being counted by scanning — true whether the line was
+    '            Pending (its first scan) or already Scan (a later one on the same line); this
+    '            procedure runs on every scan, so writing it unconditionally each time is simpler
+    '            than checking first and gives the same result.
     ' [SCAFFOLD] Two steps, and the engine forces both of them.
     '            ONE: read the sum into a variable. ACE refuses an aggregate subquery in an
     '            UPDATE's SET clause (error 3073), so the sum cannot stay inside the UPDATE.
@@ -591,7 +615,12 @@ Private Sub EvaluateVariance(ByVal lCountID As Long, ByVal db As DAO.Database)
     '            Where VarianceQuantity > 0 (overage): same resolution against
     '            AllowableOverageRate / DefaultAllowableOverageRate; flag when
     '            (CountedQuantity - ExpectedQuantity) > effective rate * ExpectedQuantity.
-    '            Either comparison holding sets RemediationStatusID = Flagged, else None.
+    '            Either comparison holding sets RemediationStatusID = Flagged, else None — but only
+    '            where the line's current RemediationStatusID is already None or Flagged. Where it
+    '            is Under Review or Resolved, a human reviewer put it there; this evaluation runs on
+    '            every scan (including a recount), and without checking first would silently revert
+    '            that decision. Read the current value before writing a new one, and skip the write
+    '            entirely when it is Under Review or Resolved.
     '            At ExpectedQuantity = 0 this needs no special case: CountedQuantity can't be
     '            negative, so the shortfall line can never hold, and the overage line reduces to
     '            "CountedQuantity > 0" — any nonzero count where none was expected gets flagged,
@@ -620,8 +649,8 @@ End Sub
 ## Standards Layer
 
 - **Error handling** — the `errHandler`/`Cleanup` structure plus the error-reporting call and
-  line-number policy come from `error-handling.md`, which ranks three options and says when each
-  fits. The `MsgBox` block shown is option 3, which needs nothing installed; a practice with its own
+  line-number policy come from `error-handling.md`, which ranks two options and says when each
+  fits. The `MsgBox` block shown is option 2, which needs nothing installed; a practice with its own
   logger substitutes it at the call site, and may number lines or not.
 - **Query style** — every `>>> ... per query-style.md <<<` marker is SQL written to the house query
   standard (aliasing, where querydefs live, formatting, safe criteria).
@@ -655,5 +684,3 @@ developer's own library, not committed here.*
 
 - **Package-vs-unit disambiguation** — *how* a scan is known to be a package vs. a unit (the rule
   that drives Business Rule #4) is itself undecided in the table template; lives here when resolved.
-- **Indexed barcode field** — the table template flags `Products.SKUBarCode` (Memo) as unindexable;
-  a production build wants an indexed barcode field for `ResolveScanCode` performance.

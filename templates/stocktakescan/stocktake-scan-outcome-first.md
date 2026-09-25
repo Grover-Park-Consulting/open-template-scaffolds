@@ -3,7 +3,7 @@ template: northwind-stocktake-scan-outcome-first
 title: Northwind Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.5.1
+version: 0.6.0
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -101,10 +101,11 @@ closeness in time is what tells a repeat apart from a coincidence — two separa
 product, scanned minutes apart during ordinary counting, are not duplicates of each other, and
 neither is held back.
 
-**A package barcode adds more than one unit; a product barcode adds one.** Where a product is
-tracked by the package it ships in as well as by the single unit, scanning the package's own barcode
-adds the whole package's quantity to the count in one scan, and scanning a single unit's barcode adds
-one.
+**A package barcode adds more than one unit; a product barcode adds one, or a quantity entered at
+the point of the scan.** Where a product is tracked by the package it ships in as well as by the
+single unit, scanning the package's own barcode adds the whole package's quantity to the count in
+one scan; scanning a single unit's barcode adds one, unless the counter enters a specific quantity
+for that scan, in which case the entered count is what's added.
 
 **The quantity you end up with for a product, in a session, is the sum of what was actually scanned
 — minus the repeats.** Not every scan on file; every scan that was not identified as a repeat of an
@@ -202,7 +203,13 @@ Perform each of these checks against a copy of your database with the tables alr
     - Count any nonzero quantity for it
     - Confirm that count line is flagged for review, however small the count
 12. **Two counters, one product, the same moment, do not collide.**
-    - This one needs two people, or two sessions open at once, counting the same product for the
+    - **Pick the product deliberately: it must have no count line yet.** Opening a session
+      pre-creates a count line for every product the baseline covers (Business Rule 5), so an
+      ordinary in-scope product already has its line before either counter scans it — there is no
+      race left to collide on, and the check passes trivially even on a build with no race recovery
+      at all. Use a product added to the catalog after the session opened, which the baseline never
+      saw and which genuinely has no line until the first scan creates one.
+    - With that product, this needs two people, or two sessions open at once, counting it for the
       first time in the same stocktake within a second or two of each other
     - Confirm both scans succeed
     - Confirm they land against one count line for that product, not two
@@ -223,6 +230,8 @@ Perform each of these checks against a copy of your database with the tables alr
     - Pick a product you know the system expected stock of and that nobody scanned
     - Confirm it has a count line in that session anyway, counted zero against what was expected
     - Confirm that line is flagged for review
+    - Confirm its count method reads as not-yet-counted, not as Manual or Scan — neither has
+      happened for this product
     - **This check is the one that fails when the baseline was never taken, and it is also the one
       that fails when the baseline was taken but never evaluated.** A build that creates a count line
       only when a scan arrives passes checks 1 through 12 and fails this one, because the product it
@@ -476,11 +485,10 @@ binds is stated only there.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like,
   not from reasoning that makes an answer seem obvious. Where a check exists to answer a question,
   run the check at the point the sequence calls for it rather than working the answer out yourself.
-- **Surface both warnings in the front matter** and get the developer's answer on each before
-  building. Neither is a preference to note in passing — the Memo-barcode warning changes what you
-  tell the developer about scan-resolution performance on their catalog, and the race-condition
-  warning is a requirement you build to, restated under *The same behavior every time, not the same
-  structure* as "two counters racing... never produce two count lines."
+- **Surface the warning in the front matter** and get the developer's answer before building. It is
+  not a preference to note in passing — the race-condition warning is a requirement you build to,
+  restated under *The same behavior every time, not the same structure* as "two counters racing...
+  never produce two count lines."
 - **The build record reports against *How you validate the template's output*, one entry per check,
   each saying what was done and what was observed.** Passed and not passed are the only outcomes,
   including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
