@@ -15,6 +15,10 @@ from library import validate_library
 
 
 def main() -> int:
+    # Error messages can quote template text verbatim, arrow characters (->) included.
+    # Windows' default console codec (cp1252) can't encode those and crashes mid-run;
+    # force UTF-8 on stdout so this script behaves the same on every platform.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     report = validate_library()
     for result in report["results"]:
         print(("PASS" if result["ok"] else "FAIL") + f"  {result['template']}")

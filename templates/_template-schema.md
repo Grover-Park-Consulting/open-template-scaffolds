@@ -194,6 +194,7 @@ In addition to the common core, a `table-schema` template **must** contain, in t
 | `## Entities` | One `### <TableName>` per new table — grain statement, field table (§5), `Indexes:` line. **Trivial, uniform lookups** (`<name>ID` + a descriptor + optional `SortOrder`, nothing more) may instead be **grouped** in a single sub-table of name + seed rows — documentation shorthand only; each row is still its own discrete table (this is *not* a shared/MUCK lookup table). Any lookup carrying extra structure (more fields, an FK, a description) takes its own `### <name>` heading like an entity. | required |
 | `## Relationships` | New relationships and hooks into the host schema, as a bulleted list naming parent → child, the join field(s), and cascade behavior | required |
 | `## Business Rules` | Numbered list of the logic the generated objects must honor (grain constraints, rollups, derivations, deferred-logic notes) | required |
+| `## Validating the build` | The structural checklist (§4.2) confirming the tables, keys, indexes, relationships, and seed rows exist and behave as this template specifies | required |
 
 **The deployment note.** Every `table-schema` states, in `## Prerequisites`, which file its tables
 are built into. This library's templates are oriented toward a **split database** — the normal shape
@@ -218,6 +219,71 @@ where that behavior is defined, not only here.
 4. Every table named in `## Relationships` is an entity, a lookup, or a `requires_tables` entry.
 5. Audit columns (`AddedBy`, `AddedOn`, `ModifiedBy`, `ModifiedOn`) do **not** appear in field
    tables — they belong to the standards layer (§6) and are flagged if present.
+6. `## Validating the build` is present and non-empty. `validate` confirms the section exists — it
+   cannot judge whether the checks it lists are the right ones; that stays the human review gate.
+7. Every bullet in `## Relationships` states its cascade behavior explicitly — the text contains
+   "cascade" or "no cascade"/"restrict". A relationship whose behavior isn't stated either way is
+   flagged, not silently assumed either direction.
+8. Every `(Business Rule N)` citation elsewhere in the template resolves to an actual numbered item
+   in `## Business Rules`. Catches a stale reference after a rule is renumbered, reworded away, or
+   removed — the citation is text, so nothing else would catch this drift.
+9. Every front-matter `seeds` entry is described with its actual value(s) somewhere in
+   `## Entities`, not merely named in the list. A seed that is declared but never specified gives a
+   builder nothing to insert.
+
+### 4.2 The `table-schema` checklist — structural, not business logic
+
+**Why `table-schema` needs its own checklist rather than deferring to its paired template's.** A
+`vba-scaffold` or `form-spec` defers its own checklist to the paired `outcome-first` template's —
+they promise the same result by a different route, so one checklist serves both. A `table-schema`
+has no such sibling to defer to: it is usually built *before* its pair exists, and what it promises
+is different in kind — not a business outcome, but that the tables, keys, indexes, relationships,
+and seed rows exist and behave the way this template specifies. **Confirmed necessary, not merely
+tidy:** a `table-schema` build once shipped with a leftover `DefaultValue` blocking every insert into
+a new table — reported passing, because nothing in the template asked anyone to try one. The
+equivalent structural defect, in a template with a checklist, was caught by an ordinary insert.
+
+**Every `table-schema` template's `## Validating the build` states its own checks, instantiating
+this baseline against its own tables, fields, relationships, and seed rows** — not a generic list
+copied unchanged, and not reinvented from scratch per template:
+
+1. **Every new table accepts an ordinary insert** — the minimum a table must do, and the specific
+   gap that went unnoticed without this rule. Run one plain insert per table, through whatever the
+   template's own build route produces (a DAO `Sub`, or the AI assistant inserting through the tool
+   it built the table with), not a hand-crafted edge case.
+2. **Every declared `Required` field refuses a missing value, and every declared `AllowZeroLength`
+   field accepts an empty string** where the template says it should (see
+   `_materialization.md`'s sink-field rule and its log/audit-domain exception).
+3. **Every unique index refuses the duplicate it names.** A junction's compound unique index, a
+   lookup's name uniqueness — whatever `## Entities` declares as unique, tested with an attempt that
+   should fail.
+4. **Every relationship in `## Relationships` behaves as declared on the delete side** — a cascade
+   deletes its children, a non-cascade refuses the parent's own delete while children exist.
+5. **Every seed row named in front-matter `seeds` is present, exactly as specified**, after the
+   build — not merely that the table exists.
+6. **Audit columns stamp correctly**, where the template attaches `standards/audit-columns.md`'s
+   mechanism: `CreatedDate`/`CreatedBy` on insert, `ModifiedDate`/`ModifiedBy` on update, `Created*`
+   left frozen on a later update.
+7. **Every relationship also behaves as declared on the insert side** — a child row whose FK value
+   doesn't exist in the parent is refused. Check 4 tests deleting the parent; this tests the other
+   direction, and neither stands in for the other.
+8. **A value too long for a `Text(n)` field is refused, not silently truncated** — except where a
+   field's own documentation names truncation as the intended behavior (`ErrorDescription` in
+   `error-logging-schema.md` is the one declared exception in the library today). Silent truncation
+   passing as success is the same failure shape X17/X18 name for Data Macros, one layer down, at the
+   field type itself.
+9. **`Description` actually landed on the field, not only in the template's prose.** The classic
+   order-of-operations defect `_materialization.md` documents — `Description` set *after*
+   `TableDefs.Append`, never before, or error 3219 — is cheap to check and has already bitten this
+   library once for exactly this reason.
+10. **The build `Sub` survives being run a second time** — either it re-runs cleanly, or it fails
+    naming what's already there, never a bare "duplicate object" surprise. The structural sibling of
+    the "running the build again duplicates nothing" check several `vba-scaffold` checklists already
+    run.
+
+Report against this list in the build record exactly as `_template-schema.md` §12.2 states for
+every checklist in the library: one entry per check, a literal `Result: PASSED` or
+`Result: NOT PASSED`, passed and not passed the only outcomes.
 
 ---
 

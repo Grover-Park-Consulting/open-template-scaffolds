@@ -3,7 +3,7 @@ template: error-logging-schema
 title: Error Log Table
 domain: errors
 type: table-schema
-version: 0.1.0
+version: 0.2.0
 status: draft
 standards_layer:
   - naming-conventions
@@ -128,6 +128,29 @@ would relate them.
    the point it matters.
 8. **The table's home does not change its definition.** Back end or front end (wizard Step 4), the
    fields, types, and indexes above are the same.
+
+## Validating the build
+
+Per `_template-schema.md` §4.2 — the structural baseline instantiated against `tblErrorLog` alone.
+This table declares no relationships, no seed rows, and no audit columns by design, so those
+baseline checks are marked not applicable rather than skipped silently.
+
+| # | Check |
+|---|---|
+| 1 | An ordinary insert into `tblErrorLog`, supplying every Required column, succeeds. |
+| 2 | An insert with `ErrorDescription = ""` (a zero-length string, not Null) succeeds — confirms `AllowZeroLength = True` actually took on the built table, not only that the field table says so. |
+| 3 | An insert omitting any one Required column in turn is refused. |
+| 4 | Not applicable — no unique index beyond the PK is declared. |
+| 5 | Not applicable — `## Relationships` declares none, by design (Business Rule 2). |
+| 6 | Not applicable — no `seeds` are declared. |
+| 7 | Not applicable — audit columns are deliberately not applied to this table (see Standards Layer). |
+| 8 | Not applicable — no FK column is declared on `tblErrorLog` (see Relationships: "deliberately unrelated"), so there is no insert-side reference to test. |
+| 9 | An insert with `ModuleName`, `ProcedureName`, or `ErrorUser` (each Text(100)) longer than the field refuses or truncates **only** where the field's own text says so — none of these three do, unlike `ErrorDescription`, which Business Rule 4 explicitly requires to truncate rather than refuse. Confirm the built table matches that distinction, not a uniform rule applied to every text field. |
+| 10 | `Description` is present on every field of the built table, matching this template's own Purpose & rules text — confirms the second-pass `Description` set (`_materialization.md` rule 2) actually ran. |
+| 11 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming `tblErrorLog` as already existing — never a bare "duplicate object" error. |
+
+Report against this list exactly as `_template-schema.md` §12.2 states for every checklist in the
+library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`.
 
 ## Standards Layer
 

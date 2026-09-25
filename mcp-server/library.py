@@ -87,6 +87,11 @@ _FK_RE = re.compile(r"FK\s*(?:→|->)\s*`?([A-Za-z0-9_]+)`?")
 _SEGMENT = re.compile(r"[A-Z]+(?![a-z])|[A-Z][a-z0-9]*")
 _ACRONYM = re.compile(r"^[A-Z]{2,}$")
 _TABLE_PREFIX = re.compile(r"^(tlkp|tbl|USys)", re.I)
+# `TableA (1) → (∞) TableB` — the one cardinality-arrow shape every '## Relationships'
+# bullet in the library uses; tolerant of any cardinality token ("1", "∞", "0..1").
+_REL_ARROW_RE = re.compile(r"`([A-Za-z0-9_]+)\s*\([^)]*\)\s*→\s*\([^)]*\)\s*([A-Za-z0-9_]+)`")
+# "Business Rule 3" / "Business Rules 2 and 7" — the two citation shapes actually in use.
+_BUSINESS_RULE_CITE_RE = re.compile(r"Business\s+Rules?\s+(\d+)(?:\s+and\s+(\d+))?", re.I)
 
 
 def _h2_sections(body):
@@ -249,7 +254,7 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
 
     # ---- Type-specific ----
     if typ == "table-schema":
-        errors += _validate_table_schema(front, sections)
+        errors += _validate_table_schema(front, sections, body)
     elif typ == "vba-scaffold":
         errors += _validate_vba_scaffold(front, sections)
     elif typ == "outcome-first":
@@ -259,7 +264,7 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
     return errors
 
 
-def _validate_table_schema(front, sections):
+def _validate_table_schema(front, sections, body):
     errors = []
     if not front.get("new_tables"):
         errors.append("FM: type 'table-schema' requires non-empty 'new_tables'")
@@ -303,6 +308,44 @@ def _validate_table_schema(front, sections):
             m = _FK_RE.search(r[2])
             if m and m.group(1) not in known:
                 errors.append(f"TS3: FK target '{m.group(1)}' (field {r[0]}) resolves to no known table")
+
+    # ---- Relationships: every named table resolves, every line states cascade behavior ----
+    rel = _section_text(sections, "Relationships") or ""
+    for line in rel.splitlines():
+        m = _REL_ARROW_RE.search(line)
+        if not m:
+            continue                                       # not an arrow relationship line
+        for name in m.groups():
+            if name not in known:
+                errors.append(f"TS4: relationship names '{name}', which resolves to no known table")
+        if not re.search(r"cascade|restrict", line, re.I):
+            errors.append("TS7: relationship line does not state its cascade behavior "
+                          f"('cascade' or 'no cascade'/'restrict'): {line.strip()[:80]}")
+
+    # ---- '## Validating the build' is required and must say something ----
+    vtb = _section_text(sections, "Validating the build")
+    if vtb is None:
+        errors.append("TS8: missing required section '## Validating the build'")
+    elif not vtb.strip():
+        errors.append("TS8: '## Validating the build' is present but empty")
+
+    # ---- Every '(Business Rule N)' citation resolves to a real numbered rule ----
+    br_text = _section_text(sections, "Business Rules") or ""
+    rule_nums = [int(n) for n in re.findall(r"^\s*(\d+)\.\s", br_text, re.M)]
+    max_rule = max(rule_nums) if rule_nums else 0
+    if max_rule:
+        for m in _BUSINESS_RULE_CITE_RE.finditer(body):
+            for g in m.groups():
+                if g and not (1 <= int(g) <= max_rule):
+                    errors.append(f"TS9: citation 'Business Rule {g}' does not resolve to any of the "
+                                  f"{max_rule} numbered items in '## Business Rules'")
+
+    # ---- Every front-matter 'seeds' entry is described somewhere, not just named ----
+    for entry in front.get("seeds") or []:
+        token = str(entry).split(".")[-1].strip().strip("`")
+        if token and token.lower() not in body.lower():
+            errors.append(f"TS10: seeds entry '{entry}' is not described anywhere in the template body")
+
     return errors
 
 
