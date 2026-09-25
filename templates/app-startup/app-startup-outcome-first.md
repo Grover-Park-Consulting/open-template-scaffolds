@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.2.0
+version: 0.2.1
 status: draft
 standards_layer:
   - design-principles
@@ -19,8 +19,10 @@ warnings:
   - This template changes the front end people already open. It adds code that runs the moment the
     file opens, and it rewrites where the table links point. A build against an application in real
     use is preceded by a backup copy of the front end, and the developer is asked for one before
-    anything is changed. The data file is read and never written to, so the front end is the file
-    that needs copying.
+    anything is changed. This template's own build touches only the front end — but per the
+    house assumption above, shared-folder locations are a setting kept in the data file, so a build
+    that configures that setting for the first time writes to the data file too. Back that up as
+    well where it applies, not just the front end.
 related:
   - "error-logging-outcome-first — worth adding once app-startup is built: your application now has
     a place it starts from, and this template gives the errors it runs into somewhere to go instead
@@ -266,9 +268,10 @@ Six things, and nothing here can be guessed — the sixth applies only to some a
 1. **A backup copy of your front end**, if this is an application people are using. What gets built
    here runs the moment the file opens, and it rewrites where your table links point, so a build that
    goes wrong goes wrong at the one moment you need the file to work. A copy of the front end, made
-   before anything is changed, is what you go back to. Your data file is only read, never written to,
-   so the front end is the file that needs copying. **If you tell the template there is no backup,
-   the build stops rather than continuing.**
+   before anything is changed, is what you go back to. This build touches only the front end — but
+   where your shared-folder setting is being configured in the data file for the first time (see the
+   house assumption above), that is a write to the data file too, and it needs its own backup as
+   well. **If you tell the template there is no backup, the build stops rather than continuing.**
 2. **Your startup form** — the switchboard, menu, or home form the application opens once everything
    checks out.
 3. **A table your data file must contain.** Naming one is how a chosen file is tested: a file that

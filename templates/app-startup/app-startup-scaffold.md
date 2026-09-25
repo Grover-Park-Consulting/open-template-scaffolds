@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.4.0
+version: 0.4.2
 status: draft
 requires_tables:
   - USysLocalSetting
@@ -35,8 +35,9 @@ warnings:
   - This scaffold changes the front end people already open. It adds code that runs the moment the
     file opens, and it rewrites where the table links point. A build against an application in real
     use is preceded by a backup copy of the front end, and the developer is asked for one before
-    anything is changed. The data file is read and never written to, so the front end is the file
-    that needs copying.
+    anything is changed. This template's own build touches only the front end, but where a build
+    also configures the shared-folder setting in the back end's tblAppSetting for the first time,
+    that is a write to the data file too — back that up as well when it applies.
 related:
   - "error-logging-scaffold — worth adding once app-startup is built: your application now has a
     place it starts from, and this template gives the errors it runs into somewhere to go instead
@@ -97,7 +98,7 @@ Three layers, kept distinct throughout:
 | Object | Role |
 |---|---|
 | `USysLocalSetting` | A table **in the front end, not linked** — this scaffold's memory of where the back end is. Defined below. |
-| An `AutoExec` macro | Its only action is `RunCode Startup()`. Built per `templates/_materialization.md` → *The AutoExec build gotcha*. |
+| An `AutoExec` macro | Its only action is `RunCode Startup()`. Built per `templates/_materialization.md` → *The AutoExec build gotcha*. **Read the existing `AutoExec` macro before replacing it.** A database already in use may have one calling its own open-time work — initializing global variables, reading an application version, anything else the rest of the application depends on having run. Replacing its action with `RunCode Startup()` and nothing else silently drops that work; find out what it did and fold it into `Startup()` (see the step marked for it below) before building, never after a developer reports something broken that used to work. |
 | One table the back end must contain | Named by you; `BackEndIsReachable` looks for it to prove a chosen file really is this application's data file. |
 | A startup form | The switchboard, menu, or home form `Startup()` opens once everything checks out. |
 | A central error logger | `error-handling.md`. **It must not write to the back end** — see *Standards Layer*. |
@@ -106,9 +107,13 @@ Three layers, kept distinct throughout:
 ### Ask before building
 
 **Where people are already using this application, ask for a backup copy of the front end before
-changing anything — before the password question below.** This template alters the file it is built
-into. The data file is only read, never written to, so the front end is the file that needs copying.
-Two questions, in this order:
+changing anything — before the password question below.** This template's own build only alters
+the front end: it adds `modAppStartup`, the `AutoExec` macro, and `USysLocalSetting` there, and
+touches no object in the data file. **This is narrower than "the data file is never written to."**
+Where the shared-folder path a later step reads is stored in the back end's own `tblAppSetting`
+(the pattern this scaffold's own comments point to), setting or changing that value is a write to
+the data file — just not one this template's build performs. Back up the data file too wherever a
+build also configures that setting for the first time. Two questions, in this order:
 
 1. *"Is this an application people are using, or a copy you're trying this out on?"*
 2. Where people are using it: *"Make a copy of the front end before I start. Say when it's done and
@@ -296,7 +301,8 @@ Private Const mstrBackEndPathSetting As String = "BackEndPath"
 
 ```vba
 Public Function Startup() As Boolean
-    ' [SCAFFOLD] The only thing AutoExec runs, and the one place open-time work happens.
+    ' [SCAFFOLD] The only thing AutoExec runs, and the one place open-time work happens -
+    '            including whatever open-time work an incumbent AutoExec already did (step 0).
     '            The order below is not stylistic - see the comment at step 2.
     '            Returns False when the application must not carry on; each step has
     '            already told the user why.
@@ -305,6 +311,13 @@ Public Function Startup() As Boolean
     '            on every open, because it runs on every open.
 
     On Error GoTo errHandler
+
+    ' 0. Whatever the incumbent AutoExec did before this scaffold replaced it goes here, first,
+    '    if there was anything — see the Prerequisites note on reading the existing AutoExec
+    '    macro before building. Leaving this step empty is correct when there was nothing to
+    '    carry over; skipping it without checking is how a working application silently loses
+    '    open-time work it depended on.
+    ' >>> whatever the incumbent's own open-time initialization did, if anything <<<
 
     ' 1. The data connection comes first. Nothing else is meaningful without it.
     If Not EnsureBackEndLink() Then GoTo Cleanup
