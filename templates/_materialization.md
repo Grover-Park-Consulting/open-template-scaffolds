@@ -556,6 +556,36 @@ host has generated before, a count that can plausibly exceed a 16-bit range, a s
 longer than the helper's own buffer — any of these is reason enough to check the helper's actual
 declared types and limits before trusting its return value, not after the second run fails.
 
+### The VBE's ~25 line-continuation limit on one statement
+
+A generated `INSERT`/`UPDATE` built one column per continued line (`" ... " & _`) hits a real,
+documented VBE limit around 25 continuations per logical statement — a 21-column table crossed it
+in one build. Past the limit, both `access_import_text` and `access_set_code` refuse the import with
+a bare "Reserved Error" naming no line number and no mention of continuations, ruled out directly as
+a size, backslash, or multi-line-`Const` effect. A failed import also leaves a shell module behind
+that has to be deleted by hand before retrying, or a retry-and-count step miscounts.
+
+**Collect the statement into several variables, each safely under the limit, then concatenate them
+once at the end** — this is the fix, not merely a workaround: it costs nothing at run time and never
+approaches the limit again, however wide the statement grows.
+
+```vba
+Dim sSql1 As String
+Dim sSql2 As String
+Dim sSql  As String
+
+sSql1 = "INSERT INTO tblExample (Field01, Field02, Field03, ..." & _
+        ... & _
+        "Field20) " & _
+        "VALUES (..."
+sSql2 = ...
+
+sSql = sSql1 & sSql2
+```
+
+Where a template's own generated `INSERT`/`UPDATE` is naturally this wide — a wide audit or staging
+table, for instance — reach for this pattern before the column count gets anywhere near twenty.
+
 ### ACE rejects an aggregate subquery in an UPDATE's SET clause, and a self-referencing alias
 
 Two failures found writing scan-processing VBA against a real Access database, both in ordinary

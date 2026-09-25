@@ -93,6 +93,32 @@ too: any `Debug.Print` or status message can reference them.
 
 If someone later renames a procedure, `PROC_NAME` is one line directly above the thing they renamed.
 
+### Never identify the module or procedure by reading the VBA editor at run time
+
+**Named constants (`MODULE_NAME`/`PROC_NAME`, above) are the only way this standard identifies where
+an error happened.** A second technique exists in the wild — reading `Application.VBE.ActiveCodePane`
+while the code runs, to work out which module and procedure raised the error, instead of writing
+their names as constants. **It does not do what its name suggests, and generated code must never use
+it, offer it, or describe it as an alternative equal to named constants.**
+
+**Why it's wrong, not just less convenient.** `ActiveCodePane` returns the module that is *active or
+was last active in the editor* — Microsoft's own description of the property, an IDE-focus property,
+not a call-stack property. It reports whichever module a person last had open, not the module where
+the error actually occurred. Confirmed live: an error raised in one form was logged against a
+different form the developer had open moments earlier in the editor. **This failure is silent** — no
+error, no blank field, nothing that looks wrong — which is worse than the technique's second problem:
+it also depends on "Trust access to the VBA project object model" (Trust Center → Macro Settings),
+off by default and set per machine, so code that happens to work where it was written can fail
+differently on someone else's machine. Both are reasons this is prohibited; the silent-misattribution
+problem is the one that matters even where Trust Center access happens to be on.
+
+**Retrofit on encounter, without asking.** Where generated or existing code uses this pattern —
+whether the AI assistant is building something new nearby, fixing an unrelated defect in the same
+procedure, or simply reading through it — convert it to the named-constants form above as part of
+that work, the same way a hardcoded literal name (`sFrm:="ModuleName"`) gets converted on sight. This
+does not wait for the developer to ask, because the failure it produces is silent and gives them
+nothing to notice and ask about.
+
 ### Option 2 — message box, no logging
 
 ```vba

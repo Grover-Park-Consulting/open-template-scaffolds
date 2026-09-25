@@ -3,7 +3,7 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.1.2
+version: 0.2.0
 status: draft
 implements: error-logging-schema
 standards_layer:
@@ -26,11 +26,6 @@ warnings:
   - In a split database, a log table in the back end cannot be written when the back end is the thing
     that failed — which is the error you most want kept. Where that risk matters, choose the
     table-falling-back-to-file route under *Information and conditions you need to supply*.
-  - One of the two routes for identifying the failing module and procedure — reading them from the
-    Visual Basic Editor's own object model while the code runs — needs "Trust access to the VBA
-    project object model" (Trust Center → Macro Settings) turned on. That setting is off by default
-    and is per machine, not per file, so a build that works where it was written can fail silently
-    elsewhere. This is a route choice under *Free to choose alternatives*; the warning travels with it.
 related:
   - "app-startup-outcome-first — worth considering if you haven't built it yet. The
     back-end-unreachable case it handles is one of the more valuable situations to have this log
@@ -199,10 +194,6 @@ The template does not decide any of the following. If you have specific preferen
 design is being worked out, before anything is built. Where you don't choose, the build will choose
 based on the rules built into it. The template's promise holds either way.
 
-- How the code identifies which module and procedure a failure happened in — writing the names
-  directly into each procedure as it's built, or having the code work them out for itself while it
-  runs. Both produce the same recorded value; the second needs the Trust Center setting named in this
-  template's warnings.
 - How the logic divides into procedures, what they are called, and how many there are. They will be
   functionally equivalent, not necessarily structurally the same.
 - Whether the build reports in message boxes, as returned text, or both.
