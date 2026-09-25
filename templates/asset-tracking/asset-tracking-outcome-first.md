@@ -3,7 +3,7 @@ template: school-district-asset-tracking-outcome-first
 title: School District Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.2.0
+version: 0.2.1
 status: draft
 implements: school-district-asset-tracking-schema
 standards_layer:
@@ -454,6 +454,11 @@ there.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like, not
   from reasoning that makes an answer seem obvious. Where a check exists to answer a question, run the
   check at the point the sequence calls for it rather than working the answer out yourself.
+- **Before attaching either Data Macro to a live table, check what has that table open and name it if
+  the attempt would be blocked** — `templates/_materialization.md`, "Before altering a table already
+  in use, check what has it open." This is what check 18 under *How you validate the template's
+  output* is confirming; nothing in this file names a procedure to do it, so the build route you chose
+  supplies the check itself, by whatever means it has available.
 - **Surface both house assumptions and every warning in the front matter** and get the developer's
   answer on each before building.
 - **The build record reports against *How you validate the template's output*, one entry per check,

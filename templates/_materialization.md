@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.12.1
+version: 0.12.3
 status: draft
 ---
 
@@ -80,6 +80,11 @@ Six parts, in this order:
 
 **Write it before you say the build is finished**, not when you are asked for it. A record written
 later is written from memory, and the details worth keeping are the first ones to go.
+
+**That is a deadline, not a cadence — write it as you go, not only at the end.** A record started
+after the build is a reconstruction; the same six parts, filled in as each thing actually happens,
+are a contemporaneous account. Confirmed by contrast: a build written up afterward, from a 90-minute
+session, read thinner than builds written incrementally throughout.
 
 **It records what happened, not what was meant to happen — good or bad, and whatever it reflects on
 you.** A step that failed and was retried belongs in it. A test that was skipped belongs in it, named
@@ -544,6 +549,29 @@ designed together risks a merged document that runs but does the wrong thing —
 above. State what each one currently does, propose how they'd combine, and get the developer's
 answer before writing over the existing document.
 
+### Before altering a table already in use, check what has it open
+
+Attaching or replacing a Data Macro, or setting a table-level property such as a Validation Rule,
+needs the table to itself. A bound form, an open datasheet, or a query holding it open all refuse the
+attempt with the engine's own error **3420**, which names nothing about what is open — the developer
+is left to guess what to close. **Check first, and name what's found**, rather than let 3420 be the
+first thing either of you sees.
+
+The pattern is already proven and shipped, under the same name, in two templates —
+`templates/scheduling-assignment/officiating-assignment-scaffold.md`'s `ListOpenObjects` and
+`templates/audit/audit-logging-lite-scaffold.md`'s own copy — a function that reports every open
+form, table, and query (Access's own `MSys…` objects skipped, never this check's business) and
+returns an empty string when nothing is open.
+
+**Where a template ships procedures, ship this one and call it before every table alteration.**
+**Where a template names no procedures at all** — an `outcome-first` template that deliberately
+leaves the build route open, attaching its own Data Macro directly rather than generating a module —
+**run the same check by whatever means the build route uses** (the Access MCP server's own
+object-state tools, for instance) immediately before altering the table, and stop and name what's
+open rather than let the attempt fail uninformatively. Either way, this is what a validation
+checklist's "the build stops rather than leaving tables half-finished, and names what is open" entry
+is testing for, and it has nothing to confirm if nothing in the build ever performs the check.
+
 ### Reusing a host's own helper function — check what it was sized for, not just what it does
 
 A build that reuses a function already present in the target database — a row-availability check,
@@ -562,6 +590,31 @@ or differently typed than the helper was written to handle?** A macro that's lar
 host has generated before, a count that can plausibly exceed a 16-bit range, a string that can run
 longer than the helper's own buffer — any of these is reason enough to check the helper's actual
 declared types and limits before trusting its return value, not after the second run fails.
+
+### Renaming a table or field a front end may already reference
+
+A `table-schema` build that **renames** an existing table or field — not creating one, changing what
+an already-linked front end calls it — breaks every front-end object built against the old name, and
+passing every check in the back end proves nothing about that. Saved queries, embedded form/report
+record sources, bound controls, and VBA references all keep the old name until something updates
+them, and none of those objects live in the file the rename ran against.
+
+**Confirmed at cost.** One build renamed 16 fields and five lookups, verified the back end
+thoroughly, and never checked the front end. The repair — 18 saved queries, 11 embedded record
+sources, 16 bound controls, 8 VBA objects, and a second pass that found more the first one missed —
+took longer than the rename itself.
+
+**A text search over exported objects is not the check.** Exported form/report text is UTF-16 and
+line-wraps long properties, so a plain search under-reports and can return zero hits as a false
+clean. Read the live properties instead: open each front-end object, or read its property through
+the Access MCP server, and check its actual `RecordSource`, `RowSource`, `ControlSource`, and any
+VBA reference that names the renamed table or field — not the exported text.
+
+**Where a rename touches anything a front end may reference, sweep that front end before calling the
+build done** — every saved query, every form and report's record source, every bound control's
+`ControlSource`/`RowSource`/`DefaultValue`, and any VBA that names the old table or field directly.
+Whether the front end exists yet is the only condition: a schema built before any front end exists
+has nothing to sweep.
 
 ### The VBE's ~25 line-continuation limit on one statement
 

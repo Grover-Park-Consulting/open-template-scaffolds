@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.13.0
+version: 0.13.1
 status: draft
 ---
 
@@ -208,6 +208,17 @@ Say it even when it seems obvious: a schema designed as though there were only e
 built as one, but going the other way later costs a rebuild. Templates that carry a behavior
 sensitive to the split — a data macro, a VBA function a macro calls, an external file folder — say so
 where that behavior is defined, not only here.
+
+**A schema that names no mechanism for a Business Rule is choosing to leave enforcement to the
+paired `outcome-first` stage, not omitting it.** Two schemas in this library make different choices
+here, and both are right for their own case: one names a Data Macro directly, in its own text, for a
+comparably-shaped rule; another states an equivalent rule as a field-table constraint and says
+nothing about how it is enforced, leaving that to the outcome-first template built against it. Read a
+given schema's own `## Standards Layer` and `## Business Rules` to see which way it chose — don't
+infer one schema's choice from another's, and don't read a schema's silence on mechanism as a gap to
+fill. The same in-flight choice X11 names for a paired scaffold's field naming: the library states
+the decision once, in the template that owns it, and a developer or a later template reads it there
+rather than assuming it travels.
 
 ### 4.1 `validate` rules for `table-schema`
 
