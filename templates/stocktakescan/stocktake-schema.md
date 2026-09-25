@@ -3,7 +3,7 @@ template: northwind-stocktake-schema
 title: Northwind Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.8.0
+version: 0.8.1
 status: draft
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -50,6 +50,14 @@ Add a **real, scan-driven stocktake** to a Northwind-derived database. Base Nort
 `StockTake` records only a pseudo count for demo purposes — aggregate quantities hand-typed after the
 fact, with no audit trail of how they were derived. This template replaces that with a
 three-level structure that supports **two count methods over one schema**:
+
+**Confirm with the developer whether the host's "on-hand" computation reads `StockTake`.**
+Business Rule 5 below snapshots "the system's computed on-hand" into every baseline line's
+`ExpectedQuantity`. If that computation is itself derived from `StockTake` — rather than from
+`Order Details`, a running-total mechanism, or something else — building this template stops
+anyone from entering new `StockTake` rows, and the on-hand figure it depends on goes stale from
+that point on. Ask before building, rather than assuming either answer: what `StockTake` is left
+for once this template is in place (left alone, migrated, or retired) is the developer's call.
 
 - **Manual count (Level 1):** a counter records a quantity per product directly.
 - **Scanned count (Level 2):** a counter scans each product's barcode; individual scans roll

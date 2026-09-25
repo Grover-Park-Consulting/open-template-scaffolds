@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.10.2
+version: 0.10.3
 status: draft
 implements: audit-logging-lite-schema
 standards_layer:
@@ -474,6 +474,14 @@ build has to produce is stated in *What you end up with*, in the checks under *H
 template's output*, and in the list under *The same behavior every time, not the same structure* — and
 is stated there in full. A requirement that appears to live only here is a defect in this template: it
 belongs in one of those three sections, and finding one is worth reporting.
+
+**These read as open problems; they are not.** Every one of them is already solved, either in
+`templates/_materialization.md` (the library-wide Data Macro reference — the UTF-16 write
+requirement, the replaces-not-merges behavior, the namespace rewrite on export, and the Long Text
+`[Old]` limitation are all rules stated there) or in the working code of the paired scaffold,
+`audit-logging-lite-scaffold.md` (which shows the actual staging mechanism for a Long Text value,
+the comment-based ownership marker, and the System-table read boundary). This section names the
+facts; it does not re-solve them.
 
 - **Data Macros.** Access can attach automatic behaviour to a table itself using Data Macros. This behaviour occurs regardless of who makes
   the change to data and how they make it. It is the only mechanism in Access that a person editing a table cannot bypass,

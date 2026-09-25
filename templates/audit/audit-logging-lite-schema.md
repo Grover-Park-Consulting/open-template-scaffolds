@@ -3,7 +3,7 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.6.0
+version: 0.6.1
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -107,6 +107,11 @@ one with a Long Text field (five macros), so both kinds of tracking show up righ
 scan-and-generate steps apply directly to your own existing tables — the made-up tables above
 are never created; they exist only to make Path A a complete, working demo on their own. Because
 this changes real tables, back up the .accdb file first (see Warnings).
+
+**Ask which path applies before building.** This is a real fork — which tables get built and
+whether real data is at risk both depend on the answer — and nothing here decides it for you. Where
+the paired scaffold is also being built, its wizard Step 1 asks this and the answer holds for both;
+building this schema template on its own still means asking, since nothing else will.
 
 Either way, the three system tables and the generator steps are identical — only whether the two
 made-up tables get created differs.

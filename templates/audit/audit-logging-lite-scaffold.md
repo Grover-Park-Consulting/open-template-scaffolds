@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.17.0
+version: 0.18.0
 status: draft
 implements: audit-logging-lite-schema
 requires_tables:
@@ -615,7 +615,11 @@ undo, and it is the only one that covers everything at once.
 **Preferred:** `Tables named tbl… or tlkp…` — the naming style these templates follow, which is
 where those prefixes are defined.
 
-**Skip when:** never.
+**Skip when:** Step 1 chose the try-it-out demo. The demo's scope is fixed to the three tables it
+creates, which are named in this same convention — asking here would offer `Every table in this
+file` or a named list, either of which could reach real tables sharing the file the demo was built
+into, and Step 3's backup gate was skipped on the promise that a demo run touches nothing you
+already have. Set `AUDIT_SCOPE_MODE = "Standard"` for the demo without asking.
 
 **To the AI assistant: three answers plus `Tell me more` fills the control, so there is no room on
 this step for `Go back to the previous question`.** That is expected here rather than an omission,
@@ -703,7 +707,9 @@ stands?
 
 **Skip when:** the tables were created by this template's own setup step, in this run. Those tables
 were built to the shape this system needs, so the check has nothing left to find. Any other table
-has never been looked at.
+has never been looked at. This is always all-or-nothing, never a mix: Step 4 locks the demo's scope
+to exactly the tables the setup step just created, so a run never both creates some of what it
+audits and adopts the rest in the same pass.
 
 <details>
 <summary>Tell me more about the check</summary>
@@ -833,12 +839,16 @@ original is in `DataMacroBackups\` if you want to compare the two, or fold somet
 **It is safe to run again.** Generation replaces rather than accumulates, so a run that stopped
 part-way is fixed by closing everything and running it again.
 
-**The one thing that stops it part-way is an object left open**, and it is common enough to expect.
+**The one thing that stops this is an object left open**, and it is common enough to expect. In
+practice it is usually the very first table this hits, not a later one — whatever tool is running
+this build often holds the database open on its own account, which is the case people miss, so the
+Ask above already tells you to close everything first rather than let this surface as the failure.
 Attaching the macros needs each table to itself, and it cannot have that while a form, report, query
-or the table itself is open on it — including in the copy of the database you are running from,
-which is the case people miss. Access says so at the time, one message per table it could not do.
-The tables it could not do keep the macros they already had; the rest are finished normally; and the
-report at the end says how many were built and how many failed. Close everything and run it again.
+or the table itself is open on it. Where it does turn up partway through — some tables done, one
+newly opened after the run started — Access says so at the time, one message per table it could not
+do. The tables it could not do keep the macros they already had; the rest are finished normally; and
+the report at the end says how many were built and how many failed. Close everything and run it
+again.
 
 **A table with auditing switched off still gets a stamping macro.** That is not an oversight: the
 house audit columns are `Required`, and a table with no macro at all has no way to fill them, so it
