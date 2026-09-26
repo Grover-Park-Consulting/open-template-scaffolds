@@ -13,11 +13,11 @@ standards_layer:
   - naming-conventions
   - query-style
 house_assumptions:
-  - Audited tables — chosen by the developer, table by table, rather than inferred from anything
+  - "Audited tables — chosen by the developer, table by table, rather than inferred from anything
     about them. A practice that audits everything by default, or that decides by a naming
-    convention, changes that.
-  - Windows account name — the name recorded against a change. A practice whose database already
-    knows the signed-in person by their real name changes that.
+    convention, changes that."
+  - "Windows account name — the name recorded against a change. A practice whose database already
+    knows the signed-in person by their real name changes that."
 warnings:
   - This template attaches Data Macros to live tables. A build against a database in real use is
     preceded by a backup copy of the file, and the developer is asked for one before anything is

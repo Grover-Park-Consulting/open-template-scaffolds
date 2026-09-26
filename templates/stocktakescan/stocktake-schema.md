@@ -1,6 +1,6 @@
 ---
-template: northwind-stocktake-schema
-title: Northwind Scanned Stocktake — Table Schema
+template: stocktake-schema
+title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
 version: 0.8.1
@@ -34,11 +34,11 @@ seeds:
   - SystemSettings.DuplicateScanWindowSeconds
 house_assumptions:
   - "StockTakeCount.CountedQuantity stored, not derived — a reconciled count is a durable audit fact business decisions rely on; it must not change if scan detail is later edited or archived. Stored despite being derivable; the alternative is to compute it on demand."
-  - "RemediationStatus records that a count line needs review, not which direction (shortage or overage) tripped it. The signed VarianceQuantity (Business Rule 6) already answers that at review time, by its sign — a practice wanting the direction stored on the count line itself, rather than read from a query, changes this."
-  - "ProductVarianceAllowance renames the table formerly called ProductShrinkageAllowance, now that it holds an overage tolerance as well as a shortage one — 'shrinkage' names loss specifically and would misname the overage column. A practice already using the old name changes this back."
+  - "RemediationStatus — records that a count line needs review, not which direction (shortage or overage) tripped it. The signed VarianceQuantity (Business Rule 6) already answers that at review time, by its sign — a practice wanting the direction stored on the count line itself, rather than read from a query, changes this."
+  - "ProductVarianceAllowance — renames the table formerly called ProductShrinkageAllowance, now that it holds an overage tolerance as well as a shortage one — 'shrinkage' names loss specifically and would misname the overage column. A practice already using the old name changes this back."
 ---
 
-# Northwind Scanned Stocktake — Table Schema
+# Scanned Stocktake — Table Schema
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

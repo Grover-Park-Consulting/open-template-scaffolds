@@ -1,11 +1,11 @@
 ---
-template: sports-officiating-assignment-form
-title: Sports Officiating Assignment — Game Assignment Form
+template: officiating-assignment-form
+title: Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
 version: 0.4.0
 status: draft
-implements: sports-officiating-assignment-schema
+implements: officiating-assignment-schema
 record_source: qryGame_frm
 standards_layer: [form-conventions, naming-conventions, startup-conventions]
 new_forms: [frmGame_Assignment, sfrmGame_Crew]
@@ -16,7 +16,7 @@ warnings:
     changed.
 ---
 
-# Sports Officiating Assignment — Game Assignment Form
+# Officiating Assignment — Game Assignment Form
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -25,7 +25,7 @@ warnings:
 ## Intent
 
 A default entry/edit form for scheduling a game and staffing its officiating crew
-(`sports-officiating-assignment-schema`). The main form edits the game; the crew subform edits
+(`officiating-assignment-schema`). The main form edits the game; the crew subform edits
 the assignment junction — the UI expression of the schema's central idea, that a crew is rows,
 not columns. This is a **default layout, not a finished design** — structurally and
 functionally complete, but unstyled ("ugly but correct" is a pass); house design defaults and
@@ -36,9 +36,9 @@ not redefines**.
 
 | Object | Role |
 |---|---|
-| `sports-officiating-assignment-schema` (`implements`) | The tables this form edits |
+| `officiating-assignment-schema` (`implements`) | The tables this form edits |
 | `qryGame_frm` | The form's record source over `tblGame` |
-| `sports-officiating-assignment-scaffold` | The paired scaffold; the subform's validation calls its `ValidateAssignment`, the optional features call `GetAppSetting` / `GetApplicablePayRate` |
+| `officiating-assignment-scaffold` | The paired scaffold; the subform's validation calls its `ValidateAssignment`, the optional features call `GetAppSetting` / `GetApplicablePayRate` |
 | `form-conventions.md` | House design defaults + the named reusable patterns (validation highlights, quick-add, audit display) |
 
 ### Ask before building

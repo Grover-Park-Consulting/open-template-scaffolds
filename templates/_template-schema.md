@@ -110,7 +110,7 @@ present on every template; conditional keys are required when their condition ho
 1. All required keys present and non-empty; `type` and `status` within their enums.
 2. `template` is a unique, kebab-case slug that **ends with** the filename stem; a
    domain or pairing prefix may precede it (e.g. file `library/catalog-schema.md` →
-   slug `library-catalog-schema`; a form paired with the catalog → `library-catalog-publication-form`).
+   slug `catalog-schema`; a form paired with the catalog → `publication-form`).
 3. If `extends` is set, `requires_tables` is non-empty.
 4. Every entry in `new_tables` is documented under `## Entities` — either as its own `### <name>`
    heading or as a named row in a grouped lookup sub-table (§4) — and vice versa; the declared and
@@ -136,7 +136,7 @@ template fits the intended application stays the adopter's responsibility.
 
 **This was an undecided question, not a documented rule, and three templates each answered it
 differently on their own** (`audit-logging-lite-scaffold` assumed `tbl…`/`tlkp…` naming that
-matches nothing in a non-OTS host; `library-catalog-schema` declared no host and collided with the
+matches nothing in a non-OTS host; `catalog-schema` declared no host and collided with the
 collection it was shaped from; `record-finder-scaffold` named a field its own paired schema renames
 away). The decision:
 

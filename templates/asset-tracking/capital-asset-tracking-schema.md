@@ -1,6 +1,6 @@
 ---
-template: school-district-asset-tracking-schema
-title: School District Capital Asset Tracking
+template: capital-asset-tracking-schema
+title: Capital Asset Tracking — Table Schema
 domain: asset-tracking
 type: table-schema
 version: 0.5.0
@@ -13,7 +13,7 @@ house_assumptions:
   - "tlkpDepreciationMethod — seeded with only Straight-Line; the schema carries a method FK for extensibility, but no alternate depreciation calculation is implemented"
 ---
 
-# School District Capital Asset Tracking
+# Capital Asset Tracking — Table Schema
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

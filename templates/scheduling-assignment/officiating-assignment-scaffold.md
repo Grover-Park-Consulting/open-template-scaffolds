@@ -1,11 +1,11 @@
 ---
-template: sports-officiating-assignment-scaffold
-title: Sports Officiating Assignment — Assignment & Pay VBA Scaffold
+template: officiating-assignment-scaffold
+title: Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
 version: 0.9.0
 status: draft
-implements: sports-officiating-assignment-schema
+implements: officiating-assignment-schema
 requires_tables:
   - tblGame
   - tblOfficial
@@ -32,18 +32,18 @@ new_procedures:
   - SetOfficialPhoto
   - ListOpenObjects
 warnings:
-  - "This build's active-official check (Business Rule 3, inside ValidateAssignment) only covers
+  - This build's active-official check (Business Rule 3, inside ValidateAssignment) only covers
     assignments made through AssignOfficial. An assignment inserted directly into tblGameOfficial, or
     by an import, is not checked. This is the VBA route named in
-    sports-officiating-assignment-outcome-first — that template's Data Macro route closes this gap,
-    at greater build cost. Choosing this scaffold is choosing this trade-off."
+    officiating-assignment-outcome-first — that template's Data Macro route closes this gap,
+    at greater build cost. Choosing this scaffold is choosing this trade-off.
   - EnsureGameValidationRule writes a validation rule onto tblGame itself, replacing any rule text
     already there, and Access checks that rule against the rows already in the table.
     SetOfficialPhoto writes to tblOfficial. A build against a database in real use is preceded by a
     backup copy of the file, and the developer is asked for one before anything is changed.
 ---
 
-# Sports Officiating Assignment — Assignment & Pay VBA Scaffold
+# Officiating Assignment — Assignment & Pay VBA Scaffold
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -51,7 +51,7 @@ warnings:
 
 ## Intent
 
-Realize seven of the officiating **table** template's (`sports-officiating-assignment-schema`)
+Realize seven of the officiating **table** template's (`officiating-assignment-schema`)
 nine Business Rules in code: assigning an official to a game position with friendly validation
 and an active-official check (Rules 2, 3), resolving the effective-dated pay rate (Rule 6),
 keeping a game internally consistent — two different teams, an end time after the start
@@ -64,7 +64,7 @@ structure — with the domain logic marked against the table template's numbered
 Rules**, and house style deferred to the standards layer.
 
 **The other version of this template — the outcome-first method,
-`sports-officiating-assignment-outcome-first` — produces the same result from a specification
+`officiating-assignment-outcome-first` — produces the same result from a specification
 rather than working code, and offers a genuine choice for Rule 3** (a Data Macro that closes the
 coverage gap named in the warning above, or this scaffold's own VBA route). Either can be built
 against your own database, and they can be built one after the other, against separate copies, to
@@ -86,7 +86,7 @@ Three layers, kept distinct throughout:
 
 | Object | Role |
 |---|---|
-| `sports-officiating-assignment-schema` tables | The scaffold runs against the tables that template creates (`tblGame`/`tblOfficial`/`tblGameOfficial`, the lookups, `tblPositionRate`, `tblAppSetting`) |
+| `officiating-assignment-schema` tables | The scaffold runs against the tables that template creates (`tblGame`/`tblOfficial`/`tblGameOfficial`, the lookups, `tblPositionRate`, `tblAppSetting`) |
 | `tblAppSetting.OfficialPhotoFolder` seed row | Read by `GetAppSetting`, `EnsurePhotoFolder`, and `SetOfficialPhoto` (Business Rule 9). **In a split database this must be an absolute shared path**, e.g. `\\server\share\OfficialPhotos\` — the schema's own seeded value is relative, which only suits a single-file database. |
 | A photo picker | The screen that calls `SetOfficialPhoto` with the file the person chose — a form concern, deferred to a `form-spec` template. |
 | A central error logger | `error-handling.md` |
@@ -136,11 +136,11 @@ home are both making assignments into the one back end, and that changes two thi
 
 ## Validating the build
 
-**To the AI assistant.** This template and `sports-officiating-assignment-outcome-first` reach the
+**To the AI assistant.** This template and `officiating-assignment-outcome-first` reach the
 same result by different routes, and each says so where it names the other. That result is what gets
 checked, not which route built it, so there is one checklist for both rather than two.
 
-**Run every entry under `sports-officiating-assignment-outcome-first.md`'s "How you validate the
+**Run every entry under `officiating-assignment-outcome-first.md`'s "How you validate the
 template's output" against this build, on a copy, exactly as that template requires.** Do this
 whether you generated the code yourself or handed the developer the files to import — the checks read
 the database this build produced, not the procedures that produced it. Report against that same

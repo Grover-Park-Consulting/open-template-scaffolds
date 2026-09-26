@@ -1,6 +1,6 @@
 ---
-template: sports-officiating-assignment-schema
-title: Sports Officiating Assignment — Table Schema
+template: officiating-assignment-schema
+title: Officiating Assignment — Table Schema
 domain: scheduling-assignment
 type: table-schema
 version: 0.4.0
@@ -22,13 +22,13 @@ seeds:
   - tlkpOfficialPosition.Base
   - tblAppSetting.OfficialPhotoFolder
 house_assumptions:
-  - tblGameOfficial — crew-by-junction; the position set is seed data in tlkpOfficialPosition, so a bigger crew is a new seed row, never a schema change
-  - tblPositionRate — pay rates are effective-dated by (PlayLevelID, OfficialPositionID); the applicable rate is the row with the latest EffectiveDate on or before the game date
-  - tblManager — a team manager is a normalized entity with minimal contact fields; richer contact management is an Extra Option
-  - tblGame — a game's play level is derived from its teams (both teams share one PlayLevel); it is not stored on the game
+  - "tblGameOfficial — crew-by-junction; the position set is seed data in tlkpOfficialPosition, so a bigger crew is a new seed row, never a schema change"
+  - "tblPositionRate — pay rates are effective-dated by (PlayLevelID, OfficialPositionID); the applicable rate is the row with the latest EffectiveDate on or before the game date"
+  - "tblManager — a team manager is a normalized entity with minimal contact fields; richer contact management is an Extra Option"
+  - "tblGame — a game's play level is derived from its teams (both teams share one PlayLevel); it is not stored on the game"
 ---
 
-# Sports Officiating Assignment — Table Schema
+# Officiating Assignment — Table Schema
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -326,7 +326,7 @@ library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`
   builds the same entities under its own `naming-conventions.md` without editing this
   template.
 - **Error handling** — any VBA generated alongside (see the paired
-  `sports-officiating-assignment-scaffold`) takes its error pattern from the active
+  `officiating-assignment-scaffold`) takes its error pattern from the active
   `error-handling.md`.
 
 ## Extra Options

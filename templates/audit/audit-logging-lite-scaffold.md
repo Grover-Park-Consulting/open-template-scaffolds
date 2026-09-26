@@ -53,15 +53,15 @@ build_paths:
   - "Path B — Add it to a real database you already have: skip Zero_CreateSampleTables and point
     the generator at your own existing tables instead. Back up the file first (see warnings)."
 house_assumptions:
-  - Audit scope (AUDIT_SCOPE_MODE) — chosen by the developer at wizard Step 4, never inferred from
+  - "Audit scope (AUDIT_SCOPE_MODE) — chosen by the developer at wizard Step 4, never inferred from
     what the tables are called without being told to. The Standard answer matches tbl/tlkp naming,
-    but only because the developer picked that answer over List or All, which are offered equally.
-  - Identity source (AuditUser) — the Windows account name is the preferred choice for the name
+    but only because the developer picked that answer over List or All, which are offered equally."
+  - "Identity source (AuditUser) — the Windows account name is the preferred choice for the name
     recorded against a change, and what this template ships with. The developer can override it
     before generating — with the database's own identity function, where one already tracks the
     signed-in person by their real name, or with CurrentUser() for the Access-session identity
-    instead. Both alternatives are asked for at "Before you write the modules" and named under
-    Extra Options — this is a default offered, never a choice made for the developer.
+    instead. Both alternatives are asked for at 'Before you write the modules' and named under
+    Extra Options — this is a default offered, never a choice made for the developer."
 warnings:
   - Data Macros cannot audit Long Text (Memo) fields on their own. Before building, list every
     Long Text field in the tables to be audited and confirm the list with the developer — any

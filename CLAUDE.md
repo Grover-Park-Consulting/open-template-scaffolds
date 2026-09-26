@@ -500,6 +500,8 @@ the developer directs you to** — from-scratch work included.
 | `standards/` | The active standards layer — naming, audit columns, error handling |
 | `prompts/BuildNewTables-StartHere.md` | The copy-paste form of the workflow above |
 | `examples/northwind-stocktake/` | A complete worked example (filled prompt + generated output) |
+| `FREEZE.md` | The human-facing-text freeze — which files may not be reworded, and how to request a lift |
+| `templates/_COVERAGE.md` | Which of the four template types each domain currently has |
 
 **Load only what the task needs** — the relevant template plus `standards/`. Don't read the whole
 library into context every session.

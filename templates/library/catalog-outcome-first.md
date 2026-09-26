@@ -1,11 +1,11 @@
 ---
-template: library-catalog-outcome-first
+template: catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
 version: 0.1.1
 status: draft
-implements: library-catalog-schema
+implements: catalog-schema
 standards_layer:
   - audit-columns
   - naming-conventions
@@ -13,16 +13,16 @@ standards_layer:
   - query-style
   - design-principles
 house_assumptions:
-  - "The list of leading noise words stripped from a title to form its sort title (The, A, An, and
+  - "Noise words — the list of leading words stripped from a title to form its sort title (The, A, An, and
     whatever else a given collection adds) is house-specific — a language, a cataloging convention, or
     a local style choice. A shop cataloging in another language, or with its own list, changes it."
 warnings:
-  - "Choosing the VBA route for Business Rule 2 (see below) means the sort title only stays correct
+  - Choosing the VBA route for Business Rule 2 (see below) means the sort title only stays correct
     for edits made through your entry form. A title changed any other way — directly in the table, by
     an import, by a query — silently keeps its old sort title. This is a disclosed trade-off of that
-    route, not a defect; the Data Macro route does not have this gap."
+    route, not a defect; the Data Macro route does not have this gap.
 related:
-  - "library-record-finder-scaffold — worth adding once your catalog holds records: gives your entry
+  - "record-finder-scaffold — worth adding once your catalog holds records: gives your entry
     form a way to search and filter by title, creator, or genre instead of scrolling through
     everything."
 ---
@@ -44,7 +44,7 @@ and by the behaviours that must hold however the work was divided up. Those thre
 are the whole of what this template promises.
 
 **This template realizes two of the five Business Rules the table template states, and leaves the
-other three alone.** `library-catalog-schema` builds the ten tables and states, in its own Business
+other three alone.** `catalog-schema` builds the ten tables and states, in its own Business
 Rules, what has to be true once the database is in use. Three of those five are already complete the
 moment the schema is built — one record per title (Rule 1), no duplicate creator or genre links
 (Rule 4), and cascade delete on a publication's own links (Rule 5) are properties of the tables
@@ -82,7 +82,7 @@ asked, not defaulted.**
 
 **Why this is offered as a real choice instead of naming one mechanism outright.** Where a platform
 genuinely leaves exactly one route to a promise, this library names that route and stops there (see,
-for example, how `school-district-asset-tracking-outcome-first` names a Data Macro for its
+for example, how `capital-asset-tracking-outcome-first` names a Data Macro for its
 capitalization check). This isn't that case: a sort title is a convenience for browsing and
 reporting, not a compliance record, so a lesser but simpler route is a reasonable thing to offer —
 provided the person choosing it knows exactly what they're giving up. Naming both mechanisms and
@@ -295,7 +295,7 @@ there.
   supply*, item 4 — never infer it, never default it, and never treat "which is preferred" as
   permission to pick it without asking. For Rule 3, either a table-level Validation Rule or a Data
   Macro satisfies the promise, and that choice sits on the *Free to choose alternatives* list instead.
-- **Read `library-catalog-schema.md`, the table template this realizes, for the fields, the full text
+- **Read `catalog-schema.md`, the table template this realizes, for the fields, the full text
   of all five Business Rules, and the reasoning behind them.** This file restates the outcome of two
   of the five; that file is where the field names, types, and the other three live.
 - **Where the Data Macro route is chosen, read `templates/_materialization.md` for the shape of the

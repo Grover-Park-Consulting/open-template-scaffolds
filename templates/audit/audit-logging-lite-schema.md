@@ -47,24 +47,24 @@ warnings:
     scaffold backs up a table's existing macros automatically before replacing them, but does not
     restore that stamping logic afterward — that is the developer's call.
 house_assumptions:
-  - tblAuditLogConfig.IsPrimaryKey — every audited table is assumed to have a single-column
+  - "tblAuditLogConfig.IsPrimaryKey — every audited table is assumed to have a single-column
     whole-number primary key that fits in a Long Integer (AutoNumber, Long Integer, Integer or
     Byte); the Long Text backup plumbing and the generated macro XML key on one such PK, so
     composite, text, and larger-number keys are not supported. A Replication ID key is supported
     where the developer chooses it, which retypes the log's key column as text — Business Rule 4
-    states both conditions that choice requires
-  - tblAuditLog — audited rows are referenced by name and key value (TableName + PrimaryKey),
+    states both conditions that choice requires"
+  - "tblAuditLog — audited rows are referenced by name and key value (TableName + PrimaryKey),
     and nothing in the database enforces that reference. In Access terms, there is no relationship
     between the log and the audited table, so no referential integrity and no cascade delete. That
-    is deliberate — audit history survives deletion of the row it describes
-  - tblAuditLogConfig — which tables the schema scan takes is the developer's answer, asked
+    is deliberate — audit history survives deletion of the row it describes"
+  - "tblAuditLogConfig — which tables the schema scan takes is the developer's answer, asked
     as its own question in the paired scaffold and held in one setting there. The three answers
     are the tbl/tlkp naming convention, every table in the file, or a list of tables they name.
     System tables, temporary tables and linked tables are out of scope under all three.
-    Everything finer-grained is decided in data via IsAuditable
-  - tblClient — the sample tables (tblClient, tblSupportTicket, tlkpTicketPriority) are
+    Everything finer-grained is decided in data via IsAuditable"
+  - "tblClient — the sample tables (tblClient, tblSupportTicket, tlkpTicketPriority) are
     demonstration stand-ins showing both macro paths; a real build applies the system to the
-    adopter's own tables
+    adopter's own tables"
 ---
 
 # Access Audit Logging (Lite) — Table Schema

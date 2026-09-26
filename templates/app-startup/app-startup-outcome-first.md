@@ -12,9 +12,9 @@ standards_layer:
   - query-style
   - startup-conventions
 house_assumptions:
-  - The locations of any folders everybody shares are settings kept in the data file. That is why the
+  - "Shared-folder locations — settings kept in the data file. That is why the
     folders are dealt with after the data connection and not before. A practice that keeps folder
-    locations somewhere else — beside the front end, or in the code — changes that ordering.
+    locations somewhere else — beside the front end, or in the code — changes that ordering."
 warnings:
   - This template changes the front end people already open. It adds code that runs the moment the
     file opens, and it rewrites where the table links point. A build against an application in real

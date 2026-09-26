@@ -12,8 +12,8 @@ standards_layer:
   - query-style
   - design-principles
 house_assumptions:
-  - "The house audit columns (CreatedDate/CreatedBy, filled by a Before Change Data Macro calling a
-    VBA function) are deliberately not applied to the error log table. The two facts they would carry
+  - "Error log — the house audit columns (CreatedDate/CreatedBy, filled by a Before Change Data Macro calling a
+    VBA function) are deliberately not applied to it. The two facts they would carry
     — when a row was written, and by whom — are instead written by the logger itself, as ordinary
     columns, so the record does not depend on a second mechanism being present and working at the
     exact moment something already is not. This mirrors the table template's own declared assumption;

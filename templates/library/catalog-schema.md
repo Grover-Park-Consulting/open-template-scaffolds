@@ -1,5 +1,5 @@
 ---
-template: library-catalog-schema
+template: catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
@@ -20,7 +20,7 @@ new_tables:
   - tlkpBookcase
   - tlkpShelf
 house_assumptions:
-  - tblPublication — one record per title, not per physical copy. NumberOfVolumes counts duplicate copies (when MultiVolumeSet is false) or volumes in a set (when true); individual copies are not separately tracked or identified. A library that tracks individual physical copies would instead add a per-copy Holding entity — see Extra Options.
+  - "tblPublication — one record per title, not per physical copy. NumberOfVolumes counts duplicate copies (when MultiVolumeSet is false) or volumes in a set (when true); individual copies are not separately tracked or identified. A library that tracks individual physical copies would instead add a per-copy Holding entity — see Extra Options."
 ---
 
 # Library Publication Catalog — Table Schema
@@ -64,8 +64,8 @@ everything — is an acceptable choice for one user, and everything here works t
 everything in that one file and ignore the distinction.
 
 All ten tables below — three entities, two junctions, and five lookups — are created in the **back
-end** and linked into each front end. The paired entry form (`library-catalog-publication-form`)
-and the record-finder code (`library-record-finder-scaffold`) live in the **front end** and reach
+end** and linked into each front end. The paired entry form (`publication-form`)
+and the record-finder code (`record-finder-scaffold`) live in the **front end** and reach
 these tables through those links.
 
 **If the file that will hold the audit-stamping macro's `AuditUser()` function has its VBA project

@@ -15,8 +15,8 @@ structure and write it, under my standards. (Scaffold is the other route: the pr
 written, with the house-specific parts marked for you to fill in.)
 
 Resources, relative to the Open Template Scaffolds folder:
-templates/asset-tracking/asset-tracking-outcome-first.md (the template),
-templates/asset-tracking/asset-tracking-schema.md (paired tables), standards/ (my conventions),
+templates/asset-tracking/capital-asset-tracking-outcome-first.md (the template),
+templates/asset-tracking/capital-asset-tracking-schema.md (paired tables), standards/ (my conventions),
 README.md and templates/_template-schema.md for the rest.
 
 A build is successful when all validation checks run and pass.

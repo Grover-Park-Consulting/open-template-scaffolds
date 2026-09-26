@@ -1,6 +1,6 @@
 ---
 template: error-logging-schema
-title: Error Log Table
+title: Error Logging — Table Schema
 domain: errors
 type: table-schema
 version: 0.2.0
@@ -27,7 +27,7 @@ warnings:
     offers a text-file fallback for exactly this case.
 ---
 
-# Error Log Table
+# Error Logging — Table Schema
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

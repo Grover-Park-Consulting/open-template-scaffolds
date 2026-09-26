@@ -1,11 +1,11 @@
 ---
-template: school-district-asset-tracking-outcome-first
-title: School District Capital Asset Tracking — outcome-first method
+template: capital-asset-tracking-outcome-first
+title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
 version: 0.2.1
 status: draft
-implements: school-district-asset-tracking-schema
+implements: capital-asset-tracking-schema
 standards_layer:
   - audit-columns
   - naming-conventions
@@ -13,7 +13,7 @@ standards_layer:
   - query-style
   - design-principles
 house_assumptions:
-  - "The capitalization threshold is held as a single configurable value, not one per asset category.
+  - "Capitalization threshold — held as a single configurable value, not one per asset category.
     A district whose policy sets a different floor for land or land improvements than for equipment
     changes this — see *Information and conditions you need to supply*."
   - "The capitalization threshold value — read from wherever it is stored at the moment each save is
@@ -23,23 +23,23 @@ house_assumptions:
     because seed order is not guaranteed to put any status at a particular ID, on this build or the
     next."
 warnings:
-  - "This template attaches Data Macros to live tables (Business Rules 1 and 3), which is why backup
+  - This template attaches Data Macros to live tables (Business Rules 1 and 3), which is why backup
     is item 3 under *Information and conditions you need to supply* rather than a separate ask —
-    surfacing this warning and asking that item are the same step, not two."
-  - "A historical or legacy import — assets acquired years ago, under a threshold since raised — is
+    surfacing this warning and asking that item are the same step, not two.
+  - A historical or legacy import — assets acquired years ago, under a threshold since raised — is
     refused by the capitalization check exactly as any other insert would be, because the check has
     no way to tell a backdated record from a new purchase that falls short today. This is item 5
     under *Information and conditions you need to supply*; surfacing this warning and asking that
     item are the same step, not two. This template does not supply a way around the check; see
-    *What the template does not do*."
+    *What the template does not do*.
 related:
-  - "northwind-stocktake-scan-outcome-first — a similar process for a different purpose: reconciling
+  - "stocktake-scan-outcome-first — a similar process for a different purpose: reconciling
     a table of items against barcode scans. The purpose of stocktake-scan is to account for **sale
     inventory** rather than **fixtures and equipment**. The scan-resolution logic differs between the
     two and they solve different problems, so they do not share a scan-resolution mechanism."
 ---
 
-# School District Capital Asset Tracking — outcome-first method
+# Capital Asset Tracking — outcome-first method
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -56,7 +56,7 @@ and by the behaviours that must hold however the work was divided up. Those thre
 are the whole of what this template promises.
 
 **This template realizes five of the eight Business Rules the table template states, and leaves the
-other three alone.** `school-district-asset-tracking-schema` builds the fourteen tables and states, in
+other three alone.** `capital-asset-tracking-schema` builds the fourteen tables and states, in
 its own Business Rules, what has to be true once the database is in use. Three of those eight are
 already complete the moment the schema is built — barcode uniqueness (Rule 2), required ownership
 fields (Rule 7), and the direct-join reporting shape (Rule 8) are properties of the tables themselves,
@@ -425,7 +425,7 @@ there.
   route into the table — see the reasoning under each rule above. Nothing else in this file names a
   mechanism. Do not import one for Business Rules 4, 5, or 6 on the assumption that a promise this firm
   elsewhere must mean the same everywhere; it doesn't.
-- **Read `school-district-asset-tracking-schema.md`, the table template this realizes, for the fields,
+- **Read `capital-asset-tracking-schema.md`, the table template this realizes, for the fields,
   the full text of all eight Business Rules, and the reasoning behind them.** This file restates the
   outcome of five of the eight; that file is where the field names, types, and the other three live.
 - **Read `templates/_materialization.md` for the shape of a Data Macro**, the same document the audit

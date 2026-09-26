@@ -60,11 +60,11 @@ class TestServerWrapper(unittest.TestCase):
 
     def test_wrapper_reports_unavailable_as_not_ok(self):
         result = unwrap(server.check_compatibility)(
-            "northwind-stocktake-schema", r"Z:\no\such\place\nothing.accdb"
+            "stocktake-schema", r"Z:\no\such\place\nothing.accdb"
         )
         self.assertFalse(result["available"])
         self.assertFalse(result["ok"])
-        self.assertEqual(result["template"], "northwind-stocktake-schema")
+        self.assertEqual(result["template"], "stocktake-schema")
 
 
 @unittest.skipUnless(

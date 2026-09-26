@@ -103,7 +103,7 @@ class TestValidateLibrary(unittest.TestCase):
             self.assertTrue(r["ok"], f"{r['template']}: {r['errors']}")
 
     def test_single_template_by_id(self):
-        result = validate_library("northwind-stocktake-schema")
+        result = validate_library("stocktake-schema")
         self.assertEqual(result["checked"], 1)
         self.assertTrue(result["ok"])
 

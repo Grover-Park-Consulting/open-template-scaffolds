@@ -1,12 +1,12 @@
 ---
-template: northwind-stocktake-scan-scaffold
-title: Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
+template: stocktake-scan-scaffold
+title: Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
 version: 0.10.0
 status: draft
 extends: Northwind (Access Developer Edition)
-implements: northwind-stocktake-schema
+implements: stocktake-schema
 requires_tables:
   - Products
   - StockTakeSession
@@ -36,14 +36,14 @@ warnings:
     use is preceded by a backup copy of the file, and the developer is asked for one before anything
     is changed.
 related:
-  - "school-district-asset-tracking-outcome-first — a similar process for a different purpose:
+  - "capital-asset-tracking-outcome-first — a similar process for a different purpose:
     reconciling a table of items against barcode scans. The purpose of asset-tracking is to account
     for **fixtures and equipment** rather than **sale inventory**. The scan-resolution logic differs
     between the two and they solve similar, but different, problems, so they do not share a
     scan-resolution mechanism."
 ---
 
-# Northwind Scanned Stocktake — Scan-Processing VBA Scaffold
+# Scanned Stocktake — Scan-Processing VBA Scaffold
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -52,7 +52,7 @@ related:
 ## Intent
 
 Realize the scan-processing logic that the Northwind stocktake **table** template
-(`northwind-stocktake-schema`) defers "to the coding section." This scaffold supplies the
+(`stocktake-schema`) defers "to the coding section." This scaffold supplies the
 **procedure skeletons** — signatures, recordset plumbing, control flow, and error-handling
 structure — for resolving a scan to a product, recording it, rolling the scans up into the stored
 count, and evaluating the variance. It does **not** write the domain logic itself: each procedure
@@ -69,7 +69,7 @@ Three layers, kept distinct throughout:
 
 | Object | Role |
 |---|---|
-| `northwind-stocktake-schema` tables | The scaffold runs against the tables that template creates (`StockTakeSession`/`StockTakeCount`/`StockTakeScan`, the lookups, `ProductVarianceAllowance`) |
+| `stocktake-schema` tables | The scaffold runs against the tables that template creates (`StockTakeSession`/`StockTakeCount`/`StockTakeScan`, the lookups, `ProductVarianceAllowance`) |
 | `Products.SKUBarCode`, `Products.QuantityInPackage` | Scan resolution + package quantity |
 | `SystemSettings.DefaultAllowableShortageRate`, `SystemSettings.DefaultAllowableOverageRate` | Fallback variance rates |
 | `SystemSettings.DuplicateScanWindowSeconds` | Duplicate-scan detection window |
@@ -125,12 +125,12 @@ end (or which other tool) inserted the scan. That is a legitimate alternative to
 
 ## Validating the build
 
-**To the AI assistant.** This template and `northwind-stocktake-scan-outcome-first` promise the
+**To the AI assistant.** This template and `stocktake-scan-outcome-first` promise the
 identical result — the same stocktake behaviour, produced by a different route — and each says so
 where it names the other. That promise is what gets checked, not which route built it, so there is
 one checklist for both rather than two.
 
-**Run every entry under `northwind-stocktake-scan-outcome-first.md`'s "How you validate the
+**Run every entry under `stocktake-scan-outcome-first.md`'s "How you validate the
 template's output" against this build, on a copy, exactly as that template requires.** Do this
 whether you generated the code yourself or handed the developer the files to import — the checks
 read the database this build produced, not the procedures that produced it. Report against that same

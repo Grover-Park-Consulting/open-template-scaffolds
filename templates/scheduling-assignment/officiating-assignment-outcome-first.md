@@ -1,11 +1,11 @@
 ---
-template: sports-officiating-assignment-outcome-first
-title: Sports Officiating Assignment — outcome-first method
+template: officiating-assignment-outcome-first
+title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
 version: 0.1.0
 status: draft
-implements: sports-officiating-assignment-schema
+implements: officiating-assignment-schema
 standards_layer:
   - audit-columns
   - naming-conventions
@@ -13,18 +13,18 @@ standards_layer:
   - query-style
   - design-principles
 house_assumptions:
-  - "An official's age is computed as of today's date, wherever it's shown, not as of any particular
+  - "Official age — computed as of today's date, wherever it's shown, not as of any particular
     game date. A league that needs age-as-of-a-game-date for an eligibility rule changes this — the
     schema doesn't ask for that today, so this template doesn't build it."
-  - "A game's play level is read through its home team specifically, not its away team, matching the
+  - "Game play level — read through its home team specifically, not its away team, matching the
     paired scaffold's own convention. A league whose two teams in a game could genuinely carry
     different play levels needs a different rule than 'read the home team's' — this template assumes
     they always match, per the schema's own declared assumption."
 warnings:
-  - "Choosing the VBA route for Business Rule 3 (see below) means an inactive official can still be
+  - Choosing the VBA route for Business Rule 3 (see below) means an inactive official can still be
     written into an assignment through any route other than your assignment procedure — a direct edit
     to tblGameOfficial, an import. This is a disclosed trade-off of that route, not a defect; the Data
-    Macro route does not have this gap."
+    Macro route does not have this gap.
   - This template attaches a Data Macro to a live table where the Data Macro route is chosen for
     Business Rule 3. A build against a database in real use is preceded by a backup copy of the file,
     and the developer is asked for one before anything is changed.
@@ -35,7 +35,7 @@ related:
     produces the same result from working code if you'd rather build that way."
 ---
 
-# Sports Officiating Assignment — outcome-first method
+# Officiating Assignment — outcome-first method
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -52,7 +52,7 @@ and by the behaviours that must hold however the work was divided up. Those thre
 are the whole of what this template promises.
 
 **This template realizes seven of the nine Business Rules the table template states, and leaves the
-other two alone.** `sports-officiating-assignment-schema` builds the ten tables and states, in its own
+other two alone.** `officiating-assignment-schema` builds the ten tables and states, in its own
 Business Rules, what has to be true once the database is in use. Two of those nine are already
 complete the moment the schema is built — the crew is a junction, not a set of hardcoded columns
 (Rule 1), and assignment uniqueness (Rule 2) is enforced by the junction's own unique indexes. There is
@@ -78,7 +78,7 @@ your assignment procedure, not through a direct edit to `tblGameOfficial`, not t
 
 **Two routes exist to build this, and which one you pick changes what you actually get — so you're
 asked, not defaulted**, the same choice and the same reasoning as the sort-title decision in
-`library-catalog-outcome-first`:
+`catalog-outcome-first`:
 
 - **The Data Macro route (preferred).** Attached to `tblGameOfficial`, it looks up the referenced
   official's `OfficialIsActive` on every route into the table and refuses the write if that official
@@ -375,10 +375,10 @@ there.
   Validation Rule or a Data Macro satisfies each independently, and that choice sits on the *Free to
   choose alternatives* list. For Rules 5 and 8, a query, a function, or a calculated field all
   satisfy each independently, also on that list.
-- **Read `sports-officiating-assignment-schema.md`, the table template this realizes, for the fields,
+- **Read `officiating-assignment-schema.md`, the table template this realizes, for the fields,
   the full text of all nine Business Rules, and the reasoning behind them.** This file restates the
   outcome of seven of the nine; that file is where the field names, types, and the other two live.
-- **You may read `sports-officiating-assignment-scaffold.md` for one worked decomposition — nothing
+- **You may read `officiating-assignment-scaffold.md` for one worked decomposition — nothing
   more.** It shows one way to structure `AssignOfficial`, `ValidateAssignment`, and
   `GetApplicablePayRate`, and its `ValidateAssignment` is the VBA route named under *Business Rule 3*
   — read it to see exactly what that route's coverage gap looks like, not as a route this file

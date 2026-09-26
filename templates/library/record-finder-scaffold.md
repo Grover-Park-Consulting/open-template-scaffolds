@@ -1,11 +1,11 @@
 ---
-template: library-record-finder-scaffold
+template: record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
 version: 0.4.0
 status: draft
-implements: library-catalog-schema
+implements: catalog-schema
 requires_tables:
   - tblPublication
   - tblPublicationGenre
@@ -36,7 +36,7 @@ warnings:
 ## Intent
 
 Realize the **record finder** the publications entry form defers to code — the pattern
-`library-catalog-publication-form` names as a deferred dependency. On a data-entry form over a large
+`publication-form` names as a deferred dependency. On a data-entry form over a large
 table, this is how a user gets to the *one* record they want to edit: a filter strip narrows a
 pick-list dropdown three ways — by **category**, by **first letter (A–Z)**, or by **keyword** — and
 choosing an entry **jumps the form to that record**, with a consistent **"show all"** option in every
@@ -58,8 +58,8 @@ Three layers, kept distinct throughout:
 
 | Object | Role |
 |---|---|
-| `library-catalog-schema` tables (`tblPublication`, `tblPublicationGenre`) | The finder queries these to build the pick list |
-| `library-catalog-publication-form` | The paired form-spec; supplies the finder controls this engine drives (`cboCategory`, the A–Z sub-picker, `txtKeyword` + `cmdKeywordGo`, `cboFinder`) |
+| `catalog-schema` tables (`tblPublication`, `tblPublicationGenre`) | The finder queries these to build the pick list |
+| `publication-form` | The paired form-spec; supplies the finder controls this engine drives (`cboCategory`, the A–Z sub-picker, `txtKeyword` + `cmdKeywordGo`, `cboFinder`) |
 | The form's base record source | A saved query (or its SQL) whose `WHERE` `JumpFormToRecord` rewrites to land on one record |
 | A sort-title column (e.g. `PubSort`) | The finder list and the jumped form order on it |
 | A central error logger | `error-handling.md` |

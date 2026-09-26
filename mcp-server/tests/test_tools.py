@@ -86,7 +86,7 @@ class TestSearchTemplates(unittest.TestCase):
 
 class TestGetTemplate(unittest.TestCase):
     def test_composes_template_with_standards(self):
-        result = get_template("northwind-stocktake-schema")
+        result = get_template("stocktake-schema")
         self.assertTrue(result["body"].strip())
         layer = result["front_matter"]["standards_layer"]
         self.assertEqual([s["name"] for s in result["standards"]], layer)
@@ -100,7 +100,7 @@ class TestGetTemplate(unittest.TestCase):
 
     def test_unresolved_standard_reported_not_dropped(self):
         with patch.object(server, "read_standard", return_value=None):
-            result = get_template("northwind-stocktake-schema")
+            result = get_template("stocktake-schema")
         self.assertEqual(result["standards"], [])
         self.assertEqual(
             result["standards_missing"],

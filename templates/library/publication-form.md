@@ -1,11 +1,11 @@
 ---
-template: library-catalog-publication-form
+template: publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
 version: 0.4.1
 status: draft
-implements: library-catalog-schema
+implements: catalog-schema
 record_source: qryPublication_frm
 standards_layer: [form-conventions, naming-conventions]
 new_forms: [frmPublication_Edit, sfrmPublication_Creator, sfrmPublication_Genre]
@@ -24,7 +24,7 @@ warnings:
 
 ## Intent
 
-A default entry/edit form for the catalog's publications (`library-catalog-schema`). It provides a
+A default entry/edit form for the catalog's publications (`catalog-schema`). It provides a
 working, feature-complete layout for cataloguing a title and navigating the collection through a
 **layered record selector**. This is a **default layout, not a finished design** — structurally and
 functionally complete, but unstyled; the adopter applies their own polish ("ugly but correct" is a
@@ -35,10 +35,10 @@ this template **names** the framework pieces it relies on, it does not redefine 
 
 | Object | Role |
 |---|---|
-| `library-catalog-schema` (`implements`) | The tables this form edits |
+| `catalog-schema` (`implements`) | The tables this form edits |
 | `qryPublication_frm` | The form's record source over `tblPublication`; its `WHERE` is rewritten by the selector |
 | `form-conventions.md` | House design defaults **+** the named reusable patterns (layered selector, quick-add, validation highlights, audit display) |
-| `library-record-finder-scaffold` (companion `vba-scaffold`) | The record-finder engine — pick-list build (`FinderRowSource`) + jump-to-record (`JumpFormToRecord`) — realized as a paired scaffold, not redefined here |
+| `record-finder-scaffold` (companion `vba-scaffold`) | The record-finder engine — pick-list build (`FinderRowSource`) + jump-to-record (`JumpFormToRecord`) — realized as a paired scaffold, not redefined here |
 | Forms framework (deferred) | The `TempVars` wrappers and the audit / image / validation helpers — supplied by the host, **named not redefined** here |
 
 ### Ask before building
@@ -137,7 +137,7 @@ build record if a fourth form was needed.)*
 ## Features
 
 1. **Layered record selector ("All or One")** — *the headline; the engine is the companion
-   `library-record-finder-scaffold` (`vba-scaffold`).* Three filter inputs rebuild the selector's row
+   `record-finder-scaffold` (`vba-scaffold`).* Three filter inputs rebuild the selector's row
    source, and the selector's selection rewrites the form:
    - **(a) Genre + Alpha** — `cboFilterGenre` and `sfrmAlphaSelect` drive the genre/alpha row-source
      query. The chosen letter rides in a **`TempVar`** (`Alpha1stChar`), per `query-style.md`, so the
@@ -180,7 +180,7 @@ patterns; not baseline form features):*
 - **Naming** (`naming-conventions.md`) — form / subform / record-source names.
 - **Forms framework** (host-supplied, named not redefined) — the `TempVars` wrappers and the audit /
   image / validation helpers. *(The record-finder engine — the pick-list build and the jump-to-record —
-  is realized by the companion `library-record-finder-scaffold`.)*
+  is realized by the companion `record-finder-scaffold`.)*
 
 ## Materialization
 

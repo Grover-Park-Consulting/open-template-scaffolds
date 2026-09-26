@@ -1,6 +1,6 @@
 ---
-template: northwind-stocktake-scan-outcome-first
-title: Northwind Scanned Stocktake — outcome-first method
+template: stocktake-scan-outcome-first
+title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
 version: 0.6.0
@@ -18,35 +18,35 @@ standards_layer:
   - query-style
   - naming-conventions
   - design-principles
-implements: northwind-stocktake-schema
+implements: stocktake-schema
 house_assumptions:
-  - "The stored count for a product's count line (CountedQuantity) is kept current as scans are
+  - "CountedQuantity — kept current as scans are
     added, not recomputed from the scan log at the moment somebody reads it. A reconciled stocktake
     count is a durable audit fact — business decisions are made from it — so it must not shift if
     scan detail is later edited or archived. This mirrors the table template's own declared
     assumption; a build that instead computes the count on demand from the scan log has changed
     that promise."
-  - "A count line's flag says only that it needs review, not which direction — shortfall or overage
+  - "RemediationStatus — a count line's flag says only that it needs review, not which direction — shortfall or overage
     — tripped it. That is answered by the sign of the counted-versus-expected variance, read at
     review time; it is not stored a second time on the count line itself. This mirrors the table
     template's own declared assumption; a build that stores the direction on the count line has
     added something this template does not ask for."
 warnings:
-  - "Two counters can scan the same product, for the first time in a session, at the same moment.
+  - Two counters can scan the same product, for the first time in a session, at the same moment.
     Both can find no count line for it and both try to create one — the schema's own unique index
     on (session, product) then refuses the second attempt with an engine error. The build must
     turn that refusal into 'use the line the other counter just created', not let it reach the
     counter as a failure. Checking for an existing line first narrows the window; it does not
-    close it."
+    close it.
 related:
-  - "school-district-asset-tracking-outcome-first — a similar process for a different purpose:
+  - "capital-asset-tracking-outcome-first — a similar process for a different purpose:
     reconciling a table of items against barcode scans. The purpose of asset-tracking is to account
     for **fixtures and equipment** rather than **sale inventory**. The scan-resolution logic differs
     between the two and they solve similar, but different, problems, so they do not share a
     scan-resolution mechanism."
 ---
 
-# Northwind Scanned Stocktake — outcome-first method
+# Scanned Stocktake — outcome-first method
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The section after that is addressed to the AI assistant building it, and
@@ -66,11 +66,11 @@ template promises.
 and leaves the route to whoever builds it. Unlike the audit-logging templates in this library, no
 single mechanism is named here, because the platform does not force one: ordinary VBA, run from a
 form the counters use, does everything this template asks for. The other version of this template —
-the rules-based method, `northwind-stocktake-scan-scaffold` — produces the same result from working
+the rules-based method, `stocktake-scan-scaffold` — produces the same result from working
 procedure skeletons you fill in. Either one can be built against your own database, and they can be
 built one after the other, against separate copies, to compare.
 
-**This template realizes logic the table template leaves open.** `northwind-stocktake-schema` builds
+**This template realizes logic the table template leaves open.** `stocktake-schema` builds
 the tables a scanned stocktake needs and states, in its own Business Rules, what has to happen when a
 scan comes in — but defers *how* to "the coding section." This is that coding section, stated as an
 outcome rather than as code. It assumes those tables already exist.
@@ -412,13 +412,13 @@ binds is stated only there.
   what *Free to choose alternatives* leaves open. Do not import a mechanism from the paired
   rules-based template on the assumption that a promise this firm must mean one route: it doesn't,
   here.
-- **You may read `northwind-stocktake-scan-scaffold.md`, the rules-based method that produces this
+- **You may read `stocktake-scan-scaffold.md`, the rules-based method that produces this
   same result, for one worked decomposition — nothing more.** It shows procedure names, a control
   flow, and where the domain logic slots in. None of that is binding here. Copying its shape wholesale
   is a legitimate build; so is a different one that still satisfies every check. That template runs
   the check list below against its own builds and says so where it names this one: the checks belong
   to the result, not to either route.
-- **Read `northwind-stocktake-schema.md`, the table template this realizes, for the tables, the
+- **Read `stocktake-schema.md`, the table template this realizes, for the tables, the
   Business Rules, and the seed values this build reads and writes** — in particular Business Rule 2
   (scan resolution and the duplicate check), Business Rule 3 (the rollup), and Business Rules 7 and 8
   (the variance tolerances, in both directions). This file restates their outcome; that file is where

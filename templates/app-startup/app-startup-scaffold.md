@@ -30,7 +30,7 @@ new_procedures:
 seeds:
   - USysLocalSetting.BackEndPath
 house_assumptions:
-  - USysLocalSetting — a name/value settings table rather than one column per setting, mirroring the shared tblAppSetting so both read the same way; a practice preferring one column per setting changes the two accessor procedures and nothing else
+  - "USysLocalSetting — a name/value settings table rather than one column per setting, mirroring the shared tblAppSetting so both read the same way; a practice preferring one column per setting changes the two accessor procedures and nothing else"
 warnings:
   - This scaffold changes the front end people already open. It adds code that runs the moment the
     file opens, and it rewrites where the table links point. A build against an application in real
