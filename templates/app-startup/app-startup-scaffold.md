@@ -4,7 +4,7 @@ title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
 version: 0.4.2
-status: draft
+status: stable
 requires_tables:
   - USysLocalSetting
 standards_layer:
@@ -49,6 +49,8 @@ related:
 ---
 
 # Application Startup and Back-End Relinking — VBA Scaffold
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

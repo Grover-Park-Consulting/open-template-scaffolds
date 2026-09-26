@@ -4,7 +4,7 @@ title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
 version: 0.10.3
-status: draft
+status: stable
 implements: audit-logging-lite-schema
 standards_layer:
   - audit-columns
@@ -25,6 +25,8 @@ warnings:
 ---
 
 # Access Audit Logging (Lite) — outcome-first method
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,

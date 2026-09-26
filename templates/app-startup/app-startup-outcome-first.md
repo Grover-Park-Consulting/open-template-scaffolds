@@ -4,7 +4,7 @@ title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
 version: 0.2.1
-status: draft
+status: stable
 standards_layer:
   - design-principles
   - error-handling
@@ -34,6 +34,8 @@ related:
 ---
 
 # Application Startup and Back-End Relinking — outcome-first method
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose application this is. The section after that is addressed to the AI assistant building it, and

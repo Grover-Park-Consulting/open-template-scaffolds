@@ -4,7 +4,7 @@ title: Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
 version: 0.4.0
-status: draft
+status: review
 implements: officiating-assignment-schema
 record_source: qryGame_frm
 standards_layer: [form-conventions, naming-conventions, startup-conventions]
@@ -17,6 +17,8 @@ warnings:
 ---
 
 # Officiating Assignment — Game Assignment Form
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

@@ -4,7 +4,7 @@ title: Officiating Assignment — Table Schema
 domain: scheduling-assignment
 type: table-schema
 version: 0.4.0
-status: draft
+status: stable
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tlkpPlayLevel
@@ -29,6 +29,8 @@ house_assumptions:
 ---
 
 # Officiating Assignment — Table Schema
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

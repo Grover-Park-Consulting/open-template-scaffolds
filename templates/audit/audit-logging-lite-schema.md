@@ -4,7 +4,7 @@ title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
 version: 0.6.1
-status: draft
+status: review
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tblAuditLog
@@ -68,6 +68,8 @@ house_assumptions:
 ---
 
 # Access Audit Logging (Lite) — Table Schema
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

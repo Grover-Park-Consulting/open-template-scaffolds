@@ -4,7 +4,7 @@ title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
 version: 0.2.1
-status: draft
+status: stable
 implements: capital-asset-tracking-schema
 standards_layer:
   - audit-columns
@@ -40,6 +40,8 @@ related:
 ---
 
 # Capital Asset Tracking — outcome-first method
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,

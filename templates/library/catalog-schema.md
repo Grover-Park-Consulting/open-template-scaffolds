@@ -4,7 +4,7 @@ title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
 version: 0.4.2
-status: draft
+status: review
 standards_layer:
   - audit-columns
   - naming-conventions
@@ -24,6 +24,8 @@ house_assumptions:
 ---
 
 # Library Publication Catalog — Table Schema
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

@@ -4,7 +4,7 @@ title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
 version: 0.1.1
-status: draft
+status: stable
 implements: catalog-schema
 standards_layer:
   - audit-columns
@@ -28,6 +28,8 @@ related:
 ---
 
 # Library Publication Catalog — outcome-first method
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,

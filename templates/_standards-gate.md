@@ -5,10 +5,10 @@
 **If that developer is you:** this file holds the questions you will be asked and why. You do not
 have to read it — every decision in it reaches you as a question.
 
-**Pilot scope.** Only the two audit-logging templates run this gate today — `audit/audit-logging-lite-scaffold.md`
-and `audit/audit-logging-lite-outcome-first.md`, the rules-based and outcome-first methods of
-the same build. Nothing else points at it, and nothing else should until the pilot has been
-tried and judged.
+**Scope.** Every template in the library runs this gate — it is step 3 of any run (§1.1), asked once
+whether the build is table-schema, vba-scaffold, form-spec, or outcome-first. `standards/` governs
+everything a template produces regardless of type, and the gate is the one place that decision is
+surfaced to the developer.
 
 ---
 
@@ -178,9 +178,8 @@ Server gets a fifth**, one the database maintains itself so it can tell whether 
 a record while you had it open. Access has nothing of its own that does that, so on a table in an
 Access file the fifth column is not added at all. They go at the end, in that order, on every table.
 
-They matter more here than in most builds. The audit system this template installs writes to the
-four who-and-when columns every time anyone changes a record, so their names are built into the code
-you get. If you change the names here, the code changes with them.
+The house audit columns are the record any template writes to when it changes a row, so their names
+are built into the code you get. If you change the names here, the code changes with them.
 
 </details>
 ```

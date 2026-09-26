@@ -4,7 +4,7 @@ title: Error Logging — Table Schema
 domain: errors
 type: table-schema
 version: 0.2.0
-status: draft
+status: review
 standards_layer:
   - naming-conventions
   - audit-columns
@@ -28,6 +28,8 @@ warnings:
 ---
 
 # Error Logging — Table Schema
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

@@ -4,7 +4,7 @@ title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
 version: 0.4.0
-status: draft
+status: stable
 implements: catalog-schema
 requires_tables:
   - tblPublication
@@ -28,6 +28,8 @@ warnings:
 ---
 
 # Record Finder for an Entry Form — VBA Scaffold
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

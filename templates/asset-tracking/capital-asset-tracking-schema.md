@@ -4,7 +4,7 @@ title: Capital Asset Tracking — Table Schema
 domain: asset-tracking
 type: table-schema
 version: 0.5.0
-status: draft
+status: stable
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
 house_assumptions:
@@ -14,6 +14,8 @@ house_assumptions:
 ---
 
 # Capital Asset Tracking — Table Schema
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -307,7 +309,7 @@ fourteen tables.
 | 3 | Each declared unique index refuses its duplicate: `tblAsset.AssetBarcode`; `tblSite.SiteCode`; `tblRoom` on (`SiteID`, `RoomNumber`); `tblDepartment.DepartmentName`. |
 | 4 | Sample the seventeen relationships in `## Relationships` by their two declared behaviors, not one at a time: a **restrict** relationship (e.g. `tblRoom → tblAsset`) refuses deleting the parent while a child row exists; a **cascade** relationship (`tblAsset → tblAssetHistory`, `tblInventoryAuditSession → tblInventoryAuditScan`) deletes the children when the parent goes. Confirm at least one of each kind actually behaves as declared, not only that `validate` resolved the table names. |
 | 5 | Every seed row in the six lookup tables (`## Entities → Lookup tables`) is present exactly as listed — all seven `tlkpAssetCategory` rows, all five `tlkpAssetStatus` rows, and so on. Confirm `tlkpAssetCategory.IsDepreciable` specifically: `Land` is `False`, every other seeded row is `True`. |
-| 6 | The house audit columns (`AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn`, from the host's audit convention) stamp correctly on every `tbl`/`tlkp` table, per Standards Layer below. |
+| 6 | The audit columns the active standards layer supplies (see Standards Layer below) stamp correctly on every `tbl`/`tlkp` table: who created the row and when, on insert; who last changed it and when, on each update; and the created pair left frozen on a later update. |
 | 7 | An insert on the child side of a **restrict** relationship (e.g. a `tblAsset` row citing a `RoomID` that doesn't exist) is refused — the same sample used for check 4, tested from the other direction. |
 | 8 | An insert with `AssetDescription`, `SiteName`, or another `Text(n)` field longer than its declared width is refused, not silently truncated — no field in this schema documents truncation as intended behavior. |
 | 9 | `Description` is present on every field of every built table, matching this template's own Purpose & rules text. |
@@ -318,10 +320,14 @@ library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`
 
 ## Standards Layer
 
-- **Audit columns** — `AddedBy` / `AddedOn` / `ModifiedBy` / `ModifiedOn` on every `tbl`/`tlkp`
-  table, supplied by the host's audit convention. Not present in the field tables above; see
-  Business Rule 3 for the separate, template-defined movement/change history, which is not a
-  substitute for these.
+- **Audit columns** — the house default set (`CreatedDate` / `CreatedBy` / `ModifiedDate` /
+  `ModifiedBy`) on every `tbl`/`tlkp` table, maintained by the active standards layer's mechanism
+  (`standards/audit-columns.md`). The contributing host's own database stamped who-and-when its
+  own way (`AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn`, for one), and a target database may do
+  the same. Check the target database's existing convention before naming any new audit column and
+  match it, falling back to the house names only where none is present. Not present in the field
+  tables above; see Business Rule 3 for the separate, template-defined movement/change history,
+  which is not a substitute for these.
 - **Naming conventions** — this template follows the OTS `tbl`/`tlkp` prefix policy and
   field-qualification rules (`Status` → `<Entity>StatusID`, `Notes` → `<Entity>Notes`). A
   practice on a different naming convention builds the same entities under its own policy

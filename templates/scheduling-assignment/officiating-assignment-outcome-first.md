@@ -4,7 +4,7 @@ title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
 version: 0.1.0
-status: draft
+status: stable
 implements: officiating-assignment-schema
 standards_layer:
   - audit-columns
@@ -36,6 +36,8 @@ related:
 ---
 
 # Officiating Assignment — outcome-first method
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,

@@ -88,7 +88,7 @@ present on every template; conditional keys are required when their condition ho
 | `domain` | required | string | Domain folder name (e.g. `stocktakescan`, `sales`, `hr`); `_meta` reserved for infra |
 | `type` | required | enum | `table-schema` \| `vba-scaffold` \| `outcome-first` \| `form-spec` \| `spec` |
 | `version` | required | semver string | Template version, counted per template and independent of any library version. **Bump it in the same commit as any change to what the template produces** — patch for a correction an adopter needn't act on, minor for anything they would (a new or renamed field, a changed default, an added rule or section), major for a redesign an existing build can't absorb. It is the only thing that distinguishes a copy someone took earlier from the current file; see `CONTRIBUTING.md` → *Versioning a change* for why this is a rule and not a nicety |
-| `status` | required | enum | `draft` \| `review` \| `stable` |
+| `status` | required | enum | `draft` \| `review` \| `stable` — what moves a template between them is defined in `_maturity-criteria.md`, not by inspection |
 | `extends` | conditional | string | Required when the template grafts onto an existing database; names the host (e.g. `Northwind (Access Developer Edition)`) |
 | `requires_tables` | conditional | list[string] | Existing tables the template hooks into. Required when `extends` is present |
 | `requires_fields` | optional | list[string] | Specific existing fields relied on, as `Table.Field`. **Fields the host must already have** — a template that creates a field on an existing table declares it under `new_fields` instead |
@@ -228,8 +228,9 @@ rather than assuming it travels.
 3. Every `FK → <Table>` named in a field table resolves to either another entity in this
    template, a `requires_tables` entry, or another `new_tables` entry.
 4. Every table named in `## Relationships` is an entity, a lookup, or a `requires_tables` entry.
-5. Audit columns (`AddedBy`, `AddedOn`, `ModifiedBy`, `ModifiedOn`) do **not** appear in field
-   tables — they belong to the standards layer (§6) and are flagged if present.
+5. Audit columns (the house set — e.g. `CreatedDate`, `CreatedBy`, `ModifiedDate`, `ModifiedBy` under
+   the OTS default) do **not** appear in field tables — they belong to the standards layer (§6) and
+   are flagged if present.
 6. `## Validating the build` is present and non-empty. `validate` confirms the section exists — it
    cannot judge whether the checks it lists are the right ones; that stays the human review gate.
 7. Every bullet in `## Relationships` states its cascade behavior explicitly — the text contains
@@ -330,7 +331,7 @@ same template produces house-conforming output for any practice. Front-matter
 
 | Value | What it covers |
 |---|---|
-| `audit-columns` | `AddedBy` / `AddedOn` / `ModifiedBy` / `ModifiedOn` on new tables, supplied by the host's audit convention — never in the template body |
+| `audit-columns` | The house who-and-when columns (`CreatedDate` / `CreatedBy` / `ModifiedDate` / `ModifiedBy` under the OTS default) on new tables. A host database may already use different names for the same thing — check it before naming new ones, per `standards/audit-columns.md`'s own Notes section. Never named in the template body |
 | `naming-conventions` | Table/field prefix policy (e.g. Northwind no-prefix vs the OTS `tbl`/`tlkp`). The template states which house style it follows; a different practice builds the same entities under its own conventions without editing the template |
 | `error-handling` | The house `errHandler` / global-error pattern for any VBA generated alongside |
 | `query-style` | How VBA and saved queries write and run SQL — where SQL lives, aliasing/qualification, formatting, and safe criteria. Applies to any generated code that touches data (notably `vba-scaffold`) |

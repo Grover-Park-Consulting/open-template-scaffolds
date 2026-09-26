@@ -4,7 +4,7 @@ title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
 version: 0.8.1
-status: draft
+status: review
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
@@ -39,6 +39,8 @@ house_assumptions:
 ---
 
 # Scanned Stocktake — Table Schema
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -365,7 +367,7 @@ new tables, plus the two fields it grafts onto the existing `Products` table (ch
 | 3 | `StockTakeCount`'s unique index on (`StockTakeSessionID`, `ProductID`) refuses the duplicate it names — a second count line for the same product in the same session. |
 | 4 | `StockTakeSession → StockTakeCount` and `StockTakeCount → StockTakeScan` cascade-delete as declared. `Products → StockTakeCount` does **not** — deleting a product with count history is refused, never silently dropping the history — and `Products → ProductVarianceAllowance` **does** cascade, removing the tolerance row when its product goes. Confirm both the cascading and the non-cascading case directly; they sit on opposite sides of the same host table. |
 | 5 | The three `SystemSettings` seed rows (`DefaultAllowableShortageRate`, `DefaultAllowableOverageRate`, `DuplicateScanWindowSeconds`) are present with their specified values, in the host's existing `[percent*1000]`/plain-integer conventions as documented. |
-| 6 | The house audit columns (`AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn`, per the Northwind data-macro pattern) stamp correctly on every new table, per Standards Layer below. |
+| 6 | The audit columns the active standards layer supplies (see Standards Layer below) stamp correctly on every new table: who created the row and when, on insert; who last changed it and when, on each update; and the created pair left frozen on a later update. |
 | 7 | **Graft-specific, not part of the generic baseline:** `Products.SKUBarCode` and `Products.QuantityInPackage` exist (created fresh, or confirmed against fields the developer already had), `SKUBarCode` carries its index and the index is **unique** — inserting or updating a second product to the same barcode as an existing one is refused — and, where the host is split, every front end's linked-table definition of `Products` was refreshed and shows both new fields. A front end that wasn't relinked is the specific, silent failure this template's own Prerequisites section warns about: code referencing either field fails with "item not found in this collection." |
 | 8 | A `StockTakeCount` insert citing a `StockTakeSessionID` or `ProductID` that doesn't exist is refused; likewise a `StockTakeScan` insert citing a `StockTakeCountID` that doesn't exist. |
 | 9 | An insert with `ScanCode` or another `Text(n)` field longer than its declared width is refused, not silently truncated. |
@@ -380,8 +382,13 @@ library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`
 The following are deliberately **omitted** here and contributed by the developer's standards
 layer, so the same template produces house-conforming output for any practice:
 
-- **Audit columns** — `AddedBy`, `AddedOn`, `ModifiedBy`, `ModifiedOn` on every new table,
-  maintained by the Northwind data-macro audit pattern (NorthwindFeatures #30).
+- **Audit columns** — the house default set (`CreatedDate`, `CreatedBy`, `ModifiedDate`,
+  `ModifiedBy`) on every new table, maintained by the active standards layer's mechanism
+  (`standards/audit-columns.md`). A host this template is grafted onto may already stamp
+  who-and-when its own way — a Northwind-derived database, for one, commonly uses
+  `AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn` via data macros. Check the target database's
+  existing convention before naming any new audit column and match it; use the house names only
+  where no existing convention is present.
 - **Naming conventions** — table/field prefix policy. *This template honors Northwind's
   no-prefix house style; the OTS default would instead apply `tbl`/`tlkp`.* **Northwind
   is itself the worked illustration of why standards must be user-customizable: the team developing the

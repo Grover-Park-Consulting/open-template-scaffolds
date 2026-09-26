@@ -4,7 +4,7 @@ title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
 version: 0.4.1
-status: draft
+status: stable
 implements: catalog-schema
 record_source: qryPublication_frm
 standards_layer: [form-conventions, naming-conventions]
@@ -17,6 +17,8 @@ warnings:
 ---
 
 # Library Catalog — Publication Entry Form
+
+**Status last determined:** 2026-09-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
