@@ -263,7 +263,9 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     '            leaves an unscanned product with no line at all.
     ' [SCAFFOLD] Where the host computes on-hand with a VBA function rather than a query, this is a
     '            loop over the product list calling it per product, not a single INSERT ... SELECT.
-    '            Which it is depends on the host; both satisfy the rule.
+    '            Which it is depends on the host; both satisfy the rule. Read the host's on-hand
+    '            before the transaction opens, not inside it: a host function may itself write and
+    '            then read back through a domain function, which cannot see the transaction's work.
     ' >>> baseline creation, per query-style.md <<<
 
     ' [BUSINESS LOGIC #5] THREE: evaluate EACH line just created, immediately, in this same

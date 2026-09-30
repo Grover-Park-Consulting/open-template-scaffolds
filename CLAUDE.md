@@ -373,10 +373,12 @@ template's folder for a mechanism you're about to reuse (see the complementary-t
 and what held — not a rule list to apply blindly. If a fact it records no longer holds in your
 environment, say so in your own record rather than assuming the old one is still current.
 
-**After building**, write the build record to the developer's own location as always, and also copy
-it into `build-records/<template-slug>/`, named `YYYY-MM-DD-<short-description>.md`. Create the
-template's folder if it doesn't exist yet. This is not optional housekeeping — it is the whole point
-of the folder existing.
+**As you build**, write the build record to the developer's own location as always, adding to it as
+each thing happens rather than writing it up afterward.
+
+**Once the build is finished**, copy the finished record once into `build-records/<template-slug>/`,
+named `YYYY-MM-DD-<short-description>.md`. Create the template's folder if it doesn't exist yet. This
+is not optional housekeeping — it is the whole point of the folder existing.
 
 ## Write for someone who has never seen this before
 

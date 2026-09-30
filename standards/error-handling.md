@@ -280,8 +280,9 @@ back an empty transaction — while reads made inside the transaction cannot see
 uncommitted work. **Nothing is raised and nothing is logged**, which is what makes this worth a rule:
 the code looks correct, compiles, and runs, and the damage is a wrong number rather than an error.
 
-**The same applies to every read inside the transaction.** Domain functions — `DLookup`, `DSum`,
-`DCount` — run on a connection of their own and never see uncommitted work. Inside a transaction,
+**The same applies to every read inside the transaction**, including a read made by a procedure you
+call from inside it, since that procedure may use a domain function of its own. Domain functions —
+`DLookup`, `DSum`, `DCount` — run on a connection of their own and never see uncommitted work. Inside a transaction,
 read with a recordset on the same `db`, or the value that comes back is the last committed one and
 the code proceeds on it.
 

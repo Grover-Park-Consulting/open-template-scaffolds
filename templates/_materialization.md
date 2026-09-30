@@ -747,7 +747,7 @@ reading a row the transaction just inserted or updated is the same defect with a
 **A domain function reading a table the transaction does not write is safe** and needs no change: a
 lookup against `Products` from inside a transaction that writes only count and scan rows returns the
 right answer. The question to ask at each call site is not "is a transaction open?" but "does this
-transaction write the table I am about to read?"
+transaction, or anything it calls, write the table I am about to read?"
 
 **Widening a transaction widens the answer to that question.** Code that is correct with one
 transaction per unit of work can break unchanged when the transaction is widened to cover a batch,
