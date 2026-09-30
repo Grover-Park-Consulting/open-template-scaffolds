@@ -9,7 +9,7 @@ application's shared and per-person folders are confirmed or created, and then m
 
 Outcome-first route: the template sets the finished condition and ships no code; you choose the
 structure and write it, under my standards. (Scaffold is the other route: the procedures come
-written, with the house-specific parts marked for you to fill in.)
+written, with the parts that depend on my setup marked for me to decide with you.)
 
 Resources, relative to the Open Template Scaffolds folder:
 templates/app-startup/app-startup-outcome-first.md (the template), standards/ (my conventions),

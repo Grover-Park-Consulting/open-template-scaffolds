@@ -9,7 +9,7 @@ never be saved in an inconsistent combination, whatever the route the save was m
 
 Outcome-first route: the template sets the finished condition and ships no code; you choose the
 structure and write it, under my standards. (Scaffold is the other route: the procedures come
-written, with the house-specific parts marked for you to fill in.)
+written, with the parts that depend on my setup marked for me to decide with you.)
 
 Resources, relative to the Open Template Scaffolds folder:
 templates/library/catalog-outcome-first.md (the template),

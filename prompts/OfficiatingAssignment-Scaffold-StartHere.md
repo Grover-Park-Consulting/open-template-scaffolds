@@ -9,8 +9,11 @@ rate resolved for an assignment is always the one in force on the game's date, a
 an official always lands in one shared, confirmed folder under a name that can't collide with anyone
 else's.
 
-Scaffold route: the template ships the procedures already written, with the house-specific parts
-marked for you to fill in under my standards. (Outcome-first is the other route: the template sets
+Scaffold route: the template ships the procedures already written. The parts that depend on my
+setup are marked in the template. Do not fill any of them in on your own: show me each one, say
+what you would put there and why, and wait for my answer. My standards tell you the rules to apply
+to what I approve; they do not decide the marked parts for you. (Outcome-first is the other route:
+the template sets
 the finished condition and no code, and you choose the structure yourself.)
 
 Resources, relative to the Open Template Scaffolds folder:
