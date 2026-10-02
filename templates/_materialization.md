@@ -449,7 +449,10 @@ can call a public function there — the only way to reach the Windows user, sin
 of engine reach). **In a split application that means the back end *and* every front end**: the macro
 is attached to the table in the back end, but when it fires because someone edited through a *link*,
 it looks for `AuditUser()` in **that person's front end**. Missing there, the stamp fails — and since
-`CreatedBy` is `Required`, that front end cannot insert a row at all. This is the placement mistake a
+`CreatedBy` is `Required`, that front end cannot insert a row at all. The message shown when the
+function is missing is "The function 'AuditUser' is not valid for expressions used in data macros."
+That wording reads as a statement about what data macros may call. It means the function is not
+there. This is the placement mistake a
 single-file test can never catch, because in one file there is only one place for the function to be.
 
 ```vba

@@ -250,6 +250,11 @@ End Sub
 - Increment by 10 from 100; restart at a round number for `Cleanup:` and `errHandler:`.
 - **Renumber a procedure you edit, or strip its numbers entirely.** Numbers that no longer match the
   lines are worse than none — `Erl` reports a line where nothing failed.
+- **Number the statements that can fail, never a declaration.** `Erl` returns the last numbered
+  line that ran. A numbered `Dim` ahead of a failing unnumbered statement makes `Erl` report the
+  `Dim`'s number.
+- **Read `Erl` on the handler's first statement**, before any other numbered handler line runs.
+  Once a numbered handler line has run, `Erl` reports that line, not the line that failed.
 - **Line numbering is itself a house-specific choice.** This standard relies on `Erl`, which needs
   numbered lines, applied with a line-numbering tool on import. Other practices number manually, or
   reject line numbers entirely — in which case `Erl` returns 0 and the central handler simply logs

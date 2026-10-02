@@ -102,6 +102,12 @@ so an assistant doesn't mistake old grounds for new permission:
   the check on one route and failing it on the other. One sentence added, naming the route; the same
   sentence added to the five schema checks that repeat the rule. An addition, not a rewording.
 
+- 2026-10-02 (×1): `standards/error-handling.md`, "Line numbering". Two bullets added: number only
+  statements that can fail (a numbered declaration makes `Erl` report the declaration's number,
+  shown by a probe), and read `Erl` on the handler's first statement (George's own long
+  experience). The standard said nothing on either, and a build numbered a `Dim`. An addition, not a
+  rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 
