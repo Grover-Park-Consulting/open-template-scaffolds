@@ -311,7 +311,7 @@ tables.
 | 5 | `tlkpOfficialPosition`'s two declared seed rows (Plate, Base) and `tblAppSetting`'s one (`OfficialPhotoFolder` = `Images\`) are present exactly as specified. **Not applicable** to `tlkpPlayLevel`'s sample rows (10U/12U/14U/16U/18U) — those are documented as samples to replace, not declared in front-matter `seeds`, so their absence is not a defect. |
 | 6 | The house audit columns stamp correctly on every table, per Standards Layer below. |
 | 7 | A `tblGameOfficial` insert citing a `GameID`, `OfficialID`, or `OfficialPositionID` that doesn't exist is refused. |
-| 8 | An insert with `TeamName`, `VenueName`, or another `Text(n)` field longer than its declared width is refused, not silently truncated. |
+| 8 | An insert with `TeamName`, `VenueName`, or another `Text(n)` field longer than its declared width is refused, not silently truncated. Test it on the route this build actually inserts by: a bound form or recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters without raising an error, so where the build inserts by SQL the build itself must refuse the value, or the entry records that it does not. |
 | 9 | `Description` is present on every field of every built table, matching this template's own Purpose & rules text. |
 | 10 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming what already exists — never a bare "duplicate object" error. |
 

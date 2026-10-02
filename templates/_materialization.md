@@ -48,8 +48,9 @@ whether the artifact is tables, code, or a form.
 It is also what `_template-schema.md` §10.4 promises the developer in your own words, and it is the
 reason the detail can stay out of the messages they read while they are still deciding things.
 
-**Name it `build-record.md`**, and write it in the folder that holds the artifact — beside the
-`.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
+**Name it `build-record-YYYY-MM-DD-HHMM.md`**, using the date and time the build started, so a
+second build in the same folder never overwrites the first. Write it in the folder that holds the
+artifact — beside the `.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
 one record covers both.
 
 **A build record does not end its life with the build it documents.** In addition to the developer's

@@ -283,7 +283,10 @@ copied unchanged, and not reinvented from scratch per template:
    field's own documentation names truncation as the intended behavior (`ErrorDescription` in
    `error-logging-schema.md` is the one declared exception in the library today). Silent truncation
    passing as success is the same failure shape X17/X18 name for Data Macros, one layer down, at the
-   field type itself.
+   field type itself. **Test it on the route the build actually inserts by:** a bound form or a
+   recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters without
+   raising an error, so where the build inserts by SQL the build itself must refuse the value, or the
+   entry records that it does not.
 9. **`Description` actually landed on the field, not only in the template's prose.** The classic
    order-of-operations defect `_materialization.md` documents — `Description` set *after*
    `TableDefs.Append`, never before, or error 3219 — is cheap to check and has already bitten this

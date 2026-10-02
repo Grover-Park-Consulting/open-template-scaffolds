@@ -400,7 +400,7 @@ they do, which is the point of keeping the two apart.
 behavior every time, not the same structure*, both under that heading above.** Build a system that
 satisfies every promise there and passes every entry under *How you validate the template's output*.
 Then run every one of those checks yourself, on a copy, and record what each one did — in
-`build-record.md`, written before you report the build finished, never afterward and never only
+`build-record-YYYY-MM-DD-HHMM.md`, written before you report the build finished, never afterward and never only
 when asked for it. The checks bind you twice: the build has to pass them, and you have to run them. How you build is yours to decide,
 within *Free to choose alternatives*. Which checks you run is not — all of them, every build. Every
 other section in this file — *Intent*, *What the template does not do*, *Parked / future

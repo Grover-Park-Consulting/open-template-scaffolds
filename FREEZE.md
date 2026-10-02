@@ -96,6 +96,12 @@ so an assistant doesn't mistake old grounds for new permission:
   host's own handler, plus one sentence in "What a conforming build looks like". A correction of
   an error, not a rewording.
 
+- 2026-10-02 (×1): `templates/_template-schema.md` §4.2 item 8. The wording "refused, not silently
+  truncated" hid a route-dependent behavior: a bound form or recordset refuses an over-long value, and
+  a SQL `INSERT` stores the first n characters without an error, which a build record showed passing
+  the check on one route and failing it on the other. One sentence added, naming the route; the same
+  sentence added to the five schema checks that repeat the rule. An addition, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

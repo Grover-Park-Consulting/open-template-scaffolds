@@ -203,8 +203,10 @@ Seven things follow from this being procedure skeletons rather than an open rout
   that raised it *and* by every procedure it passes through on the way out, and leave no scan row
   behind. **Raise one deliberately rather than waiting for one:** calling `ProcessScan` with a
   `StockTakeSessionID` that does not exist makes the count-line insert violate referential
-  integrity, which raises from inside `EnsureCountLine` — three frames of log entries for the one
-  error, and a scan count unchanged before and after. The multi-frame logging is this route's own
+  integrity, which raises from inside `EnsureCountLine` — one log entry per frame the error passes
+  through (three in the standard shape; a different number where the host's own error handler is
+  in use, and that number is a result to record, not a target), and a scan count unchanged before
+  and after. The multi-frame logging is this route's own
   behaviour rather than anything the outcome-first list promises, so record it as part of running
   check 14, not as a separate entry — the list itself stays the fourteen it already is.
 

@@ -291,7 +291,7 @@ tables, plus one behavior specific to this template (check 7).
 | 6 | The house audit columns (`CreatedDate`/`CreatedBy`/`ModifiedDate`/`ModifiedBy`/`AccessTS`) stamp correctly on every table, per Standards Layer below. |
 | 7 | `PublicationSortTitle` is populated correctly on insert and refreshed on a title edit, through whichever mechanism was chosen for Business Rule 2 (data macro or front-end code) — and, if front-end code was chosen, confirm directly that a title changed by another route (direct table edit, import) does **not** update the sort title, since that gap is the documented cost of that choice. |
 | 8 | A `tblPublicationCreator` or `tblPublicationGenre` insert citing a `PublicationID`, `CreatorID`, or `GenreID` that doesn't exist is refused. |
-| 9 | An insert with `PublisherName`, `CreatorLastName`, or another `Text(n)` field longer than its declared width is refused, not silently truncated. `PublicationTitle` is Memo and has no such limit, by design. |
+| 9 | An insert with `PublisherName`, `CreatorLastName`, or another `Text(n)` field longer than its declared width is refused, not silently truncated. `PublicationTitle` is Memo and has no such limit, by design. Test it on the route this build actually inserts by: a bound form or recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters without raising an error, so where the build inserts by SQL the build itself must refuse the value, or the entry records that it does not. |
 | 10 | `Description` is present on every field of every built table, matching this template's own Purpose & rules text. |
 | 11 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming what already exists — never a bare "duplicate object" error. |
 
