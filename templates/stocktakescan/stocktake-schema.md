@@ -101,7 +101,8 @@ must confirm these exist and wire the new tables to them:
 > **The index is the point of the Short Text field.** Every scan resolves a code by looking it up in
 > this field, which makes it the most frequently read field in the whole design, and a field Access
 > cannot index makes every one of those lookups read the entire product list. A barcode is short —
-> 50 characters is generous for one — so keeping the field small enough to index gives nothing up.
+> the GS1-128 barcode standard allows at most 48 characters, so 50 covers it — so keeping the field
+> small enough to index gives nothing up.
 >
 > **The index must be unique, not merely present.** A barcode identifies one product; without a
 > unique index, two products could carry the same code and scan resolution would silently pick

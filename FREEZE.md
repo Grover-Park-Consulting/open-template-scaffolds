@@ -90,6 +90,12 @@ so an assistant doesn't mistake old grounds for new permission:
   `templates/_template-schema.md` §2's `warnings` row, granted because the *existing* wording was
   shown to cause a real misreading, not because a better wording was proposed.
 
+- 2026-10-02 (×1): `standards/error-handling.md`. The "Substituting your own logger" instructions
+  directed the very merge that produced a handler whose `Resume Cleanup` never ran (a re-raising
+  host handler never returns). Replaced with a logger-or-handler test and a section on accepting a
+  host's own handler, plus one sentence in "What a conforming build looks like". A correction of
+  an error, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

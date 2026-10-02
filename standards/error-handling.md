@@ -132,35 +132,61 @@ Tells the person something went wrong and **records nothing** — once they clos
 trace it happened. Reasonable for a one-off utility or a demonstration, where a log file would be
 clutter. Not reasonable for anything someone else will rely on.
 
-### Substituting your own logger
+### Substituting your own logger, and when it is really a handler
 
-If your practice already has a central error logger, replace the error logger in this standard with
-yours. Your error logger should both record the error and tell the user about the error. If your
-error logger doesn't also report to the user today, either add that to it or include a message for
-the user in the error handler beside the call to the error logger.
+A routine of the host's is a **logger** only if it records the error and returns to the line after
+the call on every path: no dialog, no re-raise, no value the caller acts on. A logger replaces the
+call to `LogError` and nothing else; the procedure still captures `Erl`, calls it, then
+`Resume Cleanup` and `Resume`. How `Erl` reaches the logger is the shop's to decide, and this file
+doesn't prescribe it.
 
-If you do swap the error logger, be careful to replace only that part of the error handler. It still
-needs **capture `Erl`, report, `Resume Cleanup`** and **`Resume`**. If your logger's own signature
-has nowhere to put `Erl`, working that in is yours to decide — this file deliberately doesn't
-prescribe it.
+A routine that does anything else is an **error handler**, not a logger. It shows a dialog, or
+re-raises the error, or returns a value, or ends the application, or has to be paired with a call on
+entry or exit. The procedure's shape then belongs to the handler, and the next section applies.
 
-### Which one to use — and who decides
+### When the host already has an error handler
 
-**Option 1 is the preferred choice.** "Preferred" means the one to put first when offering the
-two; it does **not** mean the one to use without asking (see
-`templates/_template-schema.md` §10.7).
+**To the AI generating code: this is a question for the developer, not a rule you apply.** It is one
+question: accept the host's handler as it is, or use option 1 or option 2 above. Accepting means
+every generated procedure follows the host's own procedure shape exactly as the host's own
+procedures do: its labels, its line numbering, its call, and what follows the call. Never place the
+host's call inside the shape this file gives. The two disagree about what happens after the call,
+and a handler that re-raises never returns, so the lines after it never run.
 
-**To the AI generating code: this is a question for the developer, not a rule you apply.** Ask
-which of the two they want, offer both, and say which is preferred and why. Ask it even when
-the answer looks settled — a shop with its own house handler will say so, and it is the only moment
-they get to.
+1. **Read it first.** Read the handler and at least two of the host's own procedures that call it.
+   Tell the developer what it does on each of these: returns or raises; records, shows a dialog, or
+   both; needs a paired call or set-up; ends the application; writes to a table or file the build
+   also writes.
+2. **Offer accepting only when you can state every one of those.** If any is unclear, or the
+   handler needs a paired call you cannot place correctly in every procedure, do not offer it. Say
+   why, and offer option 1 and option 2.
+3. **Ask, and name accepting as the preferred answer when it is offered.** Preferred does not
+   mean decided (`templates/_template-schema.md` §10.7). Ask it even when the answer looks settled.
+4. **Whichever is chosen, all five of these hold:**
+   - A failure inside a transaction rolls the transaction back.
+   - A caller whose next step depends on the outcome learns the call failed.
+   - `Err` is read before anything clears it.
+   - Generated code calls only a handler that is installed and compiles.
+   - Anything that must happen on failure (a rollback, releasing a file or lock) comes before the
+     handler call whenever that handler re-raises, because it never returns.
+5. **Prove it.** Force one failure inside a transaction, in a procedure called from another, and
+   check the five conditions. Count the log entries and compare them with what the handler's
+   behavior predicts: one per procedure the error passes through for a handler that records and
+   re-raises, one in total for the standard shapes. The build record names which case applied and
+   the entries seen.
+6. **Whatever this section doesn't cover goes in the build record.** Do not add a rule for it.
 
-One hard constraint bounds the answer, and it is not a preference: **generated code must compile on
-the machine it lands on, so never emit a call to a logger that isn't installed.** Where `LogError`
-is absent — no `templates/errors/error-logging-scaffold.md` build, no logger of the developer's
-own — option 1 is not available yet. **Say that, and offer the two real choices:** install
-the logger first, or use option 2 now. Do not quietly pick option 2 and report it afterward; that
-is a decision the developer never made.
+### Which one to use, and who decides
+
+**Option 1 is the preferred choice** when the host has no handler of its own. "Preferred" means the
+one to put first when offering; it does **not** mean the one to use without asking (see
+`templates/_template-schema.md` §10.7). Ask even when the answer looks settled.
+
+One hard constraint bounds every answer: **generated code must compile on the machine it lands on,
+so never emit a call to a handler or logger that isn't installed.** Where `LogError` is absent, say
+so and offer the real choices: install the logger first, use option 2 now, or accept the host's
+handler if it passes step 2 above. Do not quietly pick one and report it afterward; that is a
+decision the developer never made.
 
 ## The logger itself is the one exception
 
@@ -362,7 +388,9 @@ propagate path above, unlogged, for the dependent caller to log and act on.
 ## What a conforming build looks like
 
 A build conforms to this file when every one of these is true of the code it produced. A practice
-replacing this file replaces these conditions with its own.
+replacing this file replaces these conditions with its own. Where the developer accepted the host's
+own handler, conditions 1 to 6 are replaced by the five conditions in "When the host already has an
+error handler"; conditions 7 and 8 still apply.
 
 1. Labels are spelled exactly `errHandler:` and `Cleanup:`.
 2. Every procedure with an `errHandler:` block reaches it from `On Error GoTo errHandler` as its
