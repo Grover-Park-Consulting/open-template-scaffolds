@@ -237,6 +237,24 @@ obvious cause. Check for this before attempting to open, not after a failed atte
 Never end a process without asking — an untitled instance is often the developer's own hung work,
 not a stray one.
 
+**At the start of every build, identify the Access process you will work in. Act on no other.** The
+developer's own Access may be running beside yours, and every route to Access can reach it, because
+Windows lists a running Access as something any program on the machine can attach to. Asking the
+system for "an Access" does not let you name which process you get, so you never work that way.
+
+1. List the `MSACCESS.EXE` process IDs before you begin.
+2. Bring up the instance. Either the Access MCP server opens the file, or you start the process
+   yourself with the file named on its command line and keep the process ID the launch returns.
+3. List again. The new process ID, whose command line names the target file (or is an `-Embedding`
+   instance where the server opened it), is your instance. Write it in the build record. Where you
+   started the process, bind to the file and confirm the instance that answers reports the same ID.
+4. Work only in that instance, and on a check copy whose name is unique to the run. Binding to a
+   file confirms an instance; it does not establish one.
+
+Do nothing to an instance you did not identify as yours: no writes, no quitting, no opening a file
+in it. Something that needs a second Access process you cannot identify is not tested; say so in
+the build record. A split design is the same step for each file you open yourself.
+
 **Diagnostic VBA written to debug a build in progress must guard itself.** A throwaway probe run
 live against the developer's own Access session can trigger the VBE's debugger if the machine is
 set to break on all errors rather than unhandled ones — a setting outside this library's control,
