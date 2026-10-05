@@ -240,11 +240,11 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
 
     On Error GoTo errHandler
     ' [STANDARDS — error-handling.md, "Transaction guard"] the Database used for every write and
-    '            every read below must come from the same Workspace the transaction is begun on —
-    '            never from CurrentDb, which is a different connection and does not see this
-    '            transaction's own uncommitted work.
+    '            every read below must come from the same Workspace the transaction is begun on.
+    '            A transaction covers what is written through its own Workspace; a Database taken
+    '            from a different workspace is outside it.
     Set ws = DBEngine.Workspaces(0)
-    Set db = ws.Databases(0)          ' NOT CurrentDb - see error-handling.md
+    Set db = ws.Databases(0)          ' same workspace as BeginTrans
 
     ws.BeginTrans
     bInTrans = True
@@ -316,10 +316,10 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
 
     On Error GoTo errHandler
     ' [STANDARDS — error-handling.md, "Transaction guard"] db comes from the same Workspace the
-    '            transaction is begun on, never from CurrentDb — see that section for why a wrong
-    '            source here compiles cleanly and still produces a silently wrong number.
+    '            transaction is begun on — see that section for why a db from a different workspace
+    '            compiles cleanly and still produces a silently wrong number.
     Set ws = DBEngine.Workspaces(0)
-    Set db = ws.Databases(0)          ' NOT CurrentDb - see error-handling.md
+    Set db = ws.Databases(0)          ' same workspace as BeginTrans
 
     ws.BeginTrans
     bInTrans = True
@@ -388,11 +388,10 @@ Private Function ResolveScanCode(ByVal sScanCode As String) As Long
     Dim sSql As String
 
     On Error GoTo errHandler
-    ' [STANDARDS — error-handling.md, "Transaction guard"] CurrentDb is fine here, unlike every
-    '            other read/write in this scaffold: ProcessScan's transaction never writes to
-    '            Products, so there is no uncommitted work on this table for a separate connection
-    '            to miss. Pass db in instead if a build ever adds a write against Products inside
-    '            the same transaction.
+    ' [STANDARDS — error-handling.md, "Transaction guard"] CurrentDb is fine here: ProcessScan's
+    '            transaction never writes to Products, so this read has none of the transaction's
+    '            work to see. Pass db in instead if a build ever adds a write against Products
+    '            inside the same transaction, so every read and write in it uses one Database.
     Set db = CurrentDb
 
     ' [BUSINESS LOGIC #2] match sScanCode against Products.SKUBarCode
@@ -569,16 +568,16 @@ Private Sub RefreshCountRollup(ByVal lCountID As Long, ByVal db As DAO.Database)
     '            UPDATE's SET clause (error 3073), so the sum cannot stay inside the UPDATE.
     '            TWO: write a plain UPDATE carrying that number as a literal.
     '            Read the sum with a recordset on db — the same Database object ProcessScan passed
-    '            in, opened on the transaction's own Workspace — NEVER with DSum, and never on a
-    '            fresh CurrentDb. Either of those runs on Access's own separate connection, outside
-    '            the transaction ProcessScan opened, so it cannot see the StockTakeScan row
+    '            in, opened on the transaction's own Workspace — NEVER with DSum. A domain
+    '            function runs on Access's own separate connection, outside the transaction
+    '            ProcessScan opened, so it cannot see the StockTakeScan row
     '            RecordScan inserted moments earlier. The sum comes back as the previously committed
     '            total, this UPDATE succeeds with that wrong number, the transaction commits, and
     '            CountedQuantity runs exactly one scan behind for the life of the session. Nothing is
     '            raised and nothing is logged. See _materialization.md, "A domain function cannot see
     '            the work of the transaction it is called inside," for the measured behaviour and the
-    '            general rule, and error-handling.md's "Transaction guard" for the db-vs-CurrentDb
-    '            half of the same mistake.
+    '            general rule, and error-handling.md's "Transaction guard" for where db comes
+    '            from.
     ' >>> SELECT SUM(...) into a snapshot recordset on db, then the UPDATE — both per query-style.md <<<
 
 Cleanup:

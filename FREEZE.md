@@ -108,6 +108,14 @@ so an assistant doesn't mistake old grounds for new permission:
   experience). The standard said nothing on either, and a build numbered a `Dim`. An addition, not a
   rewording.
 
+- 2026-10-05 (×1): `standards/error-handling.md`, "Transaction guard" and conformance check 8. The
+  stated reason (writes through `CurrentDb` escape a transaction begun on `Workspaces(0)`) was
+  contradicted by a three-repeat test on 2026-10-04: coverage follows the workspace, not the
+  `Database` object. Reason rewritten as an observed account; the `ws.Databases(0)` instruction
+  stands. The same claim was corrected in `templates/stocktakescan/stocktake-scan-scaffold.md` and
+  `stocktake-scan-outcome-first.md`, neither of which is frozen. A correction of an error, not a
+  rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

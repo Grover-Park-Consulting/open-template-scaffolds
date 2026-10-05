@@ -458,7 +458,7 @@ binds is stated only there.
   every time* and check 14).** This template names no mechanism for it, for the same reason it names
   no mechanism for anything else — see *Intent*. The direct way to get it in Access/DAO is the
   transaction guard `error-handling.md` documents: begin on a `Workspace`, take the `Database` you
-  read and write through from that same `Workspace` (`ws.Databases(0)`), never from `CurrentDb`, and
+  read and write through from that same `Workspace` (`ws.Databases(0)`), and
   wrap one scan's writes and reads in it. **If you use a transaction, the same domain-function caveat
   applies here as everywhere else in this library:** a `DLookup`/`DSum`/`DMax` call made inside that
   transaction reads the last *committed* value, not what the transaction itself just wrote, so a read

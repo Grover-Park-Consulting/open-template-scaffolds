@@ -278,10 +278,10 @@ exception"). **Never** in main logic.
 
 ## Transaction guard
 
-**The transaction and every write inside it must be on one connection.** A transaction is begun on a
-`Workspace`; the writes are made through a `Database`. They are the same transaction only if that
-`Database` came from that `Workspace` — so take it from there, as the first two lines below do, and
-never from `CurrentDb`.
+**The transaction and every write inside it must be on the same workspace.** A transaction is begun on a
+`Workspace`; the writes are made through a `Database`. A write is inside the transaction when its
+`Database` belongs to that `Workspace`. Take `db` from the workspace that began the transaction, as the
+first two lines below do, and that is true by construction.
 
 ```vba
 Dim ws       As DAO.Workspace
@@ -289,7 +289,7 @@ Dim db       As DAO.Database
 Dim bInTrans As Boolean
 
 Set ws = DBEngine.Workspaces(0)
-Set db = ws.Databases(0)          ' NOT CurrentDb - see below
+Set db = ws.Databases(0)          ' same workspace as BeginTrans
 
 ws.BeginTrans
 bInTrans = True
@@ -304,23 +304,26 @@ errHandler:
       Resume
 ```
 
-**Why `CurrentDb` cannot be used here.** It returns a **new** `Database` object on every call, on
-Access's own separate connection. A transaction begun on `ws` does not cover it. Write through
-`CurrentDb` inside the guard above and the writes commit whatever happens next — `ws.Rollback` rolls
-back an empty transaction — while reads made inside the transaction cannot see the transaction's own
-uncommitted work. **Nothing is raised and nothing is logged**, which is what makes this worth a rule:
-the code looks correct, compiles, and runs, and the damage is a wrong number rather than an error.
+**Why the source of `db` still matters.** What a transaction covers follows the workspace, not the
+`Database` object. Observed, three repeats, SQL and recordset writes: with the transaction on the
+default workspace (`DBEngine.Workspaces(0)`), a write through `CurrentDb` and a write through
+`ws.Databases(0)` were both undone by `Rollback`, because `CurrentDb` belongs to the default
+workspace. A transaction begun on a workspace made with `DBEngine.CreateWorkspace` did not cover
+`CurrentDb` writes, and a write through a created workspace was not undone by a rollback on the default
+one. In those cases the writes commit whatever happens next, `ws.Rollback` rolls back an empty
+transaction, and nothing is raised or logged. The code looks correct, compiles, and runs, and the
+damage is a wrong number rather than an error.
 
-**The same applies to every read inside the transaction**, including a read made by a procedure you
-call from inside it, since that procedure may use a domain function of its own. Domain functions —
-`DLookup`, `DSum`, `DCount` — run on a connection of their own and never see uncommitted work. Inside a transaction,
-read with a recordset on the same `db`, or the value that comes back is the last committed one and
-the code proceeds on it.
+**Reads inside the transaction: domain functions do not see it.** `DLookup`, `DSum` and `DCount` run on
+a connection of their own and never see uncommitted work. A recordset opened on `db` does see it.
+Inside a transaction, read with a recordset on the same `db`. This includes reads made by a procedure
+you call from inside the transaction, since that procedure may use a domain function of its own.
+Otherwise the value that comes back is the last committed one and the code proceeds on it.
 
 **One thing the compiler catches and one it does not.** `BeginTrans`, `CommitTrans` and `Rollback`
 belong to `Workspace`; a `Database` has none of them, so calling them on the wrong object fails to
-compile and you find it in seconds. Obtaining `db` from the wrong place compiles cleanly. Compile
-every build, and check this by reading.
+compile and you find it in seconds. Taking `db` from a different workspace than the one that began the
+transaction compiles cleanly. Compile every build, and check this by reading.
 
 **Reader: the AI assistant, and a shop replacing this file.**
 
@@ -411,8 +414,8 @@ error handler"; conditions 7 and 8 still apply.
 6. Every procedure with an `errHandler:` block is line-numbered; every procedure without one is not.
 7. Every logger the generated code calls exists in the built database.
 8. Where a transaction is used, the `Database` object every write inside it goes through was
-   obtained from the same `Workspace` the transaction was begun on — never from `CurrentDb` — and no
-   domain function is read inside the transaction.
+   obtained from the same `Workspace` the transaction was begun on, and no domain function is read
+   inside the transaction.
 9. A procedure whose caller depends on its outcome propagates its errors to that caller, rather than
    logging and returning normally — only a procedure with no caller depending on the outcome, or the
    caller itself once it has the error, logs the failure (and rolls back, if it began a transaction).
