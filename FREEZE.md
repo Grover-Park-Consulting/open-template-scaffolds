@@ -122,6 +122,11 @@ so an assistant doesn't mistake old grounds for new permission:
   required abilities are unchanged. The matching sentence was added to `CLAUDE.md`, which is not
   frozen. An addition, not a rewording.
 
+- 2026-10-05 (×1): `standards/error-handling.md`, "Line numbering". One bullet added: the
+  `Cleanup:` and `errHandler:` lines may be left unnumbered, and `Erl` then still reports the failing
+  line. The section's skeleton numbers those lines and said nothing on leaving them out, while a
+  build that left them unnumbered worked. An addition, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

@@ -255,6 +255,8 @@ End Sub
   `Dim`'s number.
 - **Read `Erl` on the handler's first statement**, before any other numbered handler line runs.
   Once a numbered handler line has run, `Erl` reports that line, not the line that failed.
+- **The `Cleanup:` and `errHandler:` lines may be left unnumbered.** `Erl` then reports the last
+  numbered line that ran, which is the line that failed, so nothing has to be read first.
 - **Line numbering is itself a house-specific choice.** This standard relies on `Erl`, which needs
   numbered lines, applied with a line-numbering tool on import. Other practices number manually, or
   reject line numbers entirely — in which case `Erl` returns 0 and the central handler simply logs

@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.3.2
+version: 0.3.3
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -285,10 +285,11 @@ together.
      Earned entry between the first run's own check and its own write. The competing entry has to
      land after the first run has made its check; before that, the first run simply finds the entry
      already there, which any build handles and which proves nothing
-   - Confirm the posting run finishes without an error shown to anyone, and exactly one active entry
-     exists. Where the competing entry is a second posting run, it finishes without an error shown
-     to anyone too. Where it is an entry inserted directly, the table may refuse it with a plain
-     sentence
+   - Confirm exactly one active entry exists and the posting run finishes without an error shown to
+     anyone. The competing writer ends one of three ways, and each is acceptable: it is a posting
+     run that finds the entry already there; it is a posting run held back until the first
+     finishes, which then finds it; or it is an entry inserted directly, which the table refuses
+     with a plain sentence. Record which of the three you saw
 9. **Time taken within the balance is accepted; time taken beyond it is refused.**
    - With 8 hours, post a Taken entry of 8 hours, then separately one of 8.25
    - Confirm the first is accepted, leaving 0, and the second is refused with the available hours
