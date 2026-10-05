@@ -216,6 +216,8 @@ Your AI tells you which of those two you are in before it asks you anything, so 
 
   **Any server that does these five things works.** We name a particular one below because we owe it, not because the library depends on it: open a database, import a code module, run a procedure by name, report back the error number and description when one fails, and close and release the file.
 
+  **A sixth ability is not required, but it saves you a step:** opening a database that already exists *without running its startup routine*, the way you do when you hold the Shift key while opening a file. A database that shows a sign-in screen or a menu when it opens would otherwise stop the build, because your AI has no way to answer that screen. If your server can skip the startup, your AI does it without asking you anything. If it can't, your AI asks you to switch your startup off while it builds, and to switch it back on afterwards. The server we developed against does this.
+
   **With thanks to [unmateria](https://github.com/unmateria).**
   [MCP-Access](https://github.com/unmateria/MCP-Access) is the Access MCP server this library is
   developed and tested against, and it is what makes the build-it-for-you route something we can

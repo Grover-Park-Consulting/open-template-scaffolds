@@ -116,6 +116,12 @@ so an assistant doesn't mistake old grounds for new permission:
   `stocktake-scan-outcome-first.md`, neither of which is frozen. A correction of an error, not a
   rewording.
 
+- 2026-10-05 (×1): `README.md`, the Access MCP server paragraph. One addition: a sixth, optional
+  ability (opening an existing database with its startup skipped), disclosed because the library now
+  relies on it by default and a server without it falls back to asking the developer. The five
+  required abilities are unchanged. The matching sentence was added to `CLAUDE.md`, which is not
+  frozen. An addition, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

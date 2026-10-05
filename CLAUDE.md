@@ -184,7 +184,9 @@ MCP" — that phrase alone names both, which is how the two get confused.
 has to open a database, import a code module, run a procedure by name, report back the error number
 and description when one fails, and close and release the file. Anything that does those five things
 serves this library; `README.md` states them for the developer. Judge what is connected by whether it
-can do them, never by its name.
+can do them, never by its name. A sixth ability is not required: opening an existing database with its
+startup skipped (see `templates/_materialization.md`). A server without it still serves; the build
+then asks the developer to switch startup off.
 
 **Whoever has an Access MCP server connected installed it deliberately.** So the question above
 names the connected server and asks; it does not explain what an MCP server is. There is no
