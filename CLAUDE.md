@@ -267,6 +267,27 @@ which stops their build until they do. Wrap every such probe in its own resumabl
 setting — never rely on first setting the project's own error-trapping option, since a probe run
 before that fix takes effect is exactly what causes this.
 
+**Run nothing in Access that you cannot see into and clear without the developer.** Access freezes
+silently, with no error returned to you, on a dialog, on a file another process holds, and on code
+that runs at startup. Only the developer can clear it, and it stops the run until they do. Before
+any action that could hit one:
+
+1. Work only on a copy named for the run, never the developer's file. A hang or a forced close then
+   costs nothing.
+2. One owner per file. An Access MCP server session holds its file exclusively, so close the session
+   before starting any process on that file. Test that the file is free before you launch; never
+   launch to find out.
+3. Start a dialog watcher before any process you launch. It reads and closes dialogs in your own
+   identified processes only.
+4. Give every process you launch a deadline. At the deadline, close it by process ID (yours only)
+   and treat that copy as spoiled.
+5. VBA you write for Access (checks, hooks, probes) must not be able to raise an unhandled error.
+   Give it a handler throughout and no `Stop`.
+6. Open anything that is not the developer's own open with startup skipped.
+
+If you cannot do all of this for an action, do not run it. Record it as not tested in the build
+record. This applies to every subagent you start: put it in the subagent's prompt.
+
 Then **ask which platform the tables are for**, and generate the matching artifact (keys,
 relationships, indexes, lookup tables, and **seed rows** throughout):
 - **Access (ACE) local tables** → a **VBA `Sub` using DAO** (`CreateTableDef` / `CreateField` /
