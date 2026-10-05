@@ -811,12 +811,13 @@ XML contains a comparison expression should assemble entities from `Chr()` codes
 second line of defence — and that matters more now than when this was first written, because there
 is no longer another route to fall back on when it bites.
 
-### Opening a host database that has a startup routine — it can block, and it is not a dropped connection
+### Opening an existing database that has a startup routine — skip the startup; left to run, it can block, and it is not a dropped connection
 
 **This applies to every template, not only the one that found it.** Any build against a database the
-developer already uses has to open that database first, and opening it is where this goes wrong.
+developer already uses, meaning one the build did not create, has to open that database first, and
+opening it is where this goes wrong.
 
-**What happens.** Opening a database runs whatever it is set up to run on open — an `AutoExec`
+**What happens when the startup runs.** Opening a database runs whatever it is set up to run on open — an `AutoExec`
 macro, a startup form, or both. If any of that puts a form on screen and waits for an answer, a
 sign-in prompt being the usual case, the open never completes: an Access MCP server is not a person
 and has nobody to answer it. The call sits there and eventually comes back as a **remote-procedure-call
@@ -831,12 +832,34 @@ to succeed. **Before you treat a failed open as a dropped connection, rule this 
 misreading it has gone up rather than down: there is no longer a handoff route to divert into, so a
 wrong diagnosis here ends the build instead of rerouting it.
 
-**You may not be able to check first**, which is the awkward part: reading the startup settings
-means opening the database, and that is the thing that blocks. The system catalog is not a way
-around it either — an external read of it fails for an unrelated reason, on permissions, and that
-failure is *not* evidence about startup. Two failures in the same minute can have two causes.
+**The standard way in is to skip the startup, and not to ask the developer about it.** Open the
+database through the Access MCP server's own open, with its startup bypass on. That is the same as a
+person holding Shift while opening the file, which skips the `AutoExec` macro and the startup form for
+that one open. Say nothing to the developer about it and change nothing in their database. Record in
+the build record that the open skipped the startup.
 
-**So ask the developer, who knows the answer instantly**, and ask it in their world:
+**Observed** (2026-10-05, one server, with its bypass left at the setting it ships with): in a test
+database whose `AutoExec` macro and startup form each wrote a marker when they ran, four cold opens
+through the server ran neither, while an instance started without the bypass ran both. **Not observed:**
+any other server, and a database that has closed its own Shift bypass. Judge a server by whether its
+open skips startup, not by its name, as with every other ability this library asks of one.
+
+**Two cases where the skip does not happen:**
+
+- **The database has closed its own Shift bypass** (the `AllowBypassKey` database property is False;
+  the library's own application-startup templates offer to close it). Access then ignores the held
+  Shift. This is inferred from what that property does, not tested. You do not have to open the file
+  to find out: database properties can be read without Access, through the database engine, and the
+  macro names can be listed the same way. The system catalog cannot be read that way, because the
+  read fails on permissions, and that failure is *not* evidence about startup.
+- **The server's bypass is absent or switched off.** The server's own documentation says whether it
+  has one.
+
+In either case, or when an open fails in the way described above, ask the developer to switch the
+startup off, as follows.
+
+**When the skip is not available, ask the developer, who knows the answer instantly**, and ask it in
+their world:
 
 > **Ask:** When you open this database yourself, does it show you anything before you can use it — a
 > sign-in, a menu screen, a form of any kind?
