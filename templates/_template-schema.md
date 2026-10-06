@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.17.0
+version: 0.18.0
 status: draft
 ---
 
@@ -366,42 +366,7 @@ parks cloud/mobile migration and category-level shrinkage here).
 
 ### 7.1 The `related` front-matter key
 
-Some templates solve problems that naturally follow from, or lead into, another template or a
-standards file — building `app-startup` leaves an application with nowhere for unhandled errors
-to go; building `error-logging` makes little sense without knowing what `error-handling.md`
-already decided. `related` is how a template names that, without turning it into route
-specification or a design-time input.
-
-**It is advisory, and it is timed.** A `related` entry is never read while a template is being
-designed or built, and it never changes what gets built. The AI assistant surfaces it exactly
-once, after the build is reported finished — wherever that template's own closing instruction to
-the AI assistant already lives (`## To the AI assistant building this` for `outcome-first`; the
-equivalent build-completion point for other types). One line per entry: what it is, why it might
-be worth considering next. **Not a gate, not a recommendation to act on now** — the developer
-either takes it up in a future session or doesn't.
-
-**This is what keeps it from becoming the thing `_template-schema.md` §12.4 and the library's own
-"providing extraneous information opens gates best left closed" lesson warn against.** A mechanism
-read during design can leak into the build; a mechanism read only after the build is already
-finished cannot.
-
-**Maintenance is a review step, not a mechanical rule.** When a new template is added, check
-existing templates for a plausible `related` entry pointing at it, and add entries in both
-directions deliberately where one makes sense — never automatically, and never on every pair just
-because two templates share a domain word. A missing or stale entry is a defect to notice and fix
-when found, the same way an undeclared `house_assumptions` entry is; nothing enforces it
-mechanically beyond `validate`'s format/existence check (§2, rule 7).
-
-**Write the rationale for the developer reading it, not as a terse instruction to a machine.**
-Say why it might be worth their time, in plain, warm prose — "worth adding once X is built: you
-now have Y, and this gives Z somewhere to go" reads as a person explaining something; "you now have
-Y; consider Z" reads as AI-speak. Where two templates solve a similar-looking problem for different
-purposes (e.g. two domains that both reconcile a table of items against barcode scans), say what's
-actually shared and say plainly that the mechanism isn't — don't let the resemblance imply a
-crossover that isn't there. The `Target — rationale` dash is the one structural exception to
-keeping this dash-free; nothing else in the sentence should lean on one.
-
----
+Moved to `templates/_method.md`, method `related-after-finish`.
 
 ## 8. `type: vba-scaffold`
 
@@ -462,36 +427,7 @@ annotation:
 
 ### 8.4 Staged execution and facilitation
 
-Some `vba-scaffold` templates document procedures meant to run in a specific order, where each
-step gates a decision the developer must make before the next one runs — picking among named
-build options, reviewing a generated list before the next procedure acts on it, and the like.
-When a template documents this kind of sequence, it must also state, alongside the sequence, a
-facilitation rule for any assistant carrying out the steps on the developer's behalf:
-
-- **Never infer the answer to a staged decision.** Not from the shape of the data, not from
-  domain reasoning that makes an answer seem obvious. Ask the developer, and wait for their
-  actual answer, even when it looks predictable.
-- **Never substitute your own analysis for a procedure whose job is to answer the question.** If
-  the sequence includes a check or scan procedure, run *that procedure*, at the point the
-  sequence calls for it. Don't read the underlying data directly and report a conclusion in its
-  place.
-- **Present one step at a time.** Don't collapse a staged sequence into a single upfront report,
-  even where every fact in it turns out correct — the sequence exists so the developer reviews
-  and approves each gate, not just the end state.
-- **Restate the decision in full at the gate.** Ask where the developer can answer without
-  reconstructing anything from earlier in the session: what the setting means, what it produces
-  at run time, and what changes if they choose the other way — at the point of asking, not on
-  request. And never use one number for two quantities in the same message: if 11 fields are
-  auditable and 11 macros will be generated, say which is which, because a reader will otherwise
-  take them for the same 11.
-
-This is in addition to — not a substitute for — a project's own standing rule that no edit happens
-without explicit approval. It addresses a different failure mode: an assistant that has enough
-context and initiative to *answer* a gate the developer was meant to answer, even where it never
-touches a file. (See the `## Wizard` section of `templates/audit/audit-logging-lite-scaffold.md`
-for a worked example of this note in place, next to the steps it governs. §10 is how a template
-presents such a sequence to the developer; this section is the rule the AI assistant follows while
-running it.)
+Moved to `templates/_method.md`, method `staged-procedures`.
 
 ### 8.5 `validate` rules for `vba-scaffold`
 
@@ -699,317 +635,23 @@ written into the table.
 
 ### 10.3 How a step is asked — the mechanism
 
-**Every step is put to the developer through the interactive selection control** — the one that
-renders each option as something they click. **A step rendered as prose, a markdown table, or a
-list the developer has to answer by typing is a failed step**, however good its content: it asks
-them to compose an answer where they were promised a choice.
-
-What this file holds is the **source** for that control, not the thing shown. The `**Ask:**` line
-becomes the question, each option row becomes a clickable option with its short description
-underneath, and the `**Preferred:**` line is stated with them.
-
-Four rules follow from it:
-
-- **One step per ask.** Never two steps in one control, even where the second seems to follow.
-- **`Tell me more about <topic>` is always the last option**, on every step. There is no other way
-  for the developer to reach it — they must be able to click it. Choosing it shows the
-  *Tell me more* text and then **asks the same step again, unchanged**, so the explanation costs
-  them nothing but a click.
-- **`Go back to the previous question` is an option on every step after the first**, wherever there
-  is room for it alongside the substantive options and *Tell me more*.
-- **The control takes at most four options.** A step therefore carries **at most three substantive
-  answers plus *Tell me more***. A decision with more than three natural answers is either two
-  decisions, or has two answers that should be one — resolve it in the template. Never resolve it
-  by dropping *Tell me more*, and never by silently cutting an option (rule 8).
+Moved to `templates/_method.md`, method `wizard`.
 
 ### 10.4 What the AI assistant says outside a step
 
-§10.3 governs the step itself. Everything else said during a wizard — before the first question,
-between two steps, before the build begins, and while it runs — has no specified shape, and
-unspecified space is where ordinary explaining habits reassert themselves. Four rules govern it.
-**The first two fix opposite problems, and neither is a rule about being brief.**
-
-Nothing here is written in a template file. These are run-time rules: what the AI assistant says as the
-wizard runs, composed in the conversation and never authored anywhere.
-
-**1. Between two steps, name what was recorded and what is being asked next.**
-
-One line for each, in the developer's words:
-
-> *"Errors will go to a table, with a text file as the fallback. Step 4 asks where that table lives."*
-
-Not:
-
-> *"Step 4."*
-
-A step number says where a question sits in a list, not what it is. A developer four questions in has
-no other confirmation that the answer they clicked registered. **This rule makes what is said between
-steps longer, not shorter** — that is what it is for. Where the wizard branches, or a step is asked
-twice, this is where that is said.
-
-**2. Before the first question, and before the build, say only what the developer must act on.**
-
-These are the two moments with the most to report — the template that was matched and why, the
-build-wide warnings, the house assumptions, what was found on opening the files — and the least use
-for it. At the first, the developer has chosen nothing yet. At the second, they have chosen
-everything and are waiting. Three things are said at these moments and nothing else:
-
-- Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
-- Anything that changes what they do next.
-- The disclosure line below, before the first question only.
-- Where this run ends, before the first question only: a build in their database, or the approved
-  design and nothing further. `CLAUDE.md` → "Before the first question of any run" carries the
-  wording and the reason. It qualifies under the second item above, since it changes what the
-  developer does when the run finishes.
-
-Everything else — what was checked, what was found, what it meant — goes to **the build record**.
-
-**This rule does not govern the design presented for approval.** The diagram and field detail are the
-deliverable the whole workflow exists to produce; they are not narration, and they are not shortened.
-The rule governs the prose around them.
-
-**The build record is always written**, and delivered as a file alongside the artifact. Without it
-this rule deletes the detail rather than routing it, and the disclosure line promises something the
-format does not keep. **`templates/_materialization.md`, "The build record", defines what it is
-called, where it goes, and what belongs in it.**
-
-**3. A house assumption is asked, never assumed.**
-
-A template's `house_assumptions` entries are surfaced before the first question. **Surfacing is not
-asking.** *"I'll take that as confirmed unless you say otherwise"* states the assumption and then
-answers it on the developer's behalf — it **ignores their input rather than requiring it**, and the
-developer who says nothing has not agreed to anything. It is put through the selection control like
-any other decision, and the build waits for the answer.
-
-This is the §10.7 trap one level up, and worse: a preferred choice at least appears in a question the
-developer is looking at. A self-confirmed assumption appears in prose they were free to skim — and an
-expert skims and loses nothing, while a newcomer skims and misses the one line that mattered.
-
-**4. While the build runs, do not narrate it.**
-
-The questions are over and the developer is waiting for a result. Everything happening now is work
-they already approved, so a running commentary on it reports progress to nobody: they cannot act on
-it, cannot verify it, and cannot tell from it whether anything is going wrong. Rule 2 covers the
-moment before the build; this covers the build itself, which is longer and where the habit is
-strongest. Three things are said between the last question and the finished artifact:
-
-- **That it has started**, once, and what it will produce. Silence for several minutes is its own
-  failure — this is the line that prevents it.
-- **Anything that needs the developer to act** — a failure they have to clear, or something the
-  build hit that no question covered. Always asked as a question, never narrated past.
-- **That it is finished**: what was built, and where the build record is.
-
-Every object created, every procedure run, every check that passed, every step that went exactly as
-expected: all of it goes to the build record. **A build that goes to plan produces nothing between
-its first message and its last.**
-
-**Progress commentary has a real audience, and it is not this one.** Someone developing or trialling
-a template does want to watch each step land — they are reading for the template's behaviour, not
-for their own database, and that is a different reader (see the three readers in `CLAUDE.md`). They
-will say so. Absent that, the developer wants their tables, not a transcript of them being made.
-
-**The disclosure line**, said once, before the first question of the run — immediately before the
-entry question (§10.6) where there is one, and immediately before Step 1 where there is not:
-
-> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
-> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
-> record of how it was built, not just the thing.*
->
-> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
-> in what I say in between.*
->
-> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
-> of my work you see going past — some show every file as it's written, line by line, and others
-> show almost none of it. That changes nothing about what you get, or about your decisions arriving
-> as questions."*
-
-**The last two sentences are there because rules 2 and 4 bind one participant in the run and not the
-other.** They govern what the AI assistant says; they cannot reach what the tool it is running inside
-displays on its own account — its own commentary, or a view of every file as it is written. Where that
-happens, the developer sees a great deal of text that no rule here produced, and no way to tell which
-of the two is talking. Nothing in this library removes that variation, so the line names it instead:
-what changes is what they see, not what they get, and not where their decisions are. **A run with no
-wizard says these two sentences anyway** — `CLAUDE.md` carries that rule, since there is no disclosure
-line to carry it.
-
-**Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
-experience buys: an expert skims and loses nothing, a newcomer skims and misses the one line that
-mattered. The disclosure line gives an anchor instead — everything you must act on is in a question.
+Moved to `templates/_method.md`, method `quiet-build`.
 
 ### 10.5 Rules
 
-1. **One decision per step.** A step that asks two things is two steps.
-2. **The `Ask:` line is one short question, in the developer's words.** No clause explaining why it
-   is being asked, no naming of the machinery behind it. "Which tables should be audited?" — not
-   "Which of your tables should the scan consider for auditing? This is the one boundary decided in
-   code, and everything finer-grained is a switch you flip in a table afterwards." Words like *the
-   scan*, *the generator*, *the config table*, *the boundary* mean nothing to someone meeting this
-   for the first time; what they convey is that they are out of their depth, and the likeliest
-   response is to stop using it. **If the question needs a second sentence, that sentence belongs in
-   *Tell me more*.**
-3. **One name per thing, from the first step to the last.** Once something has been named — a file,
-   a folder, a setting, a table, a step — it keeps that name in every question, every option, and
-   every *Tell me more*. No synonyms, no switch to the more technical term later, no shortening
-   after first use. **A second name for something already named is a defect even when both names
-   are correct**: a new word signals a new thing, so the reader stops to work out what the
-   difference is and finds none. That pause costs more than the repetition would have. **Where the
-   plain name and the precise name compete, use the plain one** — a reader who feels talked down to
-   is annoyed and keeps going; a reader who is not sure two words mean one thing has already lost
-   the thread, and may not know they lost it. If the precise name is genuinely needed, it replaces
-   the plain one from first use. **The exception is a term the developer probably already owns** —
-   *referential integrity*, *cascade delete* — **or a plain word already taken by something else in
-   this material**, where the paraphrase misdirects rather than merely under-informs. There, name
-   both once, plain sentence first and the technical term marked as such: *"nothing in the database
-   enforces that reference — the database term for this is referential integrity."* After the
-   pairing the plain name carries on alone; pairing is a definition given once, and a synonym
-   appearing later is still a defect. Where the plain word is taken, the pairing belongs **in the
-   question**, not in *Tell me more* — a reader who does not open *Tell me more* has already taken
-   the wrong meaning.
-4. **A short description says what the option *is*, in one line — never why it is better.** No
-   bolding, no ordering by preference, no "recommended". Every comparison lives in *Tell me more*.
-   A description may carry a consequence the developer needs *at the moment of choosing* ("any Data
-   Macros those tables already have are replaced"), but never the reasoning behind it.
-5. **Error numbers, engine limits, version caveats, and internal names never appear outside *Tell
-   me more*.** Someone who meets "error 3870" or "`Application.LoadFromText`" in
-   a question they are being asked to answer learns one thing: this was not written for them. Put
-   it one click away, where the person who wants it will find it and nobody else has to.
-6. **Every step names a preferred choice — never a "default".** See §10.7. The `**Preferred:**`
-   line is the only signal a reader gets about which option the library would point at first, and
-   it is enough: no bolding, no "(Recommended)", no argument. Where the standards layer answers the
-   question, the preferred choice is that answer; where the standards layer is silent, it is the
-   template's own and the line says so. It may follow an earlier answer, in which case the line says
-   which step it follows.
-
-   **Say where it came from in plain words — never as a file name or a section number.** Rule 5
-   forbids an internal name in a question, and a `Preferred:` line is part of the question. So write
-   *"the naming style these templates follow"*, not `standards/naming-conventions.md` §1.1. **A line
-   that cites a file forces whoever reads it aloud to invent a paraphrase**, and the paraphrase is
-   then unreviewed: one such line produced *"from **your** naming conventions"* in a live run —
-   claiming the developer had authored a file they had never seen. Give the spoken wording in the
-   template and there is nothing to invent.
-
-   **Avoid the possessive entirely.** *"Your standards"* is wrong for anyone who has not adopted a
-   layer; *"the house standard"* assumes a house the reader may not have; *"the template's"* is
-   inaccurate, since the template follows the layer rather than defining it. *"The standards these
-   templates follow"* claims nothing about whose they are.
-7. **A confirmation step has no preferred choice.** Where a step asks the developer to attest to
-   something rather than to prefer something — that they have a backup, that a list the build will
-   act on is correct — write `**Preferred:** none` and say why: nothing the library picks can stand
-   in for the developer's own word.
-8. **Options are re-ranked, never removed.** A choice the library ranks last is still offered, in
-   the same plain form as the others.
-9. ***Tell me more* stays closed until asked for** and gives one or two facts that might tip the
-   choice — drawn from the standards files and the template's own description, not restated from
-   them, and not exhaustive.
-10. **Warnings live at the step they belong to.** A front-matter `warnings` entry that governs one
-    decision is surfaced inside that step's *Tell me more*; one that governs the whole build is
-    surfaced before step 1. This is the point of the format: the warnings are not less visible, they
-    are visible where they are actionable.
-11. **A choice made against the standards layer holds for that run** — carried forward to every
-    later step, never quietly reverted, and never written back to the standards files. The next run
-    starts from the standards again. Flexibility within limits.
-12. **Going back is always available.** Every step after the first offers it, and the developer may
-    name any earlier step at any time. **Changing an answer discards every answer after it** and the
-    wizard resumes forward from the changed step — so a revised decision can never leave a stale one
-    standing behind it.
-13. **A wizard of more than three steps opens with the entry question** (§10.6), which is where the
-    developer chooses whether to answer every step or have the preferred choices used. It is never
-    an option inside Step 1.
-14. **Ending early ends one wizard, not the run.** Where a step-1 answer declines the whole feature,
-    that wizard stops; any other wizard in the same template is asked independently.
-15. **§8.4's facilitation rules apply in full.** Never infer the answer to a step, present one step
-    at a time, and restate the decision at the gate so it can be answered without reconstructing
-    anything from earlier in the session.
+Moved to `templates/_method.md`, method `wizard`.
 
 ### 10.6 The entry question
 
-**A wizard of more than three steps opens with one question before Step 1**, asked through the same
-selection control as every other step:
-
-> **Ask:** This takes *n* questions. Do you want to answer them, or shall I just build it?
-
-| Option | Short description |
-|---|---|
-| `Ask me the questions` | Go through them one at a time. |
-| `Just build it` | I use the preferred choice at each step, and only stop where a step needs something from you. |
-
-**Preferred:** `Ask me the questions`.
-
-It exists because an instruction to proceed — "find a template and run it" — is not permission to
-put seven questions in front of someone. The entry question costs them one, and it is the only
-place the wizard interposes itself between the instruction and the build.
-
-Six rules govern it:
-
-- **Asked once, before Step 1, and never again.** It is not an option inside Step 1, and no later
-  step re-opens it.
-- **`Just build it` cannot skip a confirmation step** (rule 7). A step with no preferred choice has
-  nothing to fall back on, and passing one silently would answer for the developer on exactly the
-  questions they were meant to answer. Say up front how many of those remain.
-- **State the preferred choices before acting on them** — the answer being used at each skipped
-  step, in a short list. `Just build it` authorizes known answers; it is not consent to be
-  surprised.
-- **A preferred choice that contradicts what the developer asked for is not a preferred choice on
-  that run — ask the step, and say why you are asking it.** Preferred choices are written into a
-  template before anyone has said what they want, so a request can arrive that one of them directly
-  contradicts. A developer who asks for the feature on the database they already have has ruled out
-  the step whose preferred choice builds a set of sample tables to try it on; using it anyway is
-  precisely the surprise the rule above forbids. This applies to one step at a time — the rest of
-  `Just build it` stands.
-- **Ask it even when the developer sounded impatient.** Especially then: an imperative instruction
-  is what this question is for, and answering it takes one click.
-- ***n* is this template's own count** — the steps in its `## Wizard` section that apply to this
-  run, a number the developer could arrive at from the file. A run can turn up questions no
-  template carries: a build route where a connected tool offers one, a file that has to be made
-  writable first, a step re-asked under the rule above. Don't fold those into *n* and don't try to
-  predict them. Ask each where it arises and say it is one more than the number given at the start.
+Moved to `templates/_method.md`, method `wizard`.
 
 ### 10.7 "Preferred choice", not "default" — and why the word matters
 
-**A wizard step names a *preferred choice*. This library does not use the word "default" for it,
-anywhere, deliberately.**
-
-"Default" carries two meanings and nothing in the word says which is meant:
-
-- **the choice we would point at first** — a recommendation, which still has to be offered; and
-- **what happens when nobody chooses** — a fallback that fires on its own.
-
-Written into a file that an AI reads and acts on, the second meaning wins. A step labelled
-`Default:` reads as standing permission to skip the question, and the question stops being asked.
-That is not a hypothetical: it is how `standards/error-handling.md` came to say *"emit option 3…
-and say so"* and how a build came to pick its own error-handling option and announce the result to
-a developer who had never been asked.
-
-**The preferred choice becomes the answer in exactly two situations, and both are an act by the
-developer:**
-
-1. They decline to choose — "you pick", "whatever you think".
-2. They ask to get on with it — the entry question's *"just build it"* answer (§10.6).
-
-**It never becomes the answer on the AI assistant's initiative.** No amount of obviousness, data
-shape, or convenience converts a preferred choice into a decision nobody made.
-
-> **A note for anyone writing a template.** This distinction does not arise when you write code:
-> a default parameter value simply *is* the fallback, and no reader expects otherwise. It arises
-> the moment your reader is an agent that will act on what you wrote. Words that are precise in a
-> function signature turn ambiguous in an instruction, and the ambiguity resolves toward *action*,
-> because acting is what the reader is there to do. When in doubt, name the act you want and the
-> act you don't.
-
-`validate` does not check §10 at all — the format is proven by hand first, exactly as the three
-template types were (see the scope note at the top of this file). `templates/errors/error-logging-scaffold.md`
-is the worked example.
-
-**Two different gaps sit inside that, and only one of them closes.** §10.2 and §10.5 describe things
-that are in the file — a `### Step n —` heading, an `**Ask:**` line, a `**Preferred:**` line, a
-two-column option table, a `<details>` block per step — and a checker could assert every one of them.
-**§10.4 cannot be checked here at any point**, because nothing it governs is in a file: the line
-between two steps is composed in the conversation, the disclosure line is spoken, and the build
-record is written into the adopter's own folder. A green `validate` run says nothing about §10.4
-either way, and would look identical if the rules were never followed. Until a checker exists, the
-only thing enforcing §10 is the AI assistant reading it and a person noticing afterwards.
-
----
+Moved to `templates/_method.md`, method `wizard`.
 
 ## 11. Minimal skeleton (`type: table-schema`)
 
@@ -1116,43 +758,7 @@ so too. Tie the restatement to the checks this section already requires the buil
 record is where each result is recorded, it exists before the build is reported finished, and it is
 never written later, only when asked for.
 
-**The build-record checklist rule — stated once here, canonical for every template type that carries
-a checklist, `vba-scaffold` included. A template of either type points to this rule rather than
-restating it.** The build record reports against the template's own checklist section, one entry per
-check, each saying what was done and what was observed — a completed check list, not a narrative.
-Passed and not passed are the only outcomes; there is no third. A check the template itself marks not
-applicable is not an exception: confirm the condition it names (for example, that no seed rows are
-declared) and record `Result: PASSED` with what you confirmed. A check tests what the build made,
-through the routes the build made. Invalid data is the right probe there; sent through a route the
-build neither made nor can close, it shows only what the engine does, and that belongs in
-`_materialization.md` as a fact, not in a check. Each entry opens with a literal
-`Result: PASSED` or `Result: NOT PASSED`, so the verdict is visible at a glance rather than buried
-inside a sentence, followed by what was done and what was observed. A check is passed when every line
-under it was observed; an entry that is not passed says what was done and what stopped it. An entry
-with neither outcome is a check that was not run, and the record is not complete until it has one.
-
-**An obstacle to one method of running a check is not evidence the check cannot run — it is evidence
-that method cannot.** "Partially verified," "verified by review instead," "the structural guarantee
-holds," or any other soft middle ground is not a third outcome; it is not passed, full stop, unless a
-genuinely different method is tried first. A tool boundary, a locked resource, or a platform default
-that blocks the first approach does not license a weaker one in its place — look for a structurally
-different method that still exercises the real condition before settling for less. A second,
-independent connection to the resource under test, opened separately from whatever route is blocked,
-can often force the real condition (a genuine engine-raised error, not an inferred one) even where the
-first route a builder reaches for cannot. Exhaust that kind of alternative before a check is recorded
-as anything but passed or not passed.
-
-**A check that forces two writers to collide counts only if it was shown able to fail.** Run it once
-more on a copy with the protection against two at once switched off, and record what happened. If it
-failed, the check stands. If it did not fail, record what stopped it: where the engine's own lock on
-the first writer's unsaved rows refused the second writer, the check shows that nothing got between
-the two, not which protection stopped it, and it passes on that statement. Where nothing named stopped
-it, the method could not have shown a failure, and the check is not passed. Observed 2026-10-05: a
-second connection opened inside the same Access process failed this test for two checks of three,
-because the second writer read through the first writer's connection, and it can never show a
-writer that is held back and then finishes, because both share one thread. A second Access process,
-started on a check copy and identified by its process ID as `CLAUDE.md` requires, gave controls that
-failed or were stopped by a named engine lock.
+The build-record checklist rule moved to `templates/_method.md`, method `checklist-rule`.
 
 ### 12.3 `validate` rules for `outcome-first`
 
@@ -1213,31 +819,4 @@ names the fact by its id.
 
 ### 12.5 The `Explore options` step
 
-An outcome-first template leaves choices to whoever builds it and says which ones — the audit
-template lists them under *Free to choose alternatives*. Absent this step, the build makes those
-choices itself and records each in the build record. **The `Explore options` step lets the developer
-have them laid out first.**
-
-**When it is asked.** Once, after the last of the template's questions and before the design is
-presented, through the selection control (§10.3), on any outcome-first template that lists open
-choices:
-
-| Option | Short description |
-|---|---|
-| `Build it as specified` | The build makes the open choices itself and records each one in the build record. |
-| `Explore options` | Before the design, the AI assistant lays out each open choice with its alternatives, and you pick. Takes longer, by about one question per choice. |
-
-**Preferred:** `Build it as specified`.
-
-**What `Explore options` produces.** For each open choice with more than one workable route: the
-alternatives, what each costs, and which of the template's checks each passes. A route the AI
-assistant would not have taken on its own belongs in the comparison if it passes the checks — that is
-the step's purpose. The developer picks per choice, one choice per step. Each pick is recorded in the
-build record and holds for the rest of the run, and the picks are restated in the design presented
-for approval, never left to the transcript. Every route picked still passes every check the template
-carries; the step adds no check and relaxes none.
-
-**What it never reopens.** A mechanism the specification names under §12.4 is part of the outcome,
-not an open choice, and the step offers no alternative to it. A developer who asks for one is asking
-for a different template, or for the from-scratch path with its warning, and is told so in those
-words.
+Moved to `templates/_method.md`, method `explore-options`.

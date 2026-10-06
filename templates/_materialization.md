@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.17.0
+version: 0.18.0
 status: draft
 ---
 
@@ -40,116 +40,11 @@ on one person's machine alone, is under *Five rules that make the generated Sub 
 
 ## The build record
 
-**Every build leaves a build record**: one file, written beside the artifact, saying how it was
-built. It is not optional, and it is not a summary of the conversation. **This applies to every
-template and every build** — whether a wizard ran or the developer answered everything at once,
-whether the artifact is tables, code, or a form.
-
-It is also what `_template-schema.md` §10.4 promises the developer in your own words, and it is the
-reason the detail can stay out of the messages they read while they are still deciding things.
-
-**Name it `build-record-YYYY-MM-DD-HHMM.md`**, using the date and time the build started, so a
-second build in the same folder never overwrites the first. Write it in the folder that holds the
-artifact — beside the `.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
-one record covers both.
-
-**The record's first lines say how the template arrived:** the template id, version and `sha` that
-`get_template` returned in `served`, and the platform fact ids it delivered. A build that read the
-template files directly cannot fill these in, and its record says so instead.
-
-**A build record does not end its life with the build it documents.** In addition to the developer's
-own copy above, copy it into `build-records/<template-slug>/` in the library, named
-`YYYY-MM-DD-<short-description>.md`. One folder per template — every build of that template lands in
-the same folder, never a fresh one per run — because the folder's value is in what accumulates there,
-for this template and for any other template that later needs the same mechanism (see
-`CLAUDE.md`, "Build records accumulate"). Nothing about the record's content changes for this: it is
-written exactly as the six parts below already require, narrated with its false starts intact. Only
-its destination gains a second copy.
-
-Six parts, in this order:
-
-1. **What was built, and where.** Every object created, and which file it went into. The developer
-   should be able to open the database and find each one.
-2. **What was checked before building.** The state you found: what already existed, which references
-   were present, whether the folder was trusted. This is the part that is worth nothing on the day
-   and a great deal three months later, when something has changed and nobody remembers what it
-   used to be.
-3. **The decisions taken.** Every question the developer answered and what they chose, and any
-   decision they handed back to you. Where a wizard ran, that is its steps and their answers.
-4. **What was verified afterwards, and how.** The tests actually run, with their real results —
-   never "tested and working". Say which paths were exercised, and name the ones that were not.
-5. **Anything that did not match what the template said.** Divergences, surprises, and anything you
-   worked around. This is the section a template author needs and nobody else will write.
-6. **What is left for the developer to do.** Every follow-up the build could not complete, including
-   anything the standards layer calls for that the build route could not deliver.
-
-**Write it before you say the build is finished**, not when you are asked for it. A record written
-later is written from memory, and the details worth keeping are the first ones to go.
-
-**That is a deadline, not a cadence — write it as you go, not only at the end.** A record started
-after the build is a reconstruction; the same six parts, filled in as each thing actually happens,
-are a contemporaneous account. Confirmed by contrast: a build written up afterward, from a 90-minute
-session, read thinner than builds written incrementally throughout.
-
-**It records what happened, not what was meant to happen — good or bad, and whatever it reflects on
-you.** A step that failed and was retried belongs in it. A test that was skipped belongs in it, named
-as skipped. A build record in which everything went to plan is either untrue or not worth keeping.
-
-**Two kinds of entry go missing, and they are the two worth most.** Anything the developer had to do
-to unblock the run — a message they had to clear, a file they had to close. From where you sit that is
-a moment of waiting; from where they sit the build stopped and demanded something, and it is the part
-they will remember. Say what stopped, what they had to do, and how many times — not only a technical
-note about the cause. And anything that went wrong because of how you worked rather than because of
-their database: a file written in the wrong encoding, code that would not compile, a tool used the
-wrong way. Both belong in part 5, with everything else that did not go as the template said. **Neither
-is a new part of the record** — nothing here needs a seventh.
-
----
+Moved to `templates/_method.md`, method `build-record`.
 
 ## The runbook — the two builds that leave the developer something to run
 
-**When it applies:** any build that leaves a procedure for the developer to run — which the staged
-`vba-scaffold` sequences do by design — and any code handed over headed `UNVERIFIED` because the
-developer asked for it. Where you built everything directly and nothing is left to run, there is
-nothing to write. **It is not the packaging for a run with no Access MCP server connected.** That
-run ends at the approved design and generates no code at all, so there is nothing to write a runbook
-about.
-
-**A build the developer has to run any part of leaves a runbook**: one file, beside the code, saying
-what to run and in what order. It is not optional, and it is not the build record. The build record
-says what was done; the runbook says what they do next.
-
-**Why it exists.** You know the order because you generated the code. They have a folder of files. A
-procedure named `Three_…` tells them it is third; it does not tell them what the first two are,
-which one needs an answer written into a table before the next will do anything, or which ones are
-optional. **Naming a procedure is not documenting it**, and a developer who cannot tell an optional
-tool from a required step either runs everything or runs nothing.
-
-**Name it `runbook.md`**, and write it in the folder that holds the code.
-
-Five parts:
-
-1. **Before you start.** Everything that has to be true first, each one paired with what happens if
-   it isn't: the folder trusted, the file writable, every object in the database closed, a backup
-   taken. A precondition with no stated consequence gets skipped.
-2. **Importing the files.** Which files, and where each one goes — in a split design, which belong
-   in the back end and which have to be in every front end as well.
-3. **What to run, in order.** Every procedure they run, numbered, each with: what it does, how to
-   run it, what they should see when it worked, and what to do when it didn't. **Where a step needs
-   them to go and look at something** — review rows in a table, set switches, check a value — that
-   is its own numbered step, not a remark attached to another one.
-4. **What is optional.** Procedures that exist but are no part of a normal run, and what each is
-   for.
-5. **How to tell it worked.** What they can open or run to confirm the result in their own database,
-   without asking you.
-
-**Write it in the second person and name every procedure exactly as it appears in the code.** A
-runbook that says "run the setup procedures" has told them nothing they had not already guessed.
-
-**Say it exists when you hand the files over.** A file in a folder nobody was told about is a file
-nobody reads.
-
----
+Moved to `templates/_method.md`, method `runbook`.
 
 ## Table-schema build — Access (VBA-DAO) or SQL Server
 
