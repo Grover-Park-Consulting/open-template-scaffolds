@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.16.0
+version: 0.17.0
 status: draft
 ---
 
@@ -778,6 +778,14 @@ transaction, or anything it calls, write the table I am about to read?"
 transaction per unit of work can break unchanged when the transaction is widened to cover a batch,
 because reads that previously saw only committed rows now sit inside the transaction that wrote them.
 Re-ask the question at every call site whenever a transaction's scope changes.
+
+**Which writes a transaction covers follows the workspace, not the `Database` object.** Observed,
+three repeats, SQL and recordset writes: with the transaction on the default workspace
+(`DBEngine.Workspaces(0)`), a write through `CurrentDb` and a write through `ws.Databases(0)` were both
+undone by `Rollback`, because `CurrentDb` belongs to the default workspace. A transaction begun on a
+workspace made with `DBEngine.CreateWorkspace` did not cover `CurrentDb` writes, and a write through a
+created workspace was not undone by a rollback on the default one. In those cases the writes commit
+whatever happens next, `ws.Rollback` rolls back an empty transaction, and nothing is raised or logged.
 
 ### A row another session holds is refused with an error, and 3188 is the one usually seen
 <!-- fact: row-lock-errors -->

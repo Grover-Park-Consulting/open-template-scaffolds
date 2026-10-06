@@ -306,21 +306,12 @@ errHandler:
       Resume
 ```
 
-**Why the source of `db` still matters.** What a transaction covers follows the workspace, not the
-`Database` object. Observed, three repeats, SQL and recordset writes: with the transaction on the
-default workspace (`DBEngine.Workspaces(0)`), a write through `CurrentDb` and a write through
-`ws.Databases(0)` were both undone by `Rollback`, because `CurrentDb` belongs to the default
-workspace. A transaction begun on a workspace made with `DBEngine.CreateWorkspace` did not cover
-`CurrentDb` writes, and a write through a created workspace was not undone by a rollback on the default
-one. In those cases the writes commit whatever happens next, `ws.Rollback` rolls back an empty
-transaction, and nothing is raised or logged. The code looks correct, compiles, and runs, and the
-damage is a wrong number rather than an error.
-
-**Reads inside the transaction: domain functions do not see it.** `DLookup`, `DSum` and `DCount` run on
-a connection of their own and never see uncommitted work. A recordset opened on `db` does see it.
-Inside a transaction, read with a recordset on the same `db`. This includes reads made by a procedure
-you call from inside the transaction, since that procedure may use a domain function of its own.
-Otherwise the value that comes back is the last committed one and the code proceeds on it.
+**Why the source of `db` matters, and why reads inside the transaction use it:** which writes a
+transaction covers, and what a domain function can see while one is open, are facts about the engine,
+not house choices. They live in `templates/_materialization.md` (fact `domain-function-transaction`),
+which every template that opens a transaction declares, so a shop replacing this file keeps them.
+The house choice here is the rule above: take `db` from the workspace that began the transaction, and
+read inside it with a recordset on that same `db`, never a domain function.
 
 **One thing the compiler catches and one it does not.** `BeginTrans`, `CommitTrans` and `Rollback`
 belong to `Workspace`; a `Database` has none of them, so calling them on the wrong object fails to
