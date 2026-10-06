@@ -3,10 +3,11 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.4.2
+version: 0.4.3
 status: stable
 requires_tables:
   - USysLocalSetting
+platform_facts: [target-file, app-startup-autoexec, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, vbe-line-continuation]
 standards_layer:
   - design-principles
   - error-handling

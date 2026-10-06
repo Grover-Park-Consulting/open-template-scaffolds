@@ -3,7 +3,7 @@ template: stocktake-schema
 title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.8.1
+version: 0.8.2
 status: review
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -15,6 +15,7 @@ requires_fields:
 new_fields:
   - Products.SKUBarCode
   - Products.QuantityInPackage
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, table-in-use, rename-referenced]
 standards_layer:
   - audit-columns
   - naming-conventions

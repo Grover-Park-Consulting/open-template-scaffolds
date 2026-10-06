@@ -3,8 +3,9 @@ template: officiating-assignment-schema
 title: Officiating Assignment — Table Schema
 domain: scheduling-assignment
 type: table-schema
-version: 0.4.0
+version: 0.4.1
 status: stable
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities]
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tlkpPlayLevel

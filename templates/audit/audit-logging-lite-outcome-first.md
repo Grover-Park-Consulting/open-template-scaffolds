@@ -3,9 +3,10 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.10.3
+version: 0.10.4
 status: stable
 implements: audit-logging-lite-schema
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, table-in-use]
 standards_layer:
   - audit-columns
   - design-principles

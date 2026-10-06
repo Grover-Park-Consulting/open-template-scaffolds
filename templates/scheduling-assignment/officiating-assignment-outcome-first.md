@@ -3,9 +3,10 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.1.0
+version: 0.1.1
 status: stable
 implements: officiating-assignment-schema
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash]
 standards_layer:
   - audit-columns
   - naming-conventions

@@ -3,7 +3,7 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.2.1
+version: 0.2.2
 status: draft
 implements: time-off-ledger-schema
 requires_tables:
@@ -38,7 +38,7 @@ new_procedures:
   - PostTimeTaken
   - CancelTimeOffEntry
   - ReplaceTimeOffEntry
-platform_facts: [dao-table-build, data-macro-rules, domain-function-transaction, row-lock-errors, sql-insert-truncation, recordset-append-crash, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, app-startup-autoexec]
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, domain-function-transaction, row-lock-errors, recordset-append-crash, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, app-startup-autoexec]
 warnings:
   - These procedures write real rows into the ledger, and the ledger is never edited or deleted once
     written, so a run that goes wrong cannot be undone by deleting what it wrote. A build against a

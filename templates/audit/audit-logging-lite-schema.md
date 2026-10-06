@@ -3,8 +3,9 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.6.1
+version: 0.6.2
 status: review
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities]
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tblAuditLog

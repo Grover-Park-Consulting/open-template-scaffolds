@@ -3,7 +3,7 @@ template: stocktake-scan-outcome-first
 title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.6.0
+version: 0.6.1
 status: stable
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -13,6 +13,7 @@ requires_fields:
 new_fields:
   - Products.SKUBarCode
   - Products.QuantityInPackage
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, domain-function-transaction, row-lock-errors, table-in-use]
 standards_layer:
   - error-handling
   - query-style

@@ -3,9 +3,10 @@ template: capital-asset-tracking-outcome-first
 title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.2.1
+version: 0.2.2
 status: stable
 implements: capital-asset-tracking-schema
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash]
 standards_layer:
   - audit-columns
   - naming-conventions

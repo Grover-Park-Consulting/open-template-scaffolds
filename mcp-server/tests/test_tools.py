@@ -108,9 +108,11 @@ class TestGetTemplate(unittest.TestCase):
         self.assertEqual(result["served"]["template"], "time-off-ledger-outcome-first")
         self.assertEqual(len(result["served"]["sha"]), 12)
 
-    def test_template_without_platform_facts_gets_empty_list(self):
-        result = get_template("stocktake-schema")
-        self.assertEqual(result["platform_facts"], [])
+    def test_every_template_receives_its_declared_facts(self):
+        for t in list_templates():
+            result = get_template(t["template"])
+            self.assertNotIn("platform_facts_missing", result, t["template"])
+            self.assertTrue(result["platform_facts"], t["template"])
 
     def test_unresolved_standard_reported_not_dropped(self):
         with patch.object(server, "read_standard", return_value=None):

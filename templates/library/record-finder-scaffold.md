@@ -3,12 +3,13 @@ template: record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.4.0
+version: 0.4.1
 status: stable
 implements: catalog-schema
 requires_tables:
   - tblPublication
   - tblPublicationGenre
+platform_facts: [form-live-build, form-mapping-rules, form-layout-fidelity, form-hand-validation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, vbe-line-continuation]
 standards_layer:
   - design-principles
   - error-handling

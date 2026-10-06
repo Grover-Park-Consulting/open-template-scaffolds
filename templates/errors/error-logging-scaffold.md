@@ -3,11 +3,12 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.9.0
+version: 0.9.1
 status: stable
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, host-helper-reuse, vbe-line-continuation]
 standards_layer:
   - error-handling
   - naming-conventions

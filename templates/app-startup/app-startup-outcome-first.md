@@ -3,8 +3,9 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.2.1
+version: 0.2.2
 status: stable
+platform_facts: [target-file, app-startup-autoexec, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
 standards_layer:
   - design-principles
   - error-handling

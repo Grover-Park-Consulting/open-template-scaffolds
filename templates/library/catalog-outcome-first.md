@@ -3,9 +3,10 @@ template: catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
-version: 0.1.1
+version: 0.1.2
 status: stable
 implements: catalog-schema
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
 standards_layer:
   - audit-columns
   - naming-conventions

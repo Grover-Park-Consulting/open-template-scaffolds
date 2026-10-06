@@ -107,8 +107,8 @@ def read_platform_facts() -> tuple[dict[str, dict], list[str]]:
     return facts, dupes
 
 
-# FM9 switches on when every template declares platform_facts (end of the rollout).
-REQUIRE_PLATFORM_FACTS = False
+# FM9: every template declares platform_facts (switched on 2026-10-06 when the rollout finished).
+REQUIRE_PLATFORM_FACTS = True
 
 
 # --- validate(): format-only rules from templates/_template-schema.md ---

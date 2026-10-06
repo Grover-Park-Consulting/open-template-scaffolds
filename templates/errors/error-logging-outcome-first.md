@@ -3,9 +3,10 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.2.0
+version: 0.2.1
 status: stable
 implements: error-logging-schema
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, host-helper-reuse]
 standards_layer:
   - error-handling
   - naming-conventions

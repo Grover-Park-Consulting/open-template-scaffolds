@@ -158,6 +158,7 @@ and generate the matching artifact. Both carry the tables, fields (with their **
 indexes, relationships, and lookup **seed rows**.
 
 ### First, know which file you are building into
+<!-- fact: target-file -->
 
 A **split database** is the normal shape for Access applications, especially those in multi-user
 environments: one file holds the tables (the **back end**, usually on a shared network drive — never
@@ -183,6 +184,7 @@ The copies of a shared module are kept in step **by hand**; nothing enforces it.
 end's copy as the original and re-import it to each front end after any change.
 
 ### SQL Server → DDL
+<!-- fact: sql-server-ddl -->
 
 `CREATE TABLE` statements with primary keys, foreign keys, indexes, the lookup tables, and `INSERT` seed
 rows. Field comments become inline comments or extended properties.
@@ -567,6 +569,7 @@ above. State what each one currently does, propose how they'd combine, and get t
 answer before writing over the existing document.
 
 ### Before altering a table already in use, check what has it open
+<!-- fact: table-in-use -->
 
 Attaching or replacing a Data Macro, or setting a table-level property such as a Validation Rule,
 needs the table to itself. A bound form, an open datasheet, or a query holding it open all refuse the
@@ -590,6 +593,7 @@ checklist's "the build stops rather than leaving tables half-finished, and names
 is testing for, and it has nothing to confirm if nothing in the build ever performs the check.
 
 ### Reusing a host's own helper function — check what it was sized for, not just what it does
+<!-- fact: host-helper-reuse -->
 
 A build that reuses a function already present in the target database — a row-availability check,
 a macro-detection helper, anything the host wrote before this template arrived — is reusing more
@@ -609,6 +613,7 @@ longer than the helper's own buffer — any of these is reason enough to check t
 declared types and limits before trusting its return value, not after the second run fails.
 
 ### Renaming a table or field a front end may already reference
+<!-- fact: rename-referenced -->
 
 A `table-schema` build that **renames** an existing table or field — not creating one, changing what
 an already-linked front end calls it — breaks every front-end object built against the old name, and
@@ -634,6 +639,7 @@ Whether the front end exists yet is the only condition: a schema built before an
 has nothing to sweep.
 
 ### The VBE's ~25 line-continuation limit on one statement
+<!-- fact: vbe-line-continuation -->
 
 A generated `INSERT`/`UPDATE` built one column per continued line (`" ... " & _`) hits a real,
 documented VBE limit around 25 continuations per logical statement — a 21-column table crossed it
@@ -664,6 +670,7 @@ Where a template's own generated `INSERT`/`UPDATE` is naturally this wide — a 
 table, for instance — reach for this pattern before the column count gets anywhere near twenty.
 
 ### ACE rejects an aggregate subquery in an UPDATE's SET clause, and a self-referencing alias
+<!-- fact: ace-update-aggregate -->
 
 Two failures found writing scan-processing VBA against a real Access database, both in ordinary
 `db.Execute` SQL rather than in the table-build Sub — record them here because the next
@@ -813,6 +820,7 @@ function reads through a separate connection, not `CurrentDb`. That avoided the 
 inside the append sets it off was not narrowed down.
 
 ### VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions
+<!-- fact: vba-import-xml-entities -->
 
 Proven by two real failures, on the same kind of code, corrupted opposite ways.
 
@@ -1230,6 +1238,7 @@ as everywhere else in this file.
 ---
 
 ## Layout fidelity — a limitation of the approach
+<!-- fact: form-layout-fidelity -->
 
 The generated layout is a **functional default**, not a reproduction of a real 2D form design —
 multiple columns, multiple controls per line, landscape balance. A structural spec deliberately avoids
@@ -1243,6 +1252,7 @@ into your columns and lines is your styling pass."*
 ---
 
 ## Mapping rules
+<!-- fact: form-mapping-rules -->
 
 1. **Form shell** — `record_source` → `RecordSource`; `title` → `Caption`; default view.
 2. **Regions → sections** — Form Header / Detail / Form Footer → the Access form's sections.
@@ -1267,6 +1277,7 @@ into your columns and lines is your styling pass."*
 ---
 
 ## Hand-validation — publication form (focused, importable fragment)
+<!-- fact: form-hand-validation -->
 
 A representative slice of `templates/library/publication-form.md` materialized to Access text: the form
 shell, a Detail section with a label + textbox, a lookup combo, and a subform placed to the right of the
@@ -1332,6 +1343,7 @@ confirms. A byte-perfect importable file is the generator's job in B3.)*
 ---
 
 ## Building the form live through an Access MCP server — the path this library takes
+<!-- fact: form-live-build -->
 
 The same mapping drives an Access MCP server's form-creation and control-creation tools: instead of
 emitting text for import, the generator creates the form and its controls directly, applying the same

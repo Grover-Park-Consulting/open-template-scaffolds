@@ -3,8 +3,9 @@ template: capital-asset-tracking-schema
 title: Capital Asset Tracking — Table Schema
 domain: asset-tracking
 type: table-schema
-version: 0.5.0
+version: 0.5.1
 status: stable
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities]
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
 house_assumptions:

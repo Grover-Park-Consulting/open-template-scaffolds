@@ -3,8 +3,9 @@ template: error-logging-schema
 title: Error Logging — Table Schema
 domain: errors
 type: table-schema
-version: 0.2.1
+version: 0.2.2
 status: review
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation]
 standards_layer:
   - naming-conventions
   - audit-columns

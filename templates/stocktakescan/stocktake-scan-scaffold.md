@@ -3,7 +3,7 @@ template: stocktake-scan-scaffold
 title: Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.10.0
+version: 0.10.1
 status: stable
 extends: Northwind (Access Developer Edition)
 implements: stocktake-schema
@@ -16,6 +16,7 @@ requires_tables:
   - RemediationStatus
   - ProductVarianceAllowance
   - SystemSettings
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, domain-function-transaction, row-lock-errors, table-in-use, vbe-line-continuation, ace-update-aggregate]
 standards_layer:
   - error-handling
   - query-style

@@ -3,8 +3,9 @@ template: catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
-version: 0.4.2
+version: 0.4.3
 status: review
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities]
 standards_layer:
   - audit-columns
   - naming-conventions

@@ -3,13 +3,14 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.18.0
+version: 0.18.1
 status: stable
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
   - tblLongTextBackup
   - tblAuditLogConfig
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, table-in-use, vbe-line-continuation, domain-function-transaction]
 standards_layer:
   - error-handling
   - query-style

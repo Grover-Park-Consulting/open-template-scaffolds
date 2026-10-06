@@ -149,11 +149,11 @@ class TestPlatformFacts(unittest.TestCase):
         self.assertEqual(dupes, ["x"])
         self.assertTrue(any(e.startswith("FM8") for e in errs), errs)
 
-    def test_fm9_only_when_switched_on(self):
+    def test_fm9_requires_platform_facts(self):
         front = {"type": "table-schema"}
-        self.assertFalse(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
-        with patch.object(library, "REQUIRE_PLATFORM_FACTS", True):
-            self.assertTrue(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
+        self.assertTrue(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
+        with patch.object(library, "REQUIRE_PLATFORM_FACTS", False):
+            self.assertFalse(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
 
 
 if __name__ == "__main__":

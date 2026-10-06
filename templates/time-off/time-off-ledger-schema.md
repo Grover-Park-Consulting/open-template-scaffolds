@@ -3,7 +3,7 @@ template: time-off-ledger-schema
 title: Time Off Ledger — Table Schema
 domain: time-off
 type: table-schema
-version: 0.3.5
+version: 0.3.6
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -16,7 +16,7 @@ seeds:
   - tlkpEntryReason.Earned
   - tlkpEntryReason.Taken
   - tlkpEntryReason.Correction
-platform_facts: [dao-table-build, data-macro-rules, domain-function-transaction, row-lock-errors, sql-insert-truncation, recordset-append-crash]
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, domain-function-transaction, row-lock-errors, recordset-append-crash]
 house_assumptions:
   - "tblTimeOffEntry — the balance is never stored; it is the sum of TimeOffHours for an employee and a time off category, computed whenever it is needed (Business Rule 2). A stored balance is an Extra Option"
   - "tblTimeOffEntry.TimeOffHours — hours are kept in quarter-hour steps, so sums are exact; an entry whose hours are not a multiple of a quarter hour is refused (Business Rule 8). A shop that tracks finer fractions changes the field's type and lifts that refusal"
