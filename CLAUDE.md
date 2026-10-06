@@ -109,11 +109,19 @@ When the developer asks you to build or extend a set of tables, follow these ste
 they paste a prompt**. (`prompts/BuildNewTables-StartHere.md` is the canonical copy-paste form of
 this same workflow.)
 
-1. **Match a template.** Find the template in `templates/<domain>/` that fits the request and read it.
+1. **Match a template, and load it through the template library MCP server.** Find the template that
+   fits the request with `list_templates` or `search_templates`, then load it with `get_template`. It
+   returns the template, its standards layer, and the platform facts the template declares from
+   `templates/_materialization.md`; read all three before designing. **If `get_template` is not
+   available, the server is not registered: register it (`mcp-server/setup.ps1`) before going further.**
+   That is a side issue to fix, not a reason to read the template files directly instead. Where the
+   assistant cannot use MCP servers at all, no Access MCP server can be connected either, so the run
+   ends at the design and the files are read directly for it.
    **If no close match exists, say so and follow "When no template fits" below** — don't quietly bend
    a template that doesn't fit, and don't improvise unbounded. The from-scratch path is a first-class
    route with its own rules, not an exception.
-2. **Read the active standards layer** in `standards/`.
+2. **The active standards layer arrives with the template** (step 1). On the from-scratch path,
+   `get_standards` loads it.
 3. **Apply the standards to everything you produce** — naming conventions, audit columns, and the
    error-handling pattern — plus the field-qualification rules (no bare reserved or ambiguous nouns;
    PK = `[Entity]ID`; a FK takes the referenced PK's name). These come from `standards/`, **never**
