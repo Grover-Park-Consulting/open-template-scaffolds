@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.18.1
+version: 0.18.2
 status: stable
 implements: audit-logging-lite-schema
 requires_tables:
@@ -143,6 +143,20 @@ warnings:
 # Access Audit Logging (Lite) — VBA Scaffold
 
 **Status last determined:** 2026-09-26.
+
+## Contents
+
+- Intent
+- Prerequisites
+- What the developer runs, and in what order
+- Validating the build
+- Standards Gate
+- Wizard
+- Module-level declarations
+- Procedures
+- Standards Layer
+- Extra Options
+- Parked / future considerations
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

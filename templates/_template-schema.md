@@ -11,6 +11,21 @@ status: draft
 
 **Who reads this:** anyone writing a template, and the AI assistant reading one.
 
+## Contents
+
+- 1. File rules
+- 2. Front-matter (YAML)
+- 3. Body sections — common core (all template types)
+- 4. Body sections — `type: table-schema`
+- 5. Field-spec table format (`type: table-schema`)
+- 6. Standards Layer boundary
+- 7. Extra Options
+- 8. `type: vba-scaffold`
+- 9. `type: form-spec`
+- 10. The OTS Wizard (any template type)
+- 11. Minimal skeleton (`type: table-schema`)
+- 12. `type: outcome-first`
+
 **Using a template to build tables, forms, or code in a database?** You do not need to read this
 file in order to *use* the template. You only need to read this file if you want to *create* a template.
 

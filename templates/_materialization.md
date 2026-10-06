@@ -11,6 +11,36 @@ status: draft
 
 **Who reads this:** the AI assistant turning an approved design into real tables, code, or forms.
 
+## Contents
+
+- The build record
+- The runbook — the two builds that leave the developer something to run
+- Table-schema build — Access (VBA-DAO) or SQL Server
+  - First, know which file you are building into (fact `target-file`)
+  - SQL Server → DDL (fact `sql-server-ddl`)
+  - Access (ACE) → a VBA `Sub` using DAO (fact `dao-table-build`)
+  - Audit-field stamping — the Before Change data macro (fact `data-macro-rules`)
+  - Before altering a table already in use, check what has it open (fact `table-in-use`)
+  - Reusing a host's own helper function — check what it was sized for, not just what it does (fact `host-helper-reuse`)
+  - Renaming a table or field a front end may already reference (fact `rename-referenced`)
+  - The VBE's ~25 line-continuation limit on one statement (fact `vbe-line-continuation`)
+  - ACE rejects an aggregate subquery in an UPDATE's SET clause, and a self-referencing alias (fact `ace-update-aggregate`)
+  - A domain function cannot see the work of the transaction it is called inside (fact `domain-function-transaction`)
+  - A row another session holds is refused with an error, and 3188 is the one usually seen (fact `row-lock-errors`)
+  - A SQL `INSERT` shortens an over-long text value without an error (fact `sql-insert-truncation`)
+  - A recordset append from code can crash Access when a Data Macro's function reads through `CurrentDb` (fact `recordset-append-crash`)
+  - VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions (fact `vba-import-xml-entities`)
+  - Opening an existing database that has a startup routine — skip the startup; left to run, it can block, and it is not a dropped connection (fact `open-existing-startup`)
+  - Importing a VBA module through an Access MCP server — the encoding, and one wrong document (fact `mcp-module-import`)
+  - Running a procedure through an Access MCP server — bare name, and use eval for arguments (fact `mcp-run-procedure`)
+  - Code imported through an Access MCP server arrives without line numbers (fact `mcp-line-numbers`)
+  - After a build through an Access MCP server, confirm the file was actually released (fact `mcp-file-release`)
+  - Application startup — AutoExec, Startup(), and external file assets (fact `app-startup-autoexec`)
+- Layout fidelity — a limitation of the approach (fact `form-layout-fidelity`)
+- Mapping rules (fact `form-mapping-rules`)
+- Hand-validation — publication form (focused, importable fragment) (fact `form-hand-validation`)
+- Building the form live through an Access MCP server — the path this library takes (fact `form-live-build`)
+
 **If you are the developer:** read it to see exactly what will be done in your database. It is written as instructions only to the AI assistant, not for anyone else.
 
 This is a **format/process reference** (like `_template-schema.md`): it defines how a template's
