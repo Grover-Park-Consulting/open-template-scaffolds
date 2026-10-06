@@ -3,7 +3,7 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.2.1
+version: 0.2.2
 status: stable
 implements: error-logging-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, host-helper-reuse]
@@ -280,6 +280,9 @@ them, every build. Every other section in this file — *Intent*, *What the temp
 context for reading those two. None of it binds on its own, and nothing that binds is stated only
 there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **This template names no mechanism, because the platform leaves more than one workable route.**
   Ordinary VBA behind a shared logging procedure, called from the end of every handler, satisfies
   every promise above. Do not import a mechanism from the audit-logging templates in this library on
@@ -300,7 +303,7 @@ there.
   divide the work — before anything in the recording path could clear them. This is stated as a
   behaviour under *The same behavior every time*, not as code to copy; build it however you choose, as
   long as the behaviour holds.
-- **Read every file in `standards/` and apply it.** Error handling, naming, query style, and how the
+- **Apply every standard delivered with this template.** Error handling, naming, query style, and how the
   work divides into procedures all come from there and never from this file.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice. Two of them are gates: a

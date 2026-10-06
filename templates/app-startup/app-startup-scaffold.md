@@ -3,7 +3,7 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.4.3
+version: 0.4.4
 status: stable
 requires_tables:
   - USysLocalSetting
@@ -14,6 +14,7 @@ standards_layer:
   - naming-conventions
   - query-style
   - startup-conventions
+  - audit-columns
 target_module: modAppStartup
 new_procedures:
   - Startup

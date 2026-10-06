@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.16.0
+version: 0.17.0
 status: draft
 ---
 
@@ -1202,6 +1202,14 @@ whose reason is somewhere else is the defect above in a new place.
 
 A section that does not bind says so in one line where it starts, and says where the binding statements
 are instead.
+
+**What arrives with the template binds too, and the closing instruction says so.** `get_template`
+delivers the method and the platform facts a build needs alongside the template body, outside the
+sections the closing instruction names. By the rule above they would be read as context. So every
+`## To the AI assistant building this` carries, right after it names the specification sections, this
+sentence: *"The method and platform facts delivered with this template bind this build as fully as the
+sections named above."* A template body then restates a delivered fact only where it applies it, and
+names the fact by its id.
 
 ### 12.5 The `Explore options` step
 

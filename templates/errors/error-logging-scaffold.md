@@ -3,7 +3,7 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.9.1
+version: 0.9.2
 status: stable
 implements: error-logging-schema
 requires_tables:
@@ -14,6 +14,7 @@ standards_layer:
   - naming-conventions
   - query-style
   - design-principles
+  - startup-conventions
 target_module: modErrorLog
 new_procedures:
   - LogError

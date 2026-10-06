@@ -3,7 +3,7 @@ template: capital-asset-tracking-outcome-first
 title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.2.2
+version: 0.2.3
 status: stable
 implements: capital-asset-tracking-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash]
@@ -422,6 +422,9 @@ every build. Every other section in this file — *Intent*, *What the template d
 context for reading those two. None of it binds on its own, and nothing that binds is stated only
 there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **Two mechanisms are named, and only two: a Data Macro for the capitalization check (Business Rule
   1) and a Data Macro for the standing audit trail (Business Rule 3).** Both are named because the
   platform leaves exactly one route that can compare a field's old and new value while firing on every
@@ -431,16 +434,13 @@ there.
 - **Read `capital-asset-tracking-schema.md`, the table template this realizes, for the fields,
   the full text of all eight Business Rules, and the reasoning behind them.** This file restates the
   outcome of five of the eight; that file is where the field names, types, and the other three live.
-- **Read `templates/_materialization.md` for the shape of a Data Macro**, the same document the audit
-  domain's outcome-first template points to for the same reason: a Data Macro can only be created as
-  an XML document loaded into the table, the shape of that document is fixed by the platform, and there
-  is nothing in it for you to decide. Read it for the shape of the document only — how the work divides
-  and what things are called stay exactly as declared under *Free to choose alternatives*.
+- **The Data Macro document's shape is fixed by the platform** (fact `data-macro-rules`); how the work
+  divides and what things are called stay exactly as declared under *Free to choose alternatives*.
 - **You may read `audit-logging-lite-scaffold.md` and `audit-logging-lite-outcome-first.md` for one
   worked example of a comparable Data Macro decomposition — nothing more.** Neither is a route this
   file adopts; a different, equally valid decomposition that still satisfies every check here is a
   legitimate build.
-- **Read every file in `standards/` and apply it.** Naming, audit columns, error handling, query
+- **Apply every standard delivered with this template.** Naming, audit columns, error handling, query
   style, and how the work divides into procedures all come from there and never from this file.
 - **Ask for the six things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a question phrased in
@@ -458,8 +458,7 @@ there.
   from reasoning that makes an answer seem obvious. Where a check exists to answer a question, run the
   check at the point the sequence calls for it rather than working the answer out yourself.
 - **Before attaching either Data Macro to a live table, check what has that table open and name it if
-  the attempt would be blocked** — `templates/_materialization.md`, "Before altering a table already
-  in use, check what has it open." This is what check 18 under *How you validate the template's
+  the attempt would be blocked** (fact `table-in-use`). This is what check 18 under *How you validate the template's
   output* is confirming; nothing in this file names a procedure to do it, so the build route you chose
   supplies the check itself, by whatever means it has available.
 - **Surface both house assumptions and every warning in the front matter** and get the developer's

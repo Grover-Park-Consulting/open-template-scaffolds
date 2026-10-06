@@ -3,7 +3,7 @@ template: catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
-version: 0.1.2
+version: 0.1.3
 status: stable
 implements: catalog-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
@@ -293,6 +293,9 @@ every build. Every other section in this file — *Intent*, *What the template d
 context for reading those two. None of it binds on its own, and nothing that binds is stated only
 there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **Business Rule 2 offers a developer-facing choice between two named mechanisms, and Business
   Rule 3 names none.** For Rule 2, ask which route under *Information and conditions you need to
   supply*, item 4 — never infer it, never default it, and never treat "which is preferred" as
@@ -301,12 +304,10 @@ there.
 - **Read `catalog-schema.md`, the table template this realizes, for the fields, the full text
   of all five Business Rules, and the reasoning behind them.** This file restates the outcome of two
   of the five; that file is where the field names, types, and the other three live.
-- **Where the Data Macro route is chosen, read `templates/_materialization.md` for the shape of the
-  document** — a Data Macro can only be created as an XML document loaded into the table, the shape of
-  that document is fixed by the platform, and there is nothing in it for you to decide. Read it for
-  the shape only; how the work divides and what things are called stay exactly as declared under
+- **Where the Data Macro route is chosen, the document's shape is fixed by the platform** (fact
+  `data-macro-rules`); how the work divides and what things are called stay exactly as declared under
   *Free to choose alternatives*.
-- **Read every file in `standards/` and apply it.** Naming, audit columns, error handling, query
+- **Apply every standard delivered with this template.** Naming, audit columns, error handling, query
   style, and how the work divides into procedures all come from there and never from this file.
 - **Ask for the six things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a question phrased in

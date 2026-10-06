@@ -3,10 +3,10 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.1.1
+version: 0.1.2
 status: stable
 implements: officiating-assignment-schema
-platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash]
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash, app-startup-autoexec]
 standards_layer:
   - audit-columns
   - naming-conventions
@@ -371,6 +371,9 @@ every build. Every other section in this file — *Intent*, *What the template d
 context for reading those two. None of it binds on its own, and nothing that binds is stated only
 there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **Business Rule 3 offers a developer-facing choice between two named mechanisms; Business Rules 4
   and 7 each name none; Business Rules 5 and 8 each name none; Business Rule 9 names a pattern, not a
   domain-specific mechanism.** For Rule 3, ask which route under *Information and conditions you need
@@ -387,16 +390,15 @@ there.
   — read it to see exactly what that route's coverage gap looks like, not as a route this file
   adopts. A different, equally valid decomposition that still satisfies every check here is a
   legitimate build.
-- **For Business Rule 9, read `templates/_materialization.md` → *External file assets* for the
+- **For Business Rule 9, use the external file assets part of the fact `app-startup-autoexec` for the
   confirm-don't-create and copy-in pattern.** It is written in general terms on purpose — apply it to
   `tblOfficial.PhotoFileName` and `tblAppSetting.OfficialPhotoFolder` specifically. Do not read
   `app-startup-scaffold.md` or `app-startup-outcome-first.md` for this — they are sibling consumers of
   the same pattern, not its source, and reading a sibling domain template here risks importing a
   decomposition this file was never given license to import.
-- **Where the Data Macro route is chosen for Business Rule 3, read `templates/_materialization.md` for
-  the shape of a Data Macro** — it can only be created as an XML document loaded into the table, the
-  shape of that document is fixed by the platform, and there is nothing in it for you to decide.
-- **Read every file in `standards/` and apply it.** Naming, audit columns, error handling, query
+- **Where the Data Macro route is chosen for Business Rule 3, the document's shape is fixed by the
+  platform** (fact `data-macro-rules`).
+- **Apply every standard delivered with this template.** Naming, audit columns, error handling, query
   style, and how the work divides into procedures all come from there and never from this file.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a question phrased in

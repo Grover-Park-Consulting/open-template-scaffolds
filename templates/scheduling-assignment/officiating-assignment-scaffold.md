@@ -3,7 +3,7 @@ template: officiating-assignment-scaffold
 title: Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.9.1
+version: 0.9.2
 status: stable
 implements: officiating-assignment-schema
 requires_tables:
@@ -15,7 +15,7 @@ requires_tables:
   - tblTeam
   - tlkpPlayLevel
   - tblAppSetting
-platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash, vbe-line-continuation]
+platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash, vbe-line-continuation, app-startup-autoexec]
 standards_layer:
   - error-handling
   - query-style

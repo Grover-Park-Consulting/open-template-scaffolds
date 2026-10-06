@@ -3,12 +3,12 @@ template: officiating-assignment-form
 title: Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
-version: 0.4.1
+version: 0.4.2
 status: review
 implements: officiating-assignment-schema
 record_source: qryGame_frm
 platform_facts: [form-live-build, form-mapping-rules, form-layout-fidelity, form-hand-validation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
-standards_layer: [form-conventions, naming-conventions, startup-conventions]
+standards_layer: [form-conventions, naming-conventions, startup-conventions, error-handling]
 new_forms: [frmGame_Assignment, sfrmGame_Crew]
 warnings:
   - This template builds new forms and a query. Where the file already holds an object with one of

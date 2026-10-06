@@ -3,7 +3,7 @@ template: stocktake-scan-outcome-first
 title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.6.1
+version: 0.6.2
 status: stable
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -408,6 +408,9 @@ other section in this file — *Intent*, *What the template does not do*, *Parke
 considerations* — is context for reading those two. None of it binds on its own, and nothing that
 binds is stated only there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **This template names no mechanism, unlike the audit templates in this library, because the
   platform leaves more than one workable route here.** Ordinary VBA behind the scanning form,
   a saved query, or a table-attached automatic behavior for the rollup — more than one of these
@@ -453,19 +456,16 @@ binds is stated only there.
   it that way: the system's own figure was impossible before anybody counted anything, which is worth
   a human looking at. **Do not add a branch for it and do not guard the comparison with a test on
   `ExpectedQuantity`** — that is the division coming back by another route.
-- **Read every file in `standards/` and apply it.** Error handling, query style, naming, and how the
+- **Apply every standard delivered with this template.** Error handling, query style, naming, and how the
   work divides into procedures all come from there and never from this file.
 - **A single scan's writes need to be atomic (see the corresponding line under *The same behavior
   every time* and check 14).** This template names no mechanism for it, for the same reason it names
   no mechanism for anything else — see *Intent*. The direct way to get it in Access/DAO is the
   transaction guard `error-handling.md` documents: begin on a `Workspace`, take the `Database` you
   read and write through from that same `Workspace` (`ws.Databases(0)`), and
-  wrap one scan's writes and reads in it. **If you use a transaction, the same domain-function caveat
-  applies here as everywhere else in this library:** a `DLookup`/`DSum`/`DMax` call made inside that
-  transaction reads the last *committed* value, not what the transaction itself just wrote, so a read
-  that needs to see this scan's own work needs a recordset on the same `Database` object instead — see
-  `_materialization.md`, "A domain function cannot see the work of the transaction it is called
-  inside." **Nothing here asks you to hold a transaction open across more than one scan** — that is
+  wrap one scan's writes and reads in it. **If you use a transaction, a read that needs to see this
+  scan's own work is a recordset on the same `Database` object, never a domain function** (fact
+  `domain-function-transaction`). **Nothing here asks you to hold a transaction open across more than one scan** — that is
   the Batch / session transaction Extra Option, not the base build, and see that option's note before
   taking it.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,

@@ -3,12 +3,12 @@ template: publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.4.2
+version: 0.4.3
 status: stable
 implements: catalog-schema
 record_source: qryPublication_frm
 platform_facts: [form-live-build, form-mapping-rules, form-layout-fidelity, form-hand-validation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
-standards_layer: [form-conventions, naming-conventions]
+standards_layer: [form-conventions, naming-conventions, query-style]
 new_forms: [frmPublication_Edit, sfrmPublication_Creator, sfrmPublication_Genre]
 warnings:
   - This template builds new forms and a query. Where the file already holds an object with one of

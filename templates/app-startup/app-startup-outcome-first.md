@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.2.2
+version: 0.2.3
 status: stable
 platform_facts: [target-file, app-startup-autoexec, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
 standards_layer:
@@ -402,6 +402,9 @@ them, every build. Every other section in this file — *Intent*, *Facts about t
 template does not do* — is context for reading those two. None of it binds on its own, and nothing
 that binds is stated only there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **This template names no mechanism, because the platform leaves more than one workable route.**
   Ordinary VBA called from `AutoExec` satisfies every promise above. Do not import a mechanism from
   another template in this library on the assumption that a promise this firm must mean one route: it
@@ -414,7 +417,7 @@ that binds is stated only there.
   what it is called, and where the remembered location lives are all declared free above. Do not
   import a decomposition from anywhere else, and do not treat the count of things in this file as a
   count of procedures to write.
-- **Read every file in `standards/` and apply it.** Naming, error handling, query style, and the
+- **Apply every standard delivered with this template.** Naming, error handling, query style, and the
   error-handling frame all come from there and never from this file.
 - **Ask for the six things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a plain question where

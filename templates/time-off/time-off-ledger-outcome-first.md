@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.3.6
+version: 0.3.7
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -12,6 +12,7 @@ standards_layer:
   - error-handling
   - query-style
   - design-principles
+  - startup-conventions
 house_assumptions:
   - "Balance — counts every entry, including Taken entries dated in the future, so time booked ahead is already set aside and cannot be booked twice. A shop that wants the balance as of today only changes this; the schema does not ask for it, so this template does not build it."
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, domain-function-transaction, row-lock-errors, recordset-append-crash, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, app-startup-autoexec]
@@ -591,6 +592,9 @@ you build is yours to decide, within *Free to choose alternatives*. Which checks
 all of them, every build. Every other section in this file is context for reading those two. None
 of it binds on its own, and nothing that binds is stated only there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **Business Rule 1 and the posting checks each offer a developer-facing choice between two named
   routes. Ask both, never infer either, never default either.** They are items 4 and 5 under
   *Information and conditions you need to supply*. A route chosen restricts the build to that
@@ -600,25 +604,19 @@ of it binds on its own, and nothing that binds is stated only there.
 - **Read `time-off-ledger-schema.md`, the table template this realizes, for the fields, the full
   text of all ten Business Rules, and the reasoning behind them.** This file restates their
   outcomes. That file is where the field names, types and table shapes live.
-- **Read every file in `standards/` and apply it.** Naming, audit columns, error handling, query
+- **Apply every standard delivered with this template.** Naming, audit columns, error handling, query
   style and how the work divides into procedures all come from there and never from this file.
-- **Read `templates/_materialization.md` for the shape of a Data Macro, and read the existing Data
-  Macro on `tblTimeOffEntry` before writing anything to it.** A table's whole set of Data Macros for
-  one event lives in one document, and loading a new one replaces what was there. The audit
-  stamping lives in that document. Merge the new logic into it, and where the two do not obviously
-  share a branch, ask before writing. A Data Macro cannot be created with DAO and cannot call
-  something that is not in the file where the edit happens: see the same file for where its
-  functions must live in a split database.
+- **Read the existing Data Macro on `tblTimeOffEntry` before writing anything to it** (fact
+  `data-macro-rules`). The audit stamping lives in that document. Merge the new logic into it, and
+  where the two do not obviously share a branch, ask before writing.
 - **A function a Data Macro calls must exist in the back end and in every front end.** Say in the
   build record where each one went, and tell the developer that a changed function has to be
   re-imported everywhere, because nothing keeps the copies in step.
 - **Where a transaction is used, begin it on a `Workspace` and take the `Database` every read and
   write goes through from that same `Workspace`, never from `CurrentDb`, as `error-handling.md`
-  documents. Never read through a domain function a table the transaction writes.** A domain
-  function runs on a separate connection and does not see the transaction's own uncommitted rows.
-  The balance sum is exactly such a read: make it a recordset on the transaction's `Database`.
-  See `_materialization.md`, "A domain function cannot see the work of the transaction it is called
-  inside."
+  documents. Never read through a domain function a table the transaction writes** (fact
+  `domain-function-transaction`). The balance sum is exactly such a read: make it a recordset on the
+  transaction's `Database`.
 - **For checks 8, 10, 17, 31 and 32, where the tool building this cannot produce two literally simultaneous
   processes, that is not evidence the check cannot run.** Open a second, independent connection to
   the same file and use it to insert the competing row between the first connection's own check and

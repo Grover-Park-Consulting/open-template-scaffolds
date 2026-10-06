@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.10.4
+version: 0.10.5
 status: stable
 implements: audit-logging-lite-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, table-in-use]
@@ -691,6 +691,9 @@ section in this file — *Intent*, *Facts about the platform*,
 *What the template does not do*, *Extra options* — is context for reading those three. None of it binds
 on its own, and nothing that binds is stated only there.
 
+The method and platform facts delivered with this template bind this build as fully as the sections
+named above.
+
 - **Where the specification names a mechanism, it is because the platform leaves exactly one.** This file
   names no procedures, no modules and no tables, and it names one mechanism: the Data Macro. That is
   neither a preference nor a route decision that *Free to choose alternatives* reopens. The promise the
@@ -707,20 +710,20 @@ on its own, and nothing that binds is stated only there.
   created as an XML document loaded into the table, and the shape of that document is fixed by
   Access. There is nothing in it for you to decide and no second way to write it, so working it out
   by trial and error buys nothing and costs a great deal: the load fails with one error number that
-  says only that the text cannot be read as a Data Macro, and never says which part is wrong. Read
-  `templates/_materialization.md`, and read the working generator in
+  says only that the text cannot be read as a Data Macro, and never says which part is wrong. Use the
+  fact `data-macro-rules` delivered with this template, and read the working generator in
   `templates/audit/audit-logging-lite-scaffold.md`, the rules-based method that produces this same
   result. **Read them for the shape of the document and nothing else.** How the work divides, what
   the procedures are called, where things live, and what the build does are yours, exactly as
   declared under *Free to choose alternatives* — reading that file settles none of them, and copying
-  its decomposition would be importing a route you were not given. **One thing in
-  `templates/_materialization.md` is outside that narrowing and does bind here: rule 6, about a
+  its decomposition would be importing a route you were not given. **One thing in the fact
+  `data-macro-rules` is outside that narrowing and does bind here: rule 6, about a
   field that receives values from other fields.** The log's before-and-after value columns are such
   a field — every audited field in the database writes into them — so they hold the widest text the
   engine has and they accept a value set to nothing at all. That is not a route decision and it is
   not open under *Free to choose alternatives*; a log that cannot record a field emptied is a log
   that loses the change it exists to record.
-- **Read every file in `standards/` and apply it.** Naming, the audit column names, error handling and
+- **Apply every standard delivered with this template.** Naming, the audit column names, error handling and
   query style all come from there and never from this file. Lines marked **[your standards]** in
   *The same behavior every time, not the same structure* are outcomes that layer requires; they are
   stated here so the developer sees the
