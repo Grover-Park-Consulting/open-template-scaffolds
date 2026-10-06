@@ -48,8 +48,9 @@ redirects. You build only what's been approved, and only when directed.
 **Your first action in every run is to load the method.** Call `get_method`: with route `design` where
 no Access MCP server is connected, and with no route where one is, because the developer has not yet
 chosen. It returns how the run is conducted, beginning with `run-opening`: what you tell the developer
-before the first question. Once a template is chosen and the route is settled, `get_template` with that
-route returns the template's own method in full; follow it from then on. **The method and the platform
+before the first question. Once a template is chosen and the route is settled, call `get_template` with that
+route and `have_method=true`: it returns the template and the method its own features add, since
+`get_method` already delivered the rest. Follow both from then on. **The method and the platform
 facts delivered with a template bind the run as fully as anything in this file.** `templates/_method.md`
 is where the method lives; read it there only to maintain it.
 

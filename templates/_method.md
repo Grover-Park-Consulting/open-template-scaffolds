@@ -147,6 +147,108 @@ the selection control like any other decision and wait. **Never tell the develop
 an expert skims and loses nothing, a newcomer skims and misses the one line that mattered.
 
 
+## between-questions
+<!-- method: between-questions -->
+
+*Delivered: every run.*
+
+**Every question to the developer goes through the interactive selection control** — the one that
+renders each option as something they click. That covers every decision, not only wizard steps:
+approving the design, confirming a field you proposed, where to save a file. A question written as
+prose, a table, or a list they answer by typing promises a choice and delivers an essay question.
+
+### 10.4 What the AI assistant says outside a step
+
+§10.3 governs the step itself. Everything else said during a wizard — before the first question,
+between two steps, before the build begins, and while it runs — has no specified shape, and
+unspecified space is where ordinary explaining habits reassert themselves. Four rules govern it.
+**The first two fix opposite problems, and neither is a rule about being brief.**
+
+Nothing here is written in a template file. These are run-time rules: what the AI assistant says as the
+wizard runs, composed in the conversation and never authored anywhere.
+
+**1. Between two steps, name what was recorded and what is being asked next.**
+
+One line for each, in the developer's words:
+
+> *"Errors will go to a table, with a text file as the fallback. Step 4 asks where that table lives."*
+
+Not:
+
+> *"Step 4."*
+
+A step number says where a question sits in a list, not what it is. A developer four questions in has
+no other confirmation that the answer they clicked registered. **This rule makes what is said between
+steps longer, not shorter** — that is what it is for. Where the wizard branches, or a step is asked
+twice, this is where that is said.
+
+**2. Before the first question, and before the build, say only what the developer must act on.**
+
+These are the two moments with the most to report — the template that was matched and why, the
+build-wide warnings, the house assumptions, what was found on opening the files — and the least use
+for it. At the first, the developer has chosen nothing yet. At the second, they have chosen
+everything and are waiting. Three things are said at these moments and nothing else:
+
+- Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
+- Anything that changes what they do next.
+- The disclosure line below, before the first question only.
+- Where this run ends, before the first question only: a build in their database, or the approved
+  design and nothing further. The method `run-opening` carries the
+  wording and the reason. It qualifies under the second item above, since it changes what the
+  developer does when the run finishes.
+
+Everything else — what was checked, what was found, what it meant — goes to **the build record**.
+
+**This rule does not govern the design presented for approval.** The diagram and field detail are the
+deliverable the whole workflow exists to produce; they are not narration, and they are not shortened.
+The rule governs the prose around them.
+
+**The build record is always written**, and delivered as a file alongside the artifact. Without it
+this rule deletes the detail rather than routing it, and the disclosure line promises something the
+format does not keep. **`templates/_materialization.md`, "The build record", defines what it is
+called, where it goes, and what belongs in it.**
+
+**3. A house assumption is asked, never assumed.**
+
+A template's `house_assumptions` entries are surfaced before the first question. **Surfacing is not
+asking.** *"I'll take that as confirmed unless you say otherwise"* states the assumption and then
+answers it on the developer's behalf — it **ignores their input rather than requiring it**, and the
+developer who says nothing has not agreed to anything. It is put through the selection control like
+any other decision, and the build waits for the answer.
+
+This is the §10.7 trap one level up, and worse: a preferred choice at least appears in a question the
+developer is looking at. A self-confirmed assumption appears in prose they were free to skim — and an
+expert skims and loses nothing, while a newcomer skims and misses the one line that mattered.
+
+**The disclosure line**, said once, before the first question of the run — immediately before the
+entry question (§10.6) where there is one, and immediately before Step 1 where there is not:
+
+> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
+> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
+> record of how it was built, not just the thing.*
+>
+> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
+> in what I say in between.*
+>
+> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
+> of my work you see going past — some show every file as it's written, line by line, and others
+> show almost none of it. That changes nothing about what you get, or about your decisions arriving
+> as questions."*
+
+**The last two sentences are there because rules 2 and 4 bind one participant in the run and not the
+other.** They govern what the AI assistant says; they cannot reach what the tool it is running inside
+displays on its own account — its own commentary, or a view of every file as it is written. Where that
+happens, the developer sees a great deal of text that no rule here produced, and no way to tell which
+of the two is talking. Nothing in this library removes that variation, so the line names it instead:
+what changes is what they see, not what they get, and not where their decisions are. **A run with no
+wizard says these two sentences anyway** — the method `run-opening` carries that rule, since there is no disclosure
+line to carry it.
+
+**Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
+experience buys: an expert skims and loses nothing, a newcomer skims and misses the one line that
+mattered. The disclosure line gives an anchor instead — everything you must act on is in a question.
+
+
 ## checklist-rule
 <!-- method: checklist-rule -->
 
@@ -605,7 +707,9 @@ them, with no one but them to diagnose it.
 
 **If they ask for the code anyway, give it to them.** Someone who asks for it by name, having been
 told nothing has run it, is making their own call and is entitled to it. Put `UNVERIFIED` at the
-head of every file handed over, and say in the message that nothing has executed it. What ends is
+head of every file handed over, and say in the message that nothing has executed it. Before writing
+it, call `get_template` again with `route="build"`: the platform facts about how to build arrive only
+on that route. What ends is
 *offering* it as the deliverable, not their ability to have it.
 
 
@@ -769,68 +873,8 @@ record. This applies to every subagent you start: put it in the subagent's promp
 
 *Delivered: build route.*
 
-### 10.4 What the AI assistant says outside a step
-
-§10.3 governs the step itself. Everything else said during a wizard — before the first question,
-between two steps, before the build begins, and while it runs — has no specified shape, and
-unspecified space is where ordinary explaining habits reassert themselves. Four rules govern it.
-**The first two fix opposite problems, and neither is a rule about being brief.**
-
-Nothing here is written in a template file. These are run-time rules: what the AI assistant says as the
-wizard runs, composed in the conversation and never authored anywhere.
-
-**1. Between two steps, name what was recorded and what is being asked next.**
-
-One line for each, in the developer's words:
-
-> *"Errors will go to a table, with a text file as the fallback. Step 4 asks where that table lives."*
-
-Not:
-
-> *"Step 4."*
-
-A step number says where a question sits in a list, not what it is. A developer four questions in has
-no other confirmation that the answer they clicked registered. **This rule makes what is said between
-steps longer, not shorter** — that is what it is for. Where the wizard branches, or a step is asked
-twice, this is where that is said.
-
-**2. Before the first question, and before the build, say only what the developer must act on.**
-
-These are the two moments with the most to report — the template that was matched and why, the
-build-wide warnings, the house assumptions, what was found on opening the files — and the least use
-for it. At the first, the developer has chosen nothing yet. At the second, they have chosen
-everything and are waiting. Three things are said at these moments and nothing else:
-
-- Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
-- Anything that changes what they do next.
-- The disclosure line below, before the first question only.
-- Where this run ends, before the first question only: a build in their database, or the approved
-  design and nothing further. The method `run-opening` carries the
-  wording and the reason. It qualifies under the second item above, since it changes what the
-  developer does when the run finishes.
-
-Everything else — what was checked, what was found, what it meant — goes to **the build record**.
-
-**This rule does not govern the design presented for approval.** The diagram and field detail are the
-deliverable the whole workflow exists to produce; they are not narration, and they are not shortened.
-The rule governs the prose around them.
-
-**The build record is always written**, and delivered as a file alongside the artifact. Without it
-this rule deletes the detail rather than routing it, and the disclosure line promises something the
-format does not keep. **`templates/_materialization.md`, "The build record", defines what it is
-called, where it goes, and what belongs in it.**
-
-**3. A house assumption is asked, never assumed.**
-
-A template's `house_assumptions` entries are surfaced before the first question. **Surfacing is not
-asking.** *"I'll take that as confirmed unless you say otherwise"* states the assumption and then
-answers it on the developer's behalf — it **ignores their input rather than requiring it**, and the
-developer who says nothing has not agreed to anything. It is put through the selection control like
-any other decision, and the build waits for the answer.
-
-This is the §10.7 trap one level up, and worse: a preferred choice at least appears in a question the
-developer is looking at. A self-confirmed assumption appears in prose they were free to skim — and an
-expert skims and loses nothing, while a newcomer skims and misses the one line that mattered.
+§10.4 rules 1 to 3 and the disclosure line are delivered on every run, in the method
+`between-questions`. Rule 4 is the build route's alone:
 
 **4. While the build runs, do not narrate it.**
 
@@ -855,53 +899,28 @@ a template does want to watch each step land — they are reading for the templa
 for their own database, and that is a different reader (see the three readers in `CLAUDE.md`). They
 will say so. Absent that, the developer wants their tables, not a transcript of them being made.
 
-**The disclosure line**, said once, before the first question of the run — immediately before the
-entry question (§10.6) where there is one, and immediately before Step 1 where there is not:
-
-> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
-> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
-> record of how it was built, not just the thing.*
->
-> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
-> in what I say in between.*
->
-> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
-> of my work you see going past — some show every file as it's written, line by line, and others
-> show almost none of it. That changes nothing about what you get, or about your decisions arriving
-> as questions."*
-
-**The last two sentences are there because rules 2 and 4 bind one participant in the run and not the
-other.** They govern what the AI assistant says; they cannot reach what the tool it is running inside
-displays on its own account — its own commentary, or a view of every file as it is written. Where that
-happens, the developer sees a great deal of text that no rule here produced, and no way to tell which
-of the two is talking. Nothing in this library removes that variation, so the line names it instead:
-what changes is what they see, not what they get, and not where their decisions are. **A run with no
-wizard says these two sentences anyway** — the method `run-opening` carries that rule, since there is no disclosure
-line to carry it.
-
-**Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
-experience buys: an expert skims and loses nothing, a newcomer skims and misses the one line that
-mattered. The disclosure line gives an anchor instead — everything you must act on is in a question.
-
 
 ## build-record
 <!-- method: build-record -->
 
-*Delivered: build route.*
+*Delivered: every run.*
 
 ### The build record
 
 **Every build leaves a build record**: one file, written beside the artifact, saying how it was
 built. It is not optional, and it is not a summary of the conversation. **This applies to every
 template and every build** — whether a wizard ran or the developer answered everything at once,
-whether the artifact is tables, code, or a form.
+whether the artifact is tables, code, or a form. **A design-route run leaves one too:** the design
+is its artifact, and the record holds the decisions behind it. It is part of the deliverable, written
+without being asked for, never offered as an extra.
 
 It is also what `_template-schema.md` §10.4 promises the developer in your own words, and it is the
 reason the detail can stay out of the messages they read while they are still deciding things.
 
 **Name it `build-record-YYYY-MM-DD-HHMM.md`**, using the date and time the build started, so a
 second build in the same folder never overwrites the first. Write it in the folder that holds the
-artifact — beside the `.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
+artifact — beside the `.accdb`, not in the library. **On the design route there is no `.accdb` to
+sit beside:** ask the developer, as a question, where their copy goes. Where a build touches two files, such as a front end and a back end,
 one record covers both.
 
 **The record's first lines say how the template arrived:** the template id, version and `sha` that

@@ -82,10 +82,10 @@ def read_method() -> tuple[dict[str, dict], list[str]]:
 
 
 # Method every run receives, then what the template's features and the route add.
-_METHOD_EVERY_RUN = ("run-opening", "design-review", "house-assumptions-and-warnings", "checklist-rule")
+_METHOD_EVERY_RUN = ("run-opening", "design-review", "house-assumptions-and-warnings",
+                     "between-questions", "checklist-rule", "build-record")
 _METHOD_DESIGN = ("design-only-handover",)
-_METHOD_BUILD = ("build-route", "access-gate", "quiet-build", "build-record", "runbook",
-                 "build-records-accumulate")
+_METHOD_BUILD = ("build-route", "access-gate", "quiet-build", "runbook", "build-records-accumulate")
 ROUTES = ("", "design", "build")
 
 
@@ -119,12 +119,14 @@ def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
 
     A section is marked by the marker line under its heading and runs from that
     heading to the line before the next heading of the same or higher level.
-    Lines inside code fences are never read as headings. Returns
-    (sections, duplicate_ids); a duplicated id keeps its first section.
+    Lines inside code fences are never read as headings. A marker may end in
+    `route: build` (`<!-- fact: dao-table-build route: build -->`): the section is
+    then needed only on the build route, and its `route` is "build" ("" otherwise).
+    Returns (sections, duplicate_ids); a duplicated id keeps its first section.
     """
     if not path.is_file():
         return {}, []
-    mark = re.compile(r"^<!--\s*" + kind + r":\s*([a-z0-9-]+)\s*-->$")
+    mark = re.compile(r"^<!--\s*" + kind + r":\s*([a-z0-9-]+)(?:\s+route:\s*(build))?\s*-->$")
     lines = path.read_text(encoding="utf-8").splitlines()
     heads, fence = [], False
     for i, ln in enumerate(lines):
@@ -147,7 +149,7 @@ def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
             dupes.append(fid)
             continue
         facts[fid] = {"id": fid, "heading": lines[h].lstrip("#").strip(),
-                      "content": "\n".join(lines[h:end]).strip()}
+                      "content": "\n".join(lines[h:end]).strip(), "route": m.group(2) or ""}
     return facts, dupes
 
 

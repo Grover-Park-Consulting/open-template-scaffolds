@@ -198,12 +198,12 @@ def _route_or_raise(route: str) -> str:
 
 def _method_sections(ids: list[str]) -> tuple[list[dict], list[str]]:
     sections, _ = read_method()
-    found = [sections[m] for m in ids if m in sections]
+    found = [{k: sections[m][k] for k in ("id", "heading", "content")} for m in ids if m in sections]
     return found, [m for m in ids if m not in sections]
 
 
 @mcp.tool()
-def get_template(template: str, route: str = "") -> dict:
+def get_template(template: str, route: str = "", have_method: bool = False) -> dict:
     """Return a chosen template composed with its active standards layer.
 
     Looks up `template` by its front-matter id (case-insensitive) and returns
@@ -229,6 +229,13 @@ def get_template(template: str, route: str = "") -> dict:
     `route`. Pass `route="design"` for a run that ends at the approved design,
     `route="build"` for a run that builds, or leave it empty for both.
 
+    Pass `have_method=True` when `get_method` already ran in this run: the method
+    every run receives is then left out, and only what this template's own
+    features add is returned (`method_omitted` names what was left out). On the
+    design route, platform facts marked as needed only to build are left out
+    too, named under `platform_facts_omitted`; call again with `route="build"`
+    if the developer asks for code after all.
+
     Returns a dict with the `_meta` keys, the full `front_matter`, the `body`,
     a `standards` list of `{name, content}`, a `platform_facts` list and a
     `method` list, each of `{id, heading, content}`, and `served`. Anything
@@ -249,15 +256,20 @@ def get_template(template: str, route: str = "") -> dict:
                 else:
                     standards.append({"name": name, "content": content})
             facts, _ = read_platform_facts()
-            delivered, facts_missing = [], []
+            delivered, facts_missing, facts_omitted = [], [], []
             for fid in front.get("platform_facts") or []:
-                if str(fid) in facts:
-                    delivered.append(facts[str(fid)])
-                else:
+                fact = facts.get(str(fid))
+                if fact is None:
                     facts_missing.append(str(fid))
+                elif rt == "design" and fact["route"] == "build":
+                    facts_omitted.append(str(fid))
+                else:
+                    delivered.append({k: fact[k] for k in ("id", "heading", "content")})
             served = {"template": front.get("template"), "version": front.get("version"),
                       "sha": hashlib.sha256(path.read_bytes()).hexdigest()[:12]}
-            method, method_missing = _method_sections(method_for(front, body, rt))
+            ids = method_for(front, body, rt)
+            omitted = [m for m in ids if m in method_for(None, "", "")] if have_method else []
+            method, method_missing = _method_sections([m for m in ids if m not in omitted])
             result = {**_meta(front), "front_matter": front, "body": body, "standards": standards,
                       "platform_facts": delivered, "method": method, "served": served}
             if missing:
@@ -266,6 +278,10 @@ def get_template(template: str, route: str = "") -> dict:
                 result["platform_facts_missing"] = facts_missing
             if method_missing:
                 result["method_missing"] = method_missing
+            if facts_omitted:
+                result["platform_facts_omitted"] = facts_omitted
+            if omitted:
+                result["method_omitted"] = omitted
             return result
     raise ValueError(
         f"No template with id '{template}'. "

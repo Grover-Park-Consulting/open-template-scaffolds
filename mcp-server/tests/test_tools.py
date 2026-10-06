@@ -124,6 +124,26 @@ class TestGetTemplate(unittest.TestCase):
         with self.assertRaises(ValueError):
             get_template("time-off-ledger-outcome-first", route="sideways")
 
+    def test_design_route_trims_build_facts_and_known_method(self):
+        full = get_template("error-logging-schema", route="build")
+        lean = get_template("error-logging-schema", route="design", have_method=True)
+        self.assertIn("dao-table-build", [f["id"] for f in full["platform_facts"]])
+        self.assertNotIn("dao-table-build", [f["id"] for f in lean["platform_facts"]])
+        self.assertIn("dao-table-build", lean["platform_facts_omitted"])
+        self.assertIn("target-file", [f["id"] for f in lean["platform_facts"]])
+        self.assertNotIn("run-opening", [m["id"] for m in lean["method"]])
+        self.assertIn("run-opening", lean["method_omitted"])
+        wiz = get_template("error-logging-scaffold", route="build", have_method=True)
+        self.assertIn("wizard", [m["id"] for m in wiz["method"]])
+        self.assertLess(len(str(lean)), len(str(full)))
+
+    def test_every_route_gets_build_record_and_between_questions(self):
+        for r in ("design", "build"):
+            got = [m["id"] for m in get_method(r)["method"]]
+            self.assertIn("build-record", got, r)
+            self.assertIn("between-questions", got, r)
+        self.assertNotIn("quiet-build", [m["id"] for m in get_method("design")["method"]])
+
     def test_get_method_for_a_run_with_no_template(self):
         result = get_method("build")
         got = [m["id"] for m in result["method"]]

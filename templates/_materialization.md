@@ -110,13 +110,13 @@ The copies of a shared module are kept in step **by hand**; nothing enforces it.
 end's copy as the original and re-import it to each front end after any change.
 
 ### SQL Server → DDL
-<!-- fact: sql-server-ddl -->
+<!-- fact: sql-server-ddl route: build -->
 
 `CREATE TABLE` statements with primary keys, foreign keys, indexes, the lookup tables, and `INSERT` seed
 rows. Field comments become inline comments or extended properties.
 
 ### Access (ACE) → a VBA `Sub` using DAO
-<!-- fact: dao-table-build -->
+<!-- fact: dao-table-build route: build -->
 
 Access local tables are **not** built from a `CREATE TABLE` query — they're built in a VBA `Sub` with
 DAO, because that is the only way to carry a field's **`Description`** (the integral comments) and to set
@@ -495,7 +495,7 @@ above. State what each one currently does, propose how they'd combine, and get t
 answer before writing over the existing document.
 
 ### Before altering a table already in use, check what has it open
-<!-- fact: table-in-use -->
+<!-- fact: table-in-use route: build -->
 
 Attaching or replacing a Data Macro, or setting a table-level property such as a Validation Rule,
 needs the table to itself. A bound form, an open datasheet, or a query holding it open all refuse the
@@ -565,7 +565,7 @@ Whether the front end exists yet is the only condition: a schema built before an
 has nothing to sweep.
 
 ### The VBE's ~25 line-continuation limit on one statement
-<!-- fact: vbe-line-continuation -->
+<!-- fact: vbe-line-continuation route: build -->
 
 A generated `INSERT`/`UPDATE` built one column per continued line (`" ... " & _`) hits a real,
 documented VBE limit around 25 continuations per logical statement — a 21-column table crossed it
@@ -754,7 +754,7 @@ function reads through a separate connection, not `CurrentDb`. That avoided the 
 inside the append sets it off was not narrowed down.
 
 ### VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions
-<!-- fact: vba-import-xml-entities -->
+<!-- fact: vba-import-xml-entities route: build -->
 
 Proven by two real failures, on the same kind of code, corrupted opposite ways.
 
@@ -808,7 +808,7 @@ second line of defence — and that matters more now than when this was first wr
 is no longer another route to fall back on when it bites.
 
 ### Opening an existing database that has a startup routine — skip the startup; left to run, it can block, and it is not a dropped connection
-<!-- fact: open-existing-startup -->
+<!-- fact: open-existing-startup route: build -->
 
 **This applies to every template, not only the one that found it.** Any build against a database the
 developer already uses, meaning one the build did not create, has to open that database first, and
@@ -907,7 +907,7 @@ about a startup routine that is **already there**, in somebody else's database, 
 of opening it.*
 
 ### Importing a VBA module through an Access MCP server — the encoding, and one wrong document
-<!-- fact: mcp-module-import -->
+<!-- fact: mcp-module-import route: build -->
 
 **A module goes in as a file, and the file must be UTF-8 with no byte-order mark.**
 
@@ -953,7 +953,7 @@ or doesn't exist." Closing the session and calling any tool re-established it, w
 Treat it as a reconnect, not a rebuild.
 
 ### Running a procedure through an Access MCP server — bare name, and use eval for arguments
-<!-- fact: mcp-run-procedure -->
+<!-- fact: mcp-run-procedure route: build -->
 
 Three separate failures, each observed while driving a `vba-scaffold`'s staged procedures.
 
@@ -985,7 +985,7 @@ identical call without complaint. Use the run tool by default; the evaluation to
 not the upgrade.
 
 ### Code imported through an Access MCP server arrives without line numbers
-<!-- fact: mcp-line-numbers -->
+<!-- fact: mcp-line-numbers route: build -->
 
 Line numbers are added to VBA code by hand, or by a tool run over it in the editor. Neither happens
 when an Access MCP server writes code straight into a database, so **every procedure built that way arrives
@@ -999,7 +999,7 @@ for diagnostics will otherwise lose it silently — and tell them the numbers ca
 by hand or with a tool.
 
 ### After a build through an Access MCP server, confirm the file was actually released
-<!-- fact: mcp-file-release -->
+<!-- fact: mcp-file-release route: build -->
 
 A successful close reported by the Access MCP server is **not** proof the file is free. An `MSACCESS` process can
 survive that close and keep the .accdb exclusively locked, leaving a `.laccdb` file beside it.
@@ -1211,7 +1211,7 @@ into your columns and lines is your styling pass."*
 ---
 
 ## Hand-validation — publication form (focused, importable fragment)
-<!-- fact: form-hand-validation -->
+<!-- fact: form-hand-validation route: build -->
 
 A representative slice of `templates/library/publication-form.md` materialized to Access text: the form
 shell, a Detail section with a label + textbox, a lookup combo, and a subform placed to the right of the
@@ -1277,7 +1277,7 @@ confirms. A byte-perfect importable file is the generator's job in B3.)*
 ---
 
 ## Building the form live through an Access MCP server — the path this library takes
-<!-- fact: form-live-build -->
+<!-- fact: form-live-build route: build -->
 
 The same mapping drives an Access MCP server's form-creation and control-creation tools: instead of
 emitting text for import, the generator creates the form and its controls directly, applying the same
