@@ -205,9 +205,8 @@ Your AI tells you which of those two you are in before it asks you anything, so 
 - **OTS's template library MCP server** ships with the library. Its job is to let your AI look up templates and
   standards without reading the files itself. It only reads this library's files; it **cannot create or change anything in your database.** The library ships a configuration file at its root that lets
   some AI clients start the library MCP server by themselves, but that only happens when you open the library folder.
-  In the examples above the library is a subfolder, so nothing appears automatically, and there
-  is nothing that tells you why. You have two ways forward: 
-  - register it by hand (`mcp-server/setup.ps1` prints exactly what to paste)
+  In the examples above the library is a subfolder, so nothing appears automatically. You have two ways forward:
+  - run `mcp-server/setup.ps1` and answer **Y** when it offers to register the server. That works wherever the library sits. For an AI client it cannot register for you, it prints exactly what to paste.
   - skip it. As previously stated, the library runs with or without it.
 
 - **An Access MCP server** is a separate tool, and **this library does not ship with one**. Its tools open your database and **build in it directly**. This is what lets your AI run the code it wrote and fix what fails before you see it, which is the whole reason it matters: without it, the first thing to ever run that code would be you, in your own database, and a mistake would reach you as an error rather than as a finished table.
@@ -300,6 +299,12 @@ The default standards are good enough to use on day one; you don't have to chang
 started. If you like you can edit them or replace the files in `standards/` with your own conventions. From then on, every template you use comes out in your style. The library is yours to keep and adapt; there's nothing connecting back to us that you have to maintain.
 
 **One warning about replacing the standard files.** The templates expect all of the sections in the standards to be available. So, if you choose to replace them, you'll need to include all of those sections in the standards, if only as placeholders.
+
+**What we can vouch for, and what we can't.** The templates, standards and build guidance published
+here are what we have built with and tested, and the records of those builds are kept with the
+library. Once you change them, or write templates of your own, the result is yours. It may work just
+as well, but it no longer has that testing behind it, and nothing here can tell you whether it does.
+Test your changes the way the library tests its own: build from them and check the result.
 
 ## Contributing and license
 

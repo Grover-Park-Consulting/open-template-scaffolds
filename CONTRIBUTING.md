@@ -8,7 +8,9 @@ Welcome, and thanks for thinking about contributing. We're building this library
 and a little shared care keeps it useful for everyone who adopts it.
 
 The library is **fork-and-own**: you're free to fork it, swap the `standards/` layer for your
-own house rules, and never look back; there's no ongoing dependency on us. But many of us will also
+own house rules, and never look back; there's no ongoing dependency on us. What a fork changes stops
+carrying the testing behind the published library; that assurance travels with what we publish, not
+with copies of it. But many of us will also
 want to *contribute back* a template we found useful, and that's what this document is about.
 
 A quick note on roles:

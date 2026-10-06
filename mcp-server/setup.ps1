@@ -5,8 +5,10 @@
 .DESCRIPTION
     Checks for Python, installs the server's dependencies, and PRINTS the exact,
     ready-to-paste configuration for your AI client with the real path already
-    filled in. It does NOT edit any client config file for you -- it only prints
-    what to paste, so nothing on your machine is changed without your say-so.
+    filled in. For Claude Code it also OFFERS to register the server for you, and
+    does so only if you answer Y; nothing on your machine is changed without your
+    say-so. Registering with the full path works wherever the library sits,
+    including as a subfolder of another project.
 
     Run it from PowerShell:
         powershell -ExecutionPolicy Bypass -File setup.ps1
@@ -65,13 +67,31 @@ catch {
 Write-Head "3. Register the server with your AI client"
 
 Write-Host ""
-Write-Host "-- Claude Code (easiest: nothing to paste) ---------------------------" -ForegroundColor White
-Write-Host "Just open this LIBRARY folder in Claude Code. It ships a .mcp.json, so"
-Write-Host "Claude Code offers the 'open-template-scaffolds' server automatically --"
-Write-Host "approve the one-time prompt (or run /mcp to approve it) and you're done."
-Write-Host "If you prefer the command line, run:"
+$AddCmd = "claude mcp add --scope user open-template-scaffolds -- python `"$ServerPyFwd`""
+Write-Host "-- Claude Code ---------------------------------------------------------" -ForegroundColor White
+Write-Host "Register the server for every project on this machine, using this copy's"
+Write-Host "full path. This works wherever the library sits, even inside another project:"
 Write-Host ""
-Write-Host "    claude mcp add --scope user open-template-scaffolds -- python `"$ServerPyFwd`"" -ForegroundColor Green
+Write-Host "    $AddCmd" -ForegroundColor Green
+Write-Host ""
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+    $answer = Read-Host "Register it now for Claude Code, for every project on this machine? (Y/N)"
+    if ($answer -match '^[Yy]') {
+        & claude mcp add --scope user open-template-scaffolds -- python "$ServerPyFwd"
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Registered. Start a new Claude Code session to pick it up." -ForegroundColor Green
+        } else {
+            Write-Host "Registration did not succeed (exit code $LASTEXITCODE). Run the command above yourself." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "Not registered. Run the command above whenever you are ready."
+    }
+} else {
+    Write-Host "(The 'claude' command was not found, so run the line above once Claude Code is installed.)"
+}
+Write-Host ""
+Write-Host "Alternative: opening this LIBRARY folder itself in Claude Code also offers the"
+Write-Host "server (it ships a .mcp.json), but only when the library folder is what you open."
 
 Write-Host ""
 Write-Host "-- Claude Desktop (paste this block) ---------------------------------" -ForegroundColor White
