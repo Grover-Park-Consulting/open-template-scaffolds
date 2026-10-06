@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.2.3
+version: 0.2.4
 status: stable
 platform_facts: [target-file, app-startup-autoexec, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
 standards_layer:
@@ -433,18 +433,6 @@ named above.
   not from reasoning that makes an answer seem obvious. Where a check exists to answer a question, run
   the check at the point the sequence calls for it rather than working the answer out yourself.
 - **Surface the house assumption in the front matter** and get the developer's answer before building.
-- **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
-  including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
-  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and what
-  to do before settling for a soft result.
-- **While the build runs, do not narrate it.** Say once that it has started and what it will produce;
-  say anything the developer must act on, as a question; say when it is finished, what was built, and
-  where the build record is. Everything else — every procedure written, every check that passed — goes
-  to the build record.
-- **Once the build is reported finished, and only then, mention each entry under `related` in the
-  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
-  part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 

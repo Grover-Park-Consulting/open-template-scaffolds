@@ -3,7 +3,7 @@ template: stocktake-scan-outcome-first
 title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.6.2
+version: 0.6.3
 status: stable
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -492,18 +492,6 @@ named above.
   not a preference to note in passing — the race-condition warning is a requirement you build to,
   restated under *The same behavior every time, not the same structure* as "two counters racing...
   never produce two count lines."
-- **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
-  including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
-  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and what
-  to do before settling for a soft result.
-- **While the build runs, do not narrate it.** Say once that it has started and what it will produce;
-  say anything the developer must act on, as a question; say when it is finished, what was built, and
-  where the build record is. Everything else — every procedure written, every check that passed —
-  goes to the build record.
-- **Once the build is reported finished, and only then, mention each entry under `related` in the
-  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
-  part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 

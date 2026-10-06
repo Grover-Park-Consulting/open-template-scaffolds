@@ -3,7 +3,7 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.1.2
+version: 0.1.3
 status: stable
 implements: officiating-assignment-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash, app-startup-autoexec]
@@ -415,20 +415,9 @@ named above.
   check at the point the sequence calls for it rather than working the answer out yourself.
 - **Surface both house assumptions and both warnings in the front matter** and get the developer's
   answer on each before building.
-- **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
-  including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
-  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and what
-  to do before settling for a soft result. **Check 2 is the one exception stated in advance**: where
+- **Check 2 is the one exception stated in advance**: where
   the VBA route was chosen, its expected result is stated in the check itself, and recording that
   expected, disclosed outcome is what "passed" means for that entry.
-- **While the build runs, do not narrate it.** Say once that it has started and what it will produce;
-  say anything the developer must act on, as a question; say when it is finished, what was built, and
-  where the build record is. Everything else — every procedure written, every check that passed — goes
-  to the build record.
-- **Once the build is reported finished, and only then, mention each entry under `related` in the
-  front matter** (`_template-schema.md` §7.1) — one line per entry, what it is and why. This is not
-  part of the build, never a gate, and never read before this point.
 
 ## Extra options
 

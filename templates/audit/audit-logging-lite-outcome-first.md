@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.10.5
+version: 0.10.6
 status: stable
 implements: audit-logging-lite-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, table-in-use]
@@ -801,12 +801,6 @@ named above.
 - **Whatever proves an attachment is this system's own work must be written by the build itself.** A
   mark inside the attachment is the only thing that survives every naming convention. Verified: such a
   mark survives being loaded and read back unchanged.
-- **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
-  including where the first method to run a check hits an obstacle — see `_template-schema.md` §12.2
-  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and what
-  to do before settling for a soft result. Anything you verified along the way goes there rather than
-  into the conversation.
 
 ## Extra options
 

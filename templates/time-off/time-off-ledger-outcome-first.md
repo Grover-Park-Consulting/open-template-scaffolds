@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.3.7
+version: 0.3.8
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -669,21 +669,11 @@ named above.
 - **Surface every `house_assumptions` entry and every `warnings` entry in the front matter** and get
   the developer's answer on each before building. Surfacing one is not asking about it: put each
   through the selection control and wait.
-- **The build record reports against *How you validate the template's output*, one entry per check,
-  each saying what was done and what was observed.** Passed and not passed are the only outcomes,
-  including where the first method to run a check hits an obstacle: see `_template-schema.md` §12.2
-  for the full rule, the `Result: PASSED` / `Result: NOT PASSED` line every entry opens with, and
-  what to do before settling for a soft result. **Checks 2 and 23 each carry a condition stated in
+- **Checks 2 and 23 each carry a condition stated in
   advance.** Where the VBA route was chosen for Business Rule 1, check 2's expected result is stated
   in the check itself, and recording that expected, disclosed outcome is what "passed" means for it.
   Where the developer chose to run the posting themselves, the trigger part of check 23 does not
   apply, and the entry says so.
-- **While the build runs, do not narrate it.** Say once that it has started and what it will
-  produce; say anything the developer must act on, as a question; say when it is finished, what was
-  built, and where the build record is. Everything else goes to the build record.
-- **Once the build is reported finished, and only then, mention each entry under `related` in the
-  front matter** (`_template-schema.md` §7.1), one line per entry, what it is and why. This is not
-  part of the build, never a gate, and never read before this point.
 
 ## Extra Options
 
