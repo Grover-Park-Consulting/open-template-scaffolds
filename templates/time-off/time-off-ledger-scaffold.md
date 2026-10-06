@@ -3,7 +3,7 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.1.0
+version: 0.2.0
 status: draft
 implements: time-off-ledger-schema
 requires_tables:
@@ -461,13 +461,18 @@ Private Function AppendEntry(ByVal db As DAO.Database, ByVal lEmp As Long, ByVal
                              ByVal vReplaces As Variant, ByVal sNote As String) As Long
     ' [SCAFFOLD] Appends one entry and returns its TimeOffEntryID. Raises whatever the table or its
     '            Data Macro raises; the caller decides what that means.
-    '            Written through a recordset on db, never a SQL INSERT: an INSERT stores a note longer
-    '            than its field cut short without an error, and an apostrophe in a note breaks it.
-    Dim rs As DAO.Recordset
+    '            Written by a parameterised SQL INSERT on db, never a recordset append: a recordset
+    '            append from code crashed Access while the Data Macro's function read through
+    '            CurrentDb (_materialization.md, "A recordset append from code can crash Access...").
+    '            Parameters carry every value, so an apostrophe in a note needs no quoting.
+    Dim qd As DAO.QueryDef
 
-    ' >>> OpenRecordset("tblTimeOffEntry", dbOpenDynaset, dbAppendOnly) on db; AddNew; set every
-    '     column; set the optional ones (period, corrected, replaced, note) only where given;
-    '     Update; read the new key through LastModified; close <<<
+    ' >>> If sNote is longer than the size of TimeOffEntryNote read from db.TableDefs, raise 3163 (the
+    '     engine's own "field is too small") with a sentence naming the limit, so ExpectedRefusal
+    '     treats it as the refusal a recordset would have given. CreateQueryDef("", a PARAMETERS ...
+    '     INSERT INTO tblTimeOffEntry statement) on db; set every parameter, Null for the optional
+    '     ones not given; Execute dbFailOnError; read the new key with SELECT @@IDENTITY on the same
+    '     db; close the QueryDef <<<
 End Function
 ```
 

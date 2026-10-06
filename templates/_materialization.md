@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.14.0
+version: 0.15.0
 status: draft
 ---
 
@@ -784,6 +784,23 @@ each value before writing, against the size read from the table (`Field.Size`), 
 into the code, so a field the developer later widens does not leave a stale limit behind. The design
 tells the developer once: a query or import they write themselves will shorten an over-long value
 without warning.
+
+### A recordset append from code can crash Access when a Data Macro's function reads through `CurrentDb`
+
+Observed in two builds, three crashes in all (cold build run 1 on 2026-10-05; a deliberate probe on
+2026-10-06, two of two), Access 16.0.20430. A row added from code by a recordset (`OpenRecordset`,
+`AddNew`, `Update`) to a table whose Before Change Data Macro calls a VBA function that reads through
+`CurrentDb` ends the Access process at `Update`, with no message. Windows logs an access violation in
+`acedao.dll`. With the same table, macro and function, nothing crashed when the row was saved by a
+bound form (a person typing into it, or code saving it) or by a SQL `INSERT`.
+
+So the routes a developer ordinarily uses are safe. The one that fails is a recordset append in code,
+which is not the usual way to add a row. **Add rows from code by a parameterised SQL `INSERT`:** check
+each value against the field's definition first (see the section above), and read a new AutoNumber
+with `SELECT @@IDENTITY` on the same `Database` object. A developer who chooses a recordset append for
+a special case is choosing it deliberately, and the precaution it needs is this: the Data Macro's
+function reads through a separate connection, not `CurrentDb`. That avoided the crash in run 1. What
+inside the append sets it off was not narrowed down.
 
 ### VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions
 
