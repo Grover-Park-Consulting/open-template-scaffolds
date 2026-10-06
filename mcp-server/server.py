@@ -17,8 +17,8 @@ except ImportError:
     # that predates the split keeps working without a reinstall.
     from mcp.server.fastmcp import FastMCP
 
-from library import (iter_standards, iter_templates, read_platform_facts, read_standard,
-                     validate_library)
+from library import (ROUTES, iter_standards, iter_templates, method_for, read_method,
+                     read_platform_facts, read_standard, validate_library)
 
 mcp = FastMCP("open-template-scaffolds")
 
@@ -189,7 +189,21 @@ def search_templates(query: str = "", domain: str = "", type: str = "") -> list[
 
 
 @mcp.tool()
-def get_template(template: str) -> dict:
+def _route_or_raise(route: str) -> str:
+    r = route.strip().lower()
+    if r not in ROUTES:
+        raise ValueError(f"route must be 'design', 'build' or empty for both, not '{route}'.")
+    return r
+
+
+def _method_sections(ids: list[str]) -> tuple[list[dict], list[str]]:
+    sections, _ = read_method()
+    found = [sections[m] for m in ids if m in sections]
+    return found, [m for m in ids if m not in sections]
+
+
+@mcp.tool()
+def get_template(template: str, route: str = "") -> dict:
     """Return a chosen template composed with its active standards layer.
 
     Looks up `template` by its front-matter id (case-insensitive) and returns
@@ -210,14 +224,20 @@ def get_template(template: str) -> dict:
     looked up. `served` names the template, its version and a short hash of
     its file; a build record quotes it to show the template came from here.
 
+    It also returns the method the run needs: the sections of
+    `templates/_method.md` chosen from what the template contains and the
+    `route`. Pass `route="design"` for a run that ends at the approved design,
+    `route="build"` for a run that builds, or leave it empty for both.
+
     Returns a dict with the `_meta` keys, the full `front_matter`, the `body`,
-    a `standards` list of `{name, content}`, a `platform_facts` list of
-    `{id, heading, content}`, and `served`. If a `standards_layer` entry or a
-    `platform_facts` id has no match, it is reported under `standards_missing`
-    or `platform_facts_missing` rather than silently dropped. Raises ValueError
-    when no template has the given id (use `list_templates` or
-    `search_templates` to find valid ids).
+    a `standards` list of `{name, content}`, a `platform_facts` list and a
+    `method` list, each of `{id, heading, content}`, and `served`. Anything
+    named that has no match is reported under `standards_missing`,
+    `platform_facts_missing` or `method_missing` rather than silently dropped.
+    Raises ValueError for an unknown template id or route (use `list_templates`
+    or `search_templates` to find valid ids).
     """
+    rt = _route_or_raise(route)
     tid = template.strip().lower()
     for path, front, body in iter_templates():
         if str(front.get("template", "")).lower() == tid:
@@ -237,17 +257,41 @@ def get_template(template: str) -> dict:
                     facts_missing.append(str(fid))
             served = {"template": front.get("template"), "version": front.get("version"),
                       "sha": hashlib.sha256(path.read_bytes()).hexdigest()[:12]}
+            method, method_missing = _method_sections(method_for(front, body, rt))
             result = {**_meta(front), "front_matter": front, "body": body, "standards": standards,
-                      "platform_facts": delivered, "served": served}
+                      "platform_facts": delivered, "method": method, "served": served}
             if missing:
                 result["standards_missing"] = missing
             if facts_missing:
                 result["platform_facts_missing"] = facts_missing
+            if method_missing:
+                result["method_missing"] = method_missing
             return result
     raise ValueError(
         f"No template with id '{template}'. "
         "Use list_templates or search_templates to find valid ids."
     )
+
+
+@mcp.tool()
+def get_method(route: str = "") -> dict:
+    """Return the method for a run with no template — the from-scratch path.
+
+    When no template fits and the developer approves a from-scratch design, there
+    is nothing for `get_template` to load, but the run is still conducted the
+    same way. This returns the every-run method plus the method for the `route`
+    (`design`, `build`, or empty for both), from `templates/_method.md`.
+    Read-only; builds nothing.
+
+    Returns `{method: [{id, heading, content}], route}`, plus `method_missing`
+    when a mapped id has no section. Raises ValueError for an unknown route.
+    """
+    rt = _route_or_raise(route)
+    method, method_missing = _method_sections(method_for(None, "", rt))
+    result = {"method": method, "route": rt}
+    if method_missing:
+        result["method_missing"] = method_missing
+    return result
 
 
 @mcp.tool()

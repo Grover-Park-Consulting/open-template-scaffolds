@@ -23,6 +23,7 @@ list_templates = unwrap(server.list_templates)
 search_templates = unwrap(server.search_templates)
 get_template = unwrap(server.get_template)
 get_standards = unwrap(server.get_standards)
+get_method = unwrap(server.get_method)
 validate = unwrap(server.validate)
 
 META_KEYS = ("template", "title", "domain", "type", "status")
@@ -107,6 +108,29 @@ class TestGetTemplate(unittest.TestCase):
             self.assertTrue(f["content"].startswith("#"))
         self.assertEqual(result["served"]["template"], "time-off-ledger-outcome-first")
         self.assertEqual(len(result["served"]["sha"]), 12)
+
+    def test_method_follows_route_and_features(self):
+        ids = lambda r: [m["id"] for m in r["method"]]
+        build = get_template("time-off-ledger-outcome-first", route="build")
+        design = get_template("time-off-ledger-outcome-first", route="design")
+        self.assertIn("access-gate", ids(build))
+        self.assertNotIn("design-only-handover", ids(build))
+        self.assertIn("design-only-handover", ids(design))
+        self.assertNotIn("access-gate", ids(design))
+        self.assertIn("explore-options", ids(build))
+        self.assertNotIn("wizard", ids(build))
+        self.assertIn("wizard", ids(get_template("error-logging-scaffold")))
+        self.assertNotIn("method_missing", build)
+        with self.assertRaises(ValueError):
+            get_template("time-off-ledger-outcome-first", route="sideways")
+
+    def test_get_method_for_a_run_with_no_template(self):
+        result = get_method("build")
+        got = [m["id"] for m in result["method"]]
+        self.assertIn("run-opening", got)
+        self.assertIn("access-gate", got)
+        self.assertNotIn("wizard", got)
+        self.assertNotIn("method_missing", result)
 
     def test_every_template_receives_its_declared_facts(self):
         for t in list_templates():

@@ -149,6 +149,13 @@ class TestPlatformFacts(unittest.TestCase):
         self.assertEqual(dupes, ["x"])
         self.assertTrue(any(e.startswith("FM8") for e in errs), errs)
 
+    def test_every_mapped_method_has_a_section(self):
+        methods, dupes = library.read_method()
+        self.assertEqual(dupes, [])
+        every = set(library.method_for({"type": "outcome-first", "related": ["x"]}, "## Wizard\n", ""))
+        every |= set(library.method_for({"type": "vba-scaffold"}, "", ""))
+        self.assertEqual(sorted(every - set(methods)), [])
+
     def test_fm9_requires_platform_facts(self):
         front = {"type": "table-schema"}
         self.assertTrue(any(e.startswith("FM9") for e in validate_template(front, "", "x")))

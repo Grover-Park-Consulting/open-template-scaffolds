@@ -68,20 +68,64 @@ def iter_standards():
 
 
 MATERIALIZATION = TEMPLATES_DIR / "_materialization.md"
-_FACT_MARK = re.compile(r"^<!--\s*fact:\s*([a-z0-9-]+)\s*-->$")
+METHOD = TEMPLATES_DIR / "_method.md"
 
 
 def read_platform_facts() -> tuple[dict[str, dict], list[str]]:
-    """Map each fact id in _materialization.md to its section.
+    """Map each fact id in _materialization.md to its section (see _read_marked)."""
+    return _read_marked(MATERIALIZATION, "fact")
 
-    A section is marked by a `<!-- fact: id -->` line under its heading and runs
-    from that heading to the line before the next heading of the same or higher
-    level. Lines inside code fences are never read as headings. Returns
-    (facts, duplicate_ids); a duplicated id keeps its first section.
+
+def read_method() -> tuple[dict[str, dict], list[str]]:
+    """Map each method id in _method.md to its section (see _read_marked)."""
+    return _read_marked(METHOD, "method")
+
+
+# Method every run receives, then what the template's features and the route add.
+_METHOD_EVERY_RUN = ("run-opening", "design-review", "house-assumptions-and-warnings", "checklist-rule")
+_METHOD_DESIGN = ("design-only-handover",)
+_METHOD_BUILD = ("build-route", "access-gate", "quiet-build", "build-record", "runbook",
+                 "build-records-accumulate")
+ROUTES = ("", "design", "build")
+
+
+def method_for(front: dict | None, body: str, route: str = "") -> list[str]:
+    """The method ids a run needs, chosen from what the template contains and the route.
+
+    The server chooses; no template declares method, so none can forget it. `front`
+    is None for a run with no template (the from-scratch path). An empty route
+    returns both routes' method.
     """
-    if not MATERIALIZATION.is_file():
+    ids = list(_METHOD_EVERY_RUN)
+    if front is not None:
+        if front.get("related"):
+            ids.append("related-after-finish")
+        if re.search(r"^## Wizard\s*$", body, re.M):
+            ids.append("wizard")
+        typ = str(front.get("type", ""))
+        if typ == "outcome-first":
+            ids.append("explore-options")
+        if typ == "vba-scaffold":
+            ids.append("staged-procedures")
+    if route in ("", "design"):
+        ids += _METHOD_DESIGN
+    if route in ("", "build"):
+        ids += _METHOD_BUILD
+    return ids
+
+
+def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
+    """Map each `<!-- kind: id -->` marker in `path` to its section.
+
+    A section is marked by the marker line under its heading and runs from that
+    heading to the line before the next heading of the same or higher level.
+    Lines inside code fences are never read as headings. Returns
+    (sections, duplicate_ids); a duplicated id keeps its first section.
+    """
+    if not path.is_file():
         return {}, []
-    lines = MATERIALIZATION.read_text(encoding="utf-8").splitlines()
+    mark = re.compile(r"^<!--\s*" + kind + r":\s*([a-z0-9-]+)\s*-->$")
+    lines = path.read_text(encoding="utf-8").splitlines()
     heads, fence = [], False
     for i, ln in enumerate(lines):
         if ln.lstrip().startswith("```"):
@@ -90,7 +134,7 @@ def read_platform_facts() -> tuple[dict[str, dict], list[str]]:
             heads.append((i, len(ln) - len(ln.lstrip("#"))))
     facts, dupes = {}, []
     for i, ln in enumerate(lines):
-        m = _FACT_MARK.match(ln.strip())
+        m = mark.match(ln.strip())
         if not m:
             continue
         fid = m.group(1)
@@ -295,6 +339,10 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
                 errors.append(f"FM8: fact id '{fid}' is defined more than once in _materialization.md")
     elif REQUIRE_PLATFORM_FACTS and typ != "spec":
         errors.append("FM9: missing/empty platform_facts")
+    methods, _ = read_method()
+    for mid in method_for(front, body):
+        if mid not in methods:
+            errors.append(f"MT1: method '{mid}' this template receives has no section in _method.md")
 
     # ---- Common core (spec section 3) ----
     sections = _h2_sections(body)
