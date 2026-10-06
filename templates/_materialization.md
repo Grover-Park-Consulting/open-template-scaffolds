@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.18.0
+version: 0.19.0
 status: draft
 ---
 
@@ -723,6 +723,20 @@ of 2026-10-05. Code that treats a held row as an expected refusal rather than a 
 with 3218, 3260 and 3197, the engine's other lock and write-conflict errors (listed, not all
 observed). `ExpectedRefusal` in `templates/time-off/time-off-ledger-scaffold.md` is a working example.
 
+**A refused attempt is not quick.** Observed 2026-10-06 with two Access processes: one pessimistic
+`Edit` against a row another session held took about two seconds to fail, because the engine retries
+before it gives up. Code that waits for a lock by counting attempts (50 tries of 100 ms, say) waits far
+longer than it means to: a wait meant to last 5 seconds ran for more than a minute. Measure the wait by
+the clock. A refused attempt's recordset is closed, not just dropped.
+
+**A process refused on the lock sometimes stays running after it quits, with no window.** Observed
+2026-10-06 in 2 of 6 runs with the protection on, and in none of 6 with it off, where nothing was
+refused. Each had already finished its work. Closing every refused recordset, and the lock session
+itself, did not stop it. The likely explanation, from the developer's own experience and not
+established by the run, is Access's ordinary habit of leaving an instance hanging when it does not
+close cleanly. A build that launches its own processes gives each a deadline and reads its results
+before the process quits, not after.
+
 ### A SQL `INSERT` shortens an over-long text value without an error
 <!-- fact: sql-insert-truncation -->
 
@@ -734,6 +748,18 @@ each value before writing, against the size read from the table (`Field.Size`), 
 into the code, so a field the developer later widens does not leave a stale limit behind. The design
 tells the developer once: a query or import they write themselves will shorten an over-long value
 without warning.
+
+**Two traps in the parameters of a parameterised `INSERT`,** both observed 2026-10-06 in a shared
+error logger, and both silent until a Required column refuses the row:
+
+- **Declare text parameters as `Text(255)`, never `LongText`.** With several `LongText` parameters
+  declared, a later parameter arrived empty: a module name of 2 characters worked, one of 15 made the
+  *next* parameter, the procedure name, arrive with no value. The values are checked against the field
+  size first anyway, so `Text(255)` loses nothing.
+- **An empty string passed as a parameter reaches the table as Null.** A Required column with
+  `AllowZeroLength` set accepts `''` written as a literal, and refuses the same empty string passed as a
+  parameter. Where an empty string must be kept, an error description being the case that matters,
+  write that one value as a delimited literal (`'` doubled inside it).
 
 ### A recordset append from code can crash Access when a Data Macro's function reads through `CurrentDb`
 <!-- fact: recordset-append-crash -->
