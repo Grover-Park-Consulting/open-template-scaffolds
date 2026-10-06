@@ -198,16 +198,17 @@ We ship one in the library. The other is optional; you may already have one inst
 
  **Read this section.** It is short, and one thing in it decides what you have at the end of a run.
 
-The first server is genuinely optional. The second one is not, if you want your AI to do the building. **Without it you get the design — the tables, the fields, how they connect, and the reasoning behind every choice, yours to approve or change — and you build from it yourself, the way you build things today. With it, your AI builds it in your database and runs what it built, so anything wrong gets found and fixed before you ever see it.**
+The first server is needed if your AI is going to build; for a design alone it is optional. The second one is not optional, if you want your AI to do the building. **Without it you get the design — the tables, the fields, how they connect, and the reasoning behind every choice, yours to approve or change — and you build from it yourself, the way you build things today. With it, your AI builds it in your database and runs what it built, so anything wrong gets found and fixed before you ever see it.**
 
 Your AI tells you which of those two you are in before it asks you anything, so you are never surprised at the end.
 
-- **OTS's template library MCP server** ships with the library. Its job is to let your AI look up templates and
-  standards without reading the files itself. It only reads this library's files; it **cannot create or change anything in your database.** The library ships a configuration file at its root that lets
+- **OTS's template library MCP server** ships with the library. Its job is to hand your AI each template
+  together with your standards and the facts about how Access behaves that a build from it depends on, so
+  your AI never has to go looking for them. It only reads this library's files; it **cannot create or change anything in your database.** The library ships a configuration file at its root that lets
   some AI clients start the library MCP server by themselves, but that only happens when you open the library folder.
   In the examples above the library is a subfolder, so nothing appears automatically. You have two ways forward:
   - run `mcp-server/setup.ps1` and answer **Y** when it offers to register the server. That works wherever the library sits. For an AI client it cannot register for you, it prints exactly what to paste.
-  - skip it. As previously stated, the library runs with or without it.
+  - skip it, if you only want a design. A build needs it, and your AI will ask you to register it before building.
 
 - **An Access MCP server** is a separate tool, and **this library does not ship with one**. Its tools open your database and **build in it directly**. This is what lets your AI run the code it wrote and fix what fails before you see it, which is the whole reason it matters: without it, the first thing to ever run that code would be you, in your own database, and a mistake would reach you as an error rather than as a finished table.
 
