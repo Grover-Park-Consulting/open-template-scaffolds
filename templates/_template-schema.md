@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.14.0
+version: 0.15.0
 status: draft
 ---
 
@@ -283,10 +283,15 @@ copied unchanged, and not reinvented from scratch per template:
    field's own documentation names truncation as the intended behavior (`ErrorDescription` in
    `error-logging-schema.md` is the one declared exception in the library today). Silent truncation
    passing as success is the same failure shape X17/X18 name for Data Macros, one layer down, at the
-   field type itself. **Test it on the route the build actually inserts by:** a bound form or a
-   recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters without
-   raising an error, so where the build inserts by SQL the build itself must refuse the value, or the
-   entry records that it does not.
+   field type itself. **Test it on every route the build itself writes by, and only those:** a bound
+   form or a recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters
+   without raising an error, so where the build inserts by SQL it checks each value against the
+   field's own definition before writing. **Where the build copies existing rows into a table it
+   created, compare each source field's definition with its target's before copying;** a source
+   wider than its target is settled with the developer, never copied and cut short. A SQL `INSERT`
+   the build does not make, such as a query or import the developer writes later, is not tested:
+   what the engine does with it is a platform fact (`_materialization.md`, "A SQL `INSERT` shortens
+   an over-long text value without an error"), told to the developer in the design.
 9. **`Description` actually landed on the field, not only in the template's prose.** The classic
    order-of-operations defect `_materialization.md` documents — `Description` set *after*
    `TableDefs.Append`, never before, or error 3219 — is cheap to check and has already bitten this
@@ -1116,7 +1121,10 @@ restating it.** The build record reports against the template's own checklist se
 check, each saying what was done and what was observed — a completed check list, not a narrative.
 Passed and not passed are the only outcomes; there is no third. A check the template itself marks not
 applicable is not an exception: confirm the condition it names (for example, that no seed rows are
-declared) and record `Result: PASSED` with what you confirmed. Each entry opens with a literal
+declared) and record `Result: PASSED` with what you confirmed. A check tests what the build made,
+through the routes the build made. Invalid data is the right probe there; sent through a route the
+build neither made nor can close, it shows only what the engine does, and that belongs in
+`_materialization.md` as a fact, not in a check. Each entry opens with a literal
 `Result: PASSED` or `Result: NOT PASSED`, so the verdict is visible at a glance rather than buried
 inside a sentence, followed by what was done and what was observed. A check is passed when every line
 under it was observed; an entry that is not passed says what was done and what stopped it. An entry

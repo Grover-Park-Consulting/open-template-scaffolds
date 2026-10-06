@@ -3,7 +3,7 @@ template: time-off-ledger-schema
 title: Time Off Ledger — Table Schema
 domain: time-off
 type: table-schema
-version: 0.3.3
+version: 0.3.4
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -275,7 +275,7 @@ tables.
 | 5 | The three seed rows in `tlkpEntryReason` (Earned, Taken, Correction) are present exactly as specified. **Not applicable** to `tlkpTimeOffCategory`'s sample rows: they are samples to replace, not declared in front-matter `seeds`, so their absence is not a defect. |
 | 6 | The house audit columns stamp correctly on every table, per Standards Layer below. |
 | 7 | An insert citing an `EmployeeID`, `TimeOffCategoryID`, `EntryReasonID`, `CorrectsTimeOffEntryID` or `ReplacesTimeOffEntryID` that does not exist is refused. |
-| 8 | An insert with `FirstName`, `LastName`, `TimeOffCategoryName`, `EntryReasonName` or `TimeOffEntryNote` longer than its declared width is refused, not silently truncated. Test it on the route this build actually inserts by: a bound form or recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters without raising an error, so where the build inserts by SQL the build itself must refuse the value. A direct SQL `INSERT` made by anyone else cannot be refused by the build, because the engine shortens the value before any Data Macro sees it. Record the result for each route separately: `Result: PASSED` for each route that refuses it, and `Result: NOT PASSED` for a route that truncates, naming the route. |
+| 8 | An insert with `FirstName`, `LastName`, `TimeOffCategoryName`, `EntryReasonName` or `TimeOffEntryNote` longer than its declared width is refused, not silently truncated, on every route this build writes by. Where the build writes by SQL, it checks the value against the field's definition first. A SQL `INSERT` the build does not make is not tested here (`_template-schema.md` §4.2 item 8). |
 | 9 | `Description` is present on every field of every built table, matching this template's own Purpose & rules text. |
 | 10 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming what already exists, never a bare "duplicate object" error. |
 | 11 | The two validation rules refuse on every route. `TimeOffHours` of 0 and of 4.1 are refused and 4.25 and -4.25 are accepted; `HoursPerPeriod` of 0 and of -1 are refused and 5 is accepted. Make each attempt by a SQL `INSERT`, by a recordset append, and by a SQL `UPDATE` of a good row, and confirm each refusal shows the rule's own text. Run it before any Data Macro is attached, so the rule, not the macro, is what refused. |

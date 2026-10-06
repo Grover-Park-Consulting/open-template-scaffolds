@@ -3,7 +3,7 @@ template: error-logging-schema
 title: Error Logging — Table Schema
 domain: errors
 type: table-schema
-version: 0.2.0
+version: 0.2.1
 status: review
 standards_layer:
   - naming-conventions
@@ -147,7 +147,7 @@ baseline checks are marked not applicable rather than skipped silently.
 | 6 | Not applicable — no `seeds` are declared. |
 | 7 | Not applicable — audit columns are deliberately not applied to this table (see Standards Layer). |
 | 8 | Not applicable — no FK column is declared on `tblErrorLog` (see Relationships: "deliberately unrelated"), so there is no insert-side reference to test. |
-| 9 | An insert with `ModuleName`, `ProcedureName`, or `ErrorUser` (each Text(100)) longer than the field refuses or truncates **only** where the field's own text says so — none of these three do, unlike `ErrorDescription`, which Business Rule 4 explicitly requires to truncate rather than refuse. Confirm the built table matches that distinction, not a uniform rule applied to every text field. |
+| 9 | A value longer than `ModuleName`, `ProcedureName` or `ErrorUser` (each Text(100)) is refused on every route the logger writes by, not cut short; `ErrorDescription` is the one field the logger shortens to fit, by Business Rule 4. Confirm both halves of that distinction on the logger's own write routes. A SQL `INSERT` the logger does not make is not tested (`_template-schema.md` §4.2 item 8). |
 | 10 | `Description` is present on every field of the built table, matching this template's own Purpose & rules text — confirms the second-pass `Description` set (`_materialization.md` rule 2) actually ran. |
 | 11 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming `tblErrorLog` as already existing — never a bare "duplicate object" error. |
 

@@ -134,6 +134,13 @@ so an assistant doesn't mistake old grounds for new permission:
   engine lock (two cold builds counted race checks whose controls could not fail). Additions, not
   rewording.
 
+- 2026-10-06 (×1, later): `templates/_template-schema.md` §12.2 and §4.2 item 8. §12.2 gains one
+  sentence: a check tests the routes the build made, and what the engine does on other routes is a
+  fact, not a check. §4.2 item 8's route sentence is replaced: test every route the build writes by
+  and only those, compare definitions before copying existing rows, and a SQL `INSERT` the build does
+  not make is a platform fact. Grounds: the old wording let two checks test a door no build owns,
+  producing a `NOT PASSED` no build could ever clear. A correction of an error.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

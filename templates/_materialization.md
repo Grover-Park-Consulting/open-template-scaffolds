@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.13.0
+version: 0.14.0
 status: draft
 ---
 
@@ -773,6 +773,17 @@ second session tries to write or lock the same row, the second session gets an e
 of 2026-10-05. Code that treats a held row as an expected refusal rather than a failure lists 3188
 with 3218, 3260 and 3197, the engine's other lock and write-conflict errors (listed, not all
 observed). `ExpectedRefusal` in `templates/time-off/time-off-ledger-scaffold.md` is a working example.
+
+### A SQL `INSERT` shortens an over-long text value without an error
+
+A SQL `INSERT` that puts a value longer than a `Text(n)` field's size into it stores the first n
+characters and raises no error. No Data Macro sees the full value, because the engine shortens it
+first. A bound form and a DAO recordset refuse the same value. Observed in every build that tried it
+since 2026-10-02. A build cannot change this for statements it does not write. Its own SQL checks
+each value before writing, against the size read from the table (`Field.Size`), not a number copied
+into the code, so a field the developer later widens does not leave a stale limit behind. The design
+tells the developer once: a query or import they write themselves will shorten an over-long value
+without warning.
 
 ### VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions
 
