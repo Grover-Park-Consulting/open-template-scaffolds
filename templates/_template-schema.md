@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.13.1
+version: 0.14.0
 status: draft
 ---
 
@@ -1114,7 +1114,9 @@ never written later, only when asked for.
 a checklist, `vba-scaffold` included. A template of either type points to this rule rather than
 restating it.** The build record reports against the template's own checklist section, one entry per
 check, each saying what was done and what was observed — a completed check list, not a narrative.
-Passed and not passed are the only outcomes; there is no third. Each entry opens with a literal
+Passed and not passed are the only outcomes; there is no third. A check the template itself marks not
+applicable is not an exception: confirm the condition it names (for example, that no seed rows are
+declared) and record `Result: PASSED` with what you confirmed. Each entry opens with a literal
 `Result: PASSED` or `Result: NOT PASSED`, so the verdict is visible at a glance rather than buried
 inside a sentence, followed by what was done and what was observed. A check is passed when every line
 under it was observed; an entry that is not passed says what was done and what stopped it. An entry
@@ -1130,6 +1132,18 @@ independent connection to the resource under test, opened separately from whatev
 can often force the real condition (a genuine engine-raised error, not an inferred one) even where the
 first route a builder reaches for cannot. Exhaust that kind of alternative before a check is recorded
 as anything but passed or not passed.
+
+**A check that forces two writers to collide counts only if it was shown able to fail.** Run it once
+more on a copy with the protection against two at once switched off, and record what happened. If it
+failed, the check stands. If it did not fail, record what stopped it: where the engine's own lock on
+the first writer's unsaved rows refused the second writer, the check shows that nothing got between
+the two, not which protection stopped it, and it passes on that statement. Where nothing named stopped
+it, the method could not have shown a failure, and the check is not passed. Observed 2026-10-05: a
+second connection opened inside the same Access process failed this test for two checks of three,
+because the second writer read through the first writer's connection, and it can never show a
+writer that is held back and then finishes, because both share one thread. A second Access process,
+started on a check copy and identified by its process ID as `CLAUDE.md` requires, gave controls that
+failed or were stopped by a named engine lock.
 
 ### 12.3 `validate` rules for `outcome-first`
 

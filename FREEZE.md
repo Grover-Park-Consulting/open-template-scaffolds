@@ -127,6 +127,13 @@ so an assistant doesn't mistake old grounds for new permission:
   line. The section's skeleton numbers those lines and said nothing on leaving them out, while a
   build that left them unnumbered worked. An addition, not a rewording.
 
+- 2026-10-06 (×1): `templates/_template-schema.md` §12.2, the build-record checklist rule. Two
+  additions: a check marked not applicable is confirmed and recorded `Result: PASSED` (two cold
+  builds each had to invent this, since the rule allowed only two outcomes), and a check that forces
+  two writers to collide counts only if its protection-off control failed or was stopped by a named
+  engine lock (two cold builds counted race checks whose controls could not fail). Additions, not
+  rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

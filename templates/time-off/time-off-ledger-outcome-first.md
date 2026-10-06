@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.3.3
+version: 0.3.4
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -624,9 +624,9 @@ of it binds on its own, and nothing that binds is stated only there.
   its own write. That forces the engine to show the real collision, rather than leaving you to infer
   one. See `_template-schema.md` §12.2. **The competing row has to land after the first writer has
   finished the read its decision rests on.** One that lands earlier is read by the first writer, so
-  every build passes, and the check has shown nothing. Where you want to be sure a check can fail,
-  run it once on a copy with the protection against two at once switched off, and record that it
-  failed; a copy carries test-only changes, and the record says what they were. **Give the
+  every build passes, and the check has shown nothing. Run it once on a copy with the protection
+  against two at once switched off, and record what happened, as `_template-schema.md` §12.2
+  requires; a copy carries test-only changes, and the record says what they were. **Give the
   posting code one empty procedure, called at each point a check needs a competing row** (after a
   check has passed, between the two halves of a replacement). The delivered database keeps it
   empty, and only a check copy fills it in. Without such a point there is no way to place the

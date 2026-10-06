@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.12.3
+version: 0.13.0
 status: draft
 ---
 
@@ -527,7 +527,14 @@ End Function
     loads clean and then fails when it actually runs, with error **3952** ("AXL definition was
     invalid"). Don't take a clean import as proof the macro is well-formed — run it, or run the
     build's own validation checklist, before treating the load as done.
-12. **`RaiseError`'s arguments are named `Number` and `Description`.**
+12. **`RaiseError`'s arguments are named `Number` and `Description`.** Two more facts, observed in
+    three separate builds (2026-10-04, and twice on 2026-10-05):
+    - **Whatever `Number` the macro gives, the code that made the save receives error 3939.** The
+      macro's own number never arrives. Code that must tell a Data Macro's refusal from any other
+      error tests for 3939; the refusal sentence arrives as the error's description.
+    - **`Description` is literal text unless it begins with `=`.** `="This entry is refused."` and
+      `=[sRefusal]` are evaluated; `[sRefusal]` without the `=` shows the person the text
+      `[sRefusal]`.
 13. **`SetLocalVar`'s arguments are named `Name` and `Value`.**
 
 **Before attaching any Data Macro to a table, read what's already there — never generate one on the
@@ -757,6 +764,15 @@ transaction, or anything it calls, write the table I am about to read?"
 transaction per unit of work can break unchanged when the transaction is widened to cover a batch,
 because reads that previously saw only committed rows now sit inside the transaction that wrote them.
 Re-ask the question at every call site whenever a transaction's scope changes.
+
+### A row another session holds is refused with an error, and 3188 is the one usually seen
+
+When one session holds a row (a recordset `Edit` not yet saved, or a lock taken on purpose) and a
+second session tries to write or lock the same row, the second session gets an error. Error 3188,
+"Could not update; currently locked by another session on this machine", was observed in both builds
+of 2026-10-05. Code that treats a held row as an expected refusal rather than a failure lists 3188
+with 3218, 3260 and 3197, the engine's other lock and write-conflict errors (listed, not all
+observed). `ExpectedRefusal` in `templates/time-off/time-off-ledger-scaffold.md` is a working example.
 
 ### VBA code import — an import path can corrupt XML entities in a Data Macro's comparison expressions
 

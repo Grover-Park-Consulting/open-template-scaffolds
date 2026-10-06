@@ -3,7 +3,7 @@ template: time-off-ledger-schema
 title: Time Off Ledger — Table Schema
 domain: time-off
 type: table-schema
-version: 0.3.2
+version: 0.3.3
 status: draft
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
@@ -289,6 +289,9 @@ library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`
   `audit-columns.md`; audit fields never appear in this template's field tables. These columns
   record who created or changed a row and when. They are separate from the ledger, which records
   what happened to time off.
+  On `tblTimeOffEntry`, `ModifiedDate` and `ModifiedBy` stay empty for good: no entry is ever
+  changed (Business Rule 1), so nothing ever stamps them. That is by design. Check 6 confirms on that
+  table that the creation pair is filled and the change pair is empty.
 - **Naming conventions:** this template is written in the OTS default style (`tbl` and `tlkp`
   prefixes, `[Entity]ID` keys, qualified field names). A practice with different conventions builds
   the same entities under its own `naming-conventions.md` without editing this template.
