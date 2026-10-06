@@ -3,7 +3,7 @@ template: _materialization
 title: Open Template Scaffolds — Materialization (table-schema + form-spec)
 domain: _meta
 type: spec
-version: 0.15.0
+version: 0.16.0
 status: draft
 ---
 
@@ -52,6 +52,10 @@ reason the detail can stay out of the messages they read while they are still de
 second build in the same folder never overwrites the first. Write it in the folder that holds the
 artifact — beside the `.accdb`, not in the library. Where a build touches two files, such as a front end and a back end,
 one record covers both.
+
+**The record's first lines say how the template arrived:** the template id, version and `sha` that
+`get_template` returned in `served`, and the platform fact ids it delivered. A build that read the
+template files directly cannot fill these in, and its record says so instead.
 
 **A build record does not end its life with the build it documents.** In addition to the developer's
 own copy above, copy it into `build-records/<template-slug>/` in the library, named
@@ -184,6 +188,7 @@ end's copy as the original and re-import it to each front end after any change.
 rows. Field comments become inline comments or extended properties.
 
 ### Access (ACE) → a VBA `Sub` using DAO
+<!-- fact: dao-table-build -->
 
 Access local tables are **not** built from a `CREATE TABLE` query — they're built in a VBA `Sub` with
 DAO, because that is the only way to carry a field's **`Description`** (the integral comments) and to set
@@ -400,6 +405,7 @@ Naming, audit columns, and types follow the active standards; the `errHandler` i
 one (the **dependency-free message-box default** unless `error-handling.md` specifies a central logger).
 
 ### Audit-field stamping — the Before Change data macro
+<!-- fact: data-macro-rules -->
 
 The audit columns (`standards/audit-columns.md`) are **Required** but can't be filled by a default —
 `CreatedBy` needs the current user, and the engine can't evaluate `Environ()` in a default (rule 5),
@@ -716,6 +722,7 @@ Any `Nz()`/`IIf()`/expression wrapper needs a name distinct from the field it wr
 field's own name repeated after `AS`.
 
 ### A domain function cannot see the work of the transaction it is called inside
+<!-- fact: domain-function-transaction -->
 
 `DSum`, `DLookup`, `DCount` and the other domain functions do not run on the `DAO.Database` object
 the calling code holds. They run on the Access session's own separate connection to the same file,
@@ -766,6 +773,7 @@ because reads that previously saw only committed rows now sit inside the transac
 Re-ask the question at every call site whenever a transaction's scope changes.
 
 ### A row another session holds is refused with an error, and 3188 is the one usually seen
+<!-- fact: row-lock-errors -->
 
 When one session holds a row (a recordset `Edit` not yet saved, or a lock taken on purpose) and a
 second session tries to write or lock the same row, the second session gets an error. Error 3188,
@@ -775,6 +783,7 @@ with 3218, 3260 and 3197, the engine's other lock and write-conflict errors (lis
 observed). `ExpectedRefusal` in `templates/time-off/time-off-ledger-scaffold.md` is a working example.
 
 ### A SQL `INSERT` shortens an over-long text value without an error
+<!-- fact: sql-insert-truncation -->
 
 A SQL `INSERT` that puts a value longer than a `Text(n)` field's size into it stores the first n
 characters and raises no error. No Data Macro sees the full value, because the engine shortens it
@@ -786,6 +795,7 @@ tells the developer once: a query or import they write themselves will shorten a
 without warning.
 
 ### A recordset append from code can crash Access when a Data Macro's function reads through `CurrentDb`
+<!-- fact: recordset-append-crash -->
 
 Observed in two builds, three crashes in all (cold build run 1 on 2026-10-05; a deliberate probe on
 2026-10-06, two of two), Access 16.0.20430. A row added from code by a recordset (`OpenRecordset`,
@@ -856,6 +866,7 @@ second line of defence — and that matters more now than when this was first wr
 is no longer another route to fall back on when it bites.
 
 ### Opening an existing database that has a startup routine — skip the startup; left to run, it can block, and it is not a dropped connection
+<!-- fact: open-existing-startup -->
 
 **This applies to every template, not only the one that found it.** Any build against a database the
 developer already uses, meaning one the build did not create, has to open that database first, and
@@ -954,6 +965,7 @@ about a startup routine that is **already there**, in somebody else's database, 
 of opening it.*
 
 ### Importing a VBA module through an Access MCP server — the encoding, and one wrong document
+<!-- fact: mcp-module-import -->
 
 **A module goes in as a file, and the file must be UTF-8 with no byte-order mark.**
 
@@ -999,6 +1011,7 @@ or doesn't exist." Closing the session and calling any tool re-established it, w
 Treat it as a reconnect, not a rebuild.
 
 ### Running a procedure through an Access MCP server — bare name, and use eval for arguments
+<!-- fact: mcp-run-procedure -->
 
 Three separate failures, each observed while driving a `vba-scaffold`'s staged procedures.
 
@@ -1030,6 +1043,7 @@ identical call without complaint. Use the run tool by default; the evaluation to
 not the upgrade.
 
 ### Code imported through an Access MCP server arrives without line numbers
+<!-- fact: mcp-line-numbers -->
 
 Line numbers are added to VBA code by hand, or by a tool run over it in the editor. Neither happens
 when an Access MCP server writes code straight into a database, so **every procedure built that way arrives
@@ -1043,6 +1057,7 @@ for diagnostics will otherwise lose it silently — and tell them the numbers ca
 by hand or with a tool.
 
 ### After a build through an Access MCP server, confirm the file was actually released
+<!-- fact: mcp-file-release -->
 
 A successful close reported by the Access MCP server is **not** proof the file is free. An `MSACCESS` process can
 survive that close and keep the .accdb exclusively locked, leaving a `.laccdb` file beside it.
@@ -1056,6 +1071,7 @@ front end the developer usually opens. A held back end is worse than a held fron
 *everybody*, and the person who reports it is rarely the person whose machine is holding it.
 
 ### Application startup — AutoExec, Startup(), and external file assets
+<!-- fact: app-startup-autoexec -->
 
 Per `standards/startup-conventions.md`, a generated Access **application** opens through one entry
 point: an **`AutoExec` macro** whose only action is `RunCode Startup()`, and a `Public Function

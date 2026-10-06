@@ -141,6 +141,12 @@ so an assistant doesn't mistake old grounds for new permission:
   not make is a platform fact. Grounds: the old wording let two checks test a door no build owns,
   producing a `NOT PASSED` no build could ever clear. A correction of an error.
 
+- **2026-10-06, wholesale, for the architecture review (George).** Every frozen file may be edited
+  while the review that delivers platform facts to a build at the moment of use is open. Grounds: a
+  redesign of how knowledge reaches a build touches the schema, the README and the server together,
+  and per-edit lifts would fragment it. Each edit still goes through George's approval. The freeze is
+  restored, file list unchanged, when the review closes, and the closing date is added here.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

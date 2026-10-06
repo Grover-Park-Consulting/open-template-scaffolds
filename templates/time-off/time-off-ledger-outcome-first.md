@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.3.4
+version: 0.3.5
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -14,6 +14,7 @@ standards_layer:
   - design-principles
 house_assumptions:
   - "Balance — counts every entry, including Taken entries dated in the future, so time booked ahead is already set aside and cannot be booked twice. A shop that wants the balance as of today only changes this; the schema does not ask for it, so this template does not build it."
+platform_facts: [dao-table-build, data-macro-rules, domain-function-transaction, row-lock-errors, sql-insert-truncation, recordset-append-crash, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, app-startup-autoexec]
 warnings:
   - Choosing the Data Macro route for Business Rule 1 or for the posting checks means this template attaches a Data Macro to a live table. A build against a database in real use is preceded by a backup copy of the file, and the developer is asked for one before anything is changed.
   - tblTimeOffEntry will already carry a Data Macro if the audit columns were built. The build reads it first and merges the new logic into it. It never loads a new one over it, because that replaces the stamping silently.

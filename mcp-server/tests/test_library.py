@@ -28,6 +28,7 @@ EXPECTED_RULE = {
     "fm3_extends_no_requires": "FM3",
     "fm5_bad_requires_field": "FM5",
     "fm6_bad_house_assumption": "FM6",
+    "fm7_unknown_fact": "FM7",
     "fm_unknown_standard": "FM:",
     "core_missing_intent": "CORE",
     "ts1_undeclared_table": "TS1",
@@ -121,6 +122,38 @@ class TestValidateLibrary(unittest.TestCase):
                 any("not unique" in e for e in r["errors"]),
                 f"{r['template']}: {r['errors']}",
             )
+
+
+class TestPlatformFacts(unittest.TestCase):
+    def test_sections_found_and_bounded(self):
+        facts, dupes = library.read_platform_facts()
+        self.assertEqual(dupes, [])
+        self.assertIn("recordset-append-crash", facts)
+        crash = facts["recordset-append-crash"]["content"]
+        self.assertTrue(crash.startswith("### A recordset append"))
+        self.assertNotIn("### VBA code import", crash)
+        # A section containing code fences still ends at the next heading, not inside a fence.
+        dao = facts["dao-table-build"]["content"]
+        self.assertIn("```", dao)
+        self.assertNotIn("### Audit-field stamping", dao)
+
+    def test_duplicate_id_flagged(self, tmp=None):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "_materialization.md"
+            p.write_text("# M\n\n### One\n<!-- fact: x -->\na\n\n### Two\n<!-- fact: x -->\nb\n", encoding="utf-8")
+            with patch.object(library, "MATERIALIZATION", p):
+                facts, dupes = library.read_platform_facts()
+                errs = validate_template({"platform_facts": ["x"]}, "", "x")
+        self.assertEqual(facts["x"]["content"], "### One\n<!-- fact: x -->\na")
+        self.assertEqual(dupes, ["x"])
+        self.assertTrue(any(e.startswith("FM8") for e in errs), errs)
+
+    def test_fm9_only_when_switched_on(self):
+        front = {"type": "table-schema"}
+        self.assertFalse(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
+        with patch.object(library, "REQUIRE_PLATFORM_FACTS", True):
+            self.assertTrue(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
 
 
 if __name__ == "__main__":

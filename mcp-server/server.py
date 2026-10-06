@@ -6,6 +6,7 @@ phase B3; this scaffold provides the foundation plus `list_templates` as a
 proof of life.
 """
 
+import hashlib
 import re
 
 try:
@@ -16,7 +17,8 @@ except ImportError:
     # that predates the split keeps working without a reinstall.
     from mcp.server.fastmcp import FastMCP
 
-from library import iter_standards, iter_templates, read_standard, validate_library
+from library import (iter_standards, iter_templates, read_platform_facts, read_standard,
+                     validate_library)
 
 mcp = FastMCP("open-template-scaffolds")
 
@@ -202,14 +204,22 @@ def get_template(template: str) -> dict:
     This is a read/compose tool. It produces the material the AI uses to draft a
     *proposed* schema for the developer to approve; it builds nothing itself.
 
+    It also returns the platform facts the template declares in
+    `platform_facts`: the sections of `templates/_materialization.md` a build
+    from it needs, so they arrive with the template instead of waiting to be
+    looked up. `served` names the template, its version and a short hash of
+    its file; a build record quotes it to show the template came from here.
+
     Returns a dict with the `_meta` keys, the full `front_matter`, the `body`,
-    and a `standards` list of `{name, content}`. If a `standards_layer` entry
-    has no matching file, its name is reported under `standards_missing` rather
-    than silently dropped. Raises ValueError when no template has the given id
-    (use `list_templates` or `search_templates` to find valid ids).
+    a `standards` list of `{name, content}`, a `platform_facts` list of
+    `{id, heading, content}`, and `served`. If a `standards_layer` entry or a
+    `platform_facts` id has no match, it is reported under `standards_missing`
+    or `platform_facts_missing` rather than silently dropped. Raises ValueError
+    when no template has the given id (use `list_templates` or
+    `search_templates` to find valid ids).
     """
     tid = template.strip().lower()
-    for _, front, body in iter_templates():
+    for path, front, body in iter_templates():
         if str(front.get("template", "")).lower() == tid:
             standards, missing = [], []
             for name in front.get("standards_layer") or []:
@@ -218,9 +228,21 @@ def get_template(template: str) -> dict:
                     missing.append(name)
                 else:
                     standards.append({"name": name, "content": content})
-            result = {**_meta(front), "front_matter": front, "body": body, "standards": standards}
+            facts, _ = read_platform_facts()
+            delivered, facts_missing = [], []
+            for fid in front.get("platform_facts") or []:
+                if str(fid) in facts:
+                    delivered.append(facts[str(fid)])
+                else:
+                    facts_missing.append(str(fid))
+            served = {"template": front.get("template"), "version": front.get("version"),
+                      "sha": hashlib.sha256(path.read_bytes()).hexdigest()[:12]}
+            result = {**_meta(front), "front_matter": front, "body": body, "standards": standards,
+                      "platform_facts": delivered, "served": served}
             if missing:
                 result["standards_missing"] = missing
+            if facts_missing:
+                result["platform_facts_missing"] = facts_missing
             return result
     raise ValueError(
         f"No template with id '{template}'. "

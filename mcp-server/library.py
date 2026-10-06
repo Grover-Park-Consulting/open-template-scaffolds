@@ -67,6 +67,50 @@ def iter_standards():
         yield path.stem, path.read_text(encoding="utf-8")
 
 
+MATERIALIZATION = TEMPLATES_DIR / "_materialization.md"
+_FACT_MARK = re.compile(r"^<!--\s*fact:\s*([a-z0-9-]+)\s*-->$")
+
+
+def read_platform_facts() -> tuple[dict[str, dict], list[str]]:
+    """Map each fact id in _materialization.md to its section.
+
+    A section is marked by a `<!-- fact: id -->` line under its heading and runs
+    from that heading to the line before the next heading of the same or higher
+    level. Lines inside code fences are never read as headings. Returns
+    (facts, duplicate_ids); a duplicated id keeps its first section.
+    """
+    if not MATERIALIZATION.is_file():
+        return {}, []
+    lines = MATERIALIZATION.read_text(encoding="utf-8").splitlines()
+    heads, fence = [], False
+    for i, ln in enumerate(lines):
+        if ln.lstrip().startswith("```"):
+            fence = not fence
+        elif not fence and ln.startswith("#"):
+            heads.append((i, len(ln) - len(ln.lstrip("#"))))
+    facts, dupes = {}, []
+    for i, ln in enumerate(lines):
+        m = _FACT_MARK.match(ln.strip())
+        if not m:
+            continue
+        fid = m.group(1)
+        above = [h for h in heads if h[0] < i]
+        if not above:
+            continue
+        h, level = above[-1]
+        end = next((x[0] for x in heads if x[0] > i and x[1] <= level), len(lines))
+        if fid in facts:
+            dupes.append(fid)
+            continue
+        facts[fid] = {"id": fid, "heading": lines[h].lstrip("#").strip(),
+                      "content": "\n".join(lines[h:end]).strip()}
+    return facts, dupes
+
+
+# FM9 switches on when every template declares platform_facts (end of the rollout).
+REQUIRE_PLATFORM_FACTS = False
+
+
 # --- validate(): format-only rules from templates/_template-schema.md ---
 # Each check returns a short "RULE: message" string; an empty list means the
 # template is well-formed. No host database is ever opened here.
@@ -241,6 +285,16 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
         token = parts[0].strip().strip("`").split(".")[0].split()[0]
         if token and token.lower() not in body.lower():
             errors.append(f"FM6: house_assumptions Target '{token}' is not named in the template body")
+    declared = front.get("platform_facts") or []
+    if declared:
+        facts, dupes = read_platform_facts()
+        for fid in declared:
+            if str(fid) not in facts:
+                errors.append(f"FM7: platform_facts id '{fid}' matches no fact marker in _materialization.md")
+            elif str(fid) in dupes:
+                errors.append(f"FM8: fact id '{fid}' is defined more than once in _materialization.md")
+    elif REQUIRE_PLATFORM_FACTS and typ != "spec":
+        errors.append("FM9: missing/empty platform_facts")
 
     # ---- Common core (spec section 3) ----
     sections = _h2_sections(body)
