@@ -55,8 +55,9 @@ It is meta, not a template
 **A requirement before any of this runs: an Access MCP server has to be connected.** Everything in
 this file describes a build carried out through one — opening the database, creating the objects, and
 running what was created so that anything wrong with it is found here rather than by the developer.
-Where none is connected there is no build: the run ends at the approved design, and no executable
-artifact is generated. `CLAUDE.md` → "After approval — building it" is authoritative on that split,
+On the design route, whether none is connected or the developer asked for a design only, there is
+no build: the run ends at the approved design, and no executable artifact is generated. The method
+`build-route` is authoritative on that split,
 and on the one exception, which is a developer who asks for the code knowing nothing has run it.
 
 **And a second requirement: the database has to sit in a folder Access trusts.** Outside
@@ -785,7 +786,7 @@ this rule doesn't apply to it. See `templates/audit/audit-logging-lite-scaffold.
 `GetComparisonExpression` for the worked fix.
 
 **The build route is asked, never assumed.** Where an Access MCP server is connected, say you have
-it and ask — `CLAUDE.md` → "After approval — building it" carries the question, and its preferred
+it and ask — the method `build-route` carries the question, and its preferred
 answer is `Use it`. **A connected Access MCP server is not authorization to use one:** presence is
 not an answer, the developer's is. **The template library MCP server that ships in `mcp-server/` is
 not an Access MCP server** — it reads this library's files and cannot build anything.
@@ -821,8 +822,8 @@ failure**. Nothing is wrong with the file, and nothing is wrong with the server.
 
 **Why this needs saying.** The failure arrives with no mention of startup, so it reads as the tool
 being broken. It has already been misread once, as a restriction on launching Access as a separate
-process, in a build that then took the file-handoff route for the wrong reason. And `CLAUDE.md`
-tells you a dropped Access MCP server is yours to reconnect rather than a question to hand over —
+process, in a build that then took the file-handoff route for the wrong reason. And the method
+`build-route` tells you a dropped Access MCP server is yours to reconnect rather than a question to hand over —
 correct in general, and here it will put you in a retry loop against something that was never going
 to succeed. **Before you treat a failed open as a dropped connection, rule this out.** The cost of
 misreading it has gone up rather than down: there is no longer a handoff route to divert into, so a

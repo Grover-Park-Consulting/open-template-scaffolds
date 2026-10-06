@@ -157,7 +157,7 @@ Seven things follow from this being skeletons rather than an open route.
   `CurrentDb` belongs to the default workspace the first writer is using, and a file that an Access
   MCP server holds open exclusively cannot be opened by a second process at all. Close that session,
   start both processes yourself on a check copy, and identify each by process ID, as
-  `CLAUDE.md` requires. Where you cannot, record the check as not tested.
+  the method `access-gate` requires. Where you cannot, record the check as not tested.
 - **Run the same checks once with `LockEmployee` emptied**, on a copy, for the checks that force a
   collision, so that you know each can fail. Record that it did.
 - **Check 30 forces a failure between the two writes of a replacement.** Force it from `CheckHook`

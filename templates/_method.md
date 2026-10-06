@@ -66,14 +66,15 @@ changes nothing about the result or about where their decisions are. **The libra
 say the same thing to anyone who reads them; this rule exists because two of the four ways a run
 starts touch no file at all.**
 
-**Say where this run ends, in the same breath.** Whether an Access MCP server is connected decides
-what the developer has at the end, so they learn it before they answer anything rather than after.
+**Say where this run ends, in the same breath.** The route decides what the developer has at the
+end, so they learn it before they answer anything rather than after.
 
-- **An Access MCP server is connected.** The run can end in a built artifact, created and run in
-  their database and checked before they see it. The build route is asked as a wizard step when the
-  design is approved (see "After approval — building it"); nothing more is needed here.
-- **None is connected.** The run ends at the approved design. Say so now, in your own words, to this
-  effect:
+- **An Access MCP server is connected and the developer has not asked for a design only.** The run
+  can end in a built artifact, created and run in their database and checked before they see it. The
+  build route is asked as a wizard step when the design is approved (see "After approval — building
+  it"); nothing more is needed here.
+- **No Access MCP server is connected.** The run ends at the approved design. Say so now, in your
+  own words, to this effect:
 
   > *"So you know where this ends up: I can design the whole thing with you, the tables, the fields,
   > how they connect, and the reasoning behind each choice, and you approve it before we're done.
@@ -86,6 +87,15 @@ what the developer has at the end, so they learn it before they answer anything 
   product; describe what the missing tool does, so a reader who has none learns what to look for
   rather than that this was not written for them.
 
+- **The developer asked for a design only.** The run is on the design route by their choice, even with
+  an Access MCP server connected, and ends at the approved design. Say so now, in your own words, to
+  this effect:
+
+  > *"You've asked for the design only, so we finish with the design you approve, and you build from
+  > it yourself."*
+
+  It is a complete outcome, not a build cut short; do not offer the build route unless they ask.
+
 **Why they are told this first.** Without an Access MCP server you cannot run what you wrote, so
 nothing you hand over has been executed by anything. A developer who learns that at the end has
 spent the whole session believing they were getting tables.
@@ -96,29 +106,31 @@ spent the whole session believing they were getting tables.
 
 *Delivered: every run.*
 
-3. **Apply the standards to everything you produce** — naming conventions, audit columns, and the
+After the template is loaded:
+
+1. **Apply the standards to everything you produce** — naming conventions, audit columns, and the
    error-handling pattern — plus the field-qualification rules (no bare reserved or ambiguous nouns;
    PK = `[Entity]ID`; a FK takes the referenced PK's name). These come from `standards/`, **never**
    from the template body.
-4. **Honor the template.** Its entities, fields, relationships, and Business Rules are decisions
+2. **Honor the template.** Its entities, fields, relationships, and Business Rules are decisions
    already made. Carry them through unless the developer overrides a specific point.
 
    **Templates are complementary, not walled off.** A template's own body covers its domain, but a
    mechanism it uses — a Data Macro event, an error-handling pattern, a wizard shape — may already
    be documented more fully in another template, or in a prior build record for this one. Before
-   implementing a cross-cutting mechanism from scratch, check `build-records/` (see "Build records
-   accumulate" below) and any template whose domain overlaps for how it was already worked out, and
+   implementing a cross-cutting mechanism from scratch, check `build-records/` (method
+   `build-records-accumulate`) and any template whose domain overlaps for how it was already worked out, and
    say so when you draw on one.
-5. **Surface every `house_assumptions` entry** the template declares in its front-matter. List them
+3. **Surface every `house_assumptions` entry** the template declares in its front-matter. List them
    and ask the developer to confirm or override before you finalize. **Surface every `warnings`
    entry the same way** — those are conditions the build must act on, not suggestions (e.g. Data
    Macros cannot audit Long Text fields): state each one, get the developer's answer to whatever it
    says must be checked, and branch the build accordingly.
-6. **Fold in the developer's specifics** and any named extras from the template's
+4. **Fold in the developer's specifics** and any named extras from the template's
    `## Extra Options` section.
-7. **Don't invent domain content** beyond the template and what the developer supplied. If something
+5. **Don't invent domain content** beyond the template and what the developer supplied. If something
    is genuinely undetermined, ask.
-8. **Present two parts for review:** a `mermaid` `erDiagram` (tables, keys, cardinality, and the
+6. **Present two parts for review:** a `mermaid` `erDiagram` (tables, keys, cardinality, and the
    connections into any existing host tables), then field-table detail (`| Field | Type | Key / Req | Purpose & rules |`)
    with indexes, derived values, and the standards-supplied audit columns. It is never final until the
    developer says so.
@@ -175,7 +187,7 @@ it, the method could not have shown a failure, and the check is not passed. Obse
 second connection opened inside the same Access process failed this test for two checks of three,
 because the second writer read through the first writer's connection, and it can never show a
 writer that is held back and then finishes, because both share one thread. A second Access process,
-started on a check copy and identified by its process ID as `CLAUDE.md` requires, gave controls that
+started on a check copy and identified by its process ID as the method `access-gate` requires, gave controls that
 failed or were stopped by a named engine lock.
 
 
@@ -583,7 +595,8 @@ running it.)
 
 *Delivered: design route.*
 
-**Where no Access MCP server is connected, the design is the whole deliverable.** Hand over the
+**On the design route, the design is the whole deliverable,** whether no Access MCP server is
+connected or the developer asked for a design only. Hand over the
 approved design and a build record of the decisions behind it. **Generate no executable artifact:**
 no VBA `Sub`, no `CREATE TABLE` DDL, no importable form text. Nothing that has never been run
 crosses to the developer looking like a finished build. That is the failure this exists to prevent:
@@ -596,11 +609,6 @@ head of every file handed over, and say in the message that nothing has executed
 *offering* it as the deliverable, not their ability to have it.
 
 
-**Where no Access MCP server is connected there is no build, and nothing to ask about.** The rule
-at the head of this section applies: the approved design is the deliverable, and no executable
-artifact is generated.
-
-
 ## build-route
 <!-- method: build-route -->
 
@@ -608,8 +616,8 @@ artifact is generated.
 
 ### After approval — building it
 
-The design is the first deliverable. **Whether there is a second one depends on what is connected**,
-and the developer was told which run this is before the first question was asked.
+The design is the first deliverable. **On the build route there is a second one**, and the developer
+was told where this run ends before the first question was asked.
 
 
 **Where an Access MCP server is connected the build can proceed, and the route is the developer's.
@@ -761,27 +769,6 @@ record. This applies to every subagent you start: put it in the subagent's promp
 
 *Delivered: build route.*
 
-**What you say between the steps is governed too** (§10.4), and it is not a rule about being brief.
-**Between two steps, name what was recorded and what is being asked next** — *"Errors will go to a
-table, with a text file as the fallback. Step 4 asks where that table lives"*, not *"Step 4."* A step
-number says where a question sits in a list, not what it is, and it gives the developer no
-confirmation that the answer they clicked registered. **Before the first question and before the
-build, say only what they must act on** — what they must answer, what changes what they do next, and
-nothing else. Everything you checked and found goes to **the build record**, a file you always write
-and hand over alongside the artifact. The design you present for approval is the deliverable, not
-narration: it is never shortened.
-
-**While the build runs, do not narrate it.** Say once that it has started and what it will produce;
-say anything the developer must act on, as a question; say when it is finished, what was built, and
-where the build record is. **Nothing else** — every object created, every procedure run and every
-check that passed goes to the build record, and **a build that goes to plan produces nothing between
-its first message and its last.** The questions are over by then, so a running commentary reports
-progress to someone who cannot act on it, cannot verify it, and cannot tell from it whether anything
-is going wrong. Someone trialling or developing a template genuinely does want to watch each step
-land — that is a different reader, and they will say so. Absent that, the developer wants their
-tables, not a transcript of them being made.
-
-
 ### 10.4 What the AI assistant says outside a step
 
 §10.3 governs the step itself. Everything else said during a wizard — before the first question,
@@ -818,7 +805,7 @@ everything and are waiting. Three things are said at these moments and nothing e
 - Anything that changes what they do next.
 - The disclosure line below, before the first question only.
 - Where this run ends, before the first question only: a build in their database, or the approved
-  design and nothing further. `CLAUDE.md` → "Before the first question of any run" carries the
+  design and nothing further. The method `run-opening` carries the
   wording and the reason. It qualifies under the second item above, since it changes what the
   developer does when the run finishes.
 
@@ -889,7 +876,7 @@ displays on its own account — its own commentary, or a view of every file as i
 happens, the developer sees a great deal of text that no rule here produced, and no way to tell which
 of the two is talking. Nothing in this library removes that variation, so the line names it instead:
 what changes is what they see, not what they get, and not where their decisions are. **A run with no
-wizard says these two sentences anyway** — `CLAUDE.md` carries that rule, since there is no disclosure
+wizard says these two sentences anyway** — the method `run-opening` carries that rule, since there is no disclosure
 line to carry it.
 
 **Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
@@ -925,8 +912,8 @@ template files directly cannot fill these in, and its record says so instead.
 own copy above, copy it into `build-records/<template-slug>/` in the library, named
 `YYYY-MM-DD-<short-description>.md`. One folder per template — every build of that template lands in
 the same folder, never a fresh one per run — because the folder's value is in what accumulates there,
-for this template and for any other template that later needs the same mechanism (see
-`CLAUDE.md`, "Build records accumulate"). Nothing about the record's content changes for this: it is
+for this template and for any other template that later needs the same mechanism (see the
+method `build-records-accumulate`). Nothing about the record's content changes for this: it is
 written exactly as the six parts below already require, narrated with its false starts intact. Only
 its destination gains a second copy.
 
@@ -1035,8 +1022,8 @@ produced for that template — never one build's private scratch, always a share
 next one, whatever template it's for.
 
 **Before building**, check the folder for the template you're about to build, and check any other
-template's folder for a mechanism you're about to reuse (see the complementary-templates rule under
-"The core workflow" above). Read what's there as a narrated account of what was tried, what failed,
+template's folder for a mechanism you're about to reuse (see the complementary-templates rule in
+the method `design-review`). Read what's there as a narrated account of what was tried, what failed,
 and what held — not a rule list to apply blindly. If a fact it records no longer holds in your
 environment, say so in your own record rather than assuming the old one is still current.
 
