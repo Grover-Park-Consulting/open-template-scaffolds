@@ -51,27 +51,14 @@ It applies whatever the run is: a
 template with a wizard, a template without one, a from-scratch design, or a plain-words request that
 has matched nothing yet. This is the only place the text is defined.
 
-> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
-> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
-> record of how it was built, not just the thing.*
->
-> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
-> in what I say in between.*
->
-> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
-> of my work you see going past — some show every file as it's written, line by line, and others
-> show almost none of it. That changes nothing about what you get, or about your decisions arriving
-> as questions."*
+> *"How much of my work you see go past depends on the assistant you're using and where you run it; that changes nothing about what you get, or about your decisions arriving as questions."*
 
-**A run with no template yet (a plain-words request that has matched nothing, or a from-scratch
-design) has no \<artifact\> to name:** say the last paragraph only, and the other two when the
-artifact is known.
+**If the start-up form could not run** (no PowerShell, no desktop), also say the substance of `start/start-form-text.md` in your own words, once, in the same message. The form carries the rest of the opening when it runs; this line is the part it cannot carry.
 
 **Why it is said at all.** Rules 2 and 4 of `between-questions` bind your output: a build going to plan
 produces nothing between its first message and its last, and nothing needing action is buried in
 between. Neither reaches the tool you are running inside, which may narrate on its own account or show
-every file as it is written — and the developer cannot tell which of the two is talking. The last
-paragraph does not fix that. It tells them the variation is real, is not a fault, and changes nothing
+every file as it is written — and the developer cannot tell which of the two is talking. This line does not fix that. It tells them the variation is real, is not a fault, and changes nothing
 about the result or about where their decisions are. **The library's entry documents say the same
 thing to anyone who reads them; this text exists because two of the four ways a run starts touch no
 file at all.**
