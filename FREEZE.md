@@ -141,6 +141,12 @@ so an assistant doesn't mistake old grounds for new permission:
   not make is a platform fact. Grounds: the old wording let two checks test a door no build owns,
   producing a `NOT PASSED` no build could ever clear. A correction of an error.
 
+- 2026-10-07 (×1): `standards/error-handling.md`, the "Trivial delegates" sentence. It exempted only
+  a one-liner that calls another procedure, while the practice (and George's standing rule) also
+  exempts a one-line helper that cannot realistically fail; a build's header comment claimed "every
+  procedure" had a handler and was inaccurate beside two such helpers. Reworded to "Trivial
+  one-liners" with both cases. A correction of an error.
+
 - **2026-10-06, wholesale, for the architecture review (George).** Every frozen file may be edited
   while the review that delivers platform facts to a build at the moment of use is open. Grounds: a
   redesign of how knowledge reaches a build touches the schema, the README and the server together,

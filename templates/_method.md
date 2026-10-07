@@ -43,28 +43,38 @@ section numbers such as §10.4 inside it refer to where the text came from.
 
 ### Before the first question of any run — say what the tool can change, and where this run ends
 
-**Every run opens by telling the developer that what they see on screen is not the library's to
-control.** Say it before the first question, whatever the run is: a template with a wizard, a
-template without one, a from-scratch design, or a plain-words request that has matched nothing yet.
+**The first message the developer reads from you in any run contains the text below, said once,
+before the first question.** The first question of any kind: where the template runs the standards
+gate (`templates/_standards-gate.md`), say it immediately before the gate; otherwise immediately
+before the template's entry question (§10.6) where it has one, and before Step 1 where it has none.
+It applies whatever the run is: a
+template with a wizard, a template without one, a from-scratch design, or a plain-words request that
+has matched nothing yet. This is the only place the text is defined.
 
-> *"One thing neither of us controls: the assistant you're using, and where you run it, decide how
-> much of my work you see going past — some show every file as it's written, line by line, and others
+> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
+> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
+> record of how it was built, not just the thing.*
+>
+> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
+> in what I say in between.*
+>
+> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
+> of my work you see going past — some show every file as it's written, line by line, and others
 > show almost none of it. That changes nothing about what you get, or about your decisions arriving
 > as questions."*
 
-**Where the run has a wizard, this is already part of the disclosure line** —
-`templates/_template-schema.md` §10.4 carries it as the last two sentences, and saying the disclosure
-line satisfies this rule in full. Don't say it twice. **Where the run has no wizard there is no
-disclosure line**, and this is the only place it gets said.
+**A run with no template yet (a plain-words request that has matched nothing, or a from-scratch
+design) has no \<artifact\> to name:** say the last paragraph only, and the other two when the
+artifact is known.
 
-**Why it is said at all.** §10.4 rule 4 promises that a build going to plan produces nothing between
-its first message and its last, and the disclosure line promises that nothing needing action is buried
-in between. Both bind your output. Neither reaches the tool you are running inside, which may narrate
-on its own account or show every file as it is written — and the developer cannot tell which of the
-two is talking. The line does not fix that. It tells them the variation is real, is not a fault, and
-changes nothing about the result or about where their decisions are. **The library's entry documents
-say the same thing to anyone who reads them; this rule exists because two of the four ways a run
-starts touch no file at all.**
+**Why it is said at all.** Rules 2 and 4 of `between-questions` bind your output: a build going to plan
+produces nothing between its first message and its last, and nothing needing action is buried in
+between. Neither reaches the tool you are running inside, which may narrate on its own account or show
+every file as it is written — and the developer cannot tell which of the two is talking. The last
+paragraph does not fix that. It tells them the variation is real, is not a fault, and changes nothing
+about the result or about where their decisions are. **The library's entry documents say the same
+thing to anyone who reads them; this text exists because two of the four ways a run starts touch no
+file at all.**
 
 **Say where this run ends, in the same breath.** The route decides what the developer has at the
 end, so they learn it before they answer anything rather than after.
@@ -72,7 +82,7 @@ end, so they learn it before they answer anything rather than after.
 - **An Access MCP server is connected and the developer has not asked for a design only.** The run
   can end in a built artifact, created and run in their database and checked before they see it. The
   build route is asked as a wizard step when the design is approved (see "After approval — building
-  it"); nothing more is needed here.
+  it").
 - **No Access MCP server is connected.** The run ends at the approved design. Say so now, in your
   own words, to this effect:
 
@@ -191,7 +201,7 @@ everything and are waiting. Three things are said at these moments and nothing e
 
 - Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
 - Anything that changes what they do next.
-- The disclosure line below, before the first question only.
+- The disclosure line (defined in `run-opening`), before the first question only.
 - Where this run ends, before the first question only: a build in their database, or the approved
   design and nothing further. The method `run-opening` carries the
   wording and the reason. It qualifies under the second item above, since it changes what the
@@ -220,29 +230,7 @@ This is the §10.7 trap one level up, and worse: a preferred choice at least app
 developer is looking at. A self-confirmed assumption appears in prose they were free to skim — and an
 expert skims and loses nothing, while a newcomer skims and misses the one line that mattered.
 
-**The disclosure line**, said once, before the first question of the run — immediately before the
-entry question (§10.6) where there is one, and immediately before Step 1 where there is not:
-
-> *"While I build your \<artifact\>, I keep notes as I go — what I checked, what worked, and anything
-> that surprised me. When it's finished you get them as a file alongside the \<artifact\> itself: a
-> record of how it was built, not just the thing.*
->
-> *Anything you need to decide is in a question I ask you. Nothing you have to act on will be buried
-> in what I say in between.*
->
-> *One thing neither of us controls: the assistant you're using, and where you run it, decide how much
-> of my work you see going past — some show every file as it's written, line by line, and others
-> show almost none of it. That changes nothing about what you get, or about your decisions arriving
-> as questions."*
-
-**The last two sentences are there because rules 2 and 4 bind one participant in the run and not the
-other.** They govern what the AI assistant says; they cannot reach what the tool it is running inside
-displays on its own account — its own commentary, or a view of every file as it is written. Where that
-happens, the developer sees a great deal of text that no rule here produced, and no way to tell which
-of the two is talking. Nothing in this library removes that variation, so the line names it instead:
-what changes is what they see, not what they get, and not where their decisions are. **A run with no
-wizard says these two sentences anyway** — the method `run-opening` carries that rule, since there is no disclosure
-line to carry it.
+**The disclosure line** is defined in `run-opening`, which is delivered on every run and is the only place its text lives. Say it as that section directs, before the first question.
 
 **Do not tell the developer they may skim.** Knowing which paragraph is safe to skip is what
 experience buys: an expert skims and loses nothing, a newcomer skims and misses the one line that

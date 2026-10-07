@@ -32,16 +32,16 @@ holds (§4).
 
 ```
 1. Template matched, offered, accepted.
-2. The disclosure line (§10.4).
+2. The disclosure line (the method `run-opening`).
 3. THE STANDARDS GATE.            ← this file
 4. House assumptions asked; build-wide warnings surfaced.
 5. The template's entry question (§10.6).
 6. The template's own wizard steps.
 ```
 
-**The disclosure line comes before the gate, not before the template's entry question.** §10.4
-places it "immediately before the entry question" because that used to be the first question of a
-run. The gate is now first, and the line's promise — *anything you need to decide is in a question I
+**The disclosure line comes before the gate, not before the template's entry question.** The method
+`run-opening` defines the line and says it goes before the first question of any kind, which is the
+gate's. The line's promise — *anything you need to decide is in a question I
 ask you* — has to be made before the first question of any kind or it is made too late.
 
 ### 1.2 The gate asks no entry question of its own

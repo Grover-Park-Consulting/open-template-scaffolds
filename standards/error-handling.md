@@ -234,8 +234,8 @@ errHandler:
 End Sub
 ```
 
-**Trivial delegates** (a one-liner that just calls another procedure) take **no** `errHandler` and
-**no** line numbers:
+**Trivial one-liners** (a procedure that just calls another procedure, or a one-line helper that
+cannot realistically fail) take **no** `errHandler` and **no** line numbers:
 
 ```vba
 Private Sub cmdEdit_Click()
