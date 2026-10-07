@@ -45,7 +45,13 @@ redirects. You build only what's been approved, and only when directed.
 
 ## How every run starts — the method arrives with the template
 
-**Your first action in every run is to load the method.** Call `get_method`: with route `design` where
+**Your very first action in every run is to show the start-up form,** before `get_method` or anything
+else: run `powershell.exe -NoProfile -File start/start-form.ps1` from this library's folder, with the
+command's timeout set to the maximum. It shows the developer a window and returns when they press its
+button, close it, or 100 seconds pass. Whatever it prints, carry on to `get_method` next. If the command
+cannot run (no PowerShell, no desktop), carry on without it and do not mention it.
+
+**Your next action is to load the method.** Call `get_method`: with route `design` where
 no Access MCP server is connected, and with no route where one is, because the developer has not yet
 chosen. It returns how the run is conducted, beginning with `run-opening`: what you tell the developer
 before the first question. Once a template is chosen and the route is settled, call `get_template` with that
