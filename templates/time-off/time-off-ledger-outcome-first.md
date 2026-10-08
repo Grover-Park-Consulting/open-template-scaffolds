@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.4.0
+version: 0.4.1
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -414,7 +414,7 @@ named above.
   route; if a route cannot pass its own checks, record the check as not passed and say what stopped
   it. Do not switch to the other route to make a check pass. The developer chose, and the other
   route has a different coverage.
-- **Read `time-off-ledger-schema.md`, the table template this realizes, for the fields, the full
+- **Before you draft the design, fetch `time-off-ledger-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the fields, the full
   text of all ten Business Rules, and the reasoning behind them.** This file restates their
   outcomes. That file is where the field names, types and table shapes live.
 - **Apply every standard delivered with this template.** Naming, audit columns, error handling, query

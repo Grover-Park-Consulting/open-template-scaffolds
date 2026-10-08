@@ -3,7 +3,7 @@ template: catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
-version: 0.1.4
+version: 0.1.5
 status: stable
 implements: catalog-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
@@ -301,7 +301,7 @@ named above.
   supply*, item 4 — never infer it, never default it, and never treat "which is preferred" as
   permission to pick it without asking. For Rule 3, either a table-level Validation Rule or a Data
   Macro satisfies the promise, and that choice sits on the *Free to choose alternatives* list instead.
-- **Read `catalog-schema.md`, the table template this realizes, for the fields, the full text
+- **Before you draft the design, fetch `catalog-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the fields, the full text
   of all five Business Rules, and the reasoning behind them.** This file restates the outcome of two
   of the five; that file is where the field names, types, and the other three live.
 - **Where the Data Macro route is chosen, the document's shape is fixed by the platform** (fact

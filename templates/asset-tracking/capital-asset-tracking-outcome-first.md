@@ -3,7 +3,7 @@ template: capital-asset-tracking-outcome-first
 title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.2.4
+version: 0.2.5
 status: stable
 implements: capital-asset-tracking-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash]
@@ -431,7 +431,7 @@ named above.
   route into the table — see the reasoning under each rule above. Nothing else in this file names a
   mechanism. Do not import one for Business Rules 4, 5, or 6 on the assumption that a promise this firm
   elsewhere must mean the same everywhere; it doesn't.
-- **Read `capital-asset-tracking-schema.md`, the table template this realizes, for the fields,
+- **Before you draft the design, fetch `capital-asset-tracking-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the fields,
   the full text of all eight Business Rules, and the reasoning behind them.** This file restates the
   outcome of five of the eight; that file is where the field names, types, and the other three live.
 - **The Data Macro document's shape is fixed by the platform** (fact `data-macro-rules`); how the work

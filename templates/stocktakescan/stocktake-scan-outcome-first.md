@@ -3,7 +3,7 @@ template: stocktake-scan-outcome-first
 title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.6.3
+version: 0.6.4
 status: stable
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -424,7 +424,7 @@ named above.
   is a legitimate build; so is a different one that still satisfies every check. That template runs
   the check list below against its own builds and says so where it names this one: the checks belong
   to the result, not to either route.
-- **Read `stocktake-schema.md`, the table template this realizes, for the tables, the
+- **Before you draft the design, fetch `stocktake-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the tables, the
   Business Rules, and the seed values this build reads and writes** — in particular Business Rule 2
   (scan resolution and the duplicate check), Business Rule 3 (the rollup), and Business Rules 7 and 8
   (the variance tolerances, in both directions). This file restates their outcome; that file is where

@@ -3,7 +3,7 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.2.3
+version: 0.2.4
 status: stable
 implements: error-logging-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, host-helper-reuse]
@@ -291,7 +291,7 @@ named above.
   for one worked decomposition — nothing more.** It shows procedure names, a control flow, and where
   the guarding logic sits. None of that is binding here. Copying its shape wholesale is a legitimate
   build; so is a different one that still satisfies every check.
-- **Read `error-logging-schema.md`, the table template this realizes, for the table, its Business
+- **Before you draft the design, fetch `error-logging-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the table, its Business
   Rules, and the reasoning behind them** — in particular Business Rule 2 (nothing may refuse a write)
   and Business Rule 3 (the logger supplies every column itself; the database engine never evaluates a
   default for this table). This file restates their outcome; that file is where the field names and

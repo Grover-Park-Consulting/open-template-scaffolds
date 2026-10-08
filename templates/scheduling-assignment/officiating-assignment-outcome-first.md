@@ -3,7 +3,7 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.1.3
+version: 0.1.4
 status: stable
 implements: officiating-assignment-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash, app-startup-autoexec]
@@ -381,7 +381,7 @@ named above.
   Validation Rule or a Data Macro satisfies each independently, and that choice sits on the *Free to
   choose alternatives* list. For Rules 5 and 8, a query, a function, or a calculated field all
   satisfy each independently, also on that list.
-- **Read `officiating-assignment-schema.md`, the table template this realizes, for the fields,
+- **Before you draft the design, fetch `officiating-assignment-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the fields,
   the full text of all nine Business Rules, and the reasoning behind them.** This file restates the
   outcome of seven of the nine; that file is where the field names, types, and the other two live.
 - **You may read `officiating-assignment-scaffold.md` for one worked decomposition — nothing
