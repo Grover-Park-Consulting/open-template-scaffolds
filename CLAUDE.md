@@ -46,10 +46,14 @@ redirects. You build only what's been approved, and only when directed.
 ## How every run starts — the method arrives with the template
 
 **Your very first action in every run is to show the start-up form,** before `get_method` or anything
-else: run `powershell.exe -NoProfile -File start/start-form.ps1` from this library's folder, with the
-command's timeout set to the maximum. It shows the developer a window and returns when they press its
-button, close it, or 100 seconds pass. Whatever it prints, carry on to `get_method` next. If the command
-cannot run (no PowerShell, no desktop), carry on without it and do not mention it.
+else: run `powershell.exe -NoProfile -File start/start-form.ps1 -TimeoutSeconds <n>` from this
+library's folder, with the command's timeout set to the maximum your tool allows and `<n>` set 30
+seconds below that timeout (a 600-second timeout gives 570). It shows the developer a window and
+returns when they press its button, close it, or its countdown ends; the window then waits on their
+taskbar for the rest of the run. Whatever it prints, carry on to `get_method` next. If the command
+cannot run (no PowerShell, no desktop), carry on without it and do not mention it. **When the
+developer asks to see that window again, run the same command:** it brings the waiting window forward
+and returns at once. **When the run ends, run it once more with `-Close`.**
 
 **Your next action is to load the method.** Call `get_method`: with route `design` where
 no Access MCP server is connected, and with no route where one is, because the developer has not yet
@@ -72,6 +76,11 @@ code module, run a procedure by name, report back the error number and descripti
 and close and release the file. The template library MCP server this library ships reads templates
 and cannot change a database, so it never counts as one. Neither is ever called just "the MCP": that
 phrase names both, which is how the two get confused.
+An assistant's own shell driving Access through its programming interface is not an Access MCP server,
+whatever it can do: the library rules it out for safety (`README.md`, *About the two kinds of
+server*). Do not build that way, and do not offer to. If the developer asks for it after hearing why,
+it is their call: say once that the library does not support it, then record in the build record that
+the build was made outside what the library supports.
 
 ## The core workflow — designing a table schema
 

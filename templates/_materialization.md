@@ -813,7 +813,7 @@ this rule doesn't apply to it. See `templates/audit/audit-logging-lite-scaffold.
 
 **The build route is asked, never assumed.** Where an Access MCP server is connected, say you have
 it and ask — the method `build-route` carries the question, and its preferred
-answer is `Use it`. **A connected Access MCP server is not authorization to use one:** presence is
+answer is `Build it`. **A connected Access MCP server is not authorization to use one:** presence is
 not an answer, the developer's is. **The template library MCP server that ships in `mcp-server/` is
 not an Access MCP server** — it reads this library's files and cannot build anything.
 

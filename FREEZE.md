@@ -147,6 +147,12 @@ so an assistant doesn't mistake old grounds for new permission:
   procedure" had a handler and was inaccurate beside two such helpers. Reworded to "Trivial
   one-liners" with both cases. A correction of an error.
 
+- 2026-10-08 (×1): `README.md`, the Access MCP server paragraph. One sentence corrected (it said a
+  connected server meant a yes-or-no question on using it; the approval question now offers three
+  endings, one of them the design only), and one paragraph added: why the library does not build
+  through an assistant's own command line driving Access (George's ruling, safety). Grounds: a ruling
+  made that day and a sentence the method change made false. A correction and an addition.
+
 - **2026-10-06, wholesale, for the architecture review (George).** Every frozen file may be edited
   while the review that delivers platform facts to a build at the moment of use is open. Grounds: a
   redesign of how knowledge reaches a build touches the schema, the README and the server together,

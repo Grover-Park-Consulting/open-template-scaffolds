@@ -53,6 +53,11 @@ has matched nothing yet. This is the only place the text is defined.
 
 > *"How much of my work you see go past depends on the assistant you're using and where you run it; that changes nothing about what you get, or about your decisions arriving as questions."*
 
+**If the start-up form printed "parked on the taskbar",** add, in your own words:
+
+> *"The window you saw at the start waits on your taskbar for the whole run. Click it there, or ask
+> me, to read it again."*
+
 **If the start-up form could not run** (no PowerShell, no desktop), also say the substance of `start/start-form-text.md` in your own words, once, in the same message. The form carries the rest of the opening when it runs; this line is the part it cannot carry.
 
 **Why it is said at all.** Rules 2 and 4 of `between-questions` bind your output: a build going to plan
@@ -66,10 +71,12 @@ file at all.**
 **Say where this run ends, in the same breath.** The route decides what the developer has at the
 end, so they learn it before they answer anything rather than after.
 
-- **An Access MCP server is connected and the developer has not asked for a design only.** The run
-  can end in a built artifact, created and run in their database and checked before they see it. The
-  build route is asked as a wizard step when the design is approved (see "After approval — building
-  it").
+- **An Access MCP server is connected and the developer has not asked for a design only.** Say, in
+  your own words, that the run can end either way and that they choose when the design is approved:
+  with the approved design only, which they build themselves, or with a build, created and run in a
+  copy of their database and checked before they see it. The design only is always open to them;
+  the build is open because the tool to do it is connected. The choice is a wizard step (see "After
+  approval — building it").
 - **No Access MCP server is connected.** The run ends at the approved design. Say so now, in your
   own words, to this effect:
 
@@ -92,6 +99,11 @@ end, so they learn it before they answer anything rather than after.
   > it yourself."*
 
   It is a complete outcome, not a build cut short; do not offer the build route unless they ask.
+
+**On the design route, the approval question says again where the run ends,** in your own words:
+approving the design ends the run, and the developer builds from it. Where no Access MCP server is
+connected, add that building it here would need a tool that can open and run things in their
+database.
 
 **Why they are told this first.** Without an Access MCP server you cannot run what you wrote, so
 nothing you hand over has been executed by anything. A developer who learns that at the end has
@@ -184,13 +196,13 @@ twice, this is where that is said.
 These are the two moments with the most to report — the template that was matched and why, the
 build-wide warnings, the house assumptions, what was found on opening the files — and the least use
 for it. At the first, the developer has chosen nothing yet. At the second, they have chosen
-everything and are waiting. Three things are said at these moments and nothing else:
+everything and are waiting. Four things are said at these moments and nothing else:
 
 - Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
 - Anything that changes what they do next.
 - The disclosure line (defined in `run-opening`), before the first question only.
-- Where this run ends, before the first question only: a build in their database, or the approved
-  design and nothing further. The method `run-opening` carries the
+- Where this run ends: before the first question, and again when the design is approved. A build in
+  their database, or the approved design and nothing further. The method `run-opening` carries the
   wording and the reason. It qualifies under the second item above, since it changes what the
   developer does when the run finishes.
 
@@ -699,19 +711,18 @@ The design is the first deliverable. **On the build route there is a second one*
 was told where this run ends before the first question was asked.
 
 
-**Where an Access MCP server is connected the build can proceed, and the route is the developer's.
-Put it as a wizard step** (§10) — say you have it, say you're set up to use it, and offer the other
-way in the same breath:
+**Where an Access MCP server is connected, the developer chooses how the run ends, as a wizard step**
+(§10) asked when the design is approved:
 
-> **Ask:** I can build this directly in your database through the Access MCP server you have
-> connected, and I'm set up to do that unless you'd rather import the code yourself.
+> **Ask:** The design is approved. How do you want this run to end?
 >
 > | Option | Short description |
 > |---|---|
-> | `Use it` | I create the modules and objects in the database directly, and run them, so anything that fails gets fixed before you see it. |
-> | `I'll do it myself` | I hand you the code as files to import and run. Nothing will have executed it first. |
+> | `Build it` | I create it in a copy of your database and run it, so anything that fails gets fixed before you see it. |
+> | `Design only` | We stop here. You get the approved design and a build record, and you build it yourself. No code is written. |
+> | `Give me the code` | I write the code as files for you to import and run yourself. Nothing will have run it first. |
 >
-> **Preferred:** `Use it`.
+> **Preferred:** `Build it`.
 
 **Two different servers, and only one of them can build anything.** This library ships **the
 template library MCP server** (`mcp-server/`, registered by the `.mcp.json` at the root). It
