@@ -8,6 +8,9 @@ platform_facts: [mcp-module-import, mcp-line-numbers, vba-import-xml-entities, d
 
 ## Code
 
+**The tables and Data Macros exist from step 2: do not rebuild them here.** Write and import only the
+application's own procedures, including every function a Data Macro from step 2 calls by name.
+
 Write and import the procedures the build needs, divided as the design-principles standard says,
 within *Free to choose alternatives*. Each function a Data Macro calls goes into the back end and
 every front end. Where the developer chose to post when the database opens, the open-time work

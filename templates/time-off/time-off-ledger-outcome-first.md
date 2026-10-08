@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.4.1
+version: 0.4.2
 status: review
 implements: time-off-ledger-schema
 standards_layer:

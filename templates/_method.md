@@ -929,11 +929,14 @@ artifact — beside the `.accdb`, not in the library. **On the design route ther
 sit beside:** ask the developer, as a question, where their copy goes. Where a build touches two files, such as a front end and a back end,
 one record covers both.
 
-**The record's first lines say how the template arrived:** a table with one row for every part
-fetched, in the order fetched: the part, and the version and `sha` its answer returned in `served`,
-with the platform fact ids that part delivered. A part the run never fetched has no row, and that
-gap is the evidence of a step done from memory. A build that read the template files directly
-cannot fill this in, and its record says so instead.
+**Open the record with how the template arrived.** Write a table with one row for every part you
+fetched, in the order you fetched it: the part; the version and `sha` its answer returned in
+`served`; the platform fact ids it delivered; the time its answer arrived; and the first action you
+took that the part governs, with its time. Where you did any of a part's work before that part
+arrived, say so in its row, and name what you then checked again against its text. A part you never
+fetched gets no row: leave the gap, because it is the evidence. If you read template files directly
+instead of fetching them, say so here and name the files; do not fill the table in as if they had
+been fetched.
 
 **A build record does not end its life with the build it documents.** In addition to the developer's
 own copy above, copy it into `build-records/<template-slug>/` in the library, named

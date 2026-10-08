@@ -13,3 +13,10 @@ defines, where they are not there already, and the Data Macros the routes the de
 Business Rule 1 and the posting checks call for. Read any Data Macro a table already carries before
 writing to it, and merge.
 
+**Build the tables first, then their Data Macros, in this step, and confirm both exist before you
+fetch step 3.** A Data Macro needs only the name of a function it calls, not its code, so write the
+call now and leave the function to step 3. If you build the tables with a procedure, that procedure
+is this step's work and builds tables only: write none of the application's own code here (the
+rules, the posting, anything run when the database opens). That code is step 3's, and step 3
+carries the facts it depends on.
+
