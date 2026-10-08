@@ -6,6 +6,8 @@ The server ships inside the library (`<library-root>/mcp-server/`), so the
 library root is simply this file's parent's parent.
 """
 
+import hashlib
+import json
 import re
 from pathlib import Path
 
@@ -15,6 +17,8 @@ import yaml
 LIBRARY_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES_DIR = LIBRARY_ROOT / "templates"
 STANDARDS_DIR = LIBRARY_ROOT / "standards"
+# A template's step files sit in `<template-id>.steps/` beside the master file.
+STEPS_SUFFIX = ".steps"
 
 
 def split_front_matter(text: str) -> tuple[dict, str]:
@@ -34,10 +38,13 @@ def iter_templates():
     """Yield (path, front_matter, body) for each domain template.
 
     Skips infrastructure files (prefixed `_`, e.g. `_template-schema.md`,
-    `_materialization.md`) and any `README.md`, which are not domain templates.
+    `_materialization.md`), any `README.md`, and step files: those live in a
+    `<template-id>.steps/` folder beside their master and belong to it.
     """
     for path in sorted(TEMPLATES_DIR.rglob("*.md")):
         if path.name.startswith("_") or path.name.lower() == "readme.md":
+            continue
+        if any(p.name.endswith(STEPS_SUFFIX) for p in path.relative_to(TEMPLATES_DIR).parents):
             continue
         front, body = split_front_matter(path.read_text(encoding="utf-8"))
         yield path, front, body
@@ -89,6 +96,24 @@ _METHOD_BUILD = ("build-route", "access-gate", "quiet-build", "runbook", "build-
 ROUTES = ("", "design", "build")
 
 
+def _front_method(front: dict) -> list[str]:
+    """Method a template's front matter calls for; delivered with the master."""
+    ids = []
+    if front.get("related"):
+        ids.append("related-after-finish")
+    typ = str(front.get("type", ""))
+    if typ == "outcome-first":
+        ids.append("explore-options")
+    if typ == "vba-scaffold":
+        ids.append("staged-procedures")
+    return ids
+
+
+def _body_method(body: str) -> list[str]:
+    """Method a piece of template text calls for; delivered with the part that holds it."""
+    return ["wizard"] if re.search(r"^## Wizard\s*$", body, re.M) else []
+
+
 def method_for(front: dict | None, body: str, route: str = "") -> list[str]:
     """The method ids a run needs, chosen from what the template contains and the route.
 
@@ -98,15 +123,7 @@ def method_for(front: dict | None, body: str, route: str = "") -> list[str]:
     """
     ids = list(_METHOD_EVERY_RUN)
     if front is not None:
-        if front.get("related"):
-            ids.append("related-after-finish")
-        if re.search(r"^## Wizard\s*$", body, re.M):
-            ids.append("wizard")
-        typ = str(front.get("type", ""))
-        if typ == "outcome-first":
-            ids.append("explore-options")
-        if typ == "vba-scaffold":
-            ids.append("staged-procedures")
+        ids += _front_method(front) + _body_method(body)
     if route in ("", "design"):
         ids += _METHOD_DESIGN
     if route in ("", "build"):
@@ -151,6 +168,299 @@ def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
         facts[fid] = {"id": fid, "heading": lines[h].lstrip("#").strip(),
                       "content": "\n".join(lines[h:end]).strip(), "route": m.group(2) or ""}
     return facts, dupes
+
+
+# --- The run plan: a template delivered as parts, one per call --------------
+#
+# Claude Code saves any tool answer over 50,000 characters to a file instead of
+# showing it (measured 2026-10-08), and an assistant that has to go and read a
+# file has been handed a pointer, not the knowledge. So no answer may exceed
+# RESPONSE_LIMIT, which leaves headroom for other clients, whose limits are
+# unmeasured. A template is a master plus ordered step files; the server turns
+# them into parts, and each answer names the next call and when to make it.
+
+RESPONSE_LIMIT = 45000
+# Standards read while building; every other standard is read while designing.
+_BUILD_STANDARDS = ("error-handling", "query-style", "startup-conventions")
+# ST: every template declares steps. Off until the rollout finishes, as FM9 was.
+REQUIRE_STEPS = False
+
+_WHEN = {
+    "master": "now",
+    "design-standards": "at the standards gate, before its first question",
+    "design-facts": "before you draft the design",
+    "build-method": "when the developer chooses Build it or Give me the code",
+    "build-standards": "straight after the build method",
+    "build-facts": "straight after the build standards",
+}
+_STANDARDS_NOTE = (
+    "These standards govern this part. Their full text arrived in the part named beside each. "
+    "If you cannot see that text now (it was summarized away, or you would be quoting it from "
+    "memory), fetch that part again before you write anything it governs.")
+_DESIGN_END = (
+    "The design route ends when the developer approves the design. If they then ask for the "
+    "code, call get_part with part 'build-method' and route 'build', follow next from there, "
+    "and mark every file you hand over UNVERIFIED.")
+
+
+def serialized_size(obj) -> int:
+    """Characters in an answer as the server sends it (indented JSON, characters unescaped)."""
+    return len(json.dumps(obj, indent=2, ensure_ascii=False))
+
+
+def _sha(*texts: str) -> str:
+    return hashlib.sha256("\n".join(texts).encode("utf-8")).hexdigest()[:12]
+
+
+def steps_folder(path: Path) -> Path:
+    return path.with_name(path.stem + STEPS_SUFFIX)
+
+
+def read_steps(path: Path, front: dict) -> list[dict]:
+    """The step files a master lists under `steps`, in its order.
+
+    Each is `{n, step, path, front, body}`; a listed file that does not exist
+    comes back with `path` None, for validate to report.
+    """
+    folder = steps_folder(path)
+    out = []
+    for n, sid in enumerate(front.get("steps") or [], 1):
+        f = folder / f"{sid}.md"
+        if f.is_file():
+            try:
+                sfront, sbody = split_front_matter(f.read_text(encoding="utf-8"))
+            except yaml.YAMLError as exc:
+                sfront, sbody = {"_error": str(exc).splitlines()[0]}, ""
+        else:
+            f, sfront, sbody = None, {}, ""
+        out.append({"n": n, "step": str(sid), "path": f, "front": sfront, "body": sbody})
+    return out
+
+
+def _pack(items: list[dict], budget: int) -> list[list[dict]]:
+    """Group items (each with `content`) in order so no group's text exceeds `budget`."""
+    groups, cur, size = [], [], 0
+    for it in items:
+        n = len(it["content"])
+        if cur and size + n > budget:
+            groups.append(cur)
+            cur, size = [], 0
+        cur.append(it)
+        size += n
+    if cur:
+        groups.append(cur)
+    return groups
+
+
+def _split(name: str, items: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Name each group: one group keeps the plain name, several are numbered."""
+    groups = _pack(items, RESPONSE_LIMIT - 5000)
+    if len(groups) == 1:
+        return [(name, groups[0])]
+    return [(f"{name}-{i}", g) for i, g in enumerate(groups, 1)]
+
+
+def _facts(ids) -> tuple[list[dict], list[str]]:
+    facts, _ = read_platform_facts()
+    found = [{"id": str(f), "heading": facts[str(f)]["heading"], "content": facts[str(f)]["content"],
+              "route": facts[str(f)]["route"]} for f in ids or [] if str(f) in facts]
+    return found, [str(f) for f in ids or [] if str(f) not in facts]
+
+
+def _standards(names) -> tuple[list[dict], list[str]]:
+    found, missing = [], []
+    for name in names:
+        path = STANDARDS_DIR / f"{name}.md"
+        if path.is_file():
+            found.append({"name": name, "content": path.read_text(encoding="utf-8")})
+        else:
+            missing.append(name)
+    return found, missing
+
+
+def _headings(text: str) -> list[str]:
+    out, fence = [], False
+    for ln in text.splitlines():
+        if ln.lstrip().startswith("```"):
+            fence = not fence
+        elif not fence and ln.startswith("## "):
+            out.append(ln[3:].strip())
+    return out
+
+
+def _method(ids) -> tuple[list[dict], list[str]]:
+    sections, _ = read_method()
+    found = [{k: sections[m][k] for k in ("id", "heading", "content")} for m in ids if m in sections]
+    return found, [m for m in ids if m not in sections]
+
+
+def plan(path: Path, front: dict, body: str) -> list[dict]:
+    """Every part a run can fetch for this template, in order, both routes.
+
+    Each part is `{part, title, when, route, ...}` plus what composes it. The
+    design route stops before `build-method`.
+    """
+    layer = [str(s) for s in front.get("standards_layer") or []]
+    steps = read_steps(path, front)
+    facts, _ = _facts(front.get("platform_facts"))
+    design_facts = [f for f in facts if f["route"] != "build"]
+    build_facts = [f for f in facts if f["route"] == "build"]
+
+    parts = [{"part": "master", "title": "The template", "route": ""}]
+    std, _ = _standards([s for s in layer if s not in _BUILD_STANDARDS])
+    for name, group in _split("design-standards", std):
+        parts.append({"part": name, "title": "The standards the design follows", "route": "",
+                      "standards": group})
+    for name, group in _split("design-facts", design_facts):
+        parts.append({"part": name, "title": "Platform facts the design depends on", "route": "",
+                      "facts": group})
+    # A step marked `route: both` is read while designing too (a checklist the design must
+    # pass, say), so it arrives with the design parts. validate keeps such steps first.
+    for s in steps:
+        if str(s["front"].get("route", "")) == "both":
+            parts.append({"part": f"step-{s['n']}", "title": str(s["front"].get("title") or s["step"]),
+                          "route": "", "step": s})
+    parts.append({"part": "build-method", "title": "How the build is conducted", "route": "build"})
+    std, _ = _standards([s for s in layer if s in _BUILD_STANDARDS])
+    for name, group in _split("build-standards", std):
+        parts.append({"part": name, "title": "The standards the code follows", "route": "build",
+                      "standards": group})
+    if not steps:
+        # A template not yet divided into steps: its build facts arrive together.
+        for name, group in _split("build-facts", build_facts):
+            parts.append({"part": name, "title": "Platform facts the build uses", "route": "build",
+                          "facts": group})
+    for s in steps:
+        if str(s["front"].get("route", "")) != "both":
+            parts.append({"part": f"step-{s['n']}", "title": str(s["front"].get("title") or s["step"]),
+                          "route": "build", "step": s})
+    first_build = next((s["n"] for s in steps if str(s["front"].get("route", "")) != "both"), 0)
+    for p in parts:
+        p["when"] = _WHEN.get(p["part"].rstrip("0123456789").rstrip("-"), "")
+        if p["part"].startswith("step-"):
+            n = p["step"]["n"]
+            if p["route"] == "":
+                p["when"] = "before you draft the design"
+            elif n == first_build:
+                p["when"] = "when the build parts before it have arrived"
+            else:
+                p["when"] = f"when step {n - 1} is finished"
+        if p["part"].startswith("step-") and p["step"]["front"].get("when"):
+            p["when"] = str(p["step"]["front"]["when"])
+    return parts
+
+
+def _in_force(parts: list[dict]) -> list[dict]:
+    """Each standard the template follows, the part that carried it, and its sections."""
+    out = []
+    for p in parts:
+        for s in p.get("standards") or []:
+            out.append({"name": s["name"], "part": p["part"], "sections": _headings(s["content"])})
+    return out
+
+
+def compose(template: str, part: str = "master", route: str = "",
+            have_method: bool = False) -> dict:
+    """One part of a template, exactly as the server answers it.
+
+    Raises ValueError for an unknown template or part id.
+    """
+    tid = template.strip().lower()
+    for path, front, body in iter_templates():
+        if str(front.get("template", "")).lower() == tid:
+            break
+    else:
+        raise ValueError(f"No template with id '{template}'. "
+                         "Use list_templates or search_templates to find valid ids.")
+    parts = plan(path, front, body)
+    if route == "design":
+        visible = [p for p in parts if p["route"] != "build"]
+    else:
+        visible = parts
+    ids = [p["part"] for p in parts]
+    pid = part.strip().lower()
+    if pid not in ids:
+        raise ValueError(f"Template '{template}' has no part '{part}'. Its parts: {', '.join(ids)}.")
+    p = parts[ids.index(pid)]
+    version = front.get("version")
+    result = {"template": front.get("template"), "part": pid, "title": p["title"]}
+
+    if pid == "master":
+        own = _front_method(front) + _body_method(body)
+        if not have_method:
+            own = list(_METHOD_EVERY_RUN) + own + (list(_METHOD_DESIGN) if route != "build" else [])
+        method, missing = _method(own)
+        result = {**{k: front.get(k) for k in ("template", "title", "domain", "type", "status")},
+                  "part": "master", "front_matter": front, "body": body, "method": method,
+                  "parts": [{"part": q["part"], "title": q["title"], "when": q["when"]}
+                            for q in visible],
+                  "served": {"template": front.get("template"), "part": "master",
+                             "version": version, "sha": _sha(path.read_text(encoding="utf-8"))}}
+        if missing:
+            result["method_missing"] = missing
+        layer = [str(s) for s in front.get("standards_layer") or []]
+        _, std_missing = _standards(layer)
+        if std_missing:
+            result["standards_missing"] = std_missing
+        _, facts_missing = _facts(front.get("platform_facts"))
+        if facts_missing:
+            result["platform_facts_missing"] = facts_missing
+    elif "standards" in p:
+        result["standards"] = p["standards"]
+        result["served"] = {"template": front.get("template"), "part": pid, "version": version,
+                            "sha": _sha(*[s["content"] for s in p["standards"]])}
+    elif "facts" in p:
+        result["platform_facts"] = [{k: f[k] for k in ("id", "heading", "content")}
+                                    for f in p["facts"]]
+        result["served"] = {"template": front.get("template"), "part": pid, "version": version,
+                            "sha": _sha(*[f["content"] for f in p["facts"]])}
+        if pid.startswith("build-facts"):
+            result["standards_in_force"] = _in_force(parts)
+            result["standards_note"] = _STANDARDS_NOTE
+    elif pid == "build-method":
+        method, missing = _method(_METHOD_BUILD)
+        result["method"] = method
+        if missing:
+            result["method_missing"] = missing
+        result["served"] = {"template": front.get("template"), "part": pid, "version": version,
+                            "sha": _sha(*[m["content"] for m in method])}
+    else:
+        s = p["step"]
+        if s["path"] is None:
+            raise ValueError(f"Step file for '{s['step']}' is missing from {steps_folder(path).name}.")
+        earlier = _body_method(body)
+        for q in parts:
+            if q.get("step") and q["step"]["n"] < s["n"]:
+                earlier += _body_method(q["step"]["body"])
+        method, _ = _method([m for m in _body_method(s["body"]) if m not in earlier])
+        facts, facts_missing = _facts(s["front"].get("platform_facts"))
+        result.update({"step": s["n"], "of": sum(1 for q in parts if q.get("step")),
+                       "body": s["body"],
+                       "platform_facts": [{k: f[k] for k in ("id", "heading", "content")}
+                                          for f in facts],
+                       "method": method,
+                       "standards_in_force": _in_force(parts),
+                       "standards_note": _STANDARDS_NOTE,
+                       "served": {"template": front.get("template"), "part": pid,
+                                  "version": version,
+                                  "sha": _sha(s["path"].read_text(encoding="utf-8"))}})
+        if facts_missing:
+            result["platform_facts_missing"] = facts_missing
+
+    # A build part fetched on the design route (the developer asked for the code) chains on
+    # through the build parts.
+    chain = visible if pid in [q["part"] for q in visible] else parts
+    chain_ids = [q["part"] for q in chain]
+    if chain_ids.index(pid) + 1 < len(chain_ids):
+        nxt = chain[chain_ids.index(pid) + 1]
+        result["next"] = {"call": "get_part", "template": front.get("template"),
+                          "part": nxt["part"], "route": route, "when": nxt["when"]}
+    elif route == "design" and chain is visible:
+        result["next"] = None
+        result["after_design"] = _DESIGN_END
+    else:
+        result["next"] = None
+    return result
 
 
 # FM9: every template declares platform_facts (switched on 2026-10-06 when the rollout finished).
@@ -205,10 +515,9 @@ def _has_section(sections, name):
 
 
 def _section_text(sections, name):
-    for h, t in sections:
-        if h.lower().startswith(name.lower()):
-            return t
-    return None
+    """A section's text; where a master and its steps each carry one, all of them together."""
+    found = [t for h, t in sections if h.lower().startswith(name.lower())]
+    return "\n".join(found) if found else None
 
 
 def _h3_headings(text):
@@ -533,6 +842,63 @@ def _validate_form_spec(front, sections):
     return errors
 
 
+def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> list[str]:
+    """The master/steps rules (ST) and the answer-size rule (SZ1)."""
+    errors = []
+    folder = steps_folder(path)
+    if not steps:
+        if REQUIRE_STEPS and str(front.get("type", "")) != "spec":
+            errors.append("ST0: missing/empty steps")
+        if folder.is_dir():
+            errors.append(f"ST1: {folder.name}/ exists but the master lists no steps")
+        return errors
+    listed = {s["step"] for s in steps}
+    for s in steps:
+        if s["path"] is None:
+            errors.append(f"ST1: step '{s['step']}' has no file {folder.name}/{s['step']}.md")
+            continue
+        if "_error" in s["front"]:
+            errors.append(f"ST1: {s['step']}.md front matter does not parse: {s['front']['_error']}")
+            continue
+        if str(s["front"].get("step", "")) != s["step"]:
+            errors.append(f"ST1: {s['step']}.md front-matter 'step' must be '{s['step']}'")
+        if not str(s["front"].get("title", "")).strip():
+            errors.append(f"ST1: {s['step']}.md has no 'title'")
+        if "**Who reads this:**" not in s["body"]:
+            errors.append(f"ST4: {s['step']}.md does not name its reader ('**Who reads this:**')")
+        facts, dupes = read_platform_facts()
+        for fid in s["front"].get("platform_facts") or []:
+            if str(fid) not in facts:
+                errors.append(f"ST2: step '{s['step']}' fact '{fid}' matches no fact marker")
+    routes = [str(s["front"].get("route", "")) for s in steps]
+    if "both" in routes and any(r != "both" for r in routes[:max(i for i, r in enumerate(routes)
+                                                              if r == "both")]):
+        errors.append("ST5: a step marked 'route: both' is listed after a build step; list it first")
+    for s in steps:
+        if str(s["front"].get("route", "")) not in ("", "both"):
+            errors.append(f"ST5: step '{s['step']}' route must be 'both' or absent")
+    for f in sorted(folder.glob("*.md")) if folder.is_dir() else []:
+        if f.stem not in listed:
+            errors.append(f"ST1: {folder.name}/{f.name} is not listed under steps")
+    facts, _ = read_platform_facts()
+    for fid in front.get("platform_facts") or []:
+        if facts.get(str(fid), {}).get("route") == "build":
+            errors.append(f"ST3: build fact '{fid}' is in the master; it belongs in the step "
+                          "that uses it")
+    if errors:
+        return errors          # sizes are measured only on a template whose steps resolve
+    for p in plan(path, front, body):
+        for route in ("", "design", "build"):
+            if route == "design" and p["route"] == "build":
+                continue
+            size = serialized_size(compose(str(front.get("template")), p["part"], route, True))
+            if size > RESPONSE_LIMIT:
+                errors.append(f"SZ1: part '{p['part']}' (route '{route or 'both'}') is {size} "
+                              f"characters; the limit is {RESPONSE_LIMIT}")
+                break
+    return errors
+
+
 def validate_library(template: str = "") -> dict:
     """Validate one template by id, or the whole library — structure only.
 
@@ -549,7 +915,9 @@ def validate_library(template: str = "") -> dict:
             continue
         if tid and str(front.get("template", "")).lower() != tid:
             continue
-        errs = validate_template(front, body, path.stem)
+        steps = read_steps(path, front)
+        whole = "\n".join([body] + [s["body"] for s in steps])
+        errs = validate_template(front, whole, path.stem) + validate_steps(path, front, body, steps)
         results.append({"template": front.get("template"), "ok": not errs, "errors": errs})
     if tid and not results:
         raise ValueError(

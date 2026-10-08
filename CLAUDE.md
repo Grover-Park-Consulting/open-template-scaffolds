@@ -59,8 +59,9 @@ and returns at once. **When the run ends, run it once more with `-Close`.**
 no Access MCP server is connected, and with no route where one is, because the developer has not yet
 chosen. It returns how the run is conducted, beginning with `run-opening`: what you tell the developer
 before the first question. Once a template is chosen and the route is settled, call `get_template` with that
-route and `have_method=true`: it returns the template and the method its own features add, since
-`get_method` already delivered the rest. Follow both from then on. **The method and the platform
+route and `have_method=true`: it returns the template's master and the method its own features add,
+since `get_method` already delivered the rest. The rest of the template arrives in parts, one per
+call: fetch each with `get_part` when the previous answer's `next` says. Follow all of it from then on. **The method and the platform
 facts delivered with a template bind the run as fully as anything in this file.** `templates/_method.md`
 is where the method lives; read it there only to maintain it.
 
@@ -88,11 +89,13 @@ Follow these steps whenever the developer asks you to build or extend a set of t
 they paste a prompt (`prompts/BuildNewTables-StartHere.md` is the copy-paste form).
 
 1. **Match a template and load it with `get_template`** (find it with `list_templates` or
-   `search_templates`). It returns the template, its standards layer, and the platform facts it
-   declares; read all three before designing. **If `get_template` is unavailable, the server is not
+   `search_templates`). It returns the master and the list of the run's parts; the standards layer
+   and the platform facts the design depends on are the next parts, and you fetch them with
+   `get_part` before designing. **If `get_template` is unavailable, the server is not
    registered: register it (`mcp-server/setup.ps1`).** That is a side issue to fix, not a reason to
    read the template files directly. Only an assistant that cannot use MCP servers at all reads the
-   files directly, and its run ends at the design, since no Access MCP server can be connected either.
+   files directly (the master, then each step file in the order its `steps` lists), and its run ends
+   at the design, since no Access MCP server can be connected either.
 2. **If no close match exists, say so and follow "When no template fits."** Don't quietly bend a
    template that doesn't fit, and don't improvise unbounded. The from-scratch path is a first-class
    route with its own rules, not an exception.
@@ -191,8 +194,9 @@ that before choosing.
 | Path | What it is |
 |---|---|
 | `templates/_template-schema.md` | The canonical format every template follows (for authors) |
-| `templates/_method.md` | How a run is conducted; delivered by `get_template` and `get_method` |
-| `templates/_materialization.md` | Platform and tool facts; delivered by `get_template` as each template declares |
+| `templates/_method.md` | How a run is conducted; delivered by `get_method`, `get_template` and `get_part` |
+| `templates/_materialization.md` | Platform and tool facts; delivered by `get_part` as each template and step declares |
+| `templates/<domain>/<id>.steps/` | A divided template's step files, delivered one at a time by `get_part` |
 | `templates/<domain>/` | The templates, grouped by domain (e.g. `stocktakescan/`, `library/`) |
 | `standards/` | The active standards layer — naming, audit columns, error handling |
 | `prompts/BuildNewTables-StartHere.md` | The copy-paste form of the workflow above |

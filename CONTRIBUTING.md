@@ -60,6 +60,12 @@ Every contributed template must:
   ([§12.2](templates/_template-schema.md#122-body-sections)); a paired table-schema's `## Entities`,
   `## Relationships`, and `## Business Rules` ([§4](templates/_template-schema.md#4-body-sections-type-table-schema));
   a paired vba-scaffold's `## Procedures` ([§8](templates/_template-schema.md#8-type-vba-scaffold)).
+- **Fit in the pieces an assistant is sent.** The server sends a template one part at a time, and
+  `validate()` fails any part over 45,000 characters (check SZ1). A template that is too big for one
+  part is divided into a main file and step files, one per stage of the build, each naming the
+  platform facts it uses
+  ([§13](templates/_template-schema.md#13-masters-and-steps-any-template-type)). Divide it where the
+  work divides, the way you would divide a long procedure into smaller ones.
 - **Be genericized** — no client-confidential or proprietary schema. Use a recognizable public
   domain or invented data. (Our own first template took a real engagement and recast it onto the
   public Northwind sample; that's the discipline.)

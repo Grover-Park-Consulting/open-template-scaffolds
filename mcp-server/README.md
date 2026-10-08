@@ -17,7 +17,9 @@ This library does not ship one. However, if you already have one connected, your
 |---|---|
 | `list_templates` | List the library's templates + key metadata |
 | `search_templates` | Find templates by keyword / domain / type, rating the relevance of every result |
-| `get_template` | A template composed with the active standards layer (kept separate for easy swapping) |
+| `get_method` | How a run is conducted, sent first in every run |
+| `get_template` | The first part of a template: its main file, and a list of the parts that follow |
+| `get_part` | One later part: the standards layer (kept separate for easy swapping), the platform facts, or one build step. Each arrives when the run reaches the work that uses it, and each says which part comes next |
 | `get_standards` | The standards layer which powers from-scratch designs when no template fits |
 | `validate` | Validate the format of templates per `templates/_template-schema.md` |
 | `check_compatibility(template, db_path)` | Confirm a template's required tables/fields exist in a host Access DB (optional — see below) |

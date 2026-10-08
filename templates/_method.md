@@ -13,8 +13,11 @@ status: draft
 
 One home for method, the fourth kind of knowledge beside domain decisions (templates), house choices
 (`standards/`) and platform facts (`_materialization.md`). Each section carries a `<!-- method: id -->`
-marker. `get_template` delivers the sections a run needs, chosen from what the template contains and
-the route (design or build); `get_method` delivers them where no template fits. The text was moved
+marker. The template library MCP server chooses the sections a run needs from what the template
+contains and the route (design or build), and delivers each where it is used: `get_method` at the
+opening, the master (`get_template`) with what the template's type adds, the part holding a
+`## Wizard` with the wizard method, and the `build-method` part when the build starts
+(`get_method` with `stage="build"` where no template fits). The text was moved
 here verbatim on 2026-10-06 from `CLAUDE.md`, `_template-schema.md` and `_materialization.md`;
 section numbers such as §10.4 inside it refer to where the text came from.
 
@@ -23,18 +26,19 @@ section numbers such as §10.4 inside it refer to where the text came from.
 - `run-opening` — delivered every run
 - `design-review` — delivered every run
 - `house-assumptions-and-warnings` — delivered every run
+- `between-questions` — delivered every run
 - `checklist-rule` — delivered every run
+- `build-record` — delivered every run
 - `related-after-finish` — delivered when the template has `related`
-- `wizard` — delivered when the template has a `## Wizard`
+- `wizard` — delivered with the part that holds the template's `## Wizard`
 - `explore-options` — delivered `type: outcome-first`
 - `staged-procedures` — delivered `type: vba-scaffold`
 - `design-only-handover` — delivered design route
-- `build-route` — delivered build route
-- `access-gate` — delivered build route
-- `quiet-build` — delivered build route
-- `build-record` — delivered build route
-- `runbook` — delivered build route
-- `build-records-accumulate` — delivered build route
+- `build-route` — delivered build route, when the build starts
+- `access-gate` — delivered build route, when the build starts
+- `quiet-build` — delivered build route, when the build starts
+- `runbook` — delivered build route, when the build starts
+- `build-records-accumulate` — delivered build route, when the build starts
 
 ## run-opening
 <!-- method: run-opening -->
@@ -117,6 +121,9 @@ spent the whole session believing they were getting tables.
 
 After the template is loaded:
 
+0. **Fetch the design parts before drafting anything.** The master names them in `parts`: the
+   standards the design follows, the platform facts it depends on, and any step marked for the
+   design. Follow each answer's `next` until it reaches the build, or ends.
 1. **Apply the standards to everything you produce** — naming conventions, audit columns, and the
    error-handling pattern — plus the field-qualification rules (no bare reserved or ambiguous nouns;
    PK = `[Entity]ID`; a FK takes the referenced PK's name). These come from `standards/`, **never**
@@ -642,7 +649,8 @@ developer and wait for their actual answer. Never substitute your own read of th
 for a procedure whose job is to answer that question — run the procedure itself, at the point the
 sequence calls for it. Present one step's result at a time; don't collapse the sequence into a
 single upfront report, even when every fact in it is correct. Having the access and the context to
-answer a gate yourself is not the same as being asked to.
+answer a gate yourself is not the same as being asked to. Where the template is divided into steps,
+a gate inside a step is answered before the next part is fetched.
 
 
 ### 8.4 Staged execution and facilitation
@@ -695,8 +703,8 @@ them, with no one but them to diagnose it.
 **If they ask for the code anyway, give it to them.** Someone who asks for it by name, having been
 told nothing has run it, is making their own call and is entitled to it. Put `UNVERIFIED` at the
 head of every file handed over, and say in the message that nothing has executed it. Before writing
-it, call `get_template` again with `route="build"`: the platform facts about how to build arrive only
-on that route. What ends is
+it, call `get_part` with part `build-method` and route `build`, and follow `next` through every build
+part: the method, standards and platform facts for building arrive only there. What ends is
 *offering* it as the deliverable, not their ability to have it.
 
 
@@ -783,12 +791,24 @@ caveat below, which the developer can do nothing about and which is yours to han
 Then **ask which platform the tables are for**, and generate the matching artifact (keys,
 relationships, indexes, lookup tables, and **seed rows** throughout):
 - **Access (ACE) local tables** → a **VBA `Sub` using DAO**, built as the fact
-  `dao-table-build` delivered with the template says.
+  `dao-table-build` delivered with the build step says.
 - **SQL Server** → `CREATE TABLE` DDL.
 - The error-handling block in any generated VBA comes from the standards layer — a **dependency-free
   default** (a message box) unless the house `error-handling.md` specifies a central logger.
 
 Apply the standards throughout, exactly as in the approved design.
+
+### Building it part by part
+
+**The template arrives in parts, one per call, and the build follows them in order.** Each answer's
+`next` names the call to make and when to make it; make it then, not earlier and not later. Do one
+step at a time from that step's own answer: its text, the platform facts it uses, and the standards
+in force. A step not fetched is a step not done, and its row is missing from the build record.
+
+**A step's answer names the standards in force and the part that carried each one's text.** Where
+you cannot see that text now (the conversation was summarized, or you would be quoting it from
+memory), fetch that part again before writing anything it governs. What you remember of a standard
+is not the standard.
 
 ## access-gate
 <!-- method: access-gate -->
@@ -909,9 +929,11 @@ artifact — beside the `.accdb`, not in the library. **On the design route ther
 sit beside:** ask the developer, as a question, where their copy goes. Where a build touches two files, such as a front end and a back end,
 one record covers both.
 
-**The record's first lines say how the template arrived:** the template id, version and `sha` that
-`get_template` returned in `served`, and the platform fact ids it delivered. A build that read the
-template files directly cannot fill these in, and its record says so instead.
+**The record's first lines say how the template arrived:** a table with one row for every part
+fetched, in the order fetched: the part, and the version and `sha` its answer returned in `served`,
+with the platform fact ids that part delivered. A part the run never fetched has no row, and that
+gap is the evidence of a step done from memory. A build that read the template files directly
+cannot fill this in, and its record says so instead.
 
 **A build record does not end its life with the build it documents.** In addition to the developer's
 own copy above, copy it into `build-records/<template-slug>/` in the library, named

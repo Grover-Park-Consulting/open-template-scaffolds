@@ -3,7 +3,7 @@ template: _template-schema
 title: Open Template Scaffolds — Canonical Template Format
 domain: _meta
 type: spec
-version: 0.18.0
+version: 0.19.0
 status: draft
 ---
 
@@ -25,14 +25,16 @@ status: draft
 - 10. The OTS Wizard (any template type)
 - 11. Minimal skeleton (`type: table-schema`)
 - 12. `type: outcome-first`
+- 13. Masters and steps (any template type)
 
 **Using a template to build tables, forms, or code in a database?** You do not need to read this
 file in order to *use* the template. You only need to read this file if you want to *create* a template.
 
 This is the **format specification** every template file in this library must follow.
 It is the contract the template library MCP server keys off: discovery (`list_templates`,
-`search_templates`) reads the front-matter; `get_template` composes the body with the
-active standards layer; `validate` checks a template (or a filled-in copy) against the
+`search_templates`) reads the front-matter; `get_template` and `get_part` deliver a template
+in parts, the master first, with the active standards layer and the platform facts each part
+needs (§13); `validate` checks a template (or a filled-in copy) against the
 rules in this document.
 
 The format specification is meta, not a template itself (`type: spec`, `domain: _meta`) — `validate` skips files
@@ -118,7 +120,8 @@ present on every template; conditional keys are required when their condition ho
 | `seeds` | optional | list[string] | Seed data the template expects, as `Table.RowKey` |
 | `house_assumptions` | optional | list[string] | House-particular modeling assumptions deliberately kept in the template body (the "Declared" tier) because they can't be moved to the standards layer or dropped. Each entry is `Target — rationale`, where `Target` names the entity, field, or rule carrying the assumption. Makes embedded house bias machine-visible to adopters and discovery tools. |
 | `warnings` | optional | list[string] | **Anything the AI builder must surface *before* building, and act on.** Each entry states the condition and what the developer must confirm or the build must branch on: a platform limit the build cannot get around (e.g. "Data Macros cannot audit Long Text fields — confirm whether any audited table has one"), or what the template does to a database the developer already has (e.g. the backup gate). **These are examples, not a test of what belongs.** Never skip or remove an entry because it does not resemble them. House bias goes in `house_assumptions`, the only exclusion. |
-| `platform_facts` | required | list[string] | Ids of the `templates/_materialization.md` sections a build from this template needs (each section carries `<!-- fact: id -->` under its heading). `get_template` returns those sections with the template, so the facts arrive with it rather than waiting to be looked up. Name every section whose mechanism the build uses. |
+| `platform_facts` | required | list[string] | Ids of the `templates/_materialization.md` sections a build from this template needs (each section carries `<!-- fact: id -->` under its heading). The template library MCP server delivers those sections as parts of the run, so the facts arrive when they are used rather than waiting to be looked up. Name every section whose mechanism the build uses. In a template divided into steps (§13), the master names only the facts the design depends on; a fact marked `route: build` is named by the step that uses it. |
+| `steps` | optional | list[string] | The template's step files, in the order they are carried out (§13). Each entry is a file name without `.md`, in the `<template-id>.steps/` folder beside the master. |
 | `related` | optional | list[string] | Other templates or standards files worth considering next, once this one is built — never during it (see §7.1). Each entry is `Target — rationale`, where `Target` is a template slug or a `standards/<file>.md` path |
 
 **Rules the `validate` tool enforces on front-matter:**
@@ -824,8 +827,8 @@ whose reason is somewhere else is the defect above in a new place.
 A section that does not bind says so in one line where it starts, and says where the binding statements
 are instead.
 
-**What arrives with the template binds too, and the closing instruction says so.** `get_template`
-delivers the method and the platform facts a build needs alongside the template body, outside the
+**What arrives with the template binds too, and the closing instruction says so.** The template
+library MCP server delivers the method and the platform facts a build needs alongside the template body, outside the
 sections the closing instruction names. By the rule above they would be read as context. So every
 `## To the AI assistant building this` carries, right after it names the specification sections, this
 sentence: *"The method and platform facts delivered with this template bind this build as fully as the
@@ -835,3 +838,73 @@ names the fact by its id.
 ### 12.5 The `Explore options` step
 
 Moved to `templates/_method.md`, method `explore-options`.
+
+---
+
+## 13. Masters and steps (any template type)
+
+**Why templates are divided.** An AI client shows a tool's answer in full only up to a size; above
+it, the answer is saved to a file and the assistant sees a pointer instead. One client measured on
+2026-10-08 did this above 50,000 characters. An assistant that has to go and read a file has been
+handed a pointer, not the knowledge, and may never read it. So the template library MCP server
+delivers a template in **parts**, one per call, each under `RESPONSE_LIMIT` (45,000 characters,
+leaving headroom for clients not measured), and each at the point in the run where it is used.
+
+**The parts, in order:**
+
+1. `master`: the template file itself, from `get_template`.
+2. `design-standards`: the standards the design follows.
+3. `design-facts`: the platform facts the design depends on.
+4. Any step marked `route: both` (below).
+5. `build-method`: how a build is conducted. The design route stops before this part.
+6. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
+   `startup-conventions`).
+7. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.
+
+Every answer names the next call and when to make it (`next`), and carries `served` (part, version,
+hash), so a build record shows every part fetched and any part that was not. A standards or facts
+part too large for one answer is split by the server into numbered parts; a step is not split by the
+server, because its author knows where the seams are.
+
+**A divided template is a master plus a folder of step files.** The master stays at its usual path
+and keeps every section §3 and its type require for the design: its intent, prerequisites, house
+assumptions and warnings, and what the developer must supply. Step files live in
+`<template-id>.steps/` beside it, and the master lists them under `steps`, in order. Like a main
+procedure calling its subprocedures, the master holds the order; each step holds the work.
+
+**A step file:**
+
+```markdown
+---
+step: 02-rules-module
+title: "Write and import the rules module, modTimeOffRules"
+platform_facts: [vba-import-xml-entities, mcp-module-import, mcp-line-numbers]
+---
+
+**Who reads this:** the AI assistant, carrying out this step of the build.
+
+## Procedures
+...
+```
+
+- `step` matches the file name; `title` is quoted, since titles often hold a colon.
+- `platform_facts` names the facts this step uses. A fact may be named by the master and by a step,
+  and by more than one step: it is delivered each time, at each point it is used.
+- `route: both` marks a step the design is drafted against (a checklist the design must pass, the
+  wizard's design-time questions). It arrives with the design parts, on both routes. Such steps are
+  listed before every build step.
+- `when:` overrides the default timing text for the step's part.
+- A step opens with an `##` heading or a reader line; one that opens on a `###` heading would be read
+  as part of the previous step's section. Procedures in a step sit under a `## Procedures` heading
+  (`## Procedures (continued)` after the first); `validate` reads the master and its steps together
+  for the §8 and §12 rules.
+- The wizard method arrives with whichever part holds the template's `## Wizard` heading, once.
+
+**Dividing an existing template moves its text; it does not reword it.** Only the version, the
+`platform_facts` line, `steps`, and any lead a step needs to say what it is are new.
+
+**Rules `validate` enforces:** every listed step has a file whose front matter parses and names it,
+with a `title` and a reader line (ST1, ST4), and no step file is unlisted (ST1); every step's facts
+resolve (ST2); no fact marked `route: build` sits in a divided template's master (ST3); `route: both`
+steps come first (ST5); and every part the run can fetch is within `RESPONSE_LIMIT`, measured as the
+server sends it (SZ1). While the library is being divided, `steps` is optional (ST0 off).

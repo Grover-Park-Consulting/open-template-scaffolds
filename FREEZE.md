@@ -159,6 +159,12 @@ so an assistant doesn't mistake old grounds for new permission:
   and per-edit lifts would fragment it. Each edit still goes through George's approval. The freeze is
   restored, file list unchanged, when the review closes, and the closing date is added here.
 
+- **2026-10-08, under the wholesale lift above, confirmed by George for the `get_template` unbundling
+  (master template, step files, parts delivered one per call).** Grounds: the server's answer
+  changes shape, so `templates/_template-schema.md` and `README.md` would describe it wrongly. The
+  plan is `.claude/drafts/get-template-unbundling-draft-2026-10-08.md`; each edit's text is shown to
+  George before it is committed.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

@@ -6,7 +6,6 @@ phase B3; this scaffold provides the foundation plus `list_templates` as a
 proof of life.
 """
 
-import hashlib
 import re
 
 try:
@@ -17,8 +16,8 @@ except ImportError:
     # that predates the split keeps working without a reinstall.
     from mcp.server.fastmcp import FastMCP
 
-from library import (ROUTES, iter_standards, iter_templates, method_for, read_method,
-                     read_platform_facts, read_standard, validate_library)
+from library import (_METHOD_BUILD, _METHOD_DESIGN, _METHOD_EVERY_RUN, ROUTES, compose,
+                     iter_standards, iter_templates, read_method, validate_library)
 
 mcp = FastMCP("open-template-scaffolds")
 
@@ -188,7 +187,6 @@ def search_templates(query: str = "", domain: str = "", type: str = "") -> list[
     return [r[2] for r in results]
 
 
-@mcp.tool()
 def _route_or_raise(route: str) -> str:
     r = route.strip().lower()
     if r not in ROUTES:
@@ -204,107 +202,84 @@ def _method_sections(ids: list[str]) -> tuple[list[dict], list[str]]:
 
 @mcp.tool()
 def get_template(template: str, route: str = "", have_method: bool = False) -> dict:
-    """Return a chosen template composed with its active standards layer.
+    """Return the first part of a chosen template: its master.
 
-    Looks up `template` by its front-matter id (case-insensitive) and returns
-    the full template — front-matter plus body — together with the text of every
-    standards file named in the template's `standards_layer`.
+    Looks up `template` by its front-matter id (case-insensitive). A template
+    arrives in parts, one per call, so that no answer is too large to be shown
+    in full and each piece arrives when the run reaches the work that uses it.
+    This call returns the master: the full `front_matter`, the master `body`,
+    the method the template's own features add, `parts` (every part of the run
+    in order, with when to fetch each), `served`, and `next`, the call to make
+    next and when. Fetch every later part with `get_part`, following `next`.
 
-    The template and the standards are returned **separately, not merged**: the
-    template is the design; the standards are the swappable house layer applied
-    on top. Keeping them distinct lets the adopter see and customize each — a
-    standard can be swapped without touching the template.
+    The standards are not in this answer; they arrive as parts of their own
+    (`design-standards`, `build-standards`), separately from the template, so a
+    standard can be swapped without touching the template. Platform facts
+    arrive as parts too: those the design depends on in `design-facts`, and
+    those a build uses with the step that uses them.
 
-    This is a read/compose tool. It produces the material the AI uses to draft a
-    *proposed* schema for the developer to approve; it builds nothing itself.
+    Pass `route="design"` for a run that ends at the approved design,
+    `route="build"` for a run that builds, or leave it empty for both. Pass
+    `have_method=True` when `get_method` already ran in this run, so the method
+    every run receives is not sent twice.
 
-    It also returns the platform facts the template declares in
-    `platform_facts`: the sections of `templates/_materialization.md` a build
-    from it needs, so they arrive with the template instead of waiting to be
-    looked up. `served` names the template, its version and a short hash of
-    its file; a build record quotes it to show the template came from here.
-
-    It also returns the method the run needs: the sections of
-    `templates/_method.md` chosen from what the template contains and the
-    `route`. Pass `route="design"` for a run that ends at the approved design,
-    `route="build"` for a run that builds, or leave it empty for both.
-
-    Pass `have_method=True` when `get_method` already ran in this run: the method
-    every run receives is then left out, and only what this template's own
-    features add is returned (`method_omitted` names what was left out). On the
-    design route, platform facts marked as needed only to build are left out
-    too, named under `platform_facts_omitted`; call again with `route="build"`
-    if the developer asks for code after all.
-
-    Returns a dict with the `_meta` keys, the full `front_matter`, the `body`,
-    a `standards` list of `{name, content}`, a `platform_facts` list and a
-    `method` list, each of `{id, heading, content}`, and `served`. Anything
-    named that has no match is reported under `standards_missing`,
-    `platform_facts_missing` or `method_missing` rather than silently dropped.
-    Raises ValueError for an unknown template id or route (use `list_templates`
-    or `search_templates` to find valid ids).
+    This is a read/compose tool; it builds nothing. Anything named that has no
+    match is reported under `standards_missing`, `platform_facts_missing` or
+    `method_missing` rather than silently dropped. Raises ValueError for an
+    unknown template id or route (use `list_templates` or `search_templates`
+    to find valid ids).
     """
-    rt = _route_or_raise(route)
-    tid = template.strip().lower()
-    for path, front, body in iter_templates():
-        if str(front.get("template", "")).lower() == tid:
-            standards, missing = [], []
-            for name in front.get("standards_layer") or []:
-                content = read_standard(name)
-                if content is None:
-                    missing.append(name)
-                else:
-                    standards.append({"name": name, "content": content})
-            facts, _ = read_platform_facts()
-            delivered, facts_missing, facts_omitted = [], [], []
-            for fid in front.get("platform_facts") or []:
-                fact = facts.get(str(fid))
-                if fact is None:
-                    facts_missing.append(str(fid))
-                elif rt == "design" and fact["route"] == "build":
-                    facts_omitted.append(str(fid))
-                else:
-                    delivered.append({k: fact[k] for k in ("id", "heading", "content")})
-            served = {"template": front.get("template"), "version": front.get("version"),
-                      "sha": hashlib.sha256(path.read_bytes()).hexdigest()[:12]}
-            ids = method_for(front, body, rt)
-            omitted = [m for m in ids if m in method_for(None, "", "")] if have_method else []
-            method, method_missing = _method_sections([m for m in ids if m not in omitted])
-            result = {**_meta(front), "front_matter": front, "body": body, "standards": standards,
-                      "platform_facts": delivered, "method": method, "served": served}
-            if missing:
-                result["standards_missing"] = missing
-            if facts_missing:
-                result["platform_facts_missing"] = facts_missing
-            if method_missing:
-                result["method_missing"] = method_missing
-            if facts_omitted:
-                result["platform_facts_omitted"] = facts_omitted
-            if omitted:
-                result["method_omitted"] = omitted
-            return result
-    raise ValueError(
-        f"No template with id '{template}'. "
-        "Use list_templates or search_templates to find valid ids."
-    )
+    return compose(template, "master", _route_or_raise(route), have_method)
 
 
 @mcp.tool()
-def get_method(route: str = "") -> dict:
-    """Return the method for a run with no template — the from-scratch path.
+def get_part(template: str, part: str, route: str = "") -> dict:
+    """Return one part of a template, named in the `parts` list `get_template` returned.
 
-    When no template fits and the developer approves a from-scratch design, there
-    is nothing for `get_template` to load, but the run is still conducted the
-    same way. This returns the every-run method plus the method for the `route`
-    (`design`, `build`, or empty for both), from `templates/_method.md`.
-    Read-only; builds nothing.
+    Fetch the parts in order, each when its `when` says, by following the
+    `next` in every answer. A part holds what the run needs at that point and
+    nothing else: the standards the design follows, the platform facts it
+    depends on, how the build is conducted, the standards the code follows, or
+    one build step with the platform facts that step uses.
 
-    Returns `{method: [{id, heading, content}], route}`, plus `method_missing`
-    when a mapped id has no section. Raises ValueError for an unknown route.
+    A step's answer also lists `standards_in_force`: each standard that governs
+    it, the part that carried its full text, and that standard's sections. If
+    that text is no longer in front of you, fetch the part again before writing
+    anything it governs.
+
+    Every answer carries `served` (template, part, version and a short hash);
+    the build record quotes one line per part, so a part never fetched shows.
+    `next` is null after the last part. Pass the same `route` as the run's.
+    Raises ValueError for an unknown template, part, or route.
+    """
+    return compose(template, part, _route_or_raise(route))
+
+
+@mcp.tool()
+def get_method(route: str = "", stage: str = "opening") -> dict:
+    """Return the method a run follows: how it is conducted, from `templates/_method.md`.
+
+    Call it first in every run, with `stage="opening"` (the default): it returns
+    the method every run receives, plus, on the design route, what that route
+    adds. The method for conducting a build arrives later, when the developer
+    chooses to build: as the `build-method` part of a template, or, on a run
+    with no template (the from-scratch path), from this tool with
+    `stage="build"`. Read-only; builds nothing.
+
+    Returns `{method: [{id, heading, content}], route, stage}`, plus
+    `method_missing` when a mapped id has no section. Raises ValueError for an
+    unknown route or stage.
     """
     rt = _route_or_raise(route)
-    method, method_missing = _method_sections(method_for(None, "", rt))
-    result = {"method": method, "route": rt}
+    st = stage.strip().lower()
+    if st == "opening":
+        ids = list(_METHOD_EVERY_RUN) + (list(_METHOD_DESIGN) if rt in ("", "design") else [])
+    elif st == "build":
+        ids = list(_METHOD_BUILD)
+    else:
+        raise ValueError(f"stage must be 'opening' or 'build', not '{stage}'.")
+    method, method_missing = _method_sections(ids)
+    result = {"method": method, "route": rt, "stage": st}
     if method_missing:
         result["method_missing"] = method_missing
     return result
