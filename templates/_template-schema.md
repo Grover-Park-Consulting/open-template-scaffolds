@@ -853,13 +853,15 @@ leaving headroom for clients not measured), and each at the point in the run whe
 **The parts, in order:**
 
 1. `master`: the template file itself, from `get_template`.
-2. `design-standards`: the standards the design follows.
-3. `design-facts`: the platform facts the design depends on.
-4. Any step marked `route: both` (below).
-5. `build-method`: how a build is conducted. The design route stops before this part.
-6. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
+2. `standards-gate`: the standards gate (`templates/_standards-gate.md`), which every run asks
+   before any other question. A from-scratch run gets it from `get_standards`.
+3. `design-standards`: the standards the design follows.
+4. `design-facts`: the platform facts the design depends on.
+5. Any step marked `route: both` (below).
+6. `build-method`: how a build is conducted. The design route stops before this part.
+7. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
    `startup-conventions`).
-7. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.
+8. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.
 
 Every answer names the next call and when to make it (`next`), and carries `served` (part, version,
 hash), so a build record shows every part fetched and any part that was not. A standards or facts

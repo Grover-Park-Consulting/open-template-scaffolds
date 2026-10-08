@@ -27,6 +27,8 @@ get_part = unwrap(server.get_part)
 get_standards = unwrap(server.get_standards)
 get_method = unwrap(server.get_method)
 validate = unwrap(server.validate)
+serialized_size = library.serialized_size
+iter_templates = library.iter_templates
 
 META_KEYS = ("template", "title", "domain", "type", "status")
 
@@ -117,6 +119,12 @@ class TestGetTemplate(unittest.TestCase):
                                     f"{template} {answer['part']}: {answer['next']['when']}")
                 if answer["part"].startswith("step-"):
                     self.assertIn("Do this step's work now", answer["rule"])
+        for path, front, body in iter_templates():
+            if front.get("template"):
+                parts = get_template(front["template"], route="design")["parts"]
+                self.assertEqual(parts[1]["part"], "standards-gate", front["template"])
+        gate = get_part("time-off-ledger-outcome-first", "standards-gate", route="build")
+        self.assertIn("The Standards Gate", gate["gate"])
         step3 = walk("time-off-ledger-outcome-first", route="build")
         when3 = next(a["next"]["when"] for a in step3 if a["part"] == "step-2")
         self.assertIn("every action in step 2 is done", when3)
@@ -253,15 +261,24 @@ class TestSteps(unittest.TestCase):
 
 
 class TestGetStandards(unittest.TestCase):
-    def test_default_returns_all_standards(self):
+    def test_default_returns_the_gate_then_every_standard_in_turn(self):
         result = get_standards()
-        names = [e["name"] for e in result["standards"]]
+        names = result["names"]
         self.assertEqual(result["count"], len(names))
         self.assertIn("naming-conventions", names)
         self.assertEqual(names, sorted(names))
+        # The gate comes first, and the files follow one per call, so no answer spills.
+        self.assertIn("The Standards Gate", result["gate"])
+        self.assertEqual(result["next"]["standard"], names[0])
+        seen, answer = [], result
+        while answer.get("next"):
+            answer = get_standards(answer["next"]["standard"])
+            seen.append(answer["standards"][0]["name"])
+            self.assertTrue(answer["standards"][0]["content"].strip())
+            self.assertLess(serialized_size(answer), 45000)
+        self.assertEqual(seen, names)
+        self.assertLess(serialized_size(result), 45000)
         self.assertNotIn("readme", [n.lower() for n in names])
-        for entry in result["standards"]:
-            self.assertTrue(entry["content"].strip())
 
     def test_single_fetch_is_case_insensitive(self):
         result = get_standards("Naming-Conventions")

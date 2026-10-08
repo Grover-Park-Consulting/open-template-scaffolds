@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.19.0
+version: 0.19.1
 status: stable
 implements: audit-logging-lite-schema
 requires_tables:
@@ -302,7 +302,7 @@ so it can be viewed, the backup table because a front-end-triggered macro has to
 
 ## Standards Gate
 
-**Before anything below, run the standards gate** — `templates/_standards-gate.md`, in full. It is
+**Before anything below, run the standards gate** from the `standards-gate` part, in full. It is
 one question in the ordinary case and it settles whose rules govern this build. It is a separate
 wizard from the one below, and it is asked first: the disclosure line, then the gate, then this
 template's house assumptions and warnings, then its entry question.

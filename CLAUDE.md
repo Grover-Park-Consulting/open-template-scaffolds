@@ -178,8 +178,9 @@ that before choosing.
 
    In the same breath, name the alternatives without stopping for a menu: adapting the nearest
    template despite the stated mismatch, or refining the description.
-3. **On the go-ahead, design under the full standards layer.** Load it with `get_standards` and the
-   method with `get_method` (or read every file in `standards/` where MCP servers are unavailable).
+3. **On the go-ahead, design under the full standards layer.** Load it with `get_standards`, run the
+   standards gate it returns before anything else, and fetch each standards file its `next` names;
+   load the method with `get_method` (or read every file in `standards/` where MCP servers are unavailable).
    Apply naming, audit columns, field qualification, the junction-PK convention, and third-normal-form
    discipline exactly as for a template-based design. Same deliverable, same approval gate.
 4. **Surface your invented assumptions.** A from-scratch design has no `house_assumptions`, so list

@@ -48,9 +48,9 @@ section numbers such as §10.4 inside it refer to where the text came from.
 ### Before the first question of any run — say what the tool can change, and where this run ends
 
 **The first message the developer reads from you in any run contains the text below, said once,
-before the first question.** The first question of any kind: where the template runs the standards
-gate (`templates/_standards-gate.md`), say it immediately before the gate; otherwise immediately
-before the template's entry question (§10.6) where it has one, and before Step 1 where it has none.
+before the first question.** The first question of any kind is the standards gate's, which every
+run asks: say it immediately before the gate. The gate's text arrives as the `standards-gate` part,
+or from `get_standards` on a from-scratch run; run the gate from that text.
 It applies whatever the run is: a
 template with a wizard, a template without one, a from-scratch design, or a plain-words request that
 has matched nothing yet. This is the only place the text is defined.

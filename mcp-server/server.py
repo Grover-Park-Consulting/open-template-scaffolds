@@ -16,8 +16,12 @@ except ImportError:
     # that predates the split keeps working without a reinstall.
     from mcp.server.fastmcp import FastMCP
 
-from library import (_METHOD_BUILD, _METHOD_DESIGN, _METHOD_EVERY_RUN, ROUTES, compose,
-                     iter_standards, iter_templates, read_method, validate_library)
+from library import (_METHOD_BUILD, _METHOD_DESIGN, _METHOD_EVERY_RUN, GATE_PATH,
+                     ROUTES, _sha, compose, iter_standards, iter_templates, read_method,
+                     validate_library)
+
+_STANDARD_ORDER = ("Fetch this before you draft any part of the design. Do not draft from what you "
+                   "already know of these rules: the developer's copy may differ from the library's.")
 
 mcp = FastMCP("open-template-scaffolds")
 
@@ -295,26 +299,43 @@ def get_standards(standard: str = "") -> dict:
     naming, audit columns, error handling, query style, form conventions. This
     tool loads the layer without going through a template.
 
-    With no argument it returns every standards file; pass a `standard` name
-    (e.g. "naming-conventions") for just that one. Any README in `standards/`
-    is skipped — it maps the folder; it isn't a standard. Read-only: this
-    builds nothing and changes nothing; the never-build-before-approval
-    boundary is unaffected.
+    With no argument it returns the standards gate, which a from-scratch run asks
+    before anything else, and the names of the standards files, with `next`
+    naming the first; it does not send every file at once, which would be too
+    large to arrive whole. Pass a `standard` name (e.g. "naming-conventions")
+    for that one file; its answer's `next` names the file after it. Any README
+    in `standards/` is skipped — it maps the folder; it isn't a standard.
+    Read-only: this builds nothing and changes nothing; the
+    never-build-before-approval boundary is unaffected.
 
-    Returns `{standards: [{name, content}], count}`. Raises ValueError when a
-    given name matches no standards file (the message lists what exists).
+    Returns `{gate, gate_rule, served, names, count, next}` with no argument, and
+    `{standards: [{name, content}], count, next}` for one name. Raises ValueError
+    when a given name matches no standards file (the message lists what exists).
     """
     name = standard.strip().lower()
     entries = [{"name": n, "content": c} for n, c in iter_standards()]
-    if name:
-        matched = [e for e in entries if e["name"].lower() == name]
-        if not matched:
-            raise ValueError(
-                f"No standards file named '{standard}'. "
-                f"Available: {', '.join(e['name'] for e in entries)}."
-            )
-        entries = matched
-    return {"standards": entries, "count": len(entries)}
+    names = [e["name"] for e in entries]
+
+    def _next(after: int) -> dict | None:
+        if after + 1 >= len(names):
+            return None
+        return {"call": "get_standards", "standard": names[after + 1], "when": _STANDARD_ORDER}
+
+    if not name:
+        gate = GATE_PATH.read_text(encoding="utf-8")
+        return {"gate": gate,
+                "gate_rule": ("Run this gate before you ask the developer anything else, from this "
+                              "text, not from what you know of it or have read elsewhere."),
+                "served": {"part": "standards-gate", "sha": _sha(gate)},
+                "names": names, "count": len(names), "next": _next(-1)}
+    lowered = [n.lower() for n in names]
+    if name not in lowered:
+        raise ValueError(
+            f"No standards file named '{standard}'. "
+            f"Available: {', '.join(names)}."
+        )
+    i = lowered.index(name)
+    return {"standards": [entries[i]], "count": 1, "next": _next(i)}
 
 
 @mcp.tool()

@@ -165,6 +165,11 @@ so an assistant doesn't mistake old grounds for new permission:
   plan is `.claude/drafts/get-template-unbundling-draft-2026-10-08.md`; each edit's text is shown to
   George before it is committed.
 
+- **2026-10-08, under the wholesale lift above, approved by George for fix 3 of the proving-run
+  fixes.** `templates/_template-schema.md` §13's parts list gains the `standards-gate` part, which
+  every run now receives second, after the master. Grounds: the server's parts changed, so the list
+  would describe them wrongly. An addition and a renumbering, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

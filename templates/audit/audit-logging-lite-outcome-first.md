@@ -3,7 +3,7 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.10.6
+version: 0.10.7
 status: stable
 implements: audit-logging-lite-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, table-in-use]
@@ -669,7 +669,7 @@ they do, which is the point of keeping the two apart.
 
 ## Standards Gate
 
-**To the AI assistant:** before anything else, run the standards gate — `templates/_standards-gate.md`,
+**To the AI assistant:** before anything else, run the standards gate from the `standards-gate` part,
 in full. It is one question in the ordinary case, and it settles whose rules govern this build. It
 comes first: the disclosure line, then the gate, then this template's house assumptions and its
 warning, then the seven things the developer has to supply.
