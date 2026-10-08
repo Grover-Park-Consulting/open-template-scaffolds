@@ -38,9 +38,15 @@ function Read-FormText([string]$path) {
     $parts = @{}
     $name = $null
     $buffer = New-Object System.Collections.Generic.List[string]
+    # Banner lines keep their spacing (the letter-spaced title relies on it); other text is reflowed.
+    $finish = {
+        $joined = ($buffer -join ' ') -replace '\*\*', ''
+        if ($name -notlike 'Banner*') { $joined = $joined -replace '\s+', ' ' }
+        $parts[$name] = $joined.Trim()
+    }
     foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
         if ($line -match '^##\s+(.+?)\s*$') {
-            if ($name) { $parts[$name] = (($buffer -join ' ') -replace '\*\*', '' -replace '\s+', ' ').Trim() }
+            if ($name) { . $finish }
             $name = $Matches[1]
             $buffer.Clear()
         }
@@ -48,7 +54,7 @@ function Read-FormText([string]$path) {
             $buffer.Add($line.Trim())
         }
     }
-    if ($name) { $parts[$name] = (($buffer -join ' ') -replace '\*\*', '' -replace '\s+', ' ').Trim() }
+    if ($name) { . $finish }
     if (-not ($parts.Keys | Where-Object { $_ -match '^Card \d+: text$' })) { return $null }
     return $parts
 }
