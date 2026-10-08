@@ -107,6 +107,21 @@ class TestGetTemplate(unittest.TestCase):
         self.assertEqual(result["served"]["template"], "stocktake-schema")
         self.assertEqual(len(result["served"]["sha"]), 12)
 
+    def test_every_next_is_an_order_and_every_step_carries_the_rule(self):
+        # Run 3 (2026-10-08): a `when` worded as a schedule was read as information. Each `when`
+        # must be an order ("Fetch ...") and each build step must carry the rule on the work.
+        for template in ("time-off-ledger-outcome-first", "audit-logging-lite-scaffold"):
+            for answer in walk(template, route="build"):
+                if answer.get("next"):
+                    self.assertTrue(answer["next"]["when"].startswith("Fetch "),
+                                    f"{template} {answer['part']}: {answer['next']['when']}")
+                if answer["part"].startswith("step-"):
+                    self.assertIn("Do this step's work now", answer["rule"])
+        step3 = walk("time-off-ledger-outcome-first", route="build")
+        when3 = next(a["next"]["when"] for a in step3 if a["part"] == "step-2")
+        self.assertIn("every action in step 2 is done", when3)
+        self.assertIn("even if you already know how", when3)
+
     def test_unknown_id_raises(self):
         with self.assertRaises(ValueError):
             get_template("no-such-template")

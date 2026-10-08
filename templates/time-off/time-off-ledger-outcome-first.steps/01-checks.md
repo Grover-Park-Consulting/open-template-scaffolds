@@ -3,7 +3,7 @@ step: 01-checks
 title: How you validate the template's output
 platform_facts: [row-lock-errors, domain-function-transaction]
 route: both
-when: before you draft the design; every check is run when the build is finished
+when: "Fetch this before you draft the design, and design to pass every check in it. Run every check only when the build is finished."
 ---
 
 **Who reads this:** the developer whose database this is. The AI assistant designs to pass every

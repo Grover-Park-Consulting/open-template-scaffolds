@@ -185,14 +185,36 @@ _BUILD_STANDARDS = ("error-handling", "query-style", "startup-conventions")
 # ST: every template declares steps. Off until the rollout finishes, as FM9 was.
 REQUIRE_STEPS = False
 
+# Each `when` is an order on the work, not a label: it says what not to do before the part
+# arrives and closes the shortcut of working from what the assistant already knows.
 _WHEN = {
     "master": "now",
-    "design-standards": "at the standards gate, before its first question",
-    "design-facts": "before you draft the design",
-    "build-method": "when the developer chooses Build it or Give me the code",
-    "build-standards": "straight after the build method",
-    "build-facts": "straight after the build standards",
+    "design-standards": ("Fetch this before you ask the standards gate's first question. Ask no "
+                         "design question until it has arrived."),
+    "design-facts": ("Fetch this before you draft any part of the design. Do not draft from what "
+                     "you already know about Access: these facts are what make the design right."),
+    "build-method": ("Fetch this only after the developer chooses Build it or Give me the code. "
+                     "Open, create or change no database before it has arrived."),
+    "build-standards": ("Fetch this straight after the build method. Write no code before it has "
+                        "arrived."),
+    "build-facts": ("Fetch this straight after the build standards. Write no code before it has "
+                    "arrived."),
 }
+_WHEN_DESIGN_STEP = ("Fetch this before you draft any part of the design. Do not draft from what "
+                     "you already know: it carries what the design must satisfy.")
+_WHEN_FIRST_BUILD_STEP = (
+    "Fetch this as soon as the build parts before it have arrived. Do none of this step's work "
+    "before then, even if you already know how from another template or file: this step carries "
+    "the facts its work depends on.")
+_WHEN_BUILD_STEP = (
+    "Fetch this only when every action in step {prev} is done. Do none of this step's work before "
+    "it arrives, even if you already know how from another template or file: this step carries the "
+    "facts its work depends on.")
+_STEP_RULE = (
+    "Do this step's work now, and only this step's. Write, import or run nothing a later step "
+    "covers, and do not fetch the next step until everything here is done. If you did any of this "
+    "step's work before this part arrived, say so in the build record and check that work against "
+    "this text now.")
 _STANDARDS_NOTE = (
     "These standards govern this part. Their full text arrived in the part named beside each. "
     "If you cannot see that text now (it was summarized away, or you would be quoting it from "
@@ -340,11 +362,11 @@ def plan(path: Path, front: dict, body: str) -> list[dict]:
         if p["part"].startswith("step-"):
             n = p["step"]["n"]
             if p["route"] == "":
-                p["when"] = "before you draft the design"
+                p["when"] = _WHEN_DESIGN_STEP
             elif n == first_build:
-                p["when"] = "when the build parts before it have arrived"
+                p["when"] = _WHEN_FIRST_BUILD_STEP
             else:
-                p["when"] = f"when step {n - 1} is finished"
+                p["when"] = _WHEN_BUILD_STEP.format(prev=n - 1)
         if p["part"].startswith("step-") and p["step"]["front"].get("when"):
             p["when"] = str(p["step"]["front"]["when"])
     return parts
@@ -435,6 +457,7 @@ def compose(template: str, part: str = "master", route: str = "",
         method, _ = _method([m for m in _body_method(s["body"]) if m not in earlier])
         facts, facts_missing = _facts(s["front"].get("platform_facts"))
         result.update({"step": s["n"], "of": sum(1 for q in parts if q.get("step")),
+                       "rule": _STEP_RULE,
                        "body": s["body"],
                        "platform_facts": [{k: f[k] for k in ("id", "heading", "content")}
                                           for f in facts],
