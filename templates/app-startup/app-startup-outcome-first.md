@@ -3,7 +3,7 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.2.4
+version: 0.2.5
 status: stable
 platform_facts: [target-file, app-startup-autoexec, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
 standards_layer:
@@ -409,8 +409,8 @@ named above.
   Ordinary VBA called from `AutoExec` satisfies every promise above. Do not import a mechanism from
   another template in this library on the assumption that a promise this firm must mean one route: it
   doesn't, here.
-- **You may read `app-startup-scaffold.md`, the rules-based method that produces this same result, for
-  one worked decomposition — nothing more.** It shows procedure names, a control flow, and where the
+- **Once the build is under way and you are writing its code, never while drafting the design, you may fetch `app-startup-scaffold`, the rules-based method that produces this same
+  result, with `get_template` (and its steps with `get_part`, where it has them), never by reading its file, for one worked decomposition — nothing more.** It shows procedure names, a control flow, and where the
   storage and the probes sit. None of that is binding here. Copying its shape wholesale is a
   legitimate build; so is a different one that still satisfies every check.
 - **This template names no procedures, no module, and no table on purpose.** How the work divides,

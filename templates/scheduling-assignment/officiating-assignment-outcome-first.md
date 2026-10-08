@@ -3,7 +3,7 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.1.4
+version: 0.1.5
 status: stable
 implements: officiating-assignment-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash, app-startup-autoexec]
@@ -384,7 +384,7 @@ named above.
 - **Before you draft the design, fetch `officiating-assignment-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the fields,
   the full text of all nine Business Rules, and the reasoning behind them.** This file restates the
   outcome of seven of the nine; that file is where the field names, types, and the other two live.
-- **You may read `officiating-assignment-scaffold.md` for one worked decomposition — nothing
+- **Once the build is under way and you are writing its code, never while drafting the design, you may fetch `officiating-assignment-scaffold` with `get_template` (and its steps with `get_part`, where it has them), never by reading its file, for one worked decomposition — nothing
   more.** It shows one way to structure `AssignOfficial`, `ValidateAssignment`, and
   `GetApplicablePayRate`, and its `ValidateAssignment` is the VBA route named under *Business Rule 3*
   — read it to see exactly what that route's coverage gap looks like, not as a route this file

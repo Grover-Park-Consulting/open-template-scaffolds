@@ -3,7 +3,7 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.2.4
+version: 0.2.5
 status: stable
 implements: error-logging-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, host-helper-reuse]
@@ -287,8 +287,8 @@ named above.
   Ordinary VBA behind a shared logging procedure, called from the end of every handler, satisfies
   every promise above. Do not import a mechanism from the audit-logging templates in this library on
   the assumption that a promise this firm must mean one route: it doesn't, here.
-- **You may read `error-logging-scaffold.md`, the rules-based method that produces this same result,
-  for one worked decomposition — nothing more.** It shows procedure names, a control flow, and where
+- **Once the build is under way and you are writing its code, never while drafting the design, you may fetch `error-logging-scaffold`, the rules-based method that produces this same
+  result, with `get_template` (and its steps with `get_part`, where it has them), never by reading its file, for one worked decomposition — nothing more.** It shows procedure names, a control flow, and where
   the guarding logic sits. None of that is binding here. Copying its shape wholesale is a legitimate
   build; so is a different one that still satisfies every check.
 - **Before you draft the design, fetch `error-logging-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the table, its Business

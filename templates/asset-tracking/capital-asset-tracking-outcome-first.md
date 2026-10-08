@@ -3,7 +3,7 @@ template: capital-asset-tracking-outcome-first
 title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.2.5
+version: 0.2.6
 status: stable
 implements: capital-asset-tracking-schema
 platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, data-macro-rules, vba-import-xml-entities, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, recordset-append-crash]
@@ -436,8 +436,9 @@ named above.
   outcome of five of the eight; that file is where the field names, types, and the other three live.
 - **The Data Macro document's shape is fixed by the platform** (fact `data-macro-rules`); how the work
   divides and what things are called stay exactly as declared under *Free to choose alternatives*.
-- **You may read `audit-logging-lite-scaffold.md` and `audit-logging-lite-outcome-first.md` for one
-  worked example of a comparable Data Macro decomposition — nothing more.** Neither is a route this
+- **Once the build is under way and you are writing its code, never while drafting the design, you may fetch `audit-logging-lite-scaffold` and `audit-logging-lite-outcome-first` with
+  `get_template` (and their steps with `get_part`, where they have them), never by reading their
+  files, for one worked example of a comparable Data Macro decomposition — nothing more.** Neither is a route this
   file adopts; a different, equally valid decomposition that still satisfies every check here is a
   legitimate build.
 - **Apply every standard delivered with this template.** Naming, audit columns, error handling, query

@@ -3,7 +3,7 @@ template: stocktake-scan-outcome-first
 title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.6.4
+version: 0.6.5
 status: stable
 extends: Northwind (Access Developer Edition)
 requires_tables:
@@ -418,8 +418,8 @@ named above.
   what *Free to choose alternatives* leaves open. Do not import a mechanism from the paired
   rules-based template on the assumption that a promise this firm must mean one route: it doesn't,
   here.
-- **You may read `stocktake-scan-scaffold.md`, the rules-based method that produces this
-  same result, for one worked decomposition — nothing more.** It shows procedure names, a control
+- **Once the build is under way and you are writing its code, never while drafting the design, you may fetch `stocktake-scan-scaffold`, the rules-based method that produces this
+  same result, with `get_template` (and its steps with `get_part`, where it has them), never by reading its file, for one worked decomposition — nothing more.** It shows procedure names, a control
   flow, and where the domain logic slots in. None of that is binding here. Copying its shape wholesale
   is a legitimate build; so is a different one that still satisfies every check. That template runs
   the check list below against its own builds and says so where it names this one: the checks belong
