@@ -16,7 +16,7 @@ One home for method, the fourth kind of knowledge beside domain decisions (templ
 marker. The template library MCP server chooses the sections a run needs from what the template
 contains and the route (design or build), and delivers each where it is used: `get_method` at the
 opening, the master (`get_template`) with what the template's type adds, the part holding a
-`## Wizard` with the wizard method, and the `build-method` part when the build starts
+`## Wizard` with the wizard method, and the `build-method` part on the build route
 (`get_method` with `stage="build"` where no template fits). The text was moved
 here verbatim on 2026-10-06 from `CLAUDE.md`, `_template-schema.md` and `_materialization.md`;
 section numbers such as §10.4 inside it refer to where the text came from.
@@ -34,11 +34,11 @@ section numbers such as §10.4 inside it refer to where the text came from.
 - `explore-options` — delivered `type: outcome-first`
 - `staged-procedures` — delivered `type: vba-scaffold`
 - `design-only-handover` — delivered design route
-- `build-route` — delivered build route, when the build starts
-- `access-gate` — delivered build route, when the build starts
-- `quiet-build` — delivered build route, when the build starts
-- `runbook` — delivered build route, when the build starts
-- `build-records-accumulate` — delivered build route, when the build starts
+- `build-route` — delivered build route
+- `access-gate` — delivered build route
+- `quiet-build` — delivered build route
+- `runbook` — delivered build route
+- `build-records-accumulate` — delivered build route
 
 ## run-opening
 <!-- method: run-opening -->
@@ -385,7 +385,7 @@ question** — they live in *Tell me more*, where the person who wants them will
 else has to. A choice made
 against the standards layer holds for the rest of that run and is never silently re-defaulted —
 but it is never written back to `standards/` either. A step-1 answer that declines the feature ends
-**that wizard only**; any other wizard in the same template is asked independently.
+**that wizard only**; ask any other wizard in the same template independently.
 
 **Restate the decision in full at each gate.** Ask the question where the developer can answer it
 without reconstructing anything from earlier in the session: what the setting means, what it
@@ -500,7 +500,7 @@ Four rules follow from it:
     developer chooses whether to answer every step or have the preferred choices used. It is never
     an option inside Step 1.
 14. **Ending early ends one wizard, not the run.** Where a step-1 answer declines the whole feature,
-    that wizard stops; any other wizard in the same template is asked independently.
+    that wizard stops; ask any other wizard in the same template independently.
 15. **§8.4's facilitation rules apply in full.** Never infer the answer to a step, present one step
     at a time, and restate the decision at the gate so it can be answered without reconstructing
     anything from earlier in the session.
@@ -610,9 +610,8 @@ template lists them under *Free to choose alternatives*. Absent this step, the b
 choices itself and records each in the build record. **The `Explore options` step lets the developer
 have them laid out first.**
 
-**When it is asked.** Once, after the last of the template's questions and before the design is
-presented, through the selection control (§10.3), on any outcome-first template that lists open
-choices:
+**Ask it once,** after the last of the template's questions and before you present the design,
+through the selection control (§10.3), on any outcome-first template that lists open choices:
 
 | Option | Short description |
 |---|---|
@@ -715,8 +714,8 @@ part: the method, standards and platform facts for building arrive only there. W
 
 ### After approval — building it
 
-The design is the first deliverable. **On the build route there is a second one**, and the developer
-was told where this run ends before the first question was asked.
+The design is the first deliverable. **On the build route there is a second one.** Where this run
+ends was said before the first question; if it was not, say it now, before this question.
 
 
 **Where an Access MCP server is connected, the developer chooses how the run ends, as a wizard step**
@@ -815,6 +814,11 @@ is not the standard.
 <!-- method: access-gate -->
 
 *Delivered: build route.*
+
+**Before you build in a database this template alters, ask whether the developer has a backup of it.
+If they say they have none, build nothing in that database until they have one.** This stops the
+build and nothing else: the design, and any code you hand over for the developer to run, are not
+held back by it.
 
 **Before the first open of the target file, check for it being held by a process with no visible
 lock file.** On Windows, a prior Access session can crash or hang and leave `MSACCESS.EXE` running

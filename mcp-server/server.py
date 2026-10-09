@@ -254,8 +254,9 @@ def get_part(template: str, part: str, route: str = "") -> dict:
     that text is no longer in front of you, fetch the part again before writing
     anything it governs.
 
-    Every answer carries `served` (template, part, version and a short hash);
-    the build record quotes one line per part, so a part never fetched shows.
+    Every answer carries `served` (template, part, version and a short hash).
+    Quote one line per part in the build record, with when it arrived; a part
+    never fetched then shows.
     `next` is null after the last part. Pass the same `route` as the run's.
     Raises ValueError for an unknown template, part, or route.
     """

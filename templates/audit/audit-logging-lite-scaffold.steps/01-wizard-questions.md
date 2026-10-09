@@ -11,7 +11,7 @@ route: both
 
 Nine questions, asked one at a time, preceded by the entry question
 (`templates/_template-schema.md` §10.6) that asks whether you want to answer them at all. The
-standards gate above is asked before all of them and is not counted among the nine.
+standards gate comes from its own part: run it before any of these. It is not one of the nine.
 
 **One of the nine — Step 3 — is only asked where you are adding auditing to a database you already
 use**, so the try-it-out build asks eight and the other asks all nine.

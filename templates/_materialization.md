@@ -817,9 +817,8 @@ answer is `Build it`. **A connected Access MCP server is not authorization to us
 not an answer, the developer's is. **The template library MCP server that ships in `mcp-server/` is
 not an Access MCP server** — it reads this library's files and cannot build anything.
 
-**Where none is connected there is no build, and nothing to ask about.** The run ends at the approved
-design, the developer was told so before the first question, and **no executable artifact is
-generated**: no VBA `Sub`, no DDL, no importable form text. Everything below this line describes how a
+**Where none is connected, do not build, and ask nothing about building.** End the run at the approved
+design, tell the developer so before the first question, and **generate no executable artifact**: no VBA `Sub`, no DDL, no importable form text. Everything below this line describes how a
 build is carried out through an Access MCP server. It is not a packaging guide for code handed to a
 developer to run, because that is not something this library produces on its own initiative. If the
 developer asks for the code knowing nothing has executed it, it goes to them headed `UNVERIFIED`.
@@ -829,7 +828,7 @@ and what happens when nobody chooses, and only the first is true here (`_templat
 
 The entity corruption above is a reason to **check the imported source** where a scaffold warns about
 it, and never a reason to steer away from building through the server. A scaffold whose Data Macro
-XML contains a comparison expression should assemble entities from `Chr()` codes regardless, as a
+XML contains a comparison expression must assemble entities from `Chr()` codes regardless, as a
 second line of defence — and that matters more now than when this was first written, because there
 is no longer another route to fall back on when it bites.
 
@@ -1001,7 +1000,7 @@ Four_GenerateAllAuditDataMacros(True)    ' works — evaluated as an expression
 This matters more than it looks. Staged procedures take an optional `bSilent` argument precisely so
 an automated caller can suppress the message box and read the returned text instead; a caller that
 cannot pass `True` gets the dialog, and with nobody at the keyboard it waits forever. **A scaffold
-whose procedures accept arguments should say which tool to call them with**, or the first automated
+whose procedures accept arguments says which tool to call them with**, or the first automated
 run hangs.
 
 **3. Expression-evaluation is not a general substitute for running a procedure.** Point 2 is narrow:

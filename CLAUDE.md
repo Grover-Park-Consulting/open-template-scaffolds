@@ -43,7 +43,7 @@ carries decisions already made and proven; a from-scratch design is the develope
 this library can vouch for, and you say so when you offer that path. The developer approves or
 redirects. You build only what's been approved, and only when directed.
 
-## How every run starts — the method arrives with the template
+## How every run starts — load the method, then the template one part at a time
 
 **Your very first action in every run is to show the start-up form,** before `get_method` or anything
 else: run `powershell.exe -NoProfile -File start/start-form.ps1 -TimeoutSeconds <n>` from this

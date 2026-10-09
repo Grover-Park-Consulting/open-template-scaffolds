@@ -28,7 +28,7 @@ Seven things follow from this being skeletons rather than an open route.
 - **Compile the VBA project before running any check, and record that you did.** Code that will not
   compile fails every check at once with the wrong cause attached to each.
 - **Leave `CheckHook` empty in the delivered database.** The checks that need a competing writer
-  (outcome-first checks 8, 10, 17, 31 and 32) are run on a check copy whose `CheckHook` is filled in
+  (outcome-first checks 8, 10, 17, 31 and 32): run them on a check copy whose `CheckHook` you have filled in
   to place the competing row at the point the check names: `afterCheck:Earned`, `afterCheck:Taken`,
   `afterCheck:Correction` after a check has passed, and `betweenHalves` between the two writes of a
   replacement. Record what the copy changed.
