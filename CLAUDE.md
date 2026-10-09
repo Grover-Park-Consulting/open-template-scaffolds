@@ -60,8 +60,9 @@ no Access MCP server is connected, and with no route where one is, because the d
 chosen. It returns how the run is conducted, beginning with `run-opening`: what you tell the developer
 before the first question. Once a template is chosen and the route is settled, call `get_template` with that
 route and `have_method=true`: it returns the template's master and the method its own features add,
-since `get_method` already delivered the rest. The rest of the template arrives in parts, one per
-call: fetch each with `get_part` when the previous answer's `next` says. Follow all of it from then on. **The method and the platform
+since `get_method` already delivered the rest. Fetch the rest of the template one part at a time with
+`get_part`, each when the answer before it says. Do none of a part's work until that part has arrived,
+even if you already know how. Follow all of it from then on. **The method and the platform
 facts delivered with a template bind the run as fully as anything in this file.** `templates/_method.md`
 is where the method lives; read it there only to maintain it.
 

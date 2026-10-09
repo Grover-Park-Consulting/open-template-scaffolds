@@ -208,10 +208,11 @@ def _method_sections(ids: list[str]) -> tuple[list[dict], list[str]]:
 def get_template(template: str, route: str = "", have_method: bool = False) -> dict:
     """Return the first part of a chosen template: its master.
 
-    Looks up `template` by its front-matter id (case-insensitive). A template
-    arrives in parts, one per call, so that no answer is too large to be shown
-    in full and each piece arrives when the run reaches the work that uses it.
-    This call returns the master: the full `front_matter`, the master `body`,
+    Looks up `template` by its front-matter id (case-insensitive). Fetch a
+    template one part at a time: this call gives the master, and every later
+    part comes from `get_part`. Do none of a part's work before its answer
+    arrives. Parts are small so that no answer is too large to be shown in
+    full. This call returns the master: the full `front_matter`, the master `body`,
     the method the template's own features add, `parts` (every part of the run
     in order, with when to fetch each), `served`, and `next`, the call to make
     next and when. Fetch every later part with `get_part`, following `next`.
@@ -241,7 +242,9 @@ def get_part(template: str, part: str, route: str = "") -> dict:
     """Return one part of a template, named in the `parts` list `get_template` returned.
 
     Fetch the parts in order, each when its `when` says, by following the
-    `next` in every answer. A part holds what the run needs at that point and
+    `next` in every answer. Do none of a part's work before its answer
+    arrives, even if you already know how from another template or file.
+    A part holds what the run needs at that point and
     nothing else: the standards the design follows, the platform facts it
     depends on, how the build is conducted, the standards the code follows, or
     one build step with the platform facts that step uses.

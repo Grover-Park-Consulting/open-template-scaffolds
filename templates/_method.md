@@ -203,7 +203,7 @@ twice, this is where that is said.
 These are the two moments with the most to report — the template that was matched and why, the
 build-wide warnings, the house assumptions, what was found on opening the files — and the least use
 for it. At the first, the developer has chosen nothing yet. At the second, they have chosen
-everything and are waiting. Four things are said at these moments and nothing else:
+everything and are waiting. Say four things at these moments and nothing else:
 
 - Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
 - Anything that changes what they do next.
@@ -213,7 +213,7 @@ everything and are waiting. Four things are said at these moments and nothing el
   wording and the reason. It qualifies under the second item above, since it changes what the
   developer does when the run finishes.
 
-Everything else — what was checked, what was found, what it meant — goes to **the build record**.
+Everything else — what was checked, what was found, what it meant — put in **the build record**.
 
 **This rule does not govern the design presented for approval.** The diagram and field detail are the
 deliverable the whole workflow exists to produce; they are not narration, and they are not shortened.
@@ -650,7 +650,7 @@ for a procedure whose job is to answer that question — run the procedure itsel
 sequence calls for it. Present one step's result at a time; don't collapse the sequence into a
 single upfront report, even when every fact in it is correct. Having the access and the context to
 answer a gate yourself is not the same as being asked to. Where the template is divided into steps,
-a gate inside a step is answered before the next part is fetched.
+answer every gate inside a step before you fetch the next part.
 
 
 ### 8.4 Staged execution and facilitation
@@ -800,10 +800,11 @@ Apply the standards throughout, exactly as in the approved design.
 
 ### Building it part by part
 
-**The template arrives in parts, one per call, and the build follows them in order.** Each answer's
-`next` names the call to make and when to make it; make it then, not earlier and not later. Do one
-step at a time from that step's own answer: its text, the platform facts it uses, and the standards
-in force. A step not fetched is a step not done, and its row is missing from the build record.
+**Fetch the template one part at a time, and do each step's work only after its part has arrived.**
+Each answer's `next` names the call to make and when to make it; make it then, not earlier and not
+later. Do one step at a time from that step's own answer: its text, the platform facts it uses, and
+the standards in force. Do no step's work from memory or from another template: a step whose part you
+have not fetched is a step you may not do, and its row is missing from the build record.
 
 **A step's answer names the standards in force and the part that carried each one's text.** Where
 you cannot see that text now (the conversation was summarized, or you would be quoting it from
@@ -888,7 +889,7 @@ The questions are over and the developer is waiting for a result. Everything hap
 they already approved, so a running commentary on it reports progress to nobody: they cannot act on
 it, cannot verify it, and cannot tell from it whether anything is going wrong. Rule 2 covers the
 moment before the build; this covers the build itself, which is longer and where the habit is
-strongest. Three things are said between the last question and the finished artifact:
+strongest. Say three things between the last question and the finished artifact:
 
 - **That it has started**, once, and what it will produce. Silence for several minutes is its own
   failure — this is the line that prevents it.
@@ -897,8 +898,8 @@ strongest. Three things are said between the last question and the finished arti
 - **That it is finished**: what was built, and where the build record is.
 
 Every object created, every procedure run, every check that passed, every step that went exactly as
-expected: all of it goes to the build record. **A build that goes to plan produces nothing between
-its first message and its last.**
+expected: put all of it in the build record. **When the build goes to plan, say nothing between its
+first message and its last.**
 
 **Progress commentary has a real audience, and it is not this one.** Someone developing or trialling
 a template does want to watch each step land — they are reading for the template's behaviour, not
