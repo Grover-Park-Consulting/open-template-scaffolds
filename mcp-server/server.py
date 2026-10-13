@@ -16,7 +16,7 @@ except ImportError:
     # that predates the split keeps working without a reinstall.
     from mcp.server.fastmcp import FastMCP
 
-from library import (_METHOD_BUILD, _METHOD_DESIGN, _METHOD_EVERY_RUN, GATE_PATH,
+from library import (_METHOD_BUILD, _METHOD_EVERY_RUN, _METHOD_HANDOVER, GATE_PATH,
                      ROUTES, _sha, compose, iter_standards, iter_templates, read_method,
                      validate_library)
 
@@ -194,7 +194,7 @@ def search_templates(query: str = "", domain: str = "", type: str = "") -> list[
 def _route_or_raise(route: str) -> str:
     r = route.strip().lower()
     if r not in ROUTES:
-        raise ValueError(f"route must be 'design', 'build' or empty for both, not '{route}'.")
+        raise ValueError(f"route must be 'handover', 'build' or empty, not '{route}'.")
     return r
 
 
@@ -221,10 +221,13 @@ def get_template(template: str, route: str = "", have_method: bool = False) -> d
     (`design-standards`, `build-standards`), separately from the template, so a
     standard can be swapped without touching the template. Platform facts
     arrive as parts too: those the design depends on in `design-facts`, and
-    those a build uses with the step that uses them.
+    those the code uses with the step that uses them.
 
-    Pass `route="design"` for a run that ends at the approved design,
-    `route="build"` for a run that builds, or leave it empty for both. Pass
+    Pass `route="handover"` for a run where no Access MCP server is connected
+    or the developer asked for a design spec only: the master lists the design
+    phase, and the developer then chooses Proposed code or Design spec only.
+    Pass `route="build"` for a run that builds, or leave it empty (the same as
+    build). Pass
     `have_method=True` when `get_method` already ran in this run, so the method
     every run receives is not sent twice.
 
@@ -268,11 +271,11 @@ def get_method(route: str = "", stage: str = "opening") -> dict:
     """Return the method a run follows: how it is conducted, from `templates/_method.md`.
 
     Call it first in every run, with `stage="opening"` (the default): it returns
-    the method every run receives, plus, on the design route, what that route
-    adds. The method for conducting a build arrives later, when the developer
-    chooses to build: as the `build-method` part of a template, or, on a run
+    the method every run receives. The method for the chosen ending arrives
+    later: for Build it, as the `build-method` part of a template; for
+    Proposed code, as the `handover-method` part (route `handover`); on a run
     with no template (the from-scratch path), from this tool with
-    `stage="build"`. Read-only; builds nothing.
+    `stage="build"` or `stage="handover"`. Read-only; builds nothing.
 
     Returns `{method: [{id, heading, content}], route, stage}`, plus
     `method_missing` when a mapped id has no section. Raises ValueError for an
@@ -281,11 +284,13 @@ def get_method(route: str = "", stage: str = "opening") -> dict:
     rt = _route_or_raise(route)
     st = stage.strip().lower()
     if st == "opening":
-        ids = list(_METHOD_EVERY_RUN) + (list(_METHOD_DESIGN) if rt in ("", "design") else [])
+        ids = list(_METHOD_EVERY_RUN)
     elif st == "build":
         ids = list(_METHOD_BUILD)
+    elif st == "handover":
+        ids = list(_METHOD_HANDOVER)
     else:
-        raise ValueError(f"stage must be 'opening' or 'build', not '{stage}'.")
+        raise ValueError(f"stage must be 'opening', 'build' or 'handover', not '{stage}'.")
     method, method_missing = _method_sections(ids)
     result = {"method": method, "route": rt, "stage": st}
     if method_missing:

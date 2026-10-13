@@ -90,10 +90,11 @@ def read_method() -> tuple[dict[str, dict], list[str]]:
 
 # Method every run receives, then what the template's features and the route add.
 _METHOD_EVERY_RUN = ("run-opening", "design-review", "house-assumptions-and-warnings",
-                     "between-questions", "checklist-rule", "build-record")
-_METHOD_DESIGN = ("design-only-handover",)
+                     "between-questions", "checklist-rule", "build-record", "run-ending",
+                     "backup-question")
 _METHOD_BUILD = ("build-route", "access-gate", "quiet-build", "runbook", "build-records-accumulate")
-ROUTES = ("", "design", "build")
+_METHOD_HANDOVER = ("handover-code",)
+ROUTES = ("", "handover", "build")
 
 
 def _front_method(front: dict) -> list[str]:
@@ -124,8 +125,8 @@ def method_for(front: dict | None, body: str, route: str = "") -> list[str]:
     ids = list(_METHOD_EVERY_RUN)
     if front is not None:
         ids += _front_method(front) + _body_method(body)
-    if route in ("", "design"):
-        ids += _METHOD_DESIGN
+    if route in ("", "handover"):
+        ids += _METHOD_HANDOVER
     if route in ("", "build"):
         ids += _METHOD_BUILD
     return ids
@@ -198,10 +199,12 @@ _WHEN = {
                          "design question until it has arrived."),
     "design-facts": ("Fetch this before you draft any part of the design. Do not draft from what "
                      "you already know about Access: these facts are what make the design right."),
-    "build-method": ("Fetch this only after the developer chooses Build it or Give me the code. "
-                     "Open, create or change no database before it has arrived."),
-    "build-standards": ("Fetch this straight after the build method. Write no code before it has "
-                        "arrived."),
+    "build-method": ("Fetch this only after the developer chooses Build it. Open, create or "
+                     "change no database before it has arrived."),
+    "handover-method": ("Fetch this only after the developer chooses Proposed code, with route "
+                        "handover. Write no code before it has arrived."),
+    "build-standards": ("Fetch this straight after the method for the chosen ending. Write no "
+                        "code before it has arrived."),
     "build-facts": ("Fetch this straight after the build standards. Write no code before it has "
                     "arrived."),
 }
@@ -225,9 +228,10 @@ _STANDARDS_NOTE = (
     "If you cannot see that text now (it was summarized away, or you would be quoting it from "
     "memory), fetch that part again before you write anything it governs.")
 _DESIGN_END = (
-    "The design route ends when the developer approves the design. If they then ask for the "
-    "code, call get_part with part 'build-method' and route 'build', follow next from there, "
-    "and mark every file you hand over UNVERIFIED.")
+    "The design phase ends when the developer approves the design spec. Ask the ending question "
+    "as the method run-ending says. If they choose Proposed code, call get_part with part "
+    "'handover-method' and route 'handover' and follow next from there. If they choose Design "
+    "spec only, hand over the design spec and the build record and write no code.")
 
 
 def serialized_size(obj) -> int:
@@ -324,8 +328,10 @@ def _method(ids) -> tuple[list[dict], list[str]]:
 def plan(path: Path, front: dict, body: str) -> list[dict]:
     """Every part a run can fetch for this template, in order, both routes.
 
-    Each part is `{part, title, when, route, ...}` plus what composes it. The
-    design route stops before `build-method`.
+    Each part is `{part, title, when, route, ...}` plus what composes it. A
+    part's route is "" (the design phase, both routes), "build" or "handover"
+    (that route only) or "code" (the code-writing parts both routes share). The
+    master lists the handover route only as far as the design phase.
     """
     layer = [str(s) for s in front.get("standards_layer") or []]
     steps = read_steps(path, front)
@@ -350,19 +356,21 @@ def plan(path: Path, front: dict, body: str) -> list[dict]:
             parts.append({"part": f"step-{s['n']}", "title": str(s["front"].get("title") or s["step"]),
                           "route": "", "step": s})
     parts.append({"part": "build-method", "title": "How the build is conducted", "route": "build"})
+    parts.append({"part": "handover-method", "title": "How the proposed code is written",
+                  "route": "handover"})
     std, _ = _standards([s for s in layer if s in _BUILD_STANDARDS])
     for name, group in _split("build-standards", std):
-        parts.append({"part": name, "title": "The standards the code follows", "route": "build",
+        parts.append({"part": name, "title": "The standards the code follows", "route": "code",
                       "standards": group})
     if not steps:
         # A template not yet divided into steps: its build facts arrive together.
         for name, group in _split("build-facts", build_facts):
-            parts.append({"part": name, "title": "Platform facts the build uses", "route": "build",
+            parts.append({"part": name, "title": "Platform facts the code uses", "route": "code",
                           "facts": group})
     for s in steps:
         if str(s["front"].get("route", "")) != "both":
             parts.append({"part": f"step-{s['n']}", "title": str(s["front"].get("title") or s["step"]),
-                          "route": "build", "step": s})
+                          "route": "code", "step": s})
     first_build = next((s["n"] for s in steps if str(s["front"].get("route", "")) != "both"), 0)
     for p in parts:
         p["when"] = _WHEN.get(p["part"].rstrip("0123456789").rstrip("-"), "")
@@ -388,6 +396,21 @@ def _in_force(parts: list[dict]) -> list[dict]:
     return out
 
 
+def _on_route(parts: list[dict], route: str) -> list[dict]:
+    """The parts a run on `route` fetches, in order: the design phase, the code-writing
+    parts both routes share, and the parts of that route alone. An empty route is build."""
+    r = "handover" if route == "handover" else "build"
+    return [p for p in parts if p["route"] in ("", "code", r)]
+
+
+def _shown(parts: list[dict], route: str) -> list[dict]:
+    """The parts the master lists. The handover route is listed only as far as the design
+    phase: the code is optional, and the developer chooses it when the design spec is approved."""
+    if route == "handover":
+        return [p for p in parts if p["route"] == ""]
+    return _on_route(parts, route)
+
+
 def compose(template: str, part: str = "master", route: str = "",
             have_method: bool = False) -> dict:
     """One part of a template, exactly as the server answers it.
@@ -402,10 +425,7 @@ def compose(template: str, part: str = "master", route: str = "",
         raise ValueError(f"No template with id '{template}'. "
                          "Use list_templates or search_templates to find valid ids.")
     parts = plan(path, front, body)
-    if route == "design":
-        visible = [p for p in parts if p["route"] != "build"]
-    else:
-        visible = parts
+    visible = _shown(parts, route)
     ids = [p["part"] for p in parts]
     pid = part.strip().lower()
     if pid not in ids:
@@ -417,7 +437,7 @@ def compose(template: str, part: str = "master", route: str = "",
     if pid == "master":
         own = _front_method(front) + _body_method(body)
         if not have_method:
-            own = list(_METHOD_EVERY_RUN) + own + (list(_METHOD_DESIGN) if route != "build" else [])
+            own = list(_METHOD_EVERY_RUN) + own
         method, missing = _method(own)
         result = {**{k: front.get(k) for k in ("template", "title", "domain", "type", "status")},
                   "part": "master", "front_matter": front, "body": body, "method": method,
@@ -451,8 +471,8 @@ def compose(template: str, part: str = "master", route: str = "",
         if pid.startswith("build-facts"):
             result["standards_in_force"] = _in_force(parts)
             result["standards_note"] = _STANDARDS_NOTE
-    elif pid == "build-method":
-        method, missing = _method(_METHOD_BUILD)
+    elif pid in ("build-method", "handover-method"):
+        method, missing = _method(_METHOD_BUILD if pid == "build-method" else _METHOD_HANDOVER)
         result["method"] = method
         if missing:
             result["method_missing"] = missing
@@ -482,15 +502,16 @@ def compose(template: str, part: str = "master", route: str = "",
         if facts_missing:
             result["platform_facts_missing"] = facts_missing
 
-    # A build part fetched on the design route (the developer asked for the code) chains on
-    # through the build parts.
-    chain = visible if pid in [q["part"] for q in visible] else parts
+    # A part the master did not list (the handover method, or a code part on the handover
+    # route) chains on through its own route's parts.
+    cr = {"handover-method": "handover", "build-method": "build"}.get(pid, route)
+    chain = visible if pid in [q["part"] for q in visible] else _on_route(parts, cr)
     chain_ids = [q["part"] for q in chain]
     if chain_ids.index(pid) + 1 < len(chain_ids):
         nxt = chain[chain_ids.index(pid) + 1]
         result["next"] = {"call": "get_part", "template": front.get("template"),
-                          "part": nxt["part"], "route": route, "when": nxt["when"]}
-    elif route == "design" and chain is visible:
+                          "part": nxt["part"], "route": cr, "when": nxt["when"]}
+    elif route == "handover" and chain is visible:
         result["next"] = None
         result["after_design"] = _DESIGN_END
     else:
@@ -923,8 +944,10 @@ def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> lis
     if errors:
         return errors          # sizes are measured only on a template whose steps resolve
     for p in plan(path, front, body):
-        for route in ("", "design", "build"):
-            if route == "design" and p["route"] == "build":
+        for route in ("", "handover", "build"):
+            if p["route"] == "handover" and route != "handover":
+                continue
+            if p["part"] == "build-method" and route == "handover":
                 continue
             size = serialized_size(compose(str(front.get("template")), p["part"], route, True))
             if size > RESPONSE_LIMIT:

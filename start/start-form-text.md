@@ -20,7 +20,7 @@ O P E N   T E M P L A T E   S C A F F O L D S
 
 ## Banner, line 2
 
-design it, check it, then build it
+design it, check it, then build it or take the code
 
 ## Window title (the large line above the cards)
 
@@ -32,11 +32,11 @@ What you were told at the start
 
 ## Card 1: heading
 
-You decide where this run ends: at an approved design, or at a finished build
+You decide where this run ends: a finished build, proposed code, or the design spec alone
 
 ## Card 1: text
 
-Runs can end with an approved design, or they can end with something built and checked. Building depends on your assistant being able, and permitted, to open and run things in your Access database. Your assistant tells you whether it can do so in its first message. If it can, you decide whether to allow it to do so.
+Every run starts with a design you approve. It can then end three ways. A finished build is created and checked in a copy of your Access database, which depends on your assistant being able, and permitted, to open and run things there. Proposed code is code your assistant writes as files for you to import; it has not been tested or run in a live database. The design spec alone is the approved design with no code. Your assistant tells you in its first message which of these are open to you.
 
 ## Card 2: heading
 
@@ -80,7 +80,7 @@ Take your time. If you have not pressed the button in {time}, this window moves 
 
 ## Button label
 
-Continue to the Build
+Continue
 
 ## Button label, when reopened
 

@@ -170,6 +170,18 @@ so an assistant doesn't mistake old grounds for new permission:
   every run now receives second, after the master. Grounds: the server's parts changed, so the list
   would describe them wrongly. An addition and a renumbering, not a rewording.
 
+- **2026-10-13, approved by George for the handover route (the `design` route renamed, and the
+  design-spec-only / proposed-code / build endings).** Grounds: each sentence below describes a run
+  that ends at the design, or code headed `UNVERIFIED`, which the method no longer says. The exact
+  text was shown to George before editing; he supplied the heading in item 4. (1) `README.md` lines
+  26, 113 and 215: what a run without an Access MCP server ends in. (2) `README.md` line 219: the
+  heading is now "Why we don't support having your AI simply build through your computer's command
+  line using COM automation" (George's wording), and the last sentence names proposed code and the
+  design spec alone. (3) `mcp-server/README.md` line 12: same correction. (4) `templates/_template-schema.md`
+  §3 (the form-text paragraph, `UNVERIFIED` becomes `PROPOSED CODE`) and §13's parts list item 6
+  (`build-method` or `handover-method`). `mcp-server/server.py` changed in docstrings, the route
+  error and `get_method` only, no name lines.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

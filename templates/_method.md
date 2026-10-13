@@ -14,10 +14,11 @@ status: draft
 One home for method, the fourth kind of knowledge beside domain decisions (templates), house choices
 (`standards/`) and platform facts (`_materialization.md`). Each section carries a `<!-- method: id -->`
 marker. The template library MCP server chooses the sections a run needs from what the template
-contains and the route (design or build), and delivers each where it is used: `get_method` at the
+contains and the route (handover or build), and delivers each where it is used: `get_method` at the
 opening, the master (`get_template`) with what the template's type adds, the part holding a
-`## Wizard` with the wizard method, and the `build-method` part on the build route
-(`get_method` with `stage="build"` where no template fits). The text was moved
+`## Wizard` with the wizard method, the `build-method` part when the developer chooses Build it,
+and the `handover-method` part when they choose Proposed code (`get_method` with `stage="build"`
+or `stage="handover"` where no template fits). The text was moved
 here verbatim on 2026-10-06 from `CLAUDE.md`, `_template-schema.md` and `_materialization.md`;
 section numbers such as §10.4 inside it refer to where the text came from.
 
@@ -29,11 +30,13 @@ section numbers such as §10.4 inside it refer to where the text came from.
 - `between-questions` — delivered every run
 - `checklist-rule` — delivered every run
 - `build-record` — delivered every run
+- `run-ending` — delivered every run
+- `backup-question` — delivered every run
 - `related-after-finish` — delivered when the template has `related`
 - `wizard` — delivered with the part that holds the template's `## Wizard`
 - `explore-options` — delivered `type: outcome-first`
 - `staged-procedures` — delivered `type: vba-scaffold`
-- `design-only-handover` — delivered design route
+- `handover-code` — delivered with the `handover-method` part
 - `build-route` — delivered build route
 - `access-gate` — delivered build route
 - `quiet-build` — delivered build route
@@ -75,43 +78,109 @@ file at all.**
 **Say where this run ends, in the same breath.** The route decides what the developer has at the
 end, so they learn it before they answer anything rather than after.
 
-- **An Access MCP server is connected and the developer has not asked for a design only.** Say, in
-  your own words, that the run can end either way and that they choose when the design is approved:
-  with the approved design only, which they build themselves, or with a build, created and run in a
-  copy of their database and checked before they see it. The design only is always open to them;
-  the build is open because the tool to do it is connected. The choice is a wizard step (see "After
-  approval — building it").
-- **No Access MCP server is connected.** The run ends at the approved design. Say so now, in your
-  own words, to this effect:
+- **An Access MCP server is connected and the developer has not asked for a design spec only.** Say,
+  in your own words, that the run can end three ways and that they choose when the design spec is
+  approved: a build, created and run in a copy of their database and checked before they see it;
+  proposed code, which you write for them to import and which has not been tested or run in a live
+  database; or the design spec alone. The choice is a wizard step (method `run-ending`).
+- **No Access MCP server is connected.** The run is on the handover route. Say so now, in your own
+  words, to this effect:
 
-  > *"So you know where this ends up: I can design the whole thing with you, the tables, the fields,
-  > how they connect, and the reasoning behind each choice, and you approve it before we're done.
-  > What I can't do from here is build it in your database, because I have no way to open it and run
-  > the code. You'll do that part yourself, the way you'd build anything else. There are tools that
-  > would give me that ability; if you want to know what to look for, ask and I'll tell you."*
+  > *"So you know where this ends up: we design the whole thing together, and you approve the design
+  > spec. Then I can write the code for it as files you import into your database. I can't open your
+  > database or run anything in it from here, so that code is proposed code: it hasn't been tested or
+  > run in a live database. There are tools that would let me build and test it myself; if you want
+  > to know what to look for, ask and I'll tell you."*
 
-  **Say it plainly and without apology. It is a complete outcome, not a degraded one** — a design
-  under the standards layer, approved by them, is what a competent developer needs. Do not name a
-  product; describe what the missing tool does, so a reader who has none learns what to look for
-  rather than that this was not written for them.
+  **Say it plainly and without apology.** Do not name a product; describe what the missing tool does,
+  so a reader who has none learns what to look for rather than that this was not written for them.
 
-- **The developer asked for a design only.** The run is on the design route by their choice, even with
-  an Access MCP server connected, and ends at the approved design. Say so now, in your own words, to
-  this effect:
+- **The developer asked for a design spec only.** The run is on the handover route by their choice,
+  even with an Access MCP server connected. Say so now, in your own words, to this effect:
 
-  > *"You've asked for the design only, so we finish with the design you approve, and you build from
-  > it yourself."*
+  > *"You've asked for the design spec only, so we finish with the design spec you approve. If you
+  > change your mind, I can write the code for it."*
 
-  It is a complete outcome, not a build cut short; do not offer the build route unless they ask.
+  It is a complete outcome, not a build cut short; do not offer the build unless they ask.
 
-**On the design route, the approval question says again where the run ends,** in your own words:
-approving the design ends the run, and the developer builds from it. Where no Access MCP server is
-connected, add that building it here would need a tool that can open and run things in their
-database.
+**The ending question, when the design spec is approved, says again where the run ends** (method
+`run-ending`).
 
 **Why they are told this first.** Without an Access MCP server you cannot run what you wrote, so
 nothing you hand over has been executed by anything. A developer who learns that at the end has
-spent the whole session believing they were getting tables.
+spent the whole session believing they were getting a tested build.
+
+
+## run-ending
+<!-- method: run-ending -->
+
+*Delivered: every run.*
+
+### When the design spec is approved — how the run ends
+
+**The design is the process; the design spec is what it produces.** When the developer approves the
+design spec, ask how the run ends, as a wizard step (§10), before you fetch any part for the code.
+Every run ends in code or in the design spec alone; the routes differ only in whether the code was
+run.
+
+**Where an Access MCP server is connected and the developer has not asked for a design spec only:**
+
+> **Ask:** The design spec is approved. How do you want this run to end?
+>
+> | Option | Short description |
+> |---|---|
+> | `Build it` | I create it in a copy of your database and run it, so anything that fails gets fixed before you see it. |
+> | `Proposed code` | I write the code as files for you to import into your database. It has not been tested or run in a live database. |
+> | `Design spec only` | We stop here. You get the approved design spec and a build record, to review against what you already have or to plan from. No code is written. |
+>
+> **Preferred:** `Build it`.
+
+**Where no Access MCP server is connected, or the developer asked for a design spec only:**
+
+> **Ask:** The design spec is approved. How do you want this run to end?
+>
+> | Option | Short description |
+> |---|---|
+> | `Proposed code` | I write the code as files for you to import into your database. It has not been tested or run in a live database. |
+> | `Design spec only` | We stop here. You get the approved design spec and a build record, to review against what you already have or to plan from. No code is written. |
+>
+> **Preferred:** `Proposed code`.
+
+**Then do what the choice says, and nothing from the other two:**
+
+- **`Build it`:** call `get_part` with part `build-method` and route `build`, and follow `next` through
+  every part. The method for the build, the standards and the platform facts arrive there. Open,
+  create or change no database before they have. On a run with no template, call `get_method` with
+  `stage="build"`.
+- **`Proposed code`:** call `get_part` with part `handover-method` and route `handover`, and follow
+  `next` through every part. On a run with no template, call `get_method` with `stage="handover"`.
+- **`Design spec only`:** hand over the approved design spec and a build record of the decisions
+  behind it. Write no code.
+
+***Tell me more* on this question** says what each ending does to the database:
+
+> Building directly creates the modules and objects while you watch, and nothing is written until
+> you choose it. It also means I run what I write, so anything that fails gets fixed before you see
+> it. Proposed code means you import and run the files yourself, at whatever pace you like, and you
+> are the first thing that has ever run that code: anything wrong with it turns up as an error in
+> front of you. The checks come with it, so you can verify what I wrote. Either way you approve the
+> design spec first. A design spec alone is for reviewing against a structure you already have, or as
+> a starting point for a team that plans and builds later.
+
+
+## backup-question
+<!-- method: backup-question -->
+
+*Delivered: every run.*
+
+**Wherever a template asks whether the developer has a backup, the question has these two answers,
+worded the same in every template.** `Yes, I have a backup`, described as "A copy exists that I can
+go back to if anything goes wrong." `Not yet`, described as "I'll make one now. The build waits until
+I tell you it's done." It has no preferred choice (write `**Preferred:** none`).
+
+**Ask it as soon as the developer says the database is one they already use, before any question
+about its layout.** A stop belongs before the detail questions, so the developer is not asked about
+a build that will not go ahead.
 
 
 ## design-review
@@ -208,9 +277,9 @@ everything and are waiting. Say four things at these moments and nothing else:
 - Anything they must answer or confirm — asked as a question, never stated in prose (rule 3).
 - Anything that changes what they do next.
 - The disclosure line (defined in `run-opening`), before the first question only.
-- Where this run ends: before the first question, and again when the design is approved. A build in
-  their database, or the approved design and nothing further. The method `run-opening` carries the
-  wording and the reason. It qualifies under the second item above, since it changes what the
+- Where this run ends: before the first question, and again when the design spec is approved. A
+  build in their database, proposed code, or the design spec and nothing further. The method
+  `run-opening` carries the wording and the reason. It qualifies under the second item above, since it changes what the
   developer does when the run finishes.
 
 Everything else — what was checked, what was found, what it meant — put in **the build record**.
@@ -479,7 +548,7 @@ Four rules follow from it:
 7. **A confirmation step has no preferred choice.** Where a step asks the developer to attest to
    something rather than to prefer something — that they have a backup, that a list the build will
    act on is correct — write `**Preferred:** none` and say why: nothing the library picks can stand
-   in for the developer's own word.
+   in for the developer's own word. The backup question's own wording is the method `backup-question`.
 8. **Options are re-ranked, never removed.** A choice the library ranks last is still offered, in
    the same plain form as the others.
 9. ***Tell me more* stays closed until asked for** and gives one or two facts that might tip the
@@ -686,25 +755,31 @@ presents such a sequence to the developer; this section is the rule the AI assis
 running it.)
 
 
-## design-only-handover
-<!-- method: design-only-handover -->
+## handover-code
+<!-- method: handover-code -->
 
-*Delivered: design route.*
+*Delivered: with the `handover-method` part.*
 
-**On the design route, the design is the whole deliverable,** whether no Access MCP server is
-connected or the developer asked for a design only. Hand over the
-approved design and a build record of the decisions behind it. **Generate no executable artifact:**
-no VBA `Sub`, no `CREATE TABLE` DDL, no importable form text. Nothing that has never been run
-crosses to the developer looking like a finished build. That is the failure this exists to prevent:
-code whose first execution happens in the developer's own Access session, as an error, in front of
-them, with no one but them to diagnose it.
+**On the handover route the deliverable is code, as on the build route, but nothing you write is
+run.** The developer chose Proposed code at the ending question (`run-ending`). The standards,
+platform facts and steps for writing the code arrive in the parts after this one: write no code until
+they have.
 
-**If they ask for the code anyway, give it to them.** Someone who asks for it by name, having been
-told nothing has run it, is making their own call and is entitled to it. Put `UNVERIFIED` at the
-head of every file handed over, and say in the message that nothing has executed it. Before writing
-it, call `get_part` with part `build-method` and route `build`, and follow `next` through every build
-part: the method, standards and platform facts for building arrive only there. What ends is
-*offering* it as the deliverable, not their ability to have it.
+1. Write the code as files the developer can import: Access objects as text files in the format
+   `LoadFromText` reads, code modules as importable files, SQL as script files. Take each format from
+   the platform facts you were given; invent none.
+2. Put `PROPOSED CODE: not tested or run in a live database.` at the head of every file you hand
+   over, and say it once, plainly, in your message. Do not dramatise it.
+3. Open, import and run nothing. Start no Access process. None of `access-gate`, `quiet-build` or
+   `runbook` applies.
+4. **Hand over the checks.** Take the template's checks (the list written for the developer, such as
+   "How you validate the template's output") and write them as a checklist file beside the code, in
+   the template's order, each saying what to do and what a pass looks like. The developer runs them
+   to verify what you wrote. Mark every one *not run*.
+5. Tell the developer to back up the database before importing. The backup order in `access-gate`
+   stops a build and nothing else; it does not hold this code back.
+6. The build record says the code was not run and every check is *not run*. Ask the developer, as a
+   question, where the files and the record go: there is no `.accdb` of yours to sit beside.
 
 
 ## build-route
@@ -714,22 +789,9 @@ part: the method, standards and platform facts for building arrive only there. W
 
 ### After approval — building it
 
-The design is the first deliverable. **On the build route there is a second one.** Where this run
-ends was said before the first question; if it was not, say it now, before this question.
-
-
-**Where an Access MCP server is connected, the developer chooses how the run ends, as a wizard step**
-(§10) asked when the design is approved:
-
-> **Ask:** The design is approved. How do you want this run to end?
->
-> | Option | Short description |
-> |---|---|
-> | `Build it` | I create it in a copy of your database and run it, so anything that fails gets fixed before you see it. |
-> | `Design only` | We stop here. You get the approved design and a build record, and you build it yourself. No code is written. |
-> | `Give me the code` | I write the code as files for you to import and run yourself. Nothing will have run it first. |
->
-> **Preferred:** `Build it`.
+The design spec is the first deliverable. **On the build route there is a second one.** The developer
+chose Build it at the ending question (`run-ending`). Where this run ends was said before the first
+question; if it was not, say it now.
 
 **Two different servers, and only one of them can build anything.** This library ships **the
 template library MCP server** (`mcp-server/`, registered by the `.mcp.json` at the root). It
@@ -747,7 +809,7 @@ can do them, never by its name. A sixth ability is not required: opening an exis
 startup skipped (see `templates/_materialization.md`). A server without it still serves; the build
 then asks the developer to switch startup off.
 
-**Whoever has an Access MCP server connected installed it deliberately.** So the question above
+**Whoever has an Access MCP server connected installed it deliberately.** So the ending question
 names the connected server and asks; it does not explain what an MCP server is. There is no
 reader who has one and does not know what it is.
 
@@ -777,15 +839,7 @@ code has still never run. Tell them:
 > database is in now. You can retry once the server is working again, or restore your backup and
 > start clean. If the trouble persists, troubleshoot the server before retrying this template.
 
-***Tell me more* on that step covers what each route does to the database** — not the entity
-caveat below, which the developer can do nothing about and which is yours to handle silently:
-
-> Building directly creates the modules and objects while you watch, and nothing is written until
-> you choose it. It also means I run what I write, so anything that fails gets fixed before you
-> see it. Taking the files means you import and run them yourself, at whatever pace you like, and
-> it means you are the first thing that has ever run that code: anything wrong with it turns up as
-> an error in front of you. Either way you approve the design first.
-
+The entity caveat below is one the developer can do nothing about; handle it silently.
 
 Then **ask which platform the tables are for**, and generate the matching artifact (keys,
 relationships, indexes, lookup tables, and **seed rows** throughout):
@@ -795,7 +849,7 @@ relationships, indexes, lookup tables, and **seed rows** throughout):
 - The error-handling block in any generated VBA comes from the standards layer — a **dependency-free
   default** (a message box) unless the house `error-handling.md` specifies a central logger.
 
-Apply the standards throughout, exactly as in the approved design.
+Apply the standards throughout, exactly as in the approved design spec.
 
 ### Building it part by part
 
@@ -921,8 +975,8 @@ will say so. Absent that, the developer wants their tables, not a transcript of 
 **Every build leaves a build record**: one file, written beside the artifact, saying how it was
 built. It is not optional, and it is not a summary of the conversation. **This applies to every
 template and every build** — whether a wizard ran or the developer answered everything at once,
-whether the artifact is tables, code, or a form. **A design-route run leaves one too:** the design
-is its artifact, and the record holds the decisions behind it. It is part of the deliverable, written
+whether the artifact is tables, code, or a form. **A handover-route run leaves one too:** the design
+spec is its artifact, and the record holds the decisions behind it. It is part of the deliverable, written
 without being asked for, never offered as an extra.
 
 It is also what `_template-schema.md` §10.4 promises the developer in your own words, and it is the
@@ -930,7 +984,7 @@ reason the detail can stay out of the messages they read while they are still de
 
 **Name it `build-record-YYYY-MM-DD-HHMM.md`**, using the date and time the build started, so a
 second build in the same folder never overwrites the first. Write it in the folder that holds the
-artifact — beside the `.accdb`, not in the library. **On the design route there is no `.accdb` to
+artifact — beside the `.accdb`, not in the library. **On the handover route there is no `.accdb` of yours to
 sit beside:** ask the developer, as a question, where their copy goes. Where a build touches two files, such as a front end and a back end,
 one record covers both.
 
@@ -1001,11 +1055,9 @@ is a new part of the record** — nothing here needs a seventh.
 ### The runbook — the two builds that leave the developer something to run
 
 **When it applies:** any build that leaves a procedure for the developer to run — which the staged
-`vba-scaffold` sequences do by design — and any code handed over headed `UNVERIFIED` because the
-developer asked for it. Where you built everything directly and nothing is left to run, there is
-nothing to write. **It is not the packaging for a run with no Access MCP server connected.** That
-run ends at the approved design and generates no code at all, so there is nothing to write a runbook
-about.
+`vba-scaffold` sequences do by design. Where you built everything directly and nothing is left to
+run, there is nothing to write. **It is not the packaging for proposed code.** That is the handover
+route, which has its own method (`handover-code`) and ships the template's checks as a list.
 
 **A build the developer has to run any part of leaves a runbook**: one file, beside the code, saying
 what to run and in what order. It is not optional, and it is not the build record. The build record

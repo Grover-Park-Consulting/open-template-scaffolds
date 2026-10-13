@@ -121,7 +121,7 @@ class TestGetTemplate(unittest.TestCase):
                     self.assertIn("Do this step's work now", answer["rule"])
         for path, front, body in iter_templates():
             if front.get("template"):
-                parts = get_template(front["template"], route="design")["parts"]
+                parts = get_template(front["template"], route="handover")["parts"]
                 self.assertEqual(parts[1]["part"], "standards-gate", front["template"])
         gate = get_part("time-off-ledger-outcome-first", "standards-gate", route="build")
         self.assertIn("The Standards Gate", gate["gate"])
@@ -151,23 +151,41 @@ class TestGetTemplate(unittest.TestCase):
                 self.assertNotIn("platform_facts_missing", p, t["template"])
                 self.assertNotIn("standards_missing", p, t["template"])
 
-    def test_design_route_stops_before_the_build(self):
-        parts = walk("error-logging-schema", route="design")
+    def test_handover_route_lists_the_design_phase_then_offers_the_code(self):
+        parts = walk("error-logging-schema", route="handover")
         ids = [p["part"] for p in parts]
         self.assertNotIn("build-method", ids)
+        self.assertNotIn("handover-method", ids)
         self.assertIn("after_design", parts[-1])
         facts = {f["id"] for p in parts for f in p.get("platform_facts", [])}
         self.assertIn("target-file", facts)
         self.assertNotIn("dao-table-build", facts)
-        code = get_part("error-logging-schema", "build-method", route="design")
-        self.assertIsNotNone(code["next"], "asking for the code chains on through the build")
+        code = get_part("error-logging-schema", "handover-method", route="handover")
+        self.assertIsNotNone(code["next"], "choosing Proposed code chains on through the code parts")
+        self.assertIn("handover-code", [m["id"] for m in code["method"]])
+        chain = []
+        answer = code
+        while answer.get("next"):
+            self.assertEqual(answer["next"]["route"], "handover")
+            chain.append(answer["next"]["part"])
+            answer = get_part("error-logging-schema", answer["next"]["part"], route="handover")
+        self.assertNotIn("build-method", chain)
+        self.assertTrue(any(c.startswith(("build-standards", "build-facts", "step-")) for c in chain))
+
+    def test_build_route_never_chains_through_the_handover_method(self):
+        ids = [p["part"] for p in walk("error-logging-schema", route="build")]
+        self.assertIn("build-method", ids)
+        self.assertNotIn("handover-method", ids)
 
     def test_method_arrives_where_it_is_used(self):
         ids = lambda r: [m["id"] for m in r["method"]]
-        design = get_template("time-off-ledger-outcome-first", route="design")
-        self.assertIn("design-only-handover", ids(design))
+        design = get_template("time-off-ledger-outcome-first", route="handover")
+        self.assertIn("run-ending", ids(design))
         self.assertNotIn("access-gate", ids(design))
+        self.assertNotIn("handover-code", ids(design))
         self.assertIn("explore-options", ids(design))
+        self.assertIn("handover-code", ids(get_part("time-off-ledger-outcome-first",
+                                                    "handover-method", route="handover")))
         lean = get_template("time-off-ledger-outcome-first", route="build", have_method=True)
         self.assertNotIn("run-opening", ids(lean))
         self.assertIn("access-gate", ids(get_part("time-off-ledger-outcome-first", "build-method")))
@@ -178,11 +196,15 @@ class TestGetTemplate(unittest.TestCase):
             get_template("time-off-ledger-outcome-first", route="sideways")
 
     def test_every_route_gets_build_record_and_between_questions(self):
-        for r in ("design", "build"):
+        for r in ("handover", "build"):
             got = [m["id"] for m in get_method(r)["method"]]
             self.assertIn("build-record", got, r)
             self.assertIn("between-questions", got, r)
-        self.assertNotIn("quiet-build", [m["id"] for m in get_method("design")["method"]])
+            self.assertIn("run-ending", got, r)
+            self.assertIn("backup-question", got, r)
+        self.assertNotIn("quiet-build", [m["id"] for m in get_method("handover")["method"]])
+        with self.assertRaises(ValueError):
+            get_method("design")
 
     def test_get_method_build_stage_for_a_run_with_no_template(self):
         opening = [m["id"] for m in get_method("build")["method"]]
@@ -191,6 +213,9 @@ class TestGetTemplate(unittest.TestCase):
         result = get_method("build", stage="build")
         self.assertIn("access-gate", [m["id"] for m in result["method"]])
         self.assertNotIn("method_missing", result)
+        handover = get_method("handover", stage="handover")
+        self.assertEqual([m["id"] for m in handover["method"]], ["handover-code"])
+        self.assertNotIn("method_missing", handover)
         with self.assertRaises(ValueError):
             get_method(stage="later")
 
@@ -218,7 +243,7 @@ class TestSteps(unittest.TestCase):
 
     def test_every_part_of_a_divided_template_fits(self):
         for t in self.PILOTS:
-            for route in ("design", "build"):
+            for route in ("handover", "build"):
                 for p in walk(t, route=route):
                     self.assertLessEqual(library.serialized_size(p), library.RESPONSE_LIMIT,
                                          f"{t} {p['part']} ({route})")
@@ -232,7 +257,7 @@ class TestSteps(unittest.TestCase):
         self.assertNotIn("dao-table-build", parts[0]["front_matter"]["platform_facts"])
 
     def test_a_design_step_arrives_before_the_design(self):
-        design = [p["part"] for p in walk("time-off-ledger-outcome-first", route="design")]
+        design = [p["part"] for p in walk("time-off-ledger-outcome-first", route="handover")]
         self.assertIn("step-1", design)
         self.assertNotIn("step-2", design)
         build = [p["part"] for p in walk("time-off-ledger-outcome-first", route="build")]

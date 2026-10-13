@@ -72,7 +72,7 @@ cannot run (no PowerShell, no desktop), carry on without it and do not mention i
 developer asks to see that window again, run the same command:** it brings the waiting window forward
 and returns at once. **When the run ends, run it once more with `-Close`.**
 
-**Your next action is to load the method.** Call `get_method`: with route `design` where
+**Your next action is to load the method.** Call `get_method`: with route `handover` where
 no Access MCP server is connected, and with no route where one is, because the developer has not yet
 chosen. It returns how the run is conducted, beginning with `run-opening`: what you tell the developer
 before the first question. Once a template is chosen and the route is settled, call `get_template` with that
@@ -83,12 +83,13 @@ even if you already know how. Follow all of it from then on. **The method and th
 facts delivered with a template bind the run as fully as anything in this file.** `templates/_method.md`
 is where the method lives; read it there only to maintain it.
 
-**Two routes, and they are equal.** A run ends at an approved design (the design route) or at a built
-and checked artifact (the build route). A design under the standards layer, approved by the developer,
-is a complete outcome. With no Access MCP server connected, the run is on the design route. With one
-connected, the route is the developer's choice: a design they asked for is the design route, not a
-build cut short. On the build route they still choose whether you build or they take the files
-(method `build-route`).
+**Two routes, and both end in code.** The design is the process; the design spec is the work product
+the developer approves. The build route ends in code that was created and run in a copy of their
+database, then checked. The handover route ends in proposed code: code that has not been tested or
+run in a live database. The developer may also stop at the design spec alone, which is a complete
+outcome. With no Access MCP server connected, the run is on the handover route. With one connected,
+the developer chooses the ending when the design spec is approved: `Build it`, `Proposed code` or
+`Design spec only` (method `run-ending`).
 
 **An Access MCP server is judged by what it can do, never by its name:** open a database, import a
 code module, run a procedure by name, report back the error number and description when one fails,

@@ -559,10 +559,9 @@ framework helpers (and any paired `vba-scaffold`). The markdown is the source of
 
 The same design also expresses as **importable Access form text** (`SaveAsText`/`LoadFromText`), and
 the markdown → Access-text mapping is proven by hand before a generator is built. **That text is not
-a second build route.** Where no Access MCP server is connected the run ends at the approved design;
-importable text is not generated for the developer to import as though it were a finished form,
-because nothing will have opened it to confirm it loads. If they ask for it knowing that, it goes to
-them headed `UNVERIFIED`. See `_materialization.md` for the full mapping rules and a hand-validated
+a second build route.** Where no Access MCP server is connected the run is on the handover route;
+importable text is not handed over as though it were a finished form, because nothing will have
+opened it to confirm it loads. It goes to the developer headed `PROPOSED CODE`. See `_materialization.md` for the full mapping rules and a hand-validated
 fragment.
 
 ### 9.5 `validate` rules for `form-spec`
@@ -858,7 +857,8 @@ leaving headroom for clients not measured), and each at the point in the run whe
 3. `design-standards`: the standards the design follows.
 4. `design-facts`: the platform facts the design depends on.
 5. Any step marked `route: both` (below).
-6. `build-method`: how a build is conducted. The design route stops before this part.
+6. `build-method` (Build it) or `handover-method` (Proposed code): how the chosen ending is
+   conducted. The master lists the handover route only as far as the design phase.
 7. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
    `startup-conventions`).
 8. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.

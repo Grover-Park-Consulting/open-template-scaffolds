@@ -55,10 +55,9 @@ It is meta, not a template
 **A requirement before any of this runs: an Access MCP server has to be connected.** Everything in
 this file describes a build carried out through one — opening the database, creating the objects, and
 running what was created so that anything wrong with it is found here rather than by the developer.
-On the design route, whether none is connected or the developer asked for a design only, there is
-no build: the run ends at the approved design, and no executable artifact is generated. The method
-`build-route` is authoritative on that split,
-and on the one exception, which is a developer who asks for the code knowing nothing has run it.
+On the handover route, whether none is connected or the developer asked for a design spec only, there
+is no build. The run ends at the design spec, or at proposed code that nothing has run. The method
+`run-ending` is authoritative on that split.
 
 **And a second requirement: the database has to sit in a folder Access trusts.** Outside
 one, Access silently disables VBA — nothing is created, and the failure reports that a procedure
@@ -817,11 +816,10 @@ answer is `Build it`. **A connected Access MCP server is not authorization to us
 not an answer, the developer's is. **The template library MCP server that ships in `mcp-server/` is
 not an Access MCP server** — it reads this library's files and cannot build anything.
 
-**Where none is connected, do not build, and ask nothing about building.** End the run at the approved
-design, tell the developer so before the first question, and **generate no executable artifact**: no VBA `Sub`, no DDL, no importable form text. Everything below this line describes how a
-build is carried out through an Access MCP server. It is not a packaging guide for code handed to a
-developer to run, because that is not something this library produces on its own initiative. If the
-developer asks for the code knowing nothing has executed it, it goes to them headed `UNVERIFIED`.
+**Where none is connected, do not build, and ask nothing about building.** The run is on the handover
+route: tell the developer so before the first question, and follow the method `run-ending` and
+`handover-code`. Everything below this line describes how a build is carried out through an Access
+MCP server. Code handed to a developer is proposed code, headed `PROPOSED CODE`.
 
 *This passage avoids the word "default" on purpose. It means both the route we would point at first
 and what happens when nobody chooses, and only the first is true here (`_template-schema.md` §10.7).*
@@ -1119,7 +1117,7 @@ acMacro` and produces a working `AutoExec` — verified 2026-08-13 by building i
 and opening the file. The eight-line classic text **without** the `_AXL:` block round-trips through an
 Access MCP server's code-setting tool (proven with object type `macro`) and **fails** through
 `LoadFromText`. In any file the developer imports themselves — a staged scaffold's own files, or code
-handed over `UNVERIFIED` at their request — the `_AXL:` block is required.
+handed over as `PROPOSED CODE` — the `_AXL:` block is required.
 
 **The `AllowBypassKey` gotcha.** Closing Access's own Shift-key bypass — so holding Shift while
 opening a file no longer skips `AutoExec` and the startup settings — means setting the database
@@ -1310,10 +1308,10 @@ default-layout rule and wiring the same code-behind. The `form-spec` markdown re
 truth.
 
 **This is the path, not an alternative to one.** The importable text above is what a `form-spec`
-design consists of, and where no Access MCP server is connected it is as far as a run goes: the
-developer has the specification and builds from it. Importable text is never generated *for* the
-developer to import as though it were a finished form, because nothing will have opened it to check
-that it loads. If they ask for it anyway, it goes to them headed `UNVERIFIED`.
+design consists of. Where no Access MCP server is connected, the developer chooses at the end of the
+run between the specification alone and proposed code. Importable text is never handed over as
+though it were a finished form, because nothing will have opened it to check that it loads: it goes
+to them headed `PROPOSED CODE`.
 
 **Create the label controls explicitly.** A control-creation tool makes only the control you name — it does
 **not** auto-create an attached label — so each data control needs a second call for
