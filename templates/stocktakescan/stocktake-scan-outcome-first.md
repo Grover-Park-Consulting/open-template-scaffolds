@@ -3,8 +3,8 @@ template: stocktake-scan-outcome-first
 title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
-version: 0.6.5
-status: stable
+version: 0.7.0
+status: review
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
@@ -13,7 +13,8 @@ requires_fields:
 new_fields:
   - Products.SKUBarCode
   - Products.QuantityInPackage
-platform_facts: [target-file, dao-table-build, sql-server-ddl, sql-insert-truncation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release, domain-function-transaction, row-lock-errors, table-in-use]
+platform_facts: [target-file, sql-insert-truncation, domain-function-transaction, row-lock-errors]
+steps: [01-checks, 02-tables, 03-code, 04-run-the-checks]
 standards_layer:
   - error-handling
   - query-style
@@ -155,106 +156,6 @@ time, without stepping on each other's work.** A stocktake with several counters
 at once is the ordinary case this exists for, not an edge case it merely tolerates. Two counters
 scanning the same product for the first time in a session, in the same instant, both succeed — their
 scans land against the one count line for that product, never two.
-
-### How you validate the template's output
-
-**Before you trust this build: confirm every one of these ran, not just the ones the AI mentions
-running.** See `README.md`, "Check that every validation check ran."
-
-Perform each of these checks against a copy of your database with the tables already built.
-**Validate by asking: does this happen or not?**
-
-1. **A barcode that matches a product resolves to that product.**
-   - Scan a barcode you know belongs to a product in your catalog
-   - Confirm a count line exists for that product in the session, showing that scan's quantity
-2. **A barcode that matches nothing is held for review, not lost.**
-   - Scan a code that matches no product
-   - Confirm it appears in the scan record, marked as unmatched
-   - Confirm no product's counted quantity changed because of it
-3. **Scanning the same item twice, moments apart, counts once.**
-   - Scan a product's barcode
-   - Scan the same barcode again immediately, for the same quantity
-   - Confirm both scans appear in the scan record
-   - Confirm the product's counted quantity reflects only the first
-4. **Two separate scans, spaced apart, both count.**
-   - Scan a product's barcode
-   - Wait past the duplicate-detection window you supplied
-   - Scan the same barcode again, for the same quantity
-   - Confirm the product's counted quantity now reflects both
-5. **A package barcode adds the package quantity.**
-   - Scan a product's package barcode, where one exists
-   - Confirm the counted quantity increased by that product's package quantity, not by one
-6. **A shortfall beyond the allowed tolerance is flagged.**
-   - Count a product to fewer than expected, by more than its allowable shortage rate
-   - Confirm that product's count line is flagged for review
-7. **A shortfall within the allowed tolerance is not flagged.**
-   - Count a product to fewer than expected, by less than its allowable shortage rate
-   - Confirm that product's count line is not flagged
-8. **An overage beyond the allowed tolerance is flagged.**
-   - Count a product to more than expected, by more than its allowable overage rate
-   - Confirm that product's count line is flagged for review
-9. **An overage within the allowed tolerance is not flagged.**
-   - Count a product to more than expected, by less than its allowable overage rate
-   - Confirm that product's count line is not flagged
-10. **The flag does not say which direction, but the variance does.**
-    - Flag one count line by shortfall (check 6) and a different one by overage (check 8)
-    - Confirm both count lines show the same flag, with nothing on either one distinguishing them
-    - Confirm the counted and expected quantities on each still tell you which is which
-11. **A count found where none was expected is always flagged.**
-    - Find a count line whose `ExpectedQuantity` is zero, or set one up on a product with no
-      system on-hand quantity at the moment a session opens
-    - Count any nonzero quantity for it
-    - Confirm that count line is flagged for review, however small the count
-12. **Two counters, one product, the same moment, do not collide.**
-    - **Pick the product deliberately: it must have no count line yet.** Opening a session
-      pre-creates a count line for every product the baseline covers (Business Rule 5), so an
-      ordinary in-scope product already has its line before either counter scans it — there is no
-      race left to collide on, and the check passes trivially even on a build with no race recovery
-      at all. Use a product added to the catalog after the session opened, which the baseline never
-      saw and which genuinely has no line until the first scan creates one.
-    - With that product, this needs two people, or two sessions open at once, counting it for the
-      first time in the same stocktake within a second or two of each other
-    - Confirm both scans succeed
-    - Confirm they land against one count line for that product, not two
-    - This is the check named in the warning about concurrent counters — it is worth trying
-      deliberately, not just trusting the design
-    - **Where the tool building this cannot produce two literally simultaneous processes against
-      the file** — a single-threaded automation tool, or a machine that opens Access exclusively so
-      a second process cannot reach it while a call is in flight — that is not evidence this check
-      cannot run. Open a second, independent connection to the same file (a second DAO or ADODB
-      connection, not the one the build already holds), and use it to insert the competing row
-      between the first connection's own check and its own insert. That forces the engine to raise
-      the real collision error rather than asking you to infer one from documentation, and lets you
-      confirm the recovery path returns the other connection's row, not a duplicate. See
-      `_template-schema.md` §12.2 for the rule this follows
-13. **A product nobody scans is still counted, and shows up as missing.**
-    - Open a stocktake and count your way through some but not all of the products, exactly as a
-      real one would go
-    - Pick a product you know the system expected stock of and that nobody scanned
-    - Confirm it has a count line in that session anyway, counted zero against what was expected
-    - Confirm that line is flagged for review
-    - Confirm its count method reads as not-yet-counted, not as Manual or Scan — neither has
-      happened for this product
-    - **This check is the one that fails when the baseline was never taken, and it is also the one
-      that fails when the baseline was taken but never evaluated.** A build that creates a count line
-      only when a scan arrives passes checks 1 through 12 and fails this one, because the product it
-      is asking about is invisible to it. A build that creates the line up front but leaves it to be
-      flagged only when a scan for that product arrives also passes checks 1 through 12 — the line
-      exists — and still fails this one, because it stays unflagged for a product that never gets a
-      scan. Both are the same underlying gap: something about the never-scanned product never runs
-14. **A scan that fails partway through leaves nothing behind.**
-    - Force a scan to fail after it has started but before it would normally finish — set up a
-      condition that makes one of the scan's own writes fail, for example a session that is already
-      closed, or a count line's foreign key pointing at a session that no longer exists, so the
-      failure lands between the point the scan is accepted and the point every one of its writes
-      would ordinarily land
-    - Confirm no `StockTakeScan` row was left behind for that attempt
-    - Confirm the count line's `CountedQuantity` and `RemediationStatusID` are exactly what they were
-      before the attempt, not partially updated
-    - This is the check named in *the same behavior every time* as "a single scan's writes are
-      atomic" — a build with nothing tying a scan's writes together will pass every check above and
-      fail only this one, because a partial failure there leaves some of a scan's writes landing and
-      others not
 
 ### The same behavior every time, not the same structure
 
@@ -399,7 +300,7 @@ they do, which is the point of keeping the two apart.
 
 **Two sections are the specification, and only those two: *What you end up with* and *The same
 behavior every time, not the same structure*, both under that heading above.** Build a system that
-satisfies every promise there and passes every entry under *How you validate the template's output*.
+satisfies every promise there and passes every entry under *How you validate the template's output* (step 1, fetched with `get_part`).
 Then run every one of those checks yourself, on a copy, and record what each one did — in
 `build-record-YYYY-MM-DD-HHMM.md`, written before you report the build finished, never afterward and never only
 when asked for it. The checks bind you twice: the build has to pass them, and you have to run them. How you build is yours to decide,
@@ -422,52 +323,13 @@ named above.
   same result, with `get_template` (and its steps with `get_part`, where it has them), never by reading its file, for one worked decomposition — nothing more.** It shows procedure names, a control
   flow, and where the domain logic slots in. None of that is binding here. Copying its shape wholesale
   is a legitimate build; so is a different one that still satisfies every check. That template runs
-  the check list below against its own builds and says so where it names this one: the checks belong
+  the check list in step 1 against its own builds and says so where it names this one: the checks belong
   to the result, not to either route.
 - **Before you draft the design, fetch `stocktake-schema`, the table template this realizes, with `get_template` (this run's route, `have_method=true`; its master is all you need), never by reading its file, for the tables, the
   Business Rules, and the seed values this build reads and writes** — in particular Business Rule 2
   (scan resolution and the duplicate check), Business Rule 3 (the rollup), and Business Rules 7 and 8
   (the variance tolerances, in both directions). This file restates their outcome; that file is where
   the field names and table shapes live.
-- **Write the variance check as a comparison of quantities, never as a fraction with
-  `ExpectedQuantity` in a denominator — anywhere, in code or in a saved query.** The natural way to
-  state a percentage tolerance is `(ExpectedQuantity − CountedQuantity) / ExpectedQuantity > rate`,
-  and it divides by zero the moment a count line's `ExpectedQuantity` is zero. Multiplying both
-  sides of that comparison by `ExpectedQuantity` — which does not change which side is larger for
-  any count line the fraction form could be evaluated on at all — gives
-  `ExpectedQuantity − CountedQuantity > rate × ExpectedQuantity`: the same comparison wherever
-  `ExpectedQuantity > 0`, with no division anywhere. Business Rule 8 states both directions in this
-  form; build to that form, not the fraction form, even though the fraction form is the more natural
-  way to *describe* a percentage tolerance in conversation. **This is not a guard clause to add on
-  top of the fraction form — it replaces it.** A build that computes the fraction and then checks
-  `ExpectedQuantity <> 0` before using it has reintroduced the division the rewritten form exists to
-  avoid; it will divide by zero the one time this matters, on the one input path the fraction form
-  cannot survive.
-- **What this produces at `ExpectedQuantity = 0` is a stated behaviour, not an inference you are
-  asked to draw.** Confirm it rather than deriving it: `CountedQuantity` cannot be negative, so the
-  shortfall comparison can never hold when `ExpectedQuantity = 0`, and the overage comparison reduces
-  to `CountedQuantity > 0`. **Any nonzero count against a zero expected quantity is flagged, every
-  time** — this is check 11 under *How you validate the template's output*, and the corresponding
-  line under *The same behavior every time, not the same structure*.
-- **A negative expected quantity is flagged every time, and that is also stated rather than
-  derived.** A host's on-hand calculation can return a negative number where recorded sales have run
-  ahead of recorded receipts, so a count line can open with a negative `ExpectedQuantity`. The
-  overage comparison then holds for any count at all, including zero, and the line is flagged. Leave
-  it that way: the system's own figure was impossible before anybody counted anything, which is worth
-  a human looking at. **Do not add a branch for it and do not guard the comparison with a test on
-  `ExpectedQuantity`** — that is the division coming back by another route.
-- **Apply every standard delivered with this template.** Error handling, query style, naming, and how the
-  work divides into procedures all come from there and never from this file.
-- **A single scan's writes need to be atomic (see the corresponding line under *The same behavior
-  every time* and check 14).** This template names no mechanism for it, for the same reason it names
-  no mechanism for anything else — see *Intent*. The direct way to get it in Access/DAO is the
-  transaction guard `error-handling.md` documents: begin on a `Workspace`, take the `Database` you
-  read and write through from that same `Workspace` (`ws.Databases(0)`), and
-  wrap one scan's writes and reads in it. **If you use a transaction, a read that needs to see this
-  scan's own work is a recordset on the same `Database` object, never a domain function** (fact
-  `domain-function-transaction`). **Nothing here asks you to hold a transaction open across more than one scan** — that is
-  the Batch / session transaction Extra Option, not the base build, and see that option's note before
-  taking it.
 - **Ask for the five things under *Information and conditions you need to supply*,** one at a time,
   through the interactive selection control where the answer is a choice and as a question phrased
   in plain language where it is a number or a name. Two of them are gates: a database in real use
