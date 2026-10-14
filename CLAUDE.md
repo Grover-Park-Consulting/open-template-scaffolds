@@ -52,6 +52,11 @@ Name who acts, what they do and when, and the shortcut that is forbidden. Judge 
 whether it had what it needed when it was done, not by whether it followed the schedule written to
 produce that.
 
+**Edit for the fewest words that carry the meaning and the force.** When you add or edit text in a
+template or standard, use the fewest words that keep its meaning and its imperative, and tighten the
+sentences around your change if it would otherwise lengthen them. This governs new and edited text
+only; text you are not editing stays as it is.
+
 ## Your role
 
 Design from a template plus the standards layer when one fits, and from scratch under the same

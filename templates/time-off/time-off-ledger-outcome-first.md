@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.4.2
+version: 0.4.3
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -267,9 +267,10 @@ database that behaves the same way. The following must be true of every build:
   and the build record names where it went.**
 - **The accrual lookup reads the schedule table**, never a figure typed into code.
 - **A refusal tells the person what to do next:** the hours available, the date already taken, the
-  entry already cancelled. It never reports only that something failed. Where a Data Macro refused
-  the entry, the sentence the person sees is the macro's own sentence, carried through whatever
-  code posted the entry, not a generic message in its place.
+  entry already cancelled, never only that something failed. A Data Macro's own refusal sentence
+  reaches the person unchanged through whatever code posted the entry, not a generic
+  message. **A refused cancel says "not cancelled" and a refused replace "not replaced", never "not
+  posted".**
 - **A failure nobody planned for is never mistaken for a refusal.** An unexpected error inside a
   function a Data Macro calls refuses the save. Access shows its own message for it, and it is not
   recorded unless the build makes it so; the build record says which. The posting procedures
