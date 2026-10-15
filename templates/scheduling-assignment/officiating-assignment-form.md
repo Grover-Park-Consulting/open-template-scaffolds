@@ -3,11 +3,12 @@ template: officiating-assignment-form
 title: Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
-version: 0.4.2
+version: 0.5.0
 status: review
 implements: officiating-assignment-schema
 record_source: qryGame_frm
-platform_facts: [form-live-build, form-mapping-rules, form-layout-fidelity, form-hand-validation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
+platform_facts: [form-mapping-rules, form-layout-fidelity]
+steps: [01-open-and-confirm-tables, 02-build-the-form]
 standards_layer: [form-conventions, naming-conventions, startup-conventions, error-handling]
 new_forms: [frmGame_Assignment, sfrmGame_Crew]
 warnings:
@@ -144,14 +145,6 @@ subform rows).
 - **Naming** (`naming-conventions.md`) — form / subform / record-source names.
 - **Error handling** — any code-behind follows the active `error-handling.md` (shared with the
   paired scaffold).
-
-## Materialization
-
-The form-spec materializes by building the form live through an Access MCP server's form-creation and
-control-creation tools, with a default stacked layout and the code-behind wired to the paired
-`vba-scaffold` procedures. Where no Access MCP server is connected the run ends at the approved
-design. The markdown is the source of truth; see `_materialization.md` for the mapping rules and for
-what is and is not handed over.
 
 ## Extra Options
 
