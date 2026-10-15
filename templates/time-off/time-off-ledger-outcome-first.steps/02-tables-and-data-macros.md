@@ -9,7 +9,9 @@ platform_facts: [open-existing-startup, dao-table-build, sql-server-ddl, data-ma
 ## Tables and Data Macros
 
 Open the database the developer supplied, as the facts below say. Build the tables `time-off-ledger-schema`
-defines, where they are not there already, and the Data Macros the routes the developer chose for
+defines, where they are not there already. Fetch the parts of that schema you need with `get_part`:
+its checks (step 1) and its tables (step 2). Its other parts repeat what you already hold: skip
+them. Then build the Data Macros the routes the developer chose for
 Business Rule 1 and the posting checks call for. Read any Data Macro a table already carries before
 writing to it, and merge.
 
