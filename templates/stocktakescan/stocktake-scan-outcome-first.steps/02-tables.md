@@ -8,7 +8,7 @@ platform_facts: [open-existing-startup, dao-table-build, sql-server-ddl, table-i
 
 ## Tables
 
-Open the copy the build goes into, as the facts below say. Build the tables `stocktake-schema`
+Open the database the developer supplied, as the facts below say. Build the tables `stocktake-schema`
 defines and the new `Products` fields the front matter names, where they are not there already.
 Change nothing before the developer has given permission.
 

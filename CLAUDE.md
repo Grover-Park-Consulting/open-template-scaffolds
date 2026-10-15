@@ -89,8 +89,8 @@ facts delivered with a template bind the run as fully as anything in this file.*
 is where the method lives; read it there only to maintain it.
 
 **Two routes, and both end in code.** The design is the process; the design spec is the work product
-the developer approves. The build route ends in code that was created and run in a copy of their
-database, then checked. The handover route ends in proposed code: code that has not been tested or
+the developer approves. The build route ends in code that was built in the database the developer
+supplied and checked in a throwaway copy of it. The handover route ends in proposed code: code that has not been tested or
 run in a live database. The developer may also stop at the design spec alone, which is a complete
 outcome. With no Access MCP server connected, the run is on the handover route. With one connected,
 the developer chooses the ending when the design spec is approved: `Build it`, `Proposed code` or

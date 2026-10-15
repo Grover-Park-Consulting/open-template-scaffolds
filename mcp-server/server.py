@@ -17,8 +17,8 @@ except ImportError:
     from mcp.server.fastmcp import FastMCP
 
 from library import (_METHOD_BUILD, _METHOD_EVERY_RUN, _METHOD_HANDOVER, GATE_PATH,
-                     ROUTES, _sha, compose, iter_standards, iter_templates, read_method,
-                     validate_library)
+                     ROUTES, SETTLED_NOTE, _sha, compose, iter_standards, iter_templates,
+                     read_method, settled_block, validate_library)
 
 _STANDARD_ORDER = ("Fetch this before you draft any part of the design. Do not draft from what you "
                    "already know of these rules: the developer's copy may differ from the library's.")
@@ -335,6 +335,7 @@ def get_standards(standard: str = "") -> dict:
         return {"gate": gate,
                 "gate_rule": ("Run this gate before you ask the developer anything else, from this "
                               "text, not from what you know of it or have read elsewhere."),
+                "settled": settled_block(), "settled_note": SETTLED_NOTE,
                 "served": {"part": "standards-gate", "sha": _sha(gate)},
                 "names": names, "count": len(names), "next": _next(-1)}
     lowered = [n.lower() for n in names]

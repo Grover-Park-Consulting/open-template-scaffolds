@@ -130,6 +130,26 @@ class TestGetTemplate(unittest.TestCase):
         self.assertIn("every action in step 2 is done", when3)
         self.assertIn("even if you already know how", when3)
 
+    def test_gate_part_returns_the_settled_block_or_null(self):
+        import tempfile
+        block = "## How the standards were settled\n\nSettled 2026-08-03.\n\n| a | b |\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            std = Path(tmp)
+            with patch.object(library, "STANDARDS_DIR", std):
+                self.assertIsNone(library.settled_block())
+                (std / "README.md").write_text("# Standards\n\ntext\n", encoding="utf-8")
+                self.assertIsNone(library.settled_block())
+                (std / "README.md").write_text(
+                    "# Standards\n\n" + block + "\n## Other\n\nmore\n", encoding="utf-8")
+                self.assertEqual(library.settled_block(), block.strip())
+                for answer in (get_part("stocktake-scan-outcome-first", "standards-gate"),
+                               get_standards()):
+                    self.assertEqual(answer["settled"], block.strip())
+                    self.assertIn("Do not read", answer["settled_note"])
+                (std / "README.md").unlink()
+                answer = get_part("stocktake-scan-outcome-first", "standards-gate")
+                self.assertIsNone(answer["settled"])
+
     def test_unknown_id_raises(self):
         with self.assertRaises(ValueError):
             get_template("no-such-template")

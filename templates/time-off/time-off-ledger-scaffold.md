@@ -3,7 +3,7 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.3.0
+version: 0.3.1
 status: draft
 implements: time-off-ledger-schema
 requires_tables:

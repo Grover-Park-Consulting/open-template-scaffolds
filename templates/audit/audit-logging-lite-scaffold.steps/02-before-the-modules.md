@@ -1,6 +1,6 @@
 ---
 step: 02-before-the-modules
-title: "Open the copy, ask the two questions the code depends on, and write the module declarations"
+title: "Open the database, ask the two questions the code depends on, and write the module declarations"
 platform_facts: [open-existing-startup, mcp-module-import, mcp-line-numbers, vbe-line-continuation, vba-import-xml-entities]
 ---
 

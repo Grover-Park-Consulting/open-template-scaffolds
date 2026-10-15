@@ -8,7 +8,7 @@ platform_facts: [open-existing-startup, dao-table-build, sql-server-ddl, data-ma
 
 ## Tables and Data Macros
 
-Open the copy the build goes into, as the facts below say. Build the tables `time-off-ledger-schema`
+Open the database the developer supplied, as the facts below say. Build the tables `time-off-ledger-schema`
 defines, where they are not there already, and the Data Macros the routes the developer chose for
 Business Rule 1 and the posting checks call for. Read any Data Macro a table already carries before
 writing to it, and merge.

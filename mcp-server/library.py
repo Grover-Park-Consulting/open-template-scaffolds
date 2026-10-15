@@ -191,6 +191,24 @@ REQUIRE_STEPS = False
 GATE_PATH = TEMPLATES_DIR / "_standards-gate.md"
 _GATE_ORDER = ("Fetch this before you ask the developer any question. Run the gate from this text, "
                "not from what you know of it or have read elsewhere.")
+SETTLED_HEADING = "## How the standards were settled"
+SETTLED_NOTE = ("`settled` is the developer's settled block from standards/README.md, or null when "
+                "there is none. Null: ask Step G1. A block: ask Step G1-again. Do not read "
+                "standards/README.md yourself.")
+
+
+def settled_block() -> str | None:
+    """The settled-standards block in standards/README.md, or None when there is none."""
+    path = STANDARDS_DIR / "README.md"
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8")
+    start = text.find(SETTLED_HEADING)
+    if start < 0:
+        return None
+    end = re.search(r"^## ", text[start + len(SETTLED_HEADING):], re.M)
+    block = text[start:] if end is None else text[start:start + len(SETTLED_HEADING) + end.start()]
+    return block.strip()
 
 _WHEN = {
     "master": "now",
@@ -457,6 +475,8 @@ def compose(template: str, part: str = "master", route: str = "",
     elif p.get("gate"):
         gate = GATE_PATH.read_text(encoding="utf-8")
         result["gate"] = gate
+        result["settled"] = settled_block()
+        result["settled_note"] = SETTLED_NOTE
         result["served"] = {"template": front.get("template"), "part": pid, "version": version,
                             "sha": _sha(gate)}
     elif "standards" in p:

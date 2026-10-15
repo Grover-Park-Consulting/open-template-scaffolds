@@ -3,7 +3,7 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.19.1
+version: 0.19.2
 status: stable
 implements: audit-logging-lite-schema
 requires_tables:

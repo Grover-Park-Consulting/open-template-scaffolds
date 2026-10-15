@@ -80,7 +80,7 @@ end, so they learn it before they answer anything rather than after.
 
 - **An Access MCP server is connected and the developer has not asked for a design spec only.** Say,
   in your own words, that the run can end three ways and that they choose when the design spec is
-  approved: a build, created and run in a copy of their database and checked before they see it;
+  approved: a build, made in the database they supplied and checked in a throwaway copy of it before they see it;
   proposed code, which you write for them to import and which has not been tested or run in a live
   database; or the design spec alone. The choice is a wizard step (method `run-ending`).
 - **No Access MCP server is connected.** The run is on the handover route. Say so now, in your own
@@ -129,7 +129,7 @@ run.
 >
 > | Option | Short description |
 > |---|---|
-> | `Build it` | I create it in a copy of your database and run it, so anything that fails gets fixed before you see it. |
+> | `Build it` | I build it into the database you supplied, then check it in a throwaway copy, so anything that fails gets fixed before you see it. |
 > | `Proposed code` | I write the code as files for you to import into your database. It has not been tested or run in a live database. |
 > | `Design spec only` | We stop here. You get the approved design spec and a build record, to review against what you already have or to plan from. No code is written. |
 >
@@ -151,7 +151,10 @@ run.
 - **`Build it`:** call `get_part` with part `build-method` and route `build`, and follow `next` through
   every part. The method for the build, the standards and the platform facts arrive there. Open,
   create or change no database before they have. On a run with no template, call `get_method` with
-  `stage="build"`.
+  `stage="build"`. Ask permission to change the database in a panel that names the supplied file by
+  its full path as the file that will be changed, and says the checks run afterward, in a throwaway
+  copy made once the build is finished, which is not part of the result. When the build ends, the first line of the hand-over names that one file and
+  lists every throwaway copy as safe to delete. Never leave the developer a choice between files.
 - **`Proposed code`:** call `get_part` with part `handover-method` and route `handover`, and follow
   `next` through every part. On a run with no template, call `get_method` with `stage="handover"`.
 - **`Design spec only`:** hand over the approved design spec and a build record of the decisions
@@ -916,8 +919,9 @@ silently, with no error returned to you, on a dialog, on a file another process 
 that runs at startup. Only the developer can clear it, and it stops the run until they do. Before
 any action that could hit one:
 
-1. Work only on a copy named for the run, never the developer's file. A hang or a forced close then
-   costs nothing.
+1. Run every check, probe and process you launch on a throwaway copy named for the run. The build
+   itself goes into the database the developer supplied, through the Access MCP server session, after
+   the backup answer and their permission. A hang or a forced close in the copy then costs nothing.
 2. One owner per file. An Access MCP server session holds its file exclusively, so close the session
    before starting any process on that file. Test that the file is free before you launch; never
    launch to find out.
@@ -1009,7 +1013,8 @@ its destination gains a second copy.
 Six parts, in this order:
 
 1. **What was built, and where.** Every object created, and which file it went into. The developer
-   should be able to open the database and find each one.
+   should be able to open the database and find each one. Name the one file that holds the result and
+   the throwaway copies that do not.
 2. **What was checked before building.** The state you found: what already existed, which references
    were present, whether the folder was trusted. This is the part that is worth nothing on the day
    and a great deal three months later, when something has changed and nobody remembers what it

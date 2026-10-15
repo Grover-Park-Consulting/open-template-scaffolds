@@ -36,7 +36,7 @@ You decide where this run ends: a finished build, proposed code, or the design s
 
 ## Card 1: text
 
-Every run starts with a design you approve. It can then end three ways. A finished build is created and checked in a copy of your Access database, which depends on your assistant being able, and permitted, to open and run things there. Proposed code is code your assistant writes as files for you to import; it has not been tested or run in a live database. The design spec alone is the approved design with no code. Your assistant tells you in its first message which of these are open to you.
+Every run starts with a design you approve. It can then end three ways. A finished build is built in the Access database you supply and checked in a throwaway copy of it, which depends on your assistant being able, and permitted, to open and run things there. Proposed code is code your assistant writes as files for you to import; it has not been tested or run in a live database. The design spec alone is the approved design with no code. Your assistant tells you in its first message which of these are open to you.
 
 ## Card 2: heading
 
@@ -60,7 +60,7 @@ Your open work is left alone
 
 ## Card 4: text
 
-If something is built, it is built and checked in a separate copy of your database, not in a file you have open. A window you already have open is never touched.
+If something is built, it is built in the file you supply and checked in a separate copy of it. A window you already have open is never touched.
 
 ## Card 5: heading
 

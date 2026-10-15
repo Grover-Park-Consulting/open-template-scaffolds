@@ -503,7 +503,8 @@ called for that the build could not deliver under what is left for the developer
 
 ## 8. Step G1-again — the gate on a later run
 
-Asked in place of Step G1 whenever `standards/README.md` carries a settled block.
+Asked in place of Step G1 whenever `standards/README.md` carries a settled block. The gate part
+returns it as `settled` (null when there is none); do not read the file.
 
 ```markdown
 **Ask:** On 3 August you settled how these rules work. Use that again?
