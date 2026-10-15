@@ -849,6 +849,12 @@ handed a pointer, not the knowledge, and may never read it. So the template libr
 delivers a template in **parts**, one per call, each under `RESPONSE_LIMIT` (45,000 characters,
 leaving headroom for clients not measured), and each at the point in the run where it is used.
 
+**Every template is divided.** Division is how a template is structured here, not a repair for a
+large one. A template is a master plus one step per unit of build work: checks, tables, code,
+running the checks. A template with one unit of work has one step, and a table-schema template
+divides like the others, without a code step. No size or type test decides whether to divide;
+`type: spec` is the one exemption.
+
 **The parts, in order:**
 
 1. `master`: the template file itself, from `get_template`.

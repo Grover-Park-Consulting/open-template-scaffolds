@@ -182,6 +182,12 @@ so an assistant doesn't mistake old grounds for new permission:
   (`build-method` or `handover-method`). `mcp-server/server.py` changed in docstrings, the route
   error and `get_method` only, no name lines.
 
+- **2026-10-15, approved by George: division is the method for every template.** One paragraph
+  ("Every template is divided.") added to `templates/_template-schema.md` §13, before the parts list.
+  Grounds: §13 describes division as a measure for large templates, which the rollout plan
+  (`.claude/drafts/rollout-plan-division-2026-10-15.md`) replaces with one rule for all. An addition,
+  not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 
