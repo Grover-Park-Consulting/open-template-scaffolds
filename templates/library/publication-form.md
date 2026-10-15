@@ -3,11 +3,12 @@ template: publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.4.3
+version: 0.5.0
 status: stable
 implements: catalog-schema
 record_source: qryPublication_frm
-platform_facts: [form-live-build, form-mapping-rules, form-layout-fidelity, form-hand-validation, open-existing-startup, mcp-module-import, mcp-run-procedure, mcp-line-numbers, mcp-file-release]
+platform_facts: [form-mapping-rules, form-layout-fidelity]
+steps: [01-open-and-confirm-tables, 02-build-the-form]
 standards_layer: [form-conventions, naming-conventions, query-style]
 new_forms: [frmPublication_Edit, sfrmPublication_Creator, sfrmPublication_Genre]
 warnings:
@@ -184,16 +185,6 @@ patterns; not baseline form features):*
 - **Forms framework** (host-supplied, named not redefined) — the `TempVars` wrappers and the audit /
   image / validation helpers. *(The record-finder engine — the pick-list build and the jump-to-record —
   is realized by the companion `record-finder-scaffold`.)*
-
-## Materialization
-
-The form-spec materializes by building the form live through an Access MCP server's form-creation and
-control-creation tools, with a default stacked layout and the code-behind wired in — event handlers
-calling the framework helpers (and any paired `vba-scaffold` procedures). The markdown → Access-text
-mapping is **defined and hand-validated** as part of this template type's proof; the actual generator
-is built in the template library MCP server phase (B3). Where no Access MCP server is connected the
-run ends at the approved design, and no importable form text is generated for the developer to import
-as though it were a finished form — see `_materialization.md`.
 
 ## Extra Options
 
