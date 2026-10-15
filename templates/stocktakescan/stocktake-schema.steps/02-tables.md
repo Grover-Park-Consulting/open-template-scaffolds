@@ -1,7 +1,7 @@
 ---
 step: 02-tables
 title: "Build the tables the design needs"
-platform_facts: [dao-table-build, sql-server-ddl, table-in-use, vba-import-xml-entities, data-macro-rules]
+platform_facts: [open-existing-startup, dao-table-build, sql-server-ddl, table-in-use, vba-import-xml-entities, data-macro-rules, mcp-file-release]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

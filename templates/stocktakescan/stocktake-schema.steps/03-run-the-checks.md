@@ -1,7 +1,7 @@
 ---
 step: 03-run-the-checks
 title: "Run every check and record each one"
-platform_facts: []
+platform_facts: [mcp-run-procedure, mcp-file-release]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

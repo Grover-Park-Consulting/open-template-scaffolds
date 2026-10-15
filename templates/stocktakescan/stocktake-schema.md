@@ -3,7 +3,7 @@ template: stocktake-schema
 title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.9.0
+version: 0.9.1
 status: review
 extends: Northwind (Access Developer Edition)
 requires_tables:
