@@ -188,6 +188,11 @@ so an assistant doesn't mistake old grounds for new permission:
   (`.claude/drafts/rollout-plan-division-2026-10-15.md`) replaces with one rule for all. An addition,
   not a rewording.
 
+- **2026-10-15, approved by George: `templates/errors/error-logging-scaffold.md` divided** into a master
+  and step files under the same rule. Text moved verbatim by line range; the only new text is the front
+  matter (`version`, `steps`, `platform_facts` split) and one-line leads on the steps. Grounds: every
+  template is divided. A restructuring, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 
