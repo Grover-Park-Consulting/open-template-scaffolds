@@ -4,7 +4,7 @@ title: Scanned Stocktake — outcome-first method
 domain: stocktakescan
 type: outcome-first
 version: 0.7.1
-status: review
+status: stable
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
