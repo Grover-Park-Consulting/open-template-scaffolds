@@ -371,6 +371,26 @@ def get_lessons(mechanisms: list[str]) -> dict:
 
 
 @mcp.tool()
+def set_lessons_store(path: str = "default") -> dict:
+    """Record the folder where the developer's lessons database lives.
+
+    Plain version: the lessons database holds the developer's approvals and their own
+    lessons, so it needs a folder that stays put. The first lessons answer says when none
+    has been chosen; ask the developer, then call this with their answer. An empty path or
+    "default" chooses the default folder; otherwise give a full folder path. The folder is
+    created if needed and checked for write access; a cloud-synced folder is accepted with a
+    warning. The database itself is built on the next lessons call. Returns
+    `{store, created, warnings, sync}`; `sync` is the status of that first build. Raises
+    ValueError when the folder cannot be used.
+    """
+    from lessons_sync import ensure_index, set_lessons_store as choose
+
+    result = choose(path)
+    result["sync"] = ensure_index()["status"]
+    return result
+
+
+@mcp.tool()
 def validate(template: str = "") -> dict:
     """Check whether a template is *built correctly* — structure only.
 

@@ -29,11 +29,67 @@ EXIT_LOCKED, EXIT_NO_ENGINE, EXIT_NO_POWERSHELL = 10, 20, 21
 TIMEOUT_SECONDS = 90
 
 
+def _app_folder() -> Path:
+    return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "OpenTemplateScaffolds"
+
+
+def settings_path() -> Path:
+    return _app_folder() / "settings.json"
+
+
 def default_store() -> Path:
+    """The folder offered to the developer as the default; never used until they choose it."""
+    return _app_folder() / "lessons"
+
+
+def chosen_store() -> Path | None:
+    """The folder the developer chose for the lessons database, or None if they have not chosen.
+
+    The OTS_LESSONS_STORE environment variable overrides the setting (used by the tests)."""
     env = os.environ.get("OTS_LESSONS_STORE")
     if env:
         return Path(env)
-    return Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "OpenTemplateScaffolds" / "lessons"
+    try:
+        value = json.loads(settings_path().read_text(encoding="utf-8")).get("lessons_store")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return Path(value) if value else None
+
+
+_SYNCED_FOLDERS = ("onedrive", "dropbox", "google drive", "icloud", "box sync")
+
+
+def set_lessons_store(path: str = "") -> dict:
+    """Record the folder for the lessons database, creating it if needed.
+
+    An empty path or "default" chooses the default folder. Raises ValueError when the folder
+    cannot be used. Returns {"store", "created", "warnings"}."""
+    wanted = default_store() if path.strip() in ("", "default") else Path(path.strip()).expanduser()
+    if not wanted.is_absolute():
+        raise ValueError(f"'{path}' is not a full folder path (for example C:\\Lessons).")
+    created = not wanted.exists()
+    try:
+        wanted.mkdir(parents=True, exist_ok=True)
+        probe = wanted / ".ots-write-test"
+        probe.write_text("x", encoding="utf-8")
+        probe.unlink()
+    except OSError as exc:
+        raise ValueError(f"The folder '{wanted}' cannot be created or written to: {exc}") from exc
+    warnings = []
+    if any(part.lower().startswith(_SYNCED_FOLDERS) for part in wanted.parts):
+        warnings.append("This folder looks like a cloud-synced folder. A database in a synced folder can be "
+                        "locked or duplicated by the sync client. Use a local folder, or a network share.")
+    target = settings_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(".tmp")
+    try:
+        current = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        current = {}
+    current["lessons_store"] = str(wanted)
+    tmp.write_text(json.dumps(current, indent=1), encoding="utf-8")
+    os.replace(tmp, target)
+    return {"store": str(wanted), "created": created, "warnings": warnings}
 
 
 def _read_mechanisms(lessons_dir: Path) -> list[dict]:
@@ -125,12 +181,16 @@ def _write_index(path: Path, index: dict) -> None:
 
 def ensure_index(lessons_dir: Path = DEFAULT_LESSONS, store_dir: Path | None = None) -> dict:
     """Return {"status", "message", "index"}. Status is one of
-    current, synced, kept-old (database in use), from-text (database unavailable), unavailable."""
-    store = store_dir or default_store()
+    current, synced, kept-old (database in use), from-text (database unavailable), not-chosen
+    (no folder chosen yet; the library's own lessons are used), unavailable."""
+    store = store_dir or chosen_store()
     try:
         mechanisms, lessons, text_hash = read_text_lessons(lessons_dir)
     except Exception as exc:  # the library's own text is unreadable
         return {"status": "unavailable", "message": f"Lessons unavailable: {exc}", "index": None}
+    if store is None:
+        return {"status": "not-chosen", "message": "The developer has not chosen where the lessons database lives.",
+                "index": _index(mechanisms, lessons, text_hash, "text", None)}
 
     db = store / "lessons.accdb"
     index_path = store / "lessons.index.json"
@@ -183,6 +243,9 @@ LESSONS_RULE = (
     "`environment` holds only where those facts hold: check them first, and state the lesson as a "
     "consideration if you cannot. A lesson never overrides the template or the standards; if it "
     "contradicts either, tell the developer. If `note` is not empty, give it to the developer in one line. "
+    "If `status` is `not-chosen`, ask the developer once, through the selection panel, where the lessons "
+    "database should live: `suggested_store`, a folder they name, or not now. Call `set_lessons_store` with "
+    "their answer and pass on any `warnings`; on not now, carry on. "
     "Write `record_line` in the build record, adding a clause for each lesson that changed what you "
     "built or asked. The lessons are a consultation, never a condition for building.")
 
@@ -235,5 +298,8 @@ def deliver(mechanisms: list[str], lessons_dir: Path = DEFAULT_LESSONS, store_di
                 "rule": LESSONS_RULE, "record_line": f"Lessons consulted: none ({reason})"}
     lessons, unknown, held = select(got["index"], mechanisms)
     ids = ", ".join(l["id"] for l in lessons)
-    return {"status": got["status"], "note": got["message"], "lessons": lessons, "mechanisms_unknown": unknown,
-            "held_back": held, "rule": LESSONS_RULE, "record_line": f"Lessons consulted: {len(lessons)} ({ids})"}
+    out = {"status": got["status"], "note": got["message"], "lessons": lessons, "mechanisms_unknown": unknown,
+           "held_back": held, "rule": LESSONS_RULE, "record_line": f"Lessons consulted: {len(lessons)} ({ids})"}
+    if got["status"] == "not-chosen":
+        out["suggested_store"] = str(default_store())
+    return out

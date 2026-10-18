@@ -1,10 +1,12 @@
 """Tests for lessons_sync that need no database: parsing, delivery, the text fallback, and the
 missing-PowerShell and missing-engine paths."""
+import os
 import shutil
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -105,6 +107,50 @@ class Delivery(unittest.TestCase):
         lessons, unknown, held = ls.select(index, [])
         self.assertEqual([l["id"] for l in lessons], ["b"])
         self.assertEqual(held, 1)
+
+
+class Location(unittest.TestCase):
+    """Choosing where the lessons database lives. The app folder is a temp folder in every test."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        env = {k: v for k, v in os.environ.items() if k != "OTS_LESSONS_STORE"}
+        self.patches = [mock.patch.dict(os.environ, env, clear=True),
+                        mock.patch.object(ls, "_app_folder", lambda: Path(self.tmp.name) / "app")]
+        for p in self.patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_nothing_is_chosen_until_the_developer_chooses(self):
+        self.assertIsNone(ls.chosen_store())
+        got = ls.deliver([])
+        self.assertEqual(got["status"], "not-chosen")
+        self.assertTrue(got["lessons"])  # the library's own lessons still arrive
+        self.assertEqual(got["suggested_store"], str(ls.default_store()))
+        self.assertIn("set_lessons_store", got["rule"])
+
+    def test_default_choice_creates_the_folder_and_is_remembered(self):
+        got = ls.set_lessons_store("default")
+        self.assertEqual(Path(got["store"]), ls.default_store())
+        self.assertTrue(got["created"])
+        self.assertEqual(ls.chosen_store(), ls.default_store())
+
+    def test_a_named_folder_is_used_and_a_relative_one_is_refused(self):
+        target = Path(self.tmp.name) / "my lessons"
+        ls.set_lessons_store(str(target))
+        self.assertEqual(ls.chosen_store(), target)
+        with self.assertRaises(ValueError):
+            ls.set_lessons_store("relative\\folder")
+
+    def test_a_synced_folder_is_accepted_with_a_warning(self):
+        got = ls.set_lessons_store(str(Path(self.tmp.name) / "OneDrive" / "lessons"))
+        self.assertTrue(got["warnings"])
+
+    def test_the_environment_variable_overrides_the_setting(self):
+        ls.set_lessons_store("default")
+        with mock.patch.dict(os.environ, {"OTS_LESSONS_STORE": str(Path(self.tmp.name) / "x")}):
+            self.assertEqual(ls.chosen_store(), Path(self.tmp.name) / "x")
 
 
 if __name__ == "__main__":
