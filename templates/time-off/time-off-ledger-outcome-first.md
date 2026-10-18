@@ -3,7 +3,7 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.4.5
+version: 0.4.6
 status: review
 implements: time-off-ledger-schema
 standards_layer:
@@ -33,19 +33,17 @@ related:
 
 **Status last determined:** 2026-10-05.
 
-**Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
-whose database this is. The section after that is addressed to the AI assistant building it, and
-says so where it starts.
+**Who reads this.** *Intent* down to *Standards Layer* is for the developer whose database this is;
+the last section is addressed to the AI assistant building it.
 
 ---
 
 ## Intent
 
 **To produce, in an Access database, the results described in *What you end up with* below.** That
-section is the specification. It says what the database does once this is built, in words the
-developer can check for themselves, and it is followed by the checks that confirm the result
-arrived and by the behaviours that must hold however the work was divided up. Those three sections
-together are the whole of what this template promises.
+section is the specification: what the database does once built, in words the developer can check.
+The checks confirm the result arrived; the behaviours must hold however the work was divided. Those
+three sections are the whole of what this template promises.
 
 **This template realizes ten Business Rules the table template states.**
 `time-off-ledger-schema` builds the five tables and states, in its own Business Rules, what has to
@@ -71,9 +69,9 @@ are reported in the code the build writes. Its preferred answer calls a shared e
 `error-logging-outcome-first` builds. If you want that answer and your database has no logger yet,
 build the logger first. Otherwise the standard's other answer, a message box, needs nothing.
 
-**Nothing else is here.** No module names and no code beyond what is needed to reason through the
-choices named below. The other version of this template, `time-off-ledger-scaffold`, produces the
-same result from procedure skeletons you fill in, and is checked against the checks below.
+**Nothing else is here:** no module names, and no code beyond what the choices below need.
+`time-off-ledger-scaffold` produces the same result from procedure skeletons, and is checked against
+the checks below.
 
 ---
 
@@ -117,8 +115,7 @@ period, and the gap is reported, as something a person notices. It is never post
 which would read as "this employee earns nothing" when the truth is "nobody has said what they
 earn."
 
-**No mechanism is named here.** This is ordinary lookup logic, finding the applicable row given a
-date, and nothing about the platform forces one way of writing it.
+**No mechanism is named here.** Nothing about the platform forces one way of writing this lookup.
 
 ### Business Rule 4: hours are earned once per period, and every period that is due gets posted
 
@@ -312,12 +309,10 @@ choose based on the rules built into it. The template's promise holds either way
 - How the code is laid out and commented, within whatever your standards already require.
 - The order in which you are asked for the things only you can supply.
 
-**If you want something not already in the template, you can have it.** Our promise is specified in
-*What you end up with*, together with *The same behavior every time, not the same structure*. The
-checks under *How you validate the template's output* are how you confirm you got it in any given
-build. Asking for something different is an extension of the basic build, and you are welcome to
-experiment. The result is then your responsibility, and the checks above may no longer describe
-what you have.
+**If you want something not in the template, you can have it.** The promise is *What you end up
+with* plus *The same behavior every time, not the same structure*; the checks under *How you
+validate the template's output* confirm it for a given build. Something different is an extension:
+the result is then your responsibility, and the checks may no longer describe it.
 
 ### What the template does not do
 
@@ -364,10 +359,9 @@ Eight things, and nothing here is guessed on your behalf:
      up, and the task itself is yours to create; the template builds what the task runs.
 8. **Permission to change your tables**, asked immediately before anything is built.
 
-**The accdb must be in a Trusted Location.** Code in an Access file outside one does not run at
-all, and Access does not always say so. The failure can show up as the database reporting it cannot
-find a procedure that is, in fact, right there. Trust is a setting on each machine, not a property
-of the file.
+**The accdb must be in a Trusted Location.** Code in a file outside one does not run, and Access
+does not always say so: the failure can appear as the database failing to find a procedure that is
+right there. Trust is a setting on each machine, not of the file.
 
 ---
 
@@ -389,8 +383,7 @@ of the file.
 - **`design-principles`**: how the work divides into procedures. *Free to choose alternatives*
   leaves that division open on purpose, and this layer is what it is open to.
 
-A shop adopting this library replaces `standards/` with its own. Nothing in this file changes when
-they do, which is the point of keeping the two apart.
+A shop that replaces `standards/` with its own changes nothing in this file.
 
 ---
 
