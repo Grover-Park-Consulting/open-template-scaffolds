@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import isolate_lessons  # noqa: F401  (keeps these tests off the developer's real lesson store)
 import library
 import server
 
@@ -95,6 +96,44 @@ def walk(template, route=""):
     while got[-1].get("next"):
         got.append(get_part(template, got[-1]["next"]["part"], route=route))
     return got
+
+
+class TestLessons(unittest.TestCase):
+    def test_every_template_lists_the_lessons_part_right_after_the_gate(self):
+        for path, front, body in iter_templates():
+            if front.get("template"):
+                parts = [p["part"] for p in get_template(front["template"], route="handover")["parts"]]
+                self.assertEqual(parts[:3], ["master", "standards-gate", "lessons"], front["template"])
+
+    def test_the_lessons_part_arrives_with_a_rule_and_a_record_line(self):
+        got = get_part("stocktake-schema", "lessons")
+        self.assertEqual(got["part"], "lessons")
+        self.assertTrue(got["lessons"])
+        self.assertIn("Read every lesson", got["rule"])
+        self.assertTrue(got["record_line"].startswith("Lessons consulted: "))
+        self.assertEqual(len(got["served"]["sha"]), 12)
+        self.assertTrue(got["next"]["when"].startswith("Fetch "))
+
+    def test_a_template_with_mechanisms_gets_those_lessons(self):
+        real_iter = library.iter_templates
+
+        def with_mechanisms():
+            for path, front, body in real_iter():
+                if front.get("template") == "stocktake-schema":
+                    front = {**front, "mechanisms": ["ace-sql"]}
+                yield path, front, body
+
+        before = {l["id"] for l in get_part("stocktake-schema", "lessons")["lessons"]}
+        with patch.object(library, "iter_templates", with_mechanisms):
+            after = {l["id"] for l in get_part("stocktake-schema", "lessons")["lessons"]}
+        self.assertNotIn("no-count-distinct", before)
+        self.assertIn("no-count-distinct", after)
+
+    def test_get_lessons_tool_answers_without_a_template(self):
+        got = unwrap(server.get_lessons)(["ace-sql", "not-a-mechanism"])
+        self.assertIn("no-count-distinct", {l["id"] for l in got["lessons"]})
+        self.assertEqual(got["mechanisms_unknown"], ["not-a-mechanism"])
+        self.assertIn("record_line", got)
 
 
 class TestGetTemplate(unittest.TestCase):

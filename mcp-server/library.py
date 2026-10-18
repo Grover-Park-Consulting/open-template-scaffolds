@@ -213,6 +213,7 @@ def settled_block() -> str | None:
 _WHEN = {
     "master": "now",
     "standards-gate": _GATE_ORDER,
+    "lessons": "Fetch this straight after the gate, before any design question.",
     "design-standards": ("Fetch this before you ask the standards gate's first question. Ask no "
                          "design question until it has arrived."),
     "design-facts": ("Fetch this before you draft any part of the design. Do not draft from what "
@@ -359,7 +360,9 @@ def plan(path: Path, front: dict, body: str) -> list[dict]:
 
     parts = [{"part": "master", "title": "The template", "route": ""},
              # The gate settles whose standards govern the run; every run asks it first.
-             {"part": "standards-gate", "title": "The standards gate", "route": "", "gate": True}]
+             {"part": "standards-gate", "title": "The standards gate", "route": "", "gate": True},
+             # What earlier builds learned about the mechanisms this template uses.
+             {"part": "lessons", "title": "Earlier builds' lessons", "route": ""}]
     std, _ = _standards([s for s in layer if s not in _BUILD_STANDARDS])
     for name, group in _split("design-standards", std):
         parts.append({"part": name, "title": "The standards the design follows", "route": "",
@@ -472,6 +475,11 @@ def compose(template: str, part: str = "master", route: str = "",
         _, facts_missing = _facts(front.get("platform_facts"))
         if facts_missing:
             result["platform_facts_missing"] = facts_missing
+    elif pid == "lessons":
+        from lessons_sync import deliver  # imported here: lessons_sync imports this module
+        result.update(deliver([str(m) for m in front.get("mechanisms") or []]))
+        result["served"] = {"template": front.get("template"), "part": pid, "version": version,
+                            "sha": _sha(*[l["id"] + l["lesson"] for l in result["lessons"]])}
     elif p.get("gate"):
         gate = GATE_PATH.read_text(encoding="utf-8")
         result["gate"] = gate

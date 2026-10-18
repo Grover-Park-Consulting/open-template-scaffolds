@@ -349,6 +349,28 @@ def get_standards(standard: str = "") -> dict:
 
 
 @mcp.tool()
+def get_lessons(mechanisms: list[str]) -> dict:
+    """Return what earlier builds learned about the given mechanisms, with no template.
+
+    Plain version: the library keeps short lessons about how Access and the build
+    process behave, tagged by mechanism (for example error-handling, schema-migration).
+    A run with a template receives its lessons as the template's `lessons` part. A run
+    with no template, such as a from-scratch design, calls this once before the first
+    design question, with the mechanism names it expects to use. Names are matched
+    to the library's mechanism table, by canonical name or alias, ignoring case.
+
+    Lessons for the mechanisms marked `always` are included whatever you pass. Read
+    `rule` and follow it, and write `record_line` in the build record. The answer is
+    `{status, note, lessons, mechanisms_unknown, held_back, rule, record_line}`: each
+    lesson has an `action` (apply, state or ask). If the lesson store cannot be read,
+    `lessons` is empty and `record_line` says why; that never stops a build. Read-only.
+    """
+    from lessons_sync import deliver
+
+    return deliver(mechanisms)
+
+
+@mcp.tool()
 def validate(template: str = "") -> dict:
     """Check whether a template is *built correctly* — structure only.
 
