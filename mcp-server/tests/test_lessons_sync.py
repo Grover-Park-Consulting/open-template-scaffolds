@@ -29,6 +29,32 @@ class ReadTextLessons(unittest.TestCase):
         self.assertEqual(len(text_hash), 64)
 
 
+class Lookups(unittest.TestCase):
+    def test_lookups_parse_with_stable_numbers(self):
+        tables = ls._read_lookups(ls.DEFAULT_LESSONS)
+        self.assertEqual(set(tables), {"tlkpLessonKind", "tlkpLessonConfidence", "tlkpLessonStatus",
+                                       "tlkpLessonOrigin", "tlkpLessonApproval", "tlkpLessonEventKind"})
+        self.assertEqual([r["id"] for r in tables["tlkpLessonApproval"]], [1, 2, 3])
+        self.assertEqual({r["value"] for r in tables["tlkpLessonApproval"]}, {"Approved", "Proposed", "Rejected"})
+
+    def test_every_lesson_names_values_the_lookups_hold(self):
+        tables = ls._read_lookups(ls.DEFAULT_LESSONS)
+        _, lessons, _ = ls.read_text_lessons(ls.DEFAULT_LESSONS)
+        kinds = {r["value"] for r in tables["tlkpLessonKind"]}
+        confidences = {r["value"] for r in tables["tlkpLessonConfidence"]}
+        statuses = {r["value"] for r in tables["tlkpLessonStatus"]}
+        for lesson in lessons:
+            self.assertIn(lesson["kind"], kinds, lesson["slug"])
+            self.assertIn(lesson["confidence"], confidences, lesson["slug"])
+            self.assertIn(lesson["status"], statuses, lesson["slug"])
+
+    def test_an_inactive_lesson_is_left_out_of_the_index(self):
+        _, lessons, h = ls.read_text_lessons(ls.DEFAULT_LESSONS)
+        lessons[0]["status"] = "inactive"
+        index = ls._index([], lessons, h, "text", None)
+        self.assertEqual(len(index["lessons"]), 22)
+
+
 class EnsureIndexWithoutDatabase(unittest.TestCase):
     def test_no_powershell_falls_back_to_text(self):
         with tempfile.TemporaryDirectory() as tmp:

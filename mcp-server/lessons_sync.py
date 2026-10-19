@@ -105,11 +105,29 @@ def _read_mechanisms(lessons_dir: Path) -> list[dict]:
     return rows
 
 
+def _read_lookups(lessons_dir: Path) -> dict[str, list[dict]]:
+    """Table name -> [{"id", "value"}], from the sections of `_lookups.md`."""
+    tables: dict[str, list[dict]] = {}
+    current = None
+    for line in (lessons_dir / "_lookups.md").read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            current = line[3:].strip()
+            tables[current] = []
+        elif current and line.startswith("|") and not line.startswith("|---"):
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) == 2 and cells[0].isdigit():
+                tables[current].append({"id": int(cells[0]), "value": cells[1]})
+    if not tables or not all(tables.values()):
+        raise ValueError("a lookup in _lookups.md has no rows")
+    return tables
+
+
 def read_text_lessons(lessons_dir: Path) -> tuple[list[dict], list[dict], str]:
     """Return (mechanisms, lessons, hash of every source file)."""
     digest = hashlib.sha256()
     mech_path = lessons_dir / "_mechanisms.md"
     digest.update(mech_path.read_bytes())
+    digest.update((lessons_dir / "_lookups.md").read_bytes())
     mechanisms = _read_mechanisms(lessons_dir)
     lessons = []
     for path in sorted(lessons_dir.glob("[!_]*.md")):
@@ -129,7 +147,7 @@ def _index(mechanisms: list[dict], lessons: list[dict], text_hash: str, source: 
     mech = {m["name"]: {"always": bool(m["always"]), "description": m.get("description") or "", "aliases": [a.strip() for a in (m.get("aliases") or "").split(",") if a.strip()]} for m in mechanisms}
     out = []
     for l in lessons:
-        if l.get("status") == "retired":
+        if l.get("status") == "inactive":
             continue
         out.append({
             "id": l["slug"], "mechanism": l["mechanism"], "kind": l["kind"], "confidence": l["confidence"],
@@ -208,7 +226,7 @@ def ensure_index(lessons_dir: Path = DEFAULT_LESSONS, store_dir: Path | None = N
         store.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory() as tmp:
             imp, exp = Path(tmp) / "import.json", Path(tmp) / "export.json"
-            imp.write_text(json.dumps({"mechanisms": mechanisms, "lessons": lessons}), encoding="utf-8")
+            imp.write_text(json.dumps({"lookups": _read_lookups(lessons_dir), "mechanisms": mechanisms, "lessons": lessons}), encoding="utf-8")
             code, msg = _run_sync(db, imp, exp)
             if code == 0:
                 data = json.loads(exp.read_text(encoding="utf-8"))
