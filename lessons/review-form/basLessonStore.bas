@@ -61,6 +61,13 @@ Const PROC_NAME As String = "ApplyAppSettings"
     SetStartupProperty "AppTitle", "Lessons Learned from Builds"
     SetStartupProperty "StartUpForm", "frmLesson_Review"
     SetStartupProperty "StartupShowDBWindow", False
+    SetStartupProperty "StartupShowStatusBar", True
+    SetStartupProperty "AllowShortcutMenus", True
+    SetStartupProperty "AllowFullMenus", True
+    SetStartupProperty "AllowBuiltInToolbars", True
+    SetStartupProperty "AllowToolbarChanges", True
+    SetStartupProperty "AllowSpecialKeys", True
+    SetStartupProperty "AllowDatasheetSchema", True
 
 Cleanup:
     Exit Sub

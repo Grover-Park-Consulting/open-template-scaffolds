@@ -88,9 +88,6 @@ function Initialize-Schema($db) {
         'ALTER TABLE tblLessonEvent ADD CONSTRAINT tlkpLessonOrigintblLessonEvent FOREIGN KEY (EventOriginID) REFERENCES tlkpLessonOrigin (LessonOriginID)'
     )
     foreach ($s in $ddl) { $db.Execute($s, $dbFailOnError) }
-    # The designer's default of 0 on these two number fields is part of the shipped design.
-    $db.TableDefs.Item('tblLesson').Fields.Item('LessonConfidenceID').DefaultValue = '0'
-    $db.TableDefs.Item('tblLessonEvent').Fields.Item('EventOriginID').DefaultValue = '0'
 }
 
 # The number of a lookup value. A value the lookups do not hold stops the sync.

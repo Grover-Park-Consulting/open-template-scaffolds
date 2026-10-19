@@ -23,7 +23,7 @@ Only an Access MCP server can finish the front end, as for any build.
 3. Run `EnsureStoreLinks`. Call it by its plain name: a call written `Module.Procedure` is not found. It checks that the nine links point beside the file.
 4. Run `EnsureTerms`. It creates the help table `tlkpLessonTerm` and fills it.
 5. Import the forms from their text files, in this order: `sfrmLesson_Event`, `frmLessonTerm_Help`, `frmLesson_Review`. A text file for a form is UTF-16, which is how it was exported.
-6. Run `ApplyAppSettings`. It sets the application title, makes `frmLesson_Review` the startup form and hides the navigation window.
+6. Run `ApplyAppSettings`. It sets the application title, makes `frmLesson_Review` the startup form, hides the navigation window, and writes the developer's seven startup switches (status bar, shortcut menus, full menus, built-in toolbars, toolbar changes, special keys, datasheet schema, all on) into the file instead of leaving Access to default them.
 7. Compile, then close the file and release it. Tell the developer it is ready to open.
 
 ## Check, on a copy
