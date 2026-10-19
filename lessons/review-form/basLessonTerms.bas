@@ -2,6 +2,9 @@ Option Compare Database
 Option Explicit
 
 Private Const MODULE_NAME As String = "basLessonTerms"
+' MODULE_NAME and PROC_NAME are not used by this plain message-box handler. They belong to the fuller
+' error-handling method in standards/error-handling.md (option 1) and are left in as a forward-looking
+' pre-set-up, so that adding a logger later does not mean editing every procedure.
 
 ' Opens the help popup for one term. Called from the small ? button beside each field.
 Public Function ShowTerm(ByVal strTerm As String) As Boolean
