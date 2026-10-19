@@ -136,6 +136,24 @@ DRY has a limit worth stating: do not force two things together just because the
 Merge them when they are the same fact expressed twice, not when they are two facts that happen to
 resemble each other for now.
 
+## Name the fixed numbers — Enums
+
+A number in code that stands for a row of a lookup table, or for any fixed state, is written as a
+named `Enum` member, never as the bare number (`If lngApprovalID = ApprovalStatus.intApproved`, not
+`= 1`). A reader cannot tell what a bare `1` means, and a search for the meaning finds nothing.
+
+- **One Enum per lookup, named for the lookup.** Two lookups whose rows happen to share numbers keep
+  two Enums (`LessonOrigin`, `EventOrigin`). Combining them hides that they are different lists, and
+  adding a row to one lookup would then change the other's Enum.
+- **Declare it `Private`, in the module that uses it.**
+- **The member's number is the lookup row's key.** The Enum is a copy of the lookup's keys, so when a
+  row is added to the lookup, add the member in the same change.
+- **A member that is not a lookup row says what it is, in a comment.** A filter list that offers
+  "All" as a made-up first entry (`intAll = 0`) is the usual case: comment that the number is not
+  a row.
+- **Name:** the type in PascalCase for what it lists; each member `int` plus the row's value in
+  PascalCase (`intApproved`).
+
 ## Strong Contracts — say exactly what a procedure takes and returns
 
 A procedure's signature is a promise. State it fully. Declare the type of every parameter, mark each

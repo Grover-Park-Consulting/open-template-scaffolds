@@ -227,23 +227,3 @@ Composite indexes are named by leading column only.
 1. **Identity PK** (`[Entity]ID`) — always first.
 2. **Business/data columns** — identifying before qualifying (`ProjectName` before `ProjectDescription`).
 3. **Audit columns** — always last (see `audit-columns.md`).
-
----
-
-## 7. Enums for fixed numbers in VBA
-
-A number in VBA code that stands for a row of a lookup table, or for any fixed state, is written as a
-named `Enum` member, never as the bare number (`If lngApprovalID = ApprovalStatus.intApproved`, not
-`= 1`).
-
-- **One Enum per lookup, named for the lookup.** Two lookups whose rows happen to share numbers keep
-  two Enums (`LessonOrigin`, `EventOrigin`). Combining them hides that they are different lists, and
-  adding a row to one lookup would then change the other's Enum.
-- **Declare it `Private`, in the module that uses it.**
-- **The member's number is the lookup row's key.** The Enum is a copy of the lookup's keys, so when a
-  row is added to the lookup, add the member in the same change.
-- **A member that is not a lookup row says what it is, in a comment.** A filter list that offers
-  "All" as a made-up first entry (`intAll = 0`) is the usual case: comment that the number is
-  not a row.
-- **Name:** the type in PascalCase for what it lists; each member `int` plus the row's value in
-  PascalCase (`intApproved`).

@@ -194,7 +194,7 @@ so an assistant doesn't mistake old grounds for new permission:
   template is divided. A restructuring, not a rewording.
 
 - 2026-10-19 (×1 session, six files): George approved, item by item, additions drawn from his rebuilt
-  lessons database. `standards/naming-conventions.md`: new §7, Enums for fixed numbers.
+  lessons database. `standards/design-principles.md`: new section, *Name the fixed numbers* (Enums).
   `standards/form-conventions.md`: combo and list boxes take a named query as row source; new
   patterns All or One selector, Field help (optional), Locking by record state (optional).
   `standards/startup-conventions.md`: a subsection, the build writes the startup settings itself.

@@ -131,7 +131,7 @@ Documented here so a `form-spec`'s deferral is concrete, not hand-waved. Two tie
   row. The combo's bound column is hidden, its default value is 0, and picking 0 means no selection:
   whatever the combo drives (a record selection, or a filter on the form) is cleared; any other
   pick applies it. The query's sort order is not part of the pattern; it follows the context. In VBA,
-  the 0 is a commented Enum member (`naming-conventions.md` §7).
+  the 0 is a commented Enum member (`design-principles.md`, *Name the fixed numbers*).
 
   **When the pick is applied as the form's own filter, Access saves that filter with the form** and
   re-applies it at the next open, while the combo shows its default. `Form_Open` therefore turns the
@@ -164,4 +164,4 @@ Documented here so a `form-spec`'s deferral is concrete, not hand-waved. Two tie
   its text re-supplied by the library on every update, so `Form_Current` locks every text field of a
   lesson whose origin is Library and leaves its approval editable; a lesson the person added is fully
   editable. The test is a single comparison against the record's own key (an Enum member, per
-  `naming-conventions.md` §7), and the same line unlocks the fields again on the next record.
+  `design-principles.md`, *Name the fixed numbers*), and the same line unlocks the fields again on the next record.
