@@ -123,14 +123,19 @@ nothing to notice and ask about.
 
 ```vba
 errHandler:
-240       MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
-250       Resume Cleanup
-260       Resume
+    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    Resume Cleanup
+    Resume
 ```
 
 Tells the person something went wrong and **records nothing** — once they close the box there is no
 trace it happened. Reasonable for a one-off utility or a demonstration, where a log file would be
 clutter. Not reasonable for anything someone else will rely on.
+
+This handler never reads `Erl`, so its procedures carry **no line numbers**. If a procedure
+declares `MODULE_NAME` and `PROC_NAME` (option 1) but this handler never uses them, leave them in
+and comment them: they are part of the fuller method above, kept as a forward-looking pre-set-up so
+that adding a logger later does not mean editing every procedure.
 
 ### Substituting your own logger, and when it is really a handler
 
@@ -245,8 +250,9 @@ End Sub
 
 ## Line numbering
 
-- Add line numbers **only** in procedures that have an `errHandler:` block (so `Erl` returns a
-  useful value). Procedures with no `errHandler` have **no** line numbers.
+- Add line numbers **only** in procedures that have an `errHandler:` block that reads `Erl` (so `Erl`
+  returns a useful value). Procedures with no `errHandler`, or an option 2 handler, have **no** line
+  numbers.
 - Increment by 10 from 100; restart at a round number for `Cleanup:` and `errHandler:`.
 - **Renumber a procedure you edit, or strip its numbers entirely.** Numbers that no longer match the
   lines are worse than none — `Erl` reports a line where nothing failed.

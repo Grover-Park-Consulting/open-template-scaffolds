@@ -64,6 +64,20 @@ introduced.
 The idempotence principle generalizes beyond folders: anything `Startup()` does should be safe to run
 on every open, because it runs on every open.
 
+### The build writes the startup settings itself
+
+A database's startup settings are stored in the file, and for most of them Access does not store a
+setting until one is saved: an unset setting runs at Access's default, and different Access
+installations can default differently. The build therefore **writes each setting it relies on
+explicitly**, rather than leaving it unset: the application title, the startup form, whether the
+navigation window shows, and the switches that allow or hide the status bar, shortcut menus, full
+menus, built-in toolbars, toolbar changes, special keys and datasheet schema changes. Write each one
+whether or not its value matches Access's default.
+
+A setting that has never been stored does not exist as a property yet. Setting it raises error 3270
+(property not found); catch that one error, create the property with the right type (text for the
+title and startup form, Yes/No for a switch), and append it. The routine is safe to run again.
+
 ## 3. Why this is a standard, not just a build detail
 
 An application that stores a **reference to an external file asset** (a photo folder, an attachments

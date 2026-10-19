@@ -193,6 +193,15 @@ so an assistant doesn't mistake old grounds for new permission:
   matter (`version`, `steps`, `platform_facts` split) and one-line leads on the steps. Grounds: every
   template is divided. A restructuring, not a rewording.
 
+- 2026-10-19 (×1 session, six files): George approved, item by item, additions drawn from his rebuilt
+  lessons database. `standards/naming-conventions.md`: new §7, Enums for fixed numbers.
+  `standards/form-conventions.md`: combo and list boxes take a named query as row source; new
+  patterns All or One selector, Field help (optional), Locking by record state (optional).
+  `standards/startup-conventions.md`: a subsection, the build writes the startup settings itself.
+  `standards/error-handling.md`: Option 2's example loses its line numbers (the handler never reads
+  `Erl`) with a note on the unused name constants, and the first line-numbering bullet follows. The
+  Option 2 example is a correction, since its numbers did nothing; the rest are additions.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

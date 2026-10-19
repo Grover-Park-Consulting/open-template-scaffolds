@@ -57,11 +57,15 @@ From here on, this file contains instructions for the AI.
 |---|---|
 | Text | Textbox |
 | Memo | Multi-line Textbox (grows) |
-| Foreign key / lookup | Combo box (row source = the lookup; bound column hidden) |
+| Foreign key / lookup | Combo box (row source = a named query over the lookup; bound column hidden) |
 | Boolean | Check box |
 | Date/Time | Textbox + date picker |
 | Number / Currency | Textbox |
 | Many-to-many relationship | Continuous Subform |
+
+**A combo box or list box takes its row source from a named query** (`qry[Entity]_cbo` or
+`qry[Entity]_lst`, per `naming-conventions.md`) — never a table name and never SQL typed into the
+property. The query can then be opened, tested, and changed in one place.
 
 ---
 
@@ -114,6 +118,24 @@ Documented here so a `form-spec`'s deferral is concrete, not hand-waved. Two tie
   selector's `AfterUpdate` rewrites the form's record-source `WHERE` (via a SQL-`WHERE` rewriter such as
   `RefreshSQLWhere`). Supports **"All or One"** — an `<All>` entry leaves the form unfiltered.
   **→ tracked as a future `vba-scaffold` (the selector engine is reusable code).**
+- **All or One selector** — a combo box that lets the person pick one value or everything. Its row
+  source is a named query that adds one made-up entry, *All*, to the lookup's rows by `UNION`:
+
+  ```sql
+  SELECT TOP 1 0 AS MediaTypeID, "All" AS MediaTypeName FROM MSysObjects
+  UNION
+  SELECT MediaTypeID, MediaTypeName FROM tlkpMediaType;
+  ```
+
+  The *All* entry's key is 0, which no lookup row uses; `MSysObjects` is only a table known to have a
+  row. The combo's bound column is hidden, its default value is 0, and picking 0 means no selection:
+  whatever the combo drives (a record selection, or a filter on the form) is cleared; any other
+  pick applies it. The query's sort order is not part of the pattern; it follows the context. In VBA,
+  the 0 is a commented Enum member (`naming-conventions.md` §7).
+
+  **When the pick is applied as the form's own filter, Access saves that filter with the form** and
+  re-applies it at the next open, while the combo shows its default. `Form_Open` therefore turns the
+  filter off (`Me.FilterOn = False`) and sets the combo to *All*, so the two agree.
 - **Quick-add lookup** — a `➕` button beside a lookup combo opens the matching manage form in add mode
   (dialog), returns the new ID via a `TempVar`, then requeries + selects it.
 - **Validation highlights** — invalid fields are flagged visually on save and cleared on move.
@@ -124,3 +146,22 @@ Documented here so a `form-spec`'s deferral is concrete, not hand-waved. Two tie
   form-side surfacing of the `audit-columns` standard. Include it where a database carries audit columns
   *and* chooses to show them; omit otherwise. **Fully supported when used** — a `form-spec` that enables
   it names it as an optional feature.
+- **Field help** — a small `?` button beside a field that explains the field's term when pressed. Use
+  it where a form's fields carry terms a newcomer will not know. It is made of four parts:
+  - **A help table** with one row per term: the term's name (unique), a display order, and its
+    explanation, plus the audit columns. The lessons review form calls it `tlkpLessonTerm`.
+  - **One routine that opens the help**, `ShowTerm("Term")`, which opens a small read-only form as a
+    dialog, filtered to the row whose term name matches.
+  - **The buttons**: `cmdHelp_[Term]`, caption `?`, out of the tab order (`TabStop` off), with the
+    tip text `What is [Term]?`, and `=ShowTerm("[Term]")` as the click action.
+  - **The text ships with the application.** The explanations are written in code and loaded into the
+    table by an idempotent routine that creates the table when it is missing, adds a missing row, and
+    refreshes a row whose text has changed, so that a new version's wording reaches everyone. The form
+    calls it on open (`startup-conventions.md` §2).
+- **Locking by record state** — fields lock or unlock as the person moves between records, because
+  one attribute of the record decides who owns its text. Situational, so none of the library's
+  templates require it. Example, from the lessons review form: a lesson that came with the library has
+  its text re-supplied by the library on every update, so `Form_Current` locks every text field of a
+  lesson whose origin is Library and leaves its approval editable; a lesson the person added is fully
+  editable. The test is a single comparison against the record's own key (an Enum member, per
+  `naming-conventions.md` §7), and the same line unlocks the fields again on the next record.
