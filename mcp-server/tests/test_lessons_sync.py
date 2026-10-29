@@ -17,7 +17,7 @@ import lessons_sync as ls  # noqa: E402
 class ReadTextLessons(unittest.TestCase):
     def test_seed_set_parses(self):
         mechanisms, lessons, text_hash = ls.read_text_lessons(ls.DEFAULT_LESSONS)
-        self.assertEqual(len(lessons), 25)
+        self.assertEqual(len(lessons), 27)
         self.assertEqual({m["name"] for m in mechanisms if m["always"]}, {"error-handling", "vba-generation", "build-verification"})
         names = {m["name"] for m in mechanisms}
         for lesson in lessons:
@@ -52,7 +52,7 @@ class Lookups(unittest.TestCase):
         _, lessons, h = ls.read_text_lessons(ls.DEFAULT_LESSONS)
         lessons[0]["status"] = "inactive"
         index = ls._index([], lessons, h, "text", None)
-        self.assertEqual(len(index["lessons"]), 24)
+        self.assertEqual(len(index["lessons"]), 26)
 
 
 class EnsureIndexWithoutDatabase(unittest.TestCase):
@@ -61,7 +61,7 @@ class EnsureIndexWithoutDatabase(unittest.TestCase):
             result = ls.ensure_index(ls.DEFAULT_LESSONS, Path(tmp) / "store")  # isolate_lessons: no PowerShell
         self.assertEqual(result["status"], "from-text")
         self.assertIn("PowerShell was not found", result["message"])
-        self.assertEqual(len(result["index"]["lessons"]), 25)
+        self.assertEqual(len(result["index"]["lessons"]), 27)
 
     def test_no_engine_falls_back_to_text(self):
         shells = isolate_lessons.REAL_POWERSHELLS()
@@ -78,7 +78,7 @@ class EnsureIndexWithoutDatabase(unittest.TestCase):
                 ls.SCRIPT, ls._powershells = original
         self.assertEqual(result["status"], "from-text")
         self.assertIn("not available", result["message"])
-        self.assertEqual(len(result["index"]["lessons"]), 25)
+        self.assertEqual(len(result["index"]["lessons"]), 27)
 
     def test_missing_lessons_folder_is_reported_not_raised(self):
         with tempfile.TemporaryDirectory() as tmp:
