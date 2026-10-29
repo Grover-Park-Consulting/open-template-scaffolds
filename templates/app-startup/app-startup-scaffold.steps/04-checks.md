@@ -1,5 +1,5 @@
 ---
-step: 03-checks
+step: 04-checks
 title: "Run the checks"
 platform_facts: [mcp-run-procedure, mcp-file-release]
 ---
