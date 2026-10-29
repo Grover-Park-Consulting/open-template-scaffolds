@@ -854,6 +854,19 @@ relationships, indexes, lookup tables, and **seed rows** throughout):
 
 Apply the standards throughout, exactly as in the approved design spec.
 
+### Building it with no template
+
+**A run with no template has no parts, so fetch its platform facts with `get_facts`, each when its work
+begins and not before.** Do none of that work until the fact has arrived:
+
+- before you open the database: `target-file`, `mcp-file-release`, `open-existing-startup`
+- before you create tables: `dao-table-build`, `data-macro-rules`
+- before you import code: `mcp-module-import`, `vba-import-xml-entities`, `mcp-run-procedure`
+- before you build a form or report: `form-live-build`, `form-mapping-rules`, `form-hand-validation`
+
+Fetch a fact again before work it governs if its text is no longer in front of you. Add nothing to
+this list without a run that showed it missing.
+
 ### Building it part by part
 
 **Fetch the template one part at a time, and do each step's work only after its part has arrived.**
@@ -919,7 +932,8 @@ silently, with no error returned to you, on a dialog, on a file another process 
 that runs at startup. Only the developer can clear it, and it stops the run until they do. Before
 any action that could hit one:
 
-1. Run every check, probe and process you launch on a throwaway copy named for the run. The build
+1. Run every check, probe and process you launch on a throwaway copy named for the run, in a Trusted
+   Location: Access silently disables VBA anywhere else. The build
    itself goes into the database the developer supplied, through the Access MCP server session, after
    the backup answer and their permission. A hang or a forced close in the copy then costs nothing.
 2. One owner per file. An Access MCP server session holds its file exclusively, so close the session

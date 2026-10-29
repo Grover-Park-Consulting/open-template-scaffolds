@@ -17,8 +17,9 @@ except ImportError:
     from mcp.server.fastmcp import FastMCP
 
 from library import (_METHOD_BUILD, _METHOD_EVERY_RUN, _METHOD_HANDOVER, GATE_PATH,
-                     ROUTES, SETTLED_NOTE, _sha, compose, iter_standards, iter_templates,
-                     read_method, settled_block, validate_library)
+                     RESPONSE_LIMIT, ROUTES, SETTLED_NOTE, _sha, compose, iter_standards,
+                     iter_templates, read_method, read_platform_facts, serialized_size,
+                     settled_block, validate_library)
 
 _STANDARD_ORDER = ("Fetch this before you draft any part of the design. Do not draft from what you "
                    "already know of these rules: the developer's copy may differ from the library's.")
@@ -362,12 +363,45 @@ def get_lessons(mechanisms: list[str]) -> dict:
     Lessons for the mechanisms marked `always` are included whatever you pass. Read
     `rule` and follow it, and write `record_line` in the build record. The answer is
     `{status, note, lessons, mechanisms_unknown, held_back, rule, record_line}`: each
-    lesson has an `action` (apply, state or ask). If the lesson store cannot be read,
+    lesson has an `action` (apply, state or ask). When the list is empty or a name is
+    unknown, the answer also carries `mechanisms_available`, every mechanism name with
+    its description. If the lesson store cannot be read,
     `lessons` is empty and `record_line` says why; that never stops a build. Read-only.
     """
     from lessons_sync import deliver
 
     return deliver(mechanisms)
+
+
+@mcp.tool()
+def get_facts(facts: list[str]) -> dict:
+    """Return the named platform facts, with no template. For a run on the no-template build route.
+
+    Plain version: a run with a template receives its platform facts as parts of the
+    template. A build with no template has no parts, so it asks for the facts it needs
+    by id, when the method (`get_method` with `stage="build"`) says each is needed.
+    This tool only reads the named sections of `templates/_materialization.md`; it
+    does not choose facts, order them, or remember what was fetched.
+
+    Returns `{platform_facts: [{id, heading, content}], facts_missing, served}`. An id
+    that matches no fact is listed under `facts_missing`. Raises ValueError when the
+    answer would pass the response limit, naming the ids to ask for in separate calls.
+    Read-only.
+    """
+    found, missing = read_platform_facts()[0], []
+    out = []
+    for fid in facts or []:
+        hit = found.get(str(fid).strip().lower())
+        if hit:
+            out.append({k: hit[k] for k in ("id", "heading", "content")})
+        else:
+            missing.append(str(fid))
+    result = {"platform_facts": out, "facts_missing": missing,
+              "served": {"part": "platform-facts", "sha": _sha(*[f["content"] for f in out])}}
+    if serialized_size(result) > RESPONSE_LIMIT:
+        raise ValueError("These facts together are too large for one answer. Ask for them in separate "
+                         "calls: " + ", ".join(f["id"] for f in out))
+    return result
 
 
 @mcp.tool()

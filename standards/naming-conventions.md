@@ -120,6 +120,14 @@ combo/list box for data entry.
 Lookup tables take the `tlkp` prefix. User-extensible lookups that grow via "insert if not exists"
 are still lookups.
 
+**Every lookup table has a unique index on its name column.** Without one the database accepts a
+second row named "Open", and every list built on the lookup shows both. The same applies to any
+column, or pair of columns, that the design says must not repeat, such as a person and a date. The
+rule is an index and not only a check in code, because a query, an import or another form reaches
+the table without passing through the check. Where the rule holds for only some rows (one
+*unclosed* review per person), an index cannot express it: enforce it in code, and say in the design
+that it is held in code alone.
+
 ---
 
 ## 3. Junction tables

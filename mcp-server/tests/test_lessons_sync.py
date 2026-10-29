@@ -108,6 +108,12 @@ class Delivery(unittest.TestCase):
         self.assertEqual(got["mechanisms_unknown"], ["no-such-mechanism"])
         self.assertIn("no-count-distinct", {l["id"] for l in got["lessons"]})
 
+    def test_available_mechanisms_listed_when_none_asked_or_one_unknown(self):
+        for asked in ([], ["no-such-mechanism"]):
+            names = {m["name"] for m in self.deliver(asked)["mechanisms_available"]}
+            self.assertIn("ace-sql", names)
+        self.assertNotIn("mechanisms_available", self.deliver(["ace-sql"]))
+
     def test_action_follows_kind_and_confidence(self):
         lessons = {l["id"]: l for l in self.deliver(["field-properties", "error-handling"])["lessons"]}
         self.assertEqual(lessons["designer-gives-number-fields-a-default-of-zero"]["action"], "ask")

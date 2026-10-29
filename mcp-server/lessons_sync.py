@@ -318,6 +318,9 @@ def deliver(mechanisms: list[str], lessons_dir: Path = DEFAULT_LESSONS, store_di
     ids = ", ".join(l["id"] for l in lessons)
     out = {"status": got["status"], "note": got["message"], "lessons": lessons, "mechanisms_unknown": unknown,
            "held_back": held, "rule": LESSONS_RULE, "record_line": f"Lessons consulted: {len(lessons)} ({ids})"}
+    if unknown or not mechanisms:
+        out["mechanisms_available"] = [{"name": n, "description": row.get("description", "")}
+                                       for n, row in got["index"].get("mechanisms", {}).items()]
     if got["status"] == "not-chosen":
         out["suggested_store"] = str(default_store())
     return out

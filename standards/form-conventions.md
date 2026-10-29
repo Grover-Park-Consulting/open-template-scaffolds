@@ -165,3 +165,13 @@ Documented here so a `form-spec`'s deferral is concrete, not hand-waved. Two tie
   lesson whose origin is Library and leaves its approval editable; a lesson the person added is fully
   editable. The test is a single comparison against the record's own key (an Enum member, per
   `design-principles.md`, *Name the fixed numbers*), and the same line unlocks the fields again on the next record.
+
+---
+
+## 7. Starting from an existing form or report
+
+A form or report made by copying another is not built until the copy is finished. Rename every
+control whose purpose changed to match what it now shows (`txtEmailAddress` must not hold a
+supervisor's rating). Set every caption. Remove each sort and grouping level that names a field the
+new record source lacks: a copied report keeps them, and Access asks the person for a parameter
+value at preview. Then list the controls and read every name.

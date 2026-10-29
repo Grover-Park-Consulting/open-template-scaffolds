@@ -205,6 +205,8 @@ that before choosing.
 3. **On the go-ahead, design under the full standards layer.** Load it with `get_standards`, run the
    standards gate it returns before anything else, and fetch each standards file its `next` names;
    load the method with `get_method` (or read every file in `standards/` where MCP servers are unavailable).
+   Before the first design question, call `get_lessons` with the mechanisms the design will use; read each
+   lesson's `rule`, follow its `action`, and write its `record_line` in the build record.
    Apply naming, audit columns, field qualification, the junction-PK convention, and third-normal-form
    discipline exactly as for a template-based design. Same deliverable, same approval gate.
 4. **Surface your invented assumptions.** A from-scratch design has no `house_assumptions`, so list

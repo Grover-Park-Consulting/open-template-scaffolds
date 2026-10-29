@@ -108,6 +108,12 @@ the wrong file fails in ways that are hard to see:
 The copies of a shared module are kept in step **by hand**; nothing enforces it. Treat the back
 end's copy as the original and re-import it to each front end after any change.
 
+**Every file that runs code must sit in a Trusted Location.** That is a per-machine Access setting,
+not a property of the file. Outside one, Access silently disables VBA, and the symptom is procedures
+"not found", with no error saying why. In a split application this holds for every file that runs
+code, on every machine: each person's front end as well as the back end. Put a copy you make for a
+check in a trusted folder too.
+
 ### SQL Server → DDL
 <!-- fact: sql-server-ddl route: build -->
 
@@ -265,13 +271,10 @@ End Function
 **Five rules that make the generated Sub actually run** — each learned by running it against a real
 database:
 
-1. **Trusted Location.** Stated as a requirement at the top of this file, and this is where it bites:
-   outside one, Access silently disables VBA and nothing is created (a description-less failure).
-   **In a split application this applies to every file that runs code, on every machine** — each
-   person's front end as well as the back end you built the tables in. Trusted Locations are a
-   per-machine Access setting, not a property of the file, so a front end copied to a new machine and
-   dropped somewhere untrusted has its VBA disabled there and nowhere else. The symptom is an
-   application that works for everyone except one person, for no visible reason.
+1. **Trusted Location.** Required of every file that runs code (fact `target-file`). Here it bites
+   first: outside one, Access silently disables VBA and nothing is created. A front end copied to a
+   new machine and dropped somewhere untrusted has its VBA disabled there and nowhere else, so the
+   application works for everyone except one person, for no visible reason.
 2. **Descriptions after append.** Setting a field's `Description` during field-build throws **error
    3219**; create the `Description` property in a **second pass, after `db.TableDefs.Append`**.
 3. **AutoNumber** is a `dbLong` field with `Attributes = dbAutoIncrField` (and no explicit `Required`).

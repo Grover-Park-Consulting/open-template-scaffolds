@@ -5,6 +5,7 @@ FastMCP wraps each @mcp.tool() function; unwrap() reaches the plain function so
 tests exercise exactly what a client call reaches, without a running server.
 """
 
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -134,6 +135,54 @@ class TestLessons(unittest.TestCase):
         self.assertIn("no-count-distinct", {l["id"] for l in got["lessons"]})
         self.assertEqual(got["mechanisms_unknown"], ["not-a-mechanism"])
         self.assertIn("record_line", got)
+
+
+class TestGetFacts(unittest.TestCase):
+    """The no-template route's fact fetch. Its surface is pinned so that growth is a reviewed change."""
+
+    TOOLS = {"list_templates", "search_templates", "get_template", "get_part", "get_method",
+             "get_standards", "get_lessons", "get_facts", "set_lessons_store", "validate",
+             "check_compatibility"}
+
+    def test_returns_named_facts_and_lists_unknown_ids(self):
+        got = unwrap(server.get_facts)(["target-file", "no-such-fact"])
+        self.assertEqual([f["id"] for f in got["platform_facts"]], ["target-file"])
+        self.assertEqual(got["facts_missing"], ["no-such-fact"])
+        self.assertIn("served", got)
+
+    def test_target_file_carries_the_trusted_location_rule(self):
+        got = unwrap(server.get_facts)(["target-file"])
+        self.assertIn("Trusted Location", got["platform_facts"][0]["content"])
+
+    def test_oversize_request_is_refused_with_the_ids_to_split(self):
+        every = list(library.read_platform_facts()[0])
+        with self.assertRaises(ValueError) as caught:
+            unwrap(server.get_facts)(every)
+        self.assertIn("separate calls", str(caught.exception))
+
+    def test_every_fact_the_build_method_names_exists_and_fits_in_one_call(self):
+        method = library.read_method()[0]["build-route"]["content"]
+        section = method.split("### Building it with no template")[1].split("### Building it part by part")[0]
+        facts = library.read_platform_facts()[0]
+        for line in section.splitlines():
+            if not line.startswith("- before"):
+                continue
+            ids = re.findall(r"`([a-z0-9-]+)`", line)
+            self.assertTrue(ids)
+            for fid in ids:
+                self.assertIn(fid, facts)
+            unwrap(server.get_facts)(ids)
+
+    def test_the_tool_surface_is_exactly_the_known_set(self):
+        import asyncio
+        listing = getattr(server.mcp, "list_tools", None) or server.mcp.get_tools
+        tools = asyncio.run(listing())
+        names = set(tools) if isinstance(tools, dict) else {t.name for t in tools}
+        self.assertEqual(names, self.TOOLS)
+
+    def test_get_facts_takes_only_facts(self):
+        import inspect
+        self.assertEqual(list(inspect.signature(unwrap(server.get_facts)).parameters), ["facts"])
 
 
 class TestGetTemplate(unittest.TestCase):
