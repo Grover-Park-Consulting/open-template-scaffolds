@@ -87,6 +87,19 @@ unambiguous: `frmIndividual_Edit`, `frmIndividual_List`, `sfrmIndividual_Address
 
 Always schema-qualify table, view, procedure, and function references in views and stored procedures.
 
+### 1.3 A procedure name must not repeat elsewhere in the database or its references
+
+The compiler refuses two procedures with the same name in one module, and two modules with the same
+name. The same procedure name in two *different* modules compiles without complaint, as does one that
+matches a referenced library's. Nothing warns, and a call by bare name can run a procedure other than
+the one intended. Access looks for a bare name in the current module, then the other modules in the
+database, then each referenced library in the order of the References list.
+
+Before importing, search the host database and its references for each procedure name you are about
+to add. On a match, rename the new procedure or stop and ask. Call a procedure that exists in more
+than one place with its module's name in front (`modName.ProcedureName`) or, for a referenced
+library, the library's name in front.
+
 ---
 
 ## 2. Lookup tables

@@ -202,6 +202,13 @@ so an assistant doesn't mistake old grounds for new permission:
   `Erl`) with a note on the unused name constants, and the first line-numbering bullet follows. The
   Option 2 example is a correction, since its numbers did nothing; the rest are additions.
 
+- 2026-10-29 (×1 session, three frozen files): George approved, item by item, additions drawn from a
+  chapter on classes in a code library. `standards/naming-conventions.md`: new §1.3, a procedure name
+  must not repeat elsewhere in the database or its references. `standards/design-principles.md`: new
+  section, *Classes — when a class is justified*. `standards/startup-conventions.md`: §1 list line
+  changed and new §6, the front end checks it is paired with the right back end. All additions.
+  (`templates/_materialization.md`, not frozen, also gained the CRLF and read-back rules.)
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

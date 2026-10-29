@@ -952,6 +952,28 @@ a character survives the import is **untested**. Until somebody establishes it, 
 a scaffold ships ASCII-only — a plain hyphen in a comment costs nothing, and a module that will not
 compile costs a build.
 
+**Write every module file with CRLF line endings.** Access reads a class file's header
+(`VERSION 1.0 CLASS`, `BEGIN` ... `END`) and its `Attribute` lines only when each line ends in
+CR LF. A file with LF endings still imports and reports success, but the header is stored as code
+and the `Attribute` lines are dropped, so the module arrives with the wrong name and does not
+compile. Do not rely on an editor, a script, or a git setting to produce CRLF: check the written
+file for a bare LF before importing it. *(Observed by an author importing through Access itself;
+not yet reproduced through an Access MCP server.)*
+
+**After every import, read one module back before going on.** Read the first lines of an imported
+module. They must be its `Attribute VB_Name` line and `Option` lines, not `VERSION 1.0 CLASS` and
+not null-padded text. A reported success shows the import ran, not that it worked, and one bad
+module does not announce itself among good ones. For a bulk import, read back the first and last
+module imported and every class module. A bad module is rewritten, re-imported and recorded in the
+build record.
+
+**Before importing, search the host database and its references for each procedure name you are
+adding** (`standards/naming-conventions.md` §1.3). A same-named procedure elsewhere compiles
+without warning.
+
+A developer who keeps these files in git needs `*.cls text eol=crlf` and `*.bas text eol=crlf` in
+`.gitattributes`. `git ls-files --eol <file>` must show `w/crlf`.
+
 **The first line of each file is the module name**, in the form the editor expects:
 
 ```text
@@ -1230,6 +1252,9 @@ into your columns and lines is your styling pass."*
 6. **Code-behind** — event handlers wired to the named framework helpers, each with the standard
    `errHandler` block (`error-handling.md`; line numbering per the house policy). Helpers are **called,
    not defined**.
+7. **Quotes in a value** — write a quote as `\"` and a backslash as `\\`. A doubled `""` is dropped
+   without error. After any text import, read back `ControlSource`, `DefaultValue`, `ValidationRule`
+   and `RowSource` and compare each with the intended string.
 
 ---
 

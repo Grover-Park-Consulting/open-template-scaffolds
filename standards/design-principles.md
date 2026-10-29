@@ -100,6 +100,25 @@ Two rules in this layer already serve this: prefer TempVars with typed wrappers 
 variables for shared state (`query-style.md`), and keep helper procedures Private so a caller sees
 only the few entry points it needs.
 
+## Classes — when a class is justified
+
+Generated code stays procedural unless one of these is true. A class module is justified when the
+code needs:
+
+| The code needs | Use |
+|---|---|
+| input in, result out, nothing remembered between calls | procedure in a standard module |
+| related procedures that share nothing but their parameters | standard module |
+| one value for the whole application | Enum, or a TempVar with a typed wrapper (see above) |
+| several copies at once, each with its own state (one per open form, one per record being edited) | **class** — a standard module has only one copy of its state |
+| to answer events from a form, control or object (`WithEvents`) | **class** — only a class module can declare it |
+| setup and cleanup tied to the object's life (`Class_Initialize`, `Class_Terminate`) | **class** |
+| state and the procedures that read and change it, held together for the life of a form | **class** |
+
+Wanting inheritance is not a reason: VBA has none. A class module is imported as a text file with a
+header and `Attribute` lines, so every rule for writing and importing module files in
+`templates/_materialization.md` applies to it.
+
 ## High Cohesion and Low Coupling — things that belong together, few connections between them
 
 Two related ideas. Cohesion is about what goes inside a module: its procedures should belong

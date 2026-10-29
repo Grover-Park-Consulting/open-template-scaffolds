@@ -49,7 +49,8 @@ by chance.
   - ensure the application's working folders exist (`EnsureAppFolders()`, §2);
   - open the application's startup form — a switchboard, menu, or home form — e.g.
     `DoCmd.OpenForm "AppStartupForm"`;
-  - later: version checks, environment probes.
+  - confirm the front end is paired with the right back end (§6);
+  - later: environment probes.
 
   Whatever it does, it happens here, in one predictable place.
 
@@ -178,3 +179,19 @@ survive it.
 
 The runnable code — the reconnect sequence, the file-picker prompt, and the check that a chosen file
 is the right one — is `templates/app-startup/app-startup-scaffold.md`.
+
+## 6. The front end checks it is paired with the right back end
+
+A split database's front end and back end are updated separately, so a pair can drift apart. A new
+front end against an old back end fails later, when someone clicks something and a field or table
+is missing. `Startup()` checks the pairing straight after the data is confirmed reachable (§5), and
+before folders are ensured or any form opens.
+
+- The front end holds one constant: the data version it expects.
+- The back end holds one row in its settings table, `DataVersion`, saying which version it is.
+- The check compares the constant with the row read from the back end. Never compare the constant
+  with itself or with a copy kept in the front end: that cannot fail and verifies nothing.
+- A missing row counts as a mismatch. A back end older than the check is the case it exists to catch.
+- On a mismatch, name both versions in a message and open no form, as in §5.
+
+On a single-file database this is a no-op.
