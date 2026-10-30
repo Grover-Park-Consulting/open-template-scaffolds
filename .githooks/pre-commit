@@ -1,5 +1,6 @@
 #!/bin/sh
-# Runs before every commit. Blocks the commit if staged Python cannot be parsed.
+# Runs before every commit. Blocks the commit if staged Python cannot be parsed,
+# or if a template changed after its status was set.
 # Wired up with:  git config core.hooksPath .githooks
 
 hookdir=$(dirname "$0")
@@ -9,7 +10,8 @@ hookdir=$(dirname "$0")
 # each candidate by actually executing it, and take the first that works.
 for interpreter in python3 python py; do
     if "$interpreter" -c "" >/dev/null 2>&1; then
-        exec "$interpreter" "$hookdir/check_staged_python.py"
+        "$interpreter" "$hookdir/check_staged_python.py" || exit 1
+        exec "$interpreter" "$hookdir/check_template_fingerprints.py"
     fi
 done
 

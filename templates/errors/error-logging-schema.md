@@ -5,6 +5,7 @@ domain: errors
 type: table-schema
 version: 0.3.0
 status: review
+status_fingerprint: 4bd1b131ca7b
 platform_facts: [target-file, sql-insert-truncation]
 steps: [01-checks, 02-tables, 03-run-the-checks]
 standards_layer:

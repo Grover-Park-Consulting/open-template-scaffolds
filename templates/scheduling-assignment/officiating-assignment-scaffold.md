@@ -5,6 +5,7 @@ domain: scheduling-assignment
 type: vba-scaffold
 version: 0.10.0
 status: stable
+status_fingerprint: 59be5533400f
 implements: officiating-assignment-schema
 requires_tables:
   - tblGame

@@ -5,6 +5,7 @@ domain: app-startup
 type: outcome-first
 version: 0.3.0
 status: stable
+status_fingerprint: db13af18de85
 platform_facts: [target-file, app-startup-autoexec]
 steps: [01-checks, 02-code, 03-run-the-checks]
 standards_layer:

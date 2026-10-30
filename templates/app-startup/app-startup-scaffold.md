@@ -5,6 +5,7 @@ domain: app-startup
 type: vba-scaffold
 version: 0.5.1
 status: stable
+status_fingerprint: a43b5e3a8e01
 requires_tables:
   - USysLocalSetting
 platform_facts: [target-file, app-startup-autoexec]
@@ -53,7 +54,7 @@ related:
 
 # Application Startup and Back-End Relinking — VBA Scaffold
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-10-30.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

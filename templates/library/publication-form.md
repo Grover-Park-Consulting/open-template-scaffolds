@@ -5,6 +5,7 @@ domain: library
 type: form-spec
 version: 0.5.0
 status: stable
+status_fingerprint: 90168d2df937
 implements: catalog-schema
 record_source: qryPublication_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]

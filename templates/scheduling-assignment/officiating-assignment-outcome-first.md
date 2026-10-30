@@ -5,6 +5,7 @@ domain: scheduling-assignment
 type: outcome-first
 version: 0.2.0
 status: stable
+status_fingerprint: ea0d7805b58d
 implements: officiating-assignment-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules, recordset-append-crash, app-startup-autoexec]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]

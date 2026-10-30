@@ -5,6 +5,7 @@ domain: audit
 type: outcome-first
 version: 0.11.0
 status: stable
+status_fingerprint: 74d3448cb8db
 implements: audit-logging-lite-schema
 platform_facts: [target-file]
 steps: [01-checks, 02-limits, 03-tables, 04-data-macros, 05-code, 06-run-the-checks]

@@ -5,6 +5,7 @@ domain: library
 type: outcome-first
 version: 0.2.0
 status: stable
+status_fingerprint: d89f50b1766b
 implements: catalog-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]

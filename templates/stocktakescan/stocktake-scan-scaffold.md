@@ -5,6 +5,7 @@ domain: stocktakescan
 type: vba-scaffold
 version: 0.11.1
 status: stable
+status_fingerprint: 746c342374ce
 extends: Northwind (Access Developer Edition)
 implements: stocktake-schema
 requires_tables:

@@ -5,6 +5,7 @@ domain: time-off
 type: vba-scaffold
 version: 0.3.2
 status: draft
+status_fingerprint: 4369f519c48c
 implements: time-off-ledger-schema
 requires_tables:
   - tlkpTimeOffCategory

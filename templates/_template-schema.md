@@ -106,6 +106,7 @@ present on every template; conditional keys are required when their condition ho
 | `type` | required | enum | `table-schema` \| `vba-scaffold` \| `outcome-first` \| `form-spec` \| `spec` |
 | `version` | required | semver string | Template version, counted per template and independent of any library version. **Bump it in the same commit as any change to what the template produces** — patch for a correction an adopter needn't act on, minor for anything they would (a new or renamed field, a changed default, an added rule or section), major for a redesign an existing build can't absorb. It is the only thing that distinguishes a copy someone took earlier from the current file; see `CONTRIBUTING.md` → *Versioning a change* for why this is a rule and not a nicety |
 | `status` | required | enum | `draft` \| `review` \| `stable` — what moves a template between them is defined in `_maturity-criteria.md`, not by inspection |
+| `status_fingerprint` | required | string | Fingerprint of the template's text, excluding the `status`, `status_fingerprint` and `Status last determined` lines, taken when `status` was set. `validate` recomputes it and stops on a mismatch: the text changed after its status was set. A person then decides whether the change was a typo (refresh the fingerprint) or a change of meaning (re-determine the status under `_maturity-criteria.md`) |
 | `extends` | conditional | string | Required when the template grafts onto an existing database; names the host (e.g. `Northwind (Access Developer Edition)`) |
 | `requires_tables` | conditional | list[string] | Existing tables the template hooks into. Required when `extends` is present |
 | `requires_fields` | optional | list[string] | Specific existing fields relied on, as `Table.Field`. **Fields the host must already have** — a template that creates a field on an existing table declares it under `new_fields` instead |
@@ -143,6 +144,8 @@ present on every template; conditional keys are required when their condition ho
    either to another template's `template` slug, or to a file that exists under `standards/`.
    (Format and existence only — `validate` cannot judge whether the relationship makes sense;
    that stays the human review gate, same as `house_assumptions`.)
+8. `status_fingerprint` matches the fingerprint `validate` recomputes from the template's text
+   (the master and its step files). The pre-commit check runs the same test.
 
 **Scope of `validate` — format, not fitness.** `validate` confirms a template is internally
 well-formed: complete front-matter, `new_tables` matching the `### <name>` entity headings, every

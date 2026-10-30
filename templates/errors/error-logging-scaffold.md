@@ -5,6 +5,7 @@ domain: errors
 type: vba-scaffold
 version: 0.10.0
 status: stable
+status_fingerprint: 23ca0aa40702
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog

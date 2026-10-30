@@ -287,6 +287,45 @@ def read_steps(path: Path, front: dict) -> list[dict]:
     return out
 
 
+_STATUS_LINE = re.compile(r"^\*{0,2}Status last determined:")
+
+
+def template_fingerprint(path: Path, steps: list[dict]) -> str:
+    """Fingerprint of a template's text: the master and its listed step files.
+
+    Leaves out the lines that record the status itself (`status:` and
+    `status_fingerprint:` in a front matter, and the "Status last determined"
+    line), so setting a status never changes the fingerprint taken at that
+    moment. Line endings are normalised, so a checkout's setting cannot change it.
+    """
+    kept = []
+    for f in [path] + [s["path"] for s in steps if s["path"] is not None]:
+        text = f.read_text(encoding="utf-8").replace("\r\n", "\n")
+        front = ""
+        if text.startswith("---"):
+            _, front, text = text.split("---", 2)
+            front = "\n".join(l for l in front.split("\n")
+                              if not l.startswith(("status:", "status_fingerprint:")))
+        body = "\n".join(l for l in text.split("\n") if not _STATUS_LINE.match(l))
+        kept.append(front + "\n---\n" + body)
+    return _sha(*kept)
+
+
+def fingerprint_errors(template: str, path: Path, front: dict, steps: list[dict]) -> list[str]:
+    """FP1: the template's text no longer matches the fingerprint taken when its status was set."""
+    now = template_fingerprint(path, steps)
+    recorded = str(front.get("status_fingerprint") or "").strip()
+    if not recorded:
+        return [f"FP1: {template} has no status_fingerprint. Do not commit. Ask George to confirm "
+                f"its status, then write the fingerprint {now}."]
+    if recorded != now:
+        return [f"FP1: {template} changed after its status was set. Do not commit. Show George "
+                f"what changed and ask: typo or change of meaning? Typo: write the new fingerprint "
+                f"{now}. Change of meaning: re-determine the status under _maturity-criteria.md, "
+                f"update \"Status last determined\", then write the new fingerprint."]
+    return []
+
+
 def _pack(items: list[dict], budget: int) -> list[list[dict]]:
     """Group items (each with `content`) in order so no group's text exceeds `budget`."""
     groups, cur, size = [], [], 0
@@ -1004,6 +1043,7 @@ def validate_library(template: str = "") -> dict:
         steps = read_steps(path, front)
         whole = "\n".join([body] + [s["body"] for s in steps])
         errs = validate_template(front, whole, path.stem) + validate_steps(path, front, body, steps)
+        errs += fingerprint_errors(str(front.get("template")), path, front, steps)
         results.append({"template": front.get("template"), "ok": not errs, "errors": errs})
     if tid and not results:
         raise ValueError(

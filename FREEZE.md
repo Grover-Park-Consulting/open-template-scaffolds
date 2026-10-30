@@ -209,6 +209,11 @@ so an assistant doesn't mistake old grounds for new permission:
   changed and new §6, the front end checks it is paired with the right back end. All additions.
   (`templates/_materialization.md`, not frozen, also gained the CRLF and read-back rules.)
 
+- 2026-10-30 (×1), approved by George: `templates/_template-schema.md` §2 gains the
+  `status_fingerprint` key and its `validate` rule (rule 8); `templates/errors/error-logging-scaffold.md`
+  gains the key in its front matter (every template gains it). Grounds: a template edited after its
+  status was set kept a stale status, and nothing flagged it. An addition, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

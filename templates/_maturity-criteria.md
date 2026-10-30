@@ -68,3 +68,9 @@ alone is what travels with the repo and stays true for everyone who reads it.
 
 A `status: stable` (or `review`) claim with no date attached is exactly the kind of unverifiable
 claim this file exists to prevent.
+
+**The template also carries a `status_fingerprint`** (`_template-schema.md` §2), taken when the
+status is determined. When the template's text changes, `validate` and the pre-commit check stop and
+give the new value. Decide whether the change was a typo or a change of meaning. A typo: refresh the
+fingerprint; status and date stay. A change of meaning: re-determine the status under §1 to §4,
+update the date, and refresh the fingerprint.

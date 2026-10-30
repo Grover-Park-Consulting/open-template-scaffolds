@@ -5,6 +5,7 @@ domain: scheduling-assignment
 type: form-spec
 version: 0.5.0
 status: review
+status_fingerprint: 314b5680adc1
 implements: officiating-assignment-schema
 record_source: qryGame_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]

@@ -5,6 +5,7 @@ domain: errors
 type: outcome-first
 version: 0.3.0
 status: stable
+status_fingerprint: dbef837995f0
 implements: error-logging-schema
 platform_facts: [target-file, sql-insert-truncation, host-helper-reuse]
 steps: [01-checks, 02-tables, 03-code, 04-run-the-checks]

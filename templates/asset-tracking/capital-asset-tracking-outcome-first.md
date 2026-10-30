@@ -5,6 +5,7 @@ domain: asset-tracking
 type: outcome-first
 version: 0.3.0
 status: stable
+status_fingerprint: 57c62a39673a
 implements: capital-asset-tracking-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules, recordset-append-crash]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]

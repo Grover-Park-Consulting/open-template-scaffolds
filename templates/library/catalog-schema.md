@@ -5,6 +5,7 @@ domain: library
 type: table-schema
 version: 0.5.0
 status: review
+status_fingerprint: 880fd95e48c3
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules]
 steps: [01-checks, 02-tables, 03-run-the-checks]
 standards_layer:

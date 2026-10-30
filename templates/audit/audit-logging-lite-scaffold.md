@@ -5,6 +5,7 @@ domain: audit
 type: vba-scaffold
 version: 0.19.2
 status: stable
+status_fingerprint: c6d610b73b7a
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog

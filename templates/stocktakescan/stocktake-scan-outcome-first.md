@@ -5,6 +5,7 @@ domain: stocktakescan
 type: outcome-first
 version: 0.7.3
 status: stable
+status_fingerprint: 2cd3bc9ab463
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products

@@ -4,7 +4,8 @@ title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
 version: 0.4.6
-status: review
+status: stable
+status_fingerprint: 43d743d5529e
 implements: time-off-ledger-schema
 standards_layer:
   - audit-columns
@@ -31,7 +32,7 @@ related:
 
 # Time Off Ledger — outcome-first method
 
-**Status last determined:** 2026-10-05.
+**Status last determined:** 2026-10-30.
 
 **Who reads this.** *Intent* down to *Standards Layer* is for the developer whose database this is;
 the last section is addressed to the AI assistant building it.

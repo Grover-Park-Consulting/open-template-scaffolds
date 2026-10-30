@@ -163,5 +163,57 @@ class TestPlatformFacts(unittest.TestCase):
             self.assertFalse(any(e.startswith("FM9") for e in validate_template(front, "", "x")))
 
 
+class TestStatusFingerprint(unittest.TestCase):
+    MASTER = ("---\ntemplate: t\nstatus: stable\n{fp}steps: [a]\n---\n\n# T\n\nBody.\n\n"
+              "**Status last determined:** 2026-10-30.\n")
+
+    def make(self, d, master=None, step="Step text.\n"):
+        p = Path(d) / "t.md"
+        p.write_text(master or self.MASTER.format(fp=""), encoding="utf-8", newline="")
+        (Path(d) / "t.steps").mkdir(exist_ok=True)
+        (Path(d) / "t.steps" / "a.md").write_text("---\nstep: a\n---\n" + step, encoding="utf-8")
+        front, _ = split_front_matter(p.read_text(encoding="utf-8"))
+        return p, front, library.read_steps(p, front)
+
+    def test_status_lines_do_not_change_it_but_text_does(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p, front, steps = self.make(d)
+            base = library.template_fingerprint(p, steps)
+            p.write_text(self.MASTER.format(fp="status_fingerprint: abc\n")
+                         .replace("stable", "review").replace("2026-10-30", "2027-01-01"), encoding="utf-8")
+            self.assertEqual(library.template_fingerprint(p, steps), base)
+            p.write_text(self.MASTER.format(fp="").replace("Body.", "Body!"), encoding="utf-8")
+            self.assertNotEqual(library.template_fingerprint(p, steps), base)
+
+    def test_line_endings_do_not_change_it(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p, front, steps = self.make(d)
+            base = library.template_fingerprint(p, steps)
+            p.write_bytes(self.MASTER.format(fp="").replace("\n", "\r\n").encode("utf-8"))
+            self.assertEqual(library.template_fingerprint(p, steps), base)
+
+    def test_a_step_file_is_part_of_the_template(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p, front, steps = self.make(d)
+            base = library.template_fingerprint(p, steps)
+            _, _, changed = self.make(d, step="Step text, edited.\n")
+            self.assertNotEqual(library.template_fingerprint(p, changed), base)
+
+    def test_fp1_when_missing_or_stale_and_clean_when_current(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p, front, steps = self.make(d)
+            now = library.template_fingerprint(p, steps)
+            missing = library.fingerprint_errors("t", p, front, steps)
+            self.assertTrue(missing and missing[0].startswith("FP1") and "no status_fingerprint" in missing[0])
+            stale = library.fingerprint_errors("t", p, {"status_fingerprint": "000000000000"}, steps)
+            self.assertTrue(stale and stale[0].startswith("FP1") and now in stale[0]
+                            and "typo or change of meaning" in stale[0])
+            self.assertEqual(library.fingerprint_errors("t", p, {"status_fingerprint": now}, steps), [])
+
+
 if __name__ == "__main__":
     unittest.main()
