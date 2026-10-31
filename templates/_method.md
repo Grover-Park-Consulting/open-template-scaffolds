@@ -778,10 +778,58 @@ they have.
 4. **Hand over the checks.** Take the template's checks (the list written for the developer, such as
    "How you validate the template's output") and write them as a checklist file beside the code, in
    the template's order, each saying what to do and what a pass looks like. The developer runs them
-   to verify what you wrote. Mark every one *not run*.
-5. Tell the developer to back up the database before importing. The backup order in `access-gate`
+   to verify what you wrote. Mark every one *not run*. Put the confirm-first checks (step 5) at the
+   top of the file.
+5. **Say how far the template is proven, then name the checks to confirm first.** Before you offer
+   the code, read the template's `status` and put the matching paragraph below at the head of the
+   checklist file and in your message, unchanged. Then read your own code against the six checks
+   below, and fix what they catch before you offer it.
+
+   Text for the developer, by status:
+
+   `stable`
+
+   > This template is in the public library with the status stable. Earning that status required
+   > passing our own trial builds. The code we will now deliver to you was built in your
+   > environment, with your data and your requirements, so we recommend you run your own acceptance
+   > testing: checks that it does what you need, with your data.
+
+   `review`
+
+   > This template is in the public library with the status review. We have run preliminary
+   > acceptance tests, but we do not yet have enough evidence to call it proven. The code we will
+   > now deliver to you was built in your environment, with your data and your requirements, so
+   > your own acceptance testing matters. Please run the checks below.
+
+   `draft`
+
+   > This template is in the public library with the status draft: it is new, and not yet proven.
+   > The code we will now deliver to you was built in your environment, so please run your own
+   > acceptance testing before you rely on it.
+
+   End all three with: `If you ran the six checks, you can help us by pasting this section at
+   <report page>. It takes a minute.`
+
+   Under the paragraph, write a section headed "Confirm these first", worded with this build's
+   actual names, each check ending `Result: not run`. Fill its header: template, version,
+   fingerprint (the master's `served.fingerprint`), route (handover). The six:
+
+   1. Everything imports and the project compiles, with no errors.
+   2. Module text imports cleanly: procedures are found after import, and no garbage characters
+      appear on the first line.
+   3. Names don't collide: nothing here shares a name with an object already in the database, and
+      the names match the database's naming convention.
+   4. The error handler fits: the code calls the handler the database has, and a forced error
+      reaches it.
+   5. What the code does on its own is stated, on open or on a schedule, with what it writes the
+      first time.
+   6. Fixed content matches the template: lookup values and sample data that are the same in every
+      run.
+
+   End the section with a notes line: `Optional. Do not include confidential information.`
+6. Tell the developer to back up the database before importing. The backup order in `access-gate`
    stops a build and nothing else; it does not hold this code back.
-6. The build record says the code was not run and every check is *not run*. Ask the developer, as a
+7. The build record says the code was not run and every check is *not run*. Ask the developer, as a
    question, where the files and the record go: there is no `.accdb` of yours to sit beside.
 
 
