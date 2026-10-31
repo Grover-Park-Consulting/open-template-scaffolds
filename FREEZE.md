@@ -214,6 +214,12 @@ so an assistant doesn't mistake old grounds for new permission:
   gains the key in its front matter (every template gains it). Grounds: a template edited after its
   status was set kept a stale status, and nothing flagged it. An addition, not a rewording.
 
+- 2026-10-31 (×1), approved by George: `templates/_template-schema.md` §2's `status_fingerprint`
+  row, and the `Status last determined` sentence in `templates/_maturity-criteria.md` §5, name the
+  `template_status.py` command that writes the fingerprint, version, date and status. Grounds: the
+  hand-copied fingerprint, date and version were bookkeeping a tool can do. Replaces the old
+  wording of those two passages; no other text moves.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

@@ -210,8 +210,8 @@ class TestStatusFingerprint(unittest.TestCase):
             missing = library.fingerprint_errors("t", p, front, steps)
             self.assertTrue(missing and missing[0].startswith("FP1") and "no status_fingerprint" in missing[0])
             stale = library.fingerprint_errors("t", p, {"status_fingerprint": "000000000000"}, steps)
-            self.assertTrue(stale and stale[0].startswith("FP1") and now in stale[0]
-                            and "typo or change of meaning" in stale[0])
+            self.assertTrue(stale and stale[0].startswith("FP1")
+                            and "template_status.py t typo|fix|change" in stale[0])
             self.assertEqual(library.fingerprint_errors("t", p, {"status_fingerprint": now}, steps), [])
 
 

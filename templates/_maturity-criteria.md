@@ -70,7 +70,9 @@ A `status: stable` (or `review`) claim with no date attached is exactly the kind
 claim this file exists to prevent.
 
 **The template also carries a `status_fingerprint`** (`_template-schema.md` §2), taken when the
-status is determined. When the template's text changes, `validate` and the pre-commit check stop and
-give the new value. Decide whether the change was a typo or a change of meaning. A typo: refresh the
-fingerprint; status and date stay. A change of meaning: re-determine the status under §1 to §4,
-update the date, and refresh the fingerprint.
+status is determined. When the template's text changes, `validate` and the pre-commit check stop.
+Decide typo, fix or change, then run `python mcp-server/template_status.py <template> typo|fix|change`.
+A typo changes only the fingerprint. A fix or change prints the evidence from the newest local build
+record and a proposed status; apply it with `--status`. The command writes the version, status, date
+and fingerprint. A build record's `served.fingerprint` is the §1 currency test: it counts only if it
+equals the template's current fingerprint.

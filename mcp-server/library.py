@@ -315,14 +315,12 @@ def fingerprint_errors(template: str, path: Path, front: dict, steps: list[dict]
     """FP1: the template's text no longer matches the fingerprint taken when its status was set."""
     now = template_fingerprint(path, steps)
     recorded = str(front.get("status_fingerprint") or "").strip()
+    run = f"python mcp-server/template_status.py {template}"
     if not recorded:
-        return [f"FP1: {template} has no status_fingerprint. Do not commit. Ask George to confirm "
-                f"its status, then write the fingerprint {now}."]
+        return [f"FP1: {template} has no status_fingerprint. Do not commit. Run: {run} typo"]
     if recorded != now:
-        return [f"FP1: {template} changed after its status was set. Do not commit. Show George "
-                f"what changed and ask: typo or change of meaning? Typo: write the new fingerprint "
-                f"{now}. Change of meaning: re-determine the status under _maturity-criteria.md, "
-                f"update \"Status last determined\", then write the new fingerprint."]
+        return [f"FP1: {template} changed after its status was set. Do not commit. Ask George: "
+                f"typo, fix or change? Then run: {run} typo|fix|change"]
     return []
 
 
@@ -504,7 +502,8 @@ def compose(template: str, part: str = "master", route: str = "",
                   "parts": [{"part": q["part"], "title": q["title"], "when": q["when"]}
                             for q in visible],
                   "served": {"template": front.get("template"), "part": "master",
-                             "version": version, "sha": _sha(path.read_text(encoding="utf-8"))}}
+                             "version": version, "sha": _sha(path.read_text(encoding="utf-8")),
+                             "fingerprint": template_fingerprint(path, read_steps(path, front))}}
         if missing:
             result["method_missing"] = missing
         layer = [str(s) for s in front.get("standards_layer") or []]
