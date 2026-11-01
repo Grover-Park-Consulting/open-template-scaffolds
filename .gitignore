@@ -16,6 +16,10 @@ __pycache__/
 
 # Per-machine editor config (not part of the library)
 .vscode/
+*.code-workspace
+
+# Third-party reference material, not library content
+ClassesforCC/
 
 # Accumulated build records are per-developer history, not library content —
 # keep the folder and its README, ignore everything that fills it
