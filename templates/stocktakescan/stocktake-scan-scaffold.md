@@ -3,9 +3,9 @@ template: stocktake-scan-scaffold
 title: Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.11.1
-status: stable
-status_fingerprint: 746c342374ce
+version: 0.11.2
+status: review
+status_fingerprint: 5c1221483f06
 extends: Northwind (Access Developer Edition)
 implements: stocktake-schema
 requires_tables:
@@ -48,7 +48,7 @@ related:
 
 # Scanned Stocktake — Scan-Processing VBA Scaffold
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-02.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -80,7 +80,7 @@ Three layers, kept distinct throughout:
 | `SystemSettings.DuplicateScanWindowSeconds` | Duplicate-scan detection window |
 | A central error logger | `error-handling.md` |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:

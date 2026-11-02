@@ -3,9 +3,9 @@ template: officiating-assignment-scaffold
 title: Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.10.0
-status: stable
-status_fingerprint: 59be5533400f
+version: 0.10.1
+status: review
+status_fingerprint: 7ff8ab2ba548
 implements: officiating-assignment-schema
 requires_tables:
   - tblGame
@@ -48,7 +48,7 @@ warnings:
 
 # Officiating Assignment — Assignment & Pay VBA Scaffold
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-02.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -96,7 +96,7 @@ Three layers, kept distinct throughout:
 | A photo picker | The screen that calls `SetOfficialPhoto` with the file the person chose — a form concern, deferred to a `form-spec` template. |
 | A central error logger | `error-handling.md` |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:

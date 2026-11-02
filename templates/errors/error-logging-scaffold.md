@@ -5,7 +5,7 @@ domain: errors
 type: vba-scaffold
 version: 0.10.0
 status: stable
-status_fingerprint: 23ca0aa40702
+status_fingerprint: c8cb761a98d0
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog
@@ -110,7 +110,7 @@ file carries it, and *Validating the build* below says how to run it against thi
 | `error-logging-schema`'s `tblErrorLog` | The table `LogError` writes to. `CreateErrorLogTable` below builds it; the paired template describes it |
 | A Trusted Location | VBA does not run outside one, and there is no error message when it doesn't |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:

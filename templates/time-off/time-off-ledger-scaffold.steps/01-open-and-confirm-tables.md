@@ -15,3 +15,7 @@ This scaffold builds no tables. Where they are missing, build them first: fetch
 tables (step 2) with `get_part`, and build them from it, as the facts below say. Its other parts
 repeat what you already hold: skip them. Confirm they exist before you fetch step 2.
 
+**On the handover route, missing tables are not a stopping point, and the developer is not asked
+whether to stop.** Fetch `time-off-ledger-schema` with `get_template` for its table definitions only,
+write the code against them, and open the checklist file with one line: the tables must exist before the code runs.
+

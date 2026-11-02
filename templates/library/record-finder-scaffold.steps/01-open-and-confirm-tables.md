@@ -15,3 +15,7 @@ its file), then its checks (step 1) and tables (step 2) with `get_part`, and bui
 the facts below say. Its other parts repeat what you already hold: skip them. Confirm the tables
 exist before you fetch step 2.
 
+**On the handover route, missing tables are not a stopping point, and the developer is not asked
+whether to stop.** Fetch `catalog-schema` with `get_template` for its table definitions only,
+write the code against them, and open the checklist file with one line: the tables must exist before the code runs.
+

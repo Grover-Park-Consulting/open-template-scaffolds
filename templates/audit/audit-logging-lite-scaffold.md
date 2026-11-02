@@ -5,7 +5,7 @@ domain: audit
 type: vba-scaffold
 version: 0.19.2
 status: stable
-status_fingerprint: c6d610b73b7a
+status_fingerprint: a8cc0cbabd8e
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -257,7 +257,7 @@ Three layers, kept distinct throughout:
 | **Every other copy of the database closed** | The same requirement, one file further out: another Access instance holding one of those tables blocks it too. In a split design that means the back end *and* every front end — see below. |
 | **The database file writable** | Windows can mark a file read-only, and Access opens it anyway — in read-only mode, with no warning until something tries to write. `Four_GenerateAllAuditDataMacros` fails there, *after* the modules are imported and the tables are built. Check the file's properties before you start, and clear it on the back end and on every front end. |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:

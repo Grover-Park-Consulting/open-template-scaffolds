@@ -3,9 +3,9 @@ template: publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.5.0
-status: stable
-status_fingerprint: 90168d2df937
+version: 0.5.1
+status: review
+status_fingerprint: 5526231bc452
 implements: catalog-schema
 record_source: qryPublication_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]
@@ -21,7 +21,7 @@ warnings:
 
 # Library Catalog — Publication Entry Form
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-02.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -46,7 +46,7 @@ this template **names** the framework pieces it relies on, it does not redefine 
 | `record-finder-scaffold` (companion `vba-scaffold`) | The record-finder engine — pick-list build (`FinderRowSource`) + jump-to-record (`JumpFormToRecord`) — realized as a paired scaffold, not redefined here |
 | Forms framework (deferred) | The `TempVars` wrappers and the audit / image / validation helpers — supplied by the host, **named not redefined** here |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:

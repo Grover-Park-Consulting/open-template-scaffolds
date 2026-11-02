@@ -165,6 +165,20 @@ and a handler that re-raises never returns, so the lines after it never run.
 2. **Offer accepting only when you can state every one of those.** If any is unclear, or the
    handler needs a paired call you cannot place correctly in every procedure, do not offer it. Say
    why, and offer option 1 and option 2.
+
+   **A re-raising handler breaks any promise to return a value on failure.** Before you offer to
+   accept it, list each procedure in the template that returns a sentence or a partial result on
+   failure. In the design spec, show the developer one such procedure as a before-and-after, using the
+   template's own case. The text below is the shape, not the words:
+
+   > *"Posting a year of earned hours stops at month 5, because month 5 has no accrual schedule row.
+   > With the template's own handler you would see: 'Posted 4 of 12 periods, then stopped at month 5:
+   > no schedule row.' With your handler you see only the error and a line in your log file. Four rows
+   > were posted, and nothing on screen tells you so. You would open the ledger to find out where it
+   > stopped."*
+
+   End it with one line on what to do: check the ledger after any failed posting, and read the log
+   file.
 3. **Ask, and name accepting as the preferred answer when it is offered.** Preferred does not
    mean decided (`templates/_template-schema.md` §10.7). Ask it even when the answer looks settled.
 4. **Whichever is chosen, all five of these hold:**

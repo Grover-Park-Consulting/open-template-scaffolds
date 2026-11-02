@@ -106,6 +106,11 @@ end, so they learn it before they answer anything rather than after.
 **The ending question, when the design spec is approved, says again where the run ends** (method
 `run-ending`).
 
+**Read the library's templates and standards only through `get_template`, `get_part`, `get_standards`
+and `get_lessons`. Never open one from the library folder, even to check a detail or to see what a
+template asks for.** A file read hands you a part's work before its turn, and the part that was meant
+to govern that work arrives after you have done it. If you need a template you do not hold, fetch it.
+
 **Why they are told this first.** Without an Access MCP server you cannot run what you wrote, so
 nothing you hand over has been executed by anything. A developer who learns that at the end has
 spent the whole session believing they were getting a tested build.
@@ -180,6 +185,9 @@ run.
 worded the same in every template.** `Yes, I have a backup`, described as "A copy exists that I can
 go back to if anything goes wrong." `Not yet`, described as "I'll make one now. The build waits until
 I tell you it's done." It has no preferred choice (write `**Preferred:** none`).
+
+**Ask it on the build route only.** On the handover route you change nothing, and `handover-code`
+step 6 tells the developer to back up.
 
 **Ask it as soon as the developer says the database is one they already use, before any question
 about its layout.** A stop belongs before the detail questions, so the developer is not asked about
@@ -773,8 +781,13 @@ they have.
    the platform facts you were given; invent none.
 2. Put `PROPOSED CODE: not tested or run in a live database.` at the head of every file you hand
    over, and say it once, plainly, in your message. Do not dramatise it.
-3. Open, import and run nothing. Start no Access process. None of `access-gate`, `quiet-build` or
-   `runbook` applies.
+3. **Reading the developer's database is allowed; changing it is not.** List the `MSACCESS.EXE`
+   process IDs, copy the supplied file to a name unique to this run, and read the copy with the Access
+   server's read tools for its names, structure and code. The new process ID that names your copy is
+   yours; act on no other, because the developer's own Access may be running. Use no tool that writes,
+   imports, runs a procedure or saves. Leave the supplied file unopened. Close the session when you
+   have read what the design needs, and tell the developer where the copy is. Import and run nothing.
+   Name what you read in the build record. None of `access-gate`, `quiet-build` or `runbook` applies.
 4. **Hand over the checks.** Take the template's checks (the list written for the developer, such as
    "How you validate the template's output") and write them as a checklist file beside the code, in
    the template's order, each saying what to do and what a pass looks like. The developer runs them
@@ -807,8 +820,11 @@ they have.
    > The code we will now deliver to you was built in your environment, so please run your own
    > acceptance testing before you rely on it.
 
-   End all three with: `If you ran the six checks, you can help us by pasting this section at
-   <report page>. It takes a minute.`
+   Report page address: none yet.
+
+   While the address above says none, end all three paragraphs without an invitation to report, and
+   write no address of your own. Once it names an address, end all three with: `If you ran the six
+   checks, you can help us by pasting this section at <the address>. It takes a minute.`
 
    Under the paragraph, write a section headed "Confirm these first", worded with this build's
    actual names, each check ending `Result: not run`. Fill its header: template, version,

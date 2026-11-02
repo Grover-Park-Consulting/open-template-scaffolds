@@ -5,7 +5,7 @@ domain: app-startup
 type: vba-scaffold
 version: 0.5.1
 status: stable
-status_fingerprint: a43b5e3a8e01
+status_fingerprint: 3eecddfdc61b
 requires_tables:
   - USysLocalSetting
 platform_facts: [target-file, app-startup-autoexec]
@@ -110,7 +110,7 @@ Three layers, kept distinct throughout:
 | A central error logger | `error-handling.md`. **It must not write to the back end** — see *Standards Layer*. |
 | The back end's database password | Only where it has one. Asked before this is built, used while building, stored nowhere by this scaffold. |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where people are already using this application, ask for a backup copy of the front end before
 changing anything — before the password question below.** This template's own build only alters

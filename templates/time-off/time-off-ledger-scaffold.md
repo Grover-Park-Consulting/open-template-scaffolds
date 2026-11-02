@@ -3,9 +3,9 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.3.2
+version: 0.4.0
 status: draft
-status_fingerprint: 4369f519c48c
+status_fingerprint: d0c4455e93dc
 implements: time-off-ledger-schema
 requires_tables:
   - tlkpTimeOffCategory
@@ -64,7 +64,7 @@ related:
 
 # Time Off Ledger — VBA Scaffold
 
-**Status last determined:** 2026-10-05.
+**Status last determined:** 2026-11-02.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -102,14 +102,20 @@ shape), and the open-time macro for posting. This is the VBA those pieces call.
 
 ### Ask before building
 
-**Where this is a database already in use, ask for a backup copy before changing anything.** Two
-questions, in this order:
+**On the build route, where this is a database already in use, ask for a backup copy before changing
+anything.** Two questions, in this order:
 
 1. *"Is this a database you already use, or a new one you're trying this out on?"*
 2. Where it is one they already use: *"Make a copy of the file before I start. Say when it's done and
    the build continues; say there's no copy and it stops."*
 
-**Stop and build nothing if they say there is no copy.** A new database needs no copy.
+**Stop and build nothing if they say there is no copy.** A new database needs no copy. On the
+handover route ask neither: you change nothing, and the handover method tells the developer to back up.
+
+**On every route, ask whether the database already has an employee table.** Offer `Use mine`,
+described as "The code reads the table you name; you add the hire-date, accrual-start and
+inactive-date columns it needs", and `Create tblEmployee`, described as "A new minimal table from the
+schema; you would then have two people tables". Preferred: `Use mine`. Do not infer it.
 
 **One choice belongs to the developer and is never inferred:** when earned hours are posted. It is
 item 7 under *Information and conditions you need to supply* in `time-off-ledger-outcome-first`.

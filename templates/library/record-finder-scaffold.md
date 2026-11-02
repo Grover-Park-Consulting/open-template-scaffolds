@@ -3,9 +3,9 @@ template: record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.5.0
-status: stable
-status_fingerprint: fd6fbf247682
+version: 0.5.1
+status: review
+status_fingerprint: 7e37b9df63d1
 implements: catalog-schema
 requires_tables:
   - tblPublication
@@ -32,7 +32,7 @@ warnings:
 
 # Record Finder for an Entry Form — VBA Scaffold
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-02.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -69,7 +69,7 @@ Three layers, kept distinct throughout:
 | A sort-title column (e.g. `PubSort`) | The finder list and the jumped form order on it |
 | A central error logger | `error-handling.md` |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:

@@ -3,9 +3,9 @@ template: officiating-assignment-form
 title: Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
-version: 0.5.0
+version: 0.5.1
 status: review
-status_fingerprint: 314b5680adc1
+status_fingerprint: 7082340a9644
 implements: officiating-assignment-schema
 record_source: qryGame_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]
@@ -21,7 +21,7 @@ warnings:
 
 # Officiating Assignment — Game Assignment Form
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-02.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -46,7 +46,7 @@ not redefines**.
 | `officiating-assignment-scaffold` | The paired scaffold; the subform's validation calls its `ValidateAssignment`, the optional features call `GetAppSetting` / `GetApplicablePayRate` |
 | `form-conventions.md` | House design defaults + the named reusable patterns (validation highlights, quick-add, audit display) |
 
-### Ask before building
+### Ask before building (build route only)
 
 **Where this is a database already in use, ask for a backup copy before changing anything.** This
 template alters the file it is built into. Two questions, in this order:
