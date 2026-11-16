@@ -91,3 +91,33 @@ The rule of thumb: **parameterize or safely delimit values; concatenate only str
 - **Pass-through** can't use Jet parameters — build the server SQL string with the same delimiting
   discipline. A genuinely *parameterized* server call needs **ADO**, which this standards layer
   reserves for rare, advanced cases.
+
+---
+
+## 5. Building the string
+
+- **Optional criteria: start the `WHERE` with `1=1`** and append each condition with `AND`. Whether a
+  condition is the first never needs deciding:
+
+  ```vba
+  strWhere = "1=1"
+  If lngIndividualID > 0 Then strWhere = strWhere & " AND IndividualID = " & lngIndividualID
+  strSQL = "SELECT * FROM tblIndividual WHERE " & strWhere
+  ```
+
+- **Line continuation limit.** The code editor allows about 25 `_` continuations in one statement. Past
+  that, the import or compile fails with "too many line continuations" and names no line. A wide
+  `INSERT` or `UPDATE` built one column per line passes it in the low twenties of columns. Plan for it
+  before you hit it: collect the statement into several string variables, each well under the limit,
+  and join them once at the end.
+
+  ```vba
+  strSQL1 = "INSERT INTO tblExample (Field01, Field02, ..." & _
+            "Field20) "
+  strSQL2 = "VALUES (..."
+  strSQL = strSQL1 & strSQL2
+  ```
+
+  Splitting one statement into several `Execute` calls changes what runs; do not. A statement this wide
+  by accident is better refactored: a loop over a field list, a saved parameter query, or a narrower
+  table. Use the variables when the statement is wide by nature.

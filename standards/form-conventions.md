@@ -45,9 +45,18 @@ From here on, this file contains instructions for the AI.
 | `cmd` | Command button | `cmdSave` |
 | `lbl` | Label | `lblFormTitle` |
 | `img` | Image | `imgCoverImage` |
-| `sfrm` | Subform control | `sfrmPublication_Creator` |
-| `grp` | Option group | `grpStatus` |
+| `opt` | Option button | `optStatusOpen` |
+| `fra` | Option group (frame) | `fraStatus` |
+| `tgl` | Toggle button | `tglShowInactive` |
 | `tab` | Tab control | `tabDetails` |
+| `pg` | Tab page | `pgAddress` |
+| `sfrm` | Subform control | `sfrmPublication_Creator` |
+| `srpt` | Subreport control | `srptPublication_Creator` |
+| `rct` | Rectangle | `rctHeader` |
+| `lin` | Line | `linDivider` |
+| `att` | Attachment | `attCoverScan` |
+| `nav` | Navigation control | `navMain` |
+| `web` | Web browser | `webHelp` |
 
 ---
 
@@ -119,16 +128,17 @@ Documented here so a `form-spec`'s deferral is concrete, not hand-waved. Two tie
   `RefreshSQLWhere`). Supports **"All or One"** — an `<All>` entry leaves the form unfiltered.
   **→ tracked as a future `vba-scaffold` (the selector engine is reusable code).**
 - **All or One selector** — a combo box that lets the person pick one value or everything. Its row
-  source is a named query that adds one made-up entry, *All*, to the lookup's rows by `UNION`:
+  source is a named query that adds one made-up entry, *All*, to the lookup's rows by `UNION ALL`:
 
   ```sql
   SELECT TOP 1 0 AS MediaTypeID, "All" AS MediaTypeName FROM MSysObjects
-  UNION
+  UNION ALL
   SELECT MediaTypeID, MediaTypeName FROM tlkpMediaType;
   ```
 
-  The *All* entry's key is 0, which no lookup row uses; `MSysObjects` is only a table known to have a
-  row. The combo's bound column is hidden, its default value is 0, and picking 0 means no selection:
+  The *All* entry's key is 0, which no lookup row uses. `MSysObjects` exists in every accdb, which is
+  why it is used and not a table of your own, which exists only where an application has created it.
+  The two parts cannot repeat a row, so `UNION ALL` skips a pass that would remove nothing. The combo's bound column is hidden, its default value is 0, and picking 0 means no selection:
   whatever the combo drives (a record selection, or a filter on the form) is cleared; any other
   pick applies it. The query's sort order is not part of the pattern; it follows the context. In VBA,
   the 0 is a commented Enum member (`design-principles.md`, *Name the fixed numbers*).

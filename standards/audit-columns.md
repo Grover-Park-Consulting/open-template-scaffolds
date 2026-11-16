@@ -72,7 +72,9 @@ Every `tbl` and `tlkp` table carries these five columns, **always last** in colu
     stamp `CreatedBy`, and since `CreatedBy` is `Required` the save fails outright: that front end
     cannot insert a row at all. Put the same module in the back end and in every front end, and
     re-import it everywhere whenever it changes — nothing keeps the copies in step for you. On a
-    single-file database there is only one place for it, and this does not arise.
+    single-file database there is only one place for it, and this does not arise. A program that
+    writes to the tables without being Access (a script, a web application) cannot resolve the
+    function and its writes fail with the same message; this standard does not cover that.
   - **`AuditUser()` must never return an empty string.** `Environ$("USERNAME")` comes back empty in
     some contexts — a scheduled task, a service account, a locked-down profile — and because
     `CreatedBy` is `Required`, an empty result blocks the insert outright. The helper falls back to

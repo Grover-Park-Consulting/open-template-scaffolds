@@ -248,3 +248,34 @@ Composite indexes are named by leading column only.
 1. **Identity PK** (`[Entity]ID`) — always first.
 2. **Business/data columns** — identifying before qualifying (`ProjectName` before `ProjectDescription`).
 3. **Audit columns** — always last (see `audit-columns.md`).
+
+---
+
+## 7. VBA variable and constant names
+
+A variable's name starts with a prefix for its type, then the value in PascalCase.
+
+| Prefix | Type | Example |
+|---|---|---|
+| `str` | String | `strSQL`, `strWhere` |
+| `lng` | Long | `lngIndividualID` |
+| `int` | Integer | `intIndex` |
+| `boo` | Boolean (canonical) | `booEnabled` |
+| `dt` | Date/Time | `dtMailedDate` |
+| `dbl` | Double | `dblValue` |
+| `db` | Database object | `db As DAO.Database` |
+| `rst` | Recordset | `rst As DAO.Recordset` |
+| `ws` | Workspace | `ws As DAO.Workspace` |
+| `qdf` | QueryDef | `qdf As DAO.QueryDef` |
+| `tdf` | TableDef | `tdf As DAO.TableDef` |
+| `fld` | Field | `fld As DAO.Field` |
+| `prp` | Property | `prp As DAO.Property` |
+| `ctrl` | Control | `ctrl As Control` |
+| `frm` | Form | `frm As Form` |
+| `rpt` | Report | `rpt As Report` |
+| `varX` | Variant (For Each loop) | `varX As Variant` |
+| `m` | Private class field | `mForm` |
+
+Every object variable carries its type's prefix. `bol` and `b` are older Boolean prefixes; use `boo`
+in new code. Constants are PascalCase: `Private Const MaxRetries As Long = 3`. An Enum's members
+take no prefix (`design-principles.md`, *Name the fixed numbers*).

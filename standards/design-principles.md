@@ -158,7 +158,7 @@ resemble each other for now.
 ## Name the fixed numbers — Enums
 
 A number in code that stands for a row of a lookup table, or for any fixed state, is written as a
-named `Enum` member, never as the bare number (`If lngApprovalID = ApprovalStatus.intApproved`, not
+named `Enum` member, never as the bare number (`If lngApprovalID = ApprovalStatus.Approved`, not
 `= 1`). A reader cannot tell what a bare `1` means, and a search for the meaning finds nothing.
 
 - **One Enum per lookup, named for the lookup.** Two lookups whose rows happen to share numbers keep
@@ -168,10 +168,20 @@ named `Enum` member, never as the bare number (`If lngApprovalID = ApprovalStatu
 - **The member's number is the lookup row's key.** The Enum is a copy of the lookup's keys, so when a
   row is added to the lookup, add the member in the same change.
 - **A member that is not a lookup row says what it is, in a comment.** A filter list that offers
-  "All" as a made-up first entry (`intAll = 0`) is the usual case: comment that the number is not
+  "All" as a made-up first entry (`All = 0`) is the usual case: comment that the number is not
   a row.
-- **Name:** the type in PascalCase for what it lists; each member `int` plus the row's value in
-  PascalCase (`intApproved`).
+- **Name:** the type in PascalCase for what it lists; each member is the row's value in PascalCase
+  (`Approved`), with no type prefix and no `ID` suffix: an Enum value is always a whole number, so
+  either would only repeat it.
+- **Member names are scoped to the module.** A duplicate member name in the same module fails to
+  compile; rename the second.
+
+## Comments — say why, not what
+
+Add a comment only when the reason is not obvious from the code: a hidden constraint, a subtle
+invariant, a workaround for a known bug, the standard or template rule a line carries out, or
+attribution for a non-obvious algorithm. Do not comment what the code does, name the current task or
+caller, or write anything that will go stale as the code changes.
 
 ## Strong Contracts — say exactly what a procedure takes and returns
 
