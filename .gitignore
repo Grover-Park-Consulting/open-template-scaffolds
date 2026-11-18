@@ -20,6 +20,7 @@ __pycache__/
 
 # Third-party reference material, not library content
 ClassesforCC/
+StandardsFromOtherDevelopers/
 
 # Accumulated build records are per-developer history, not library content —
 # keep the folder and its README, ignore everything that fills it
