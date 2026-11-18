@@ -81,10 +81,54 @@ The rule of thumb: **parameterize or safely delimit values; concatenate only str
   > form control reference — a perfectly common approach, and one many prefer; a forked practice that
   > wants it simply swaps this rule. This layer defaults the other way *because* of the decoupling.
 
+- **When the values vary in a statement built in code** (a one-off action query, or values a saved
+  query does not cover): declare them in a `PARAMETERS` clause on a temporary QueryDef and set them by
+  name. The values never enter the SQL text, so nothing needs delimiting or quote-doubling, and the
+  engine checks each value against its declared type. Take `db` from the transaction's workspace when
+  there is one (`error-handling.md`, *Transaction guard*).
+
+  ```vba
+  ' Adapted from AccessCodeLib (access-codelib.net), data/dao/DaoHandler.cls, BSD 3-Clause License.
+  Set qdf = db.CreateQueryDef(vbNullString, _
+        "PARAMETERS [pCustomerName] Text(255), [pOrderQuantity] Long; " & _
+        "INSERT INTO tblOrder (CustomerName, OrderQuantity) VALUES ([pCustomerName], [pOrderQuantity])")
+  qdf.Parameters("pCustomerName").Value = strCustomerName
+  qdf.Parameters("pOrderQuantity").Value = lngOrderQuantity
+  qdf.Execute dbFailOnError
+  ```
+
 - **When the shape of the query varies** — optional criteria, a variable `IN (…)` list, dynamic columns
   or sort — **build the string**. Then:
-  - Delimit every concatenated **value** correctly: strings in single quotes (double any embedded
-    quote), dates in `#mm/dd/yyyy#` or via a formatting helper, numbers bare and validated.
+  - Delimit every concatenated **value** so the result is the same on every machine. Concatenating a
+    number or date directly uses the machine's regional settings: `1.5` arrives as `1,5` where the
+    comma is the decimal separator, and a `/` in a `Format` pattern becomes the local date separator.
+    - **Text:** single quotes, every embedded quote doubled.
+    - **Numbers:** `Trim$(Str$(value))`. `Str$` always writes a decimal point; plain concatenation
+      does not.
+    - **Dates, Access SQL:** `Format$(value, "\#yyyy\-mm\-dd\#")`, or with a time
+      `Format$(value, "\#yyyy\-mm\-dd hh\:nn\:ss\#")`. Every separator is escaped with `\`.
+    - **Dates, SQL Server (pass-through):** `Format$(value, "\'yyyymmdd hh\:nn\:ss\'")`, which SQL
+      Server reads the same under any language setting.
+
+    ```vba
+    ' Locale-independent SQL literals.
+    ' Adapted from AccessCodeLib (access-codelib.net), data/SqlTools.cls, BSD 3-Clause License.
+    strWhere = strWhere & " AND OrderDate >= " & Format$(dtFrom, "\#yyyy\-mm\-dd\#")
+    strWhere = strWhere & " AND UnitPrice > " & Trim$(Str$(dblUnitPrice))
+    ```
+
+    Tested by AccessCodeLib's contributors on machines set to other regional settings, not on this
+    library maintainer's own.
+  - **Date ranges include the whole last day.** A Date/Time field that holds a time is missed by
+    `BETWEEN` for every row after midnight on the last day. Write the range as on or after the first
+    day and before the day after the last:
+
+    ```vba
+    ' Adapted from AccessCodeLib (access-codelib.net), data/SqlTools.cls, BSD 3-Clause License.
+    strWhere = strWhere & " AND OrderDate >= " & Format$(dtFrom, "\#yyyy\-mm\-dd\#") & _
+               " AND OrderDate < " & Format$(DateAdd("d", 1, dtTo), "\#yyyy\-mm\-dd\#")
+    ```
+
   - **Whitelist any concatenated identifier** (field, table, or sort name) against known values — never
     pass user free-text as an identifier.
 
@@ -104,6 +148,11 @@ The rule of thumb: **parameterize or safely delimit values; concatenate only str
   If lngIndividualID > 0 Then strWhere = strWhere & " AND IndividualID = " & lngIndividualID
   strSQL = "SELECT * FROM tblIndividual WHERE " & strWhere
   ```
+
+  **An empty value adds no condition.** When an optional criterion's control is empty (Null or a
+  zero-length string), append nothing for it. A condition comparing a field with Null matches no row,
+  so a search form with one blank box would return nothing. (Adapted from AccessCodeLib,
+  access-codelib.net, `data/SqlTools.cls` and `data/FilterStringBuilder.cls`, BSD 3-Clause License.)
 
 - **Line continuation limit.** The code editor allows about 25 `_` continuations in one statement. Past
   that, the import or compile fails with "too many line continuations" and names no line. A wide

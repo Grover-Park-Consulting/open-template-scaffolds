@@ -370,9 +370,26 @@ second of the two shapes named in "What a conforming build looks like":
 
 ```vba
 errHandler:
-240       Set rs = Nothing                                    ' local cleanup only
-250       Err.Raise Err.Number, Err.Source, Err.Description   ' propagate - do not log, do not swallow
+          ' Adapted from AccessCodeLib (access-codelib.net), data/dao/DaoHandler.cls, BSD 3-Clause License.
+240       lngErrNumber = Err.Number                           ' copy Err first: cleanup can clear it
+250       strErrSource = Err.Source
+260       strErrDescription = Err.Description
+270       Set rs = Nothing                                    ' local cleanup only
+280       Err.Raise lngErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & strErrSource, strErrDescription
 ```
+
+**Copy `Err` before the cleanup.** Cleanup can run code you cannot see: setting a class instance to
+`Nothing` runs its `Class_Terminate`, and an `On Error` statement there, or in any procedure it calls,
+clears `Err`. A re-raise that reads `Err` after the cleanup then raises error 0, which VBA reports as
+error 5, "Invalid procedure call or argument", and the real error is lost. Observed 2026-11-18 in a
+test database: a `Class_Terminate` with `On Error Resume Next`, and one calling a procedure with its
+own handler, both cleared `Err`; `rs.Close` and `ws.Rollback` did not.
+
+**Name this procedure in the source.** Each propagating procedure puts `MODULE_NAME.PROC_NAME->` in
+front of `Err.Source`, so the error reaches the procedure that logs carrying the path it took
+(`modOrder.PostOrder->modOrder.WriteLines->MyDatabase`). This tells the reader where the error began,
+which `Erl` in the logging procedure cannot, since it reports only the line of the call. The logger
+records the path only if it reads `Err.Source`.
 
 The procedure whose next action depends on this one is the one that logs — and, if it began a
 transaction, rolls back, per the transaction guard above (`If bInTrans Then ws.Rollback`). Logging
@@ -399,8 +416,11 @@ errHandler:
 250           Set rs = Nothing
 260           Resume Next
 270       End If
-280       Set rs = Nothing
-290       Err.Raise Err.Number, Err.Source, Err.Description   ' anything else: propagate, unlogged
+280       lngErrNumber = Err.Number                           ' anything else: copy, clean up, propagate unlogged
+290       strErrSource = Err.Source
+300       strErrDescription = Err.Description
+310       Set rs = Nothing
+320       Err.Raise lngErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & strErrSource, strErrDescription
 ```
 
 Only the error number named as expected is ever recovered from inline; every other error takes the
@@ -418,8 +438,9 @@ error handler"; conditions 7 and 8 still apply.
    first executable line.
 3. Every `errHandler:` block follows one of two named shapes, never a mix of the two: the
    **reporting shape** — capture `Erl`, report, `Resume Cleanup`, then `Resume` — for a procedure
-   that is itself the end of the line; or the **propagating shape** — local cleanup only, then
-   `Err.Raise Err.Number, Err.Source, Err.Description`, no `Erl` capture and no report — for a
+   that is itself the end of the line; or the **propagating shape** — copy `Err` into local
+   variables, local cleanup only, then `Err.Raise` from those variables with
+   `MODULE_NAME.PROC_NAME->` in front of the source, no `Erl` capture and no report — for a
    procedure whose caller depends on the outcome (see "Errors from a called procedure must reach
    whoever depends on the outcome").
 4. No procedure with an `errHandler:` block exits by a route that skips `Cleanup:`.

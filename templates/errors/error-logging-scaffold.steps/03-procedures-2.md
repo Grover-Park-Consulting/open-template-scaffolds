@@ -131,6 +131,11 @@ Public Function CreateErrorLogTable(Optional bSilent As Boolean = False) As Stri
     fld.AllowZeroLength = True
     tdf.Fields.Append fld
 
+    Set fld = tdf.CreateField("ErrorSource", dbText, ERROR_SOURCE_MAX)
+    fld.Required = True
+    fld.AllowZeroLength = True
+    tdf.Fields.Append fld
+
     Set fld = tdf.CreateField("ModuleName", dbText, 100)
     fld.Required = True
     fld.AllowZeroLength = True
@@ -185,6 +190,8 @@ Public Function CreateErrorLogTable(Optional bSilent As Boolean = False) As Stri
     SetFieldDescription db, "ErrorNumber", "Err.Number as captured by LogError."
     SetFieldDescription db, "ErrorDescription", _
         "Err.Description, truncated to fit rather than allowed to fail the write."
+    SetFieldDescription db, "ErrorSource", _
+        "Err.Source: the path through propagating procedures, or the project. Truncated to fit."
     SetFieldDescription db, "ModuleName", "The module the failing line sits in."
     SetFieldDescription db, "ProcedureName", "The procedure the failing line sits in."
     SetFieldDescription db, "ErrorLineNumber", _

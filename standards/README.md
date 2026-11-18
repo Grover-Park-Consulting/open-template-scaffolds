@@ -34,6 +34,19 @@ file(s) here and applies them.
 | [`form-conventions.md`](form-conventions.md) | `form-conventions` | Form design defaults (control prefixes, control types, buttons, tab order, sizing) + named form patterns (selector, quick-add, validation highlights; audit display optional) |
 | [`startup-conventions.md`](startup-conventions.md) | `startup-conventions` | How a generated Access application initializes on open — the `AutoExec` → `Startup()` convention, the idempotent `EnsureAppFolders()` slot, and reliable external-file-asset folders |
 
+## Sources
+
+Some rules here are adapted from other people's published work. The code that carries each one says
+so in a comment. Crediting a source means the method is not original to this library; it does not
+mean the source endorses this library, or this library endorses everything in the source.
+
+| Source | Adapted into |
+|---|---|
+| AccessCodeLib, access-codelib.net (BSD 3-Clause License; `data/SqlTools.cls`, `data/FilterStringBuilder.cls`, `data/dao/DaoHandler.cls`) | `query-style.md` §4: SQL with parameters on a temporary QueryDef, values that read the same under any regional settings, date ranges that include the whole last day; §5: an empty value adds no condition. `error-handling.md`: the propagating shape copies `Err` first and names itself in the source (and, outside this folder, the error-logging templates record that path in `ErrorSource`) |
+
+The full record of what was adopted from each source, and what was not, is in
+[`../reference/house-comparisons/`](../reference/house-comparisons/).
+
 ## Using your own standards
 
 You can replace any or all of the standards files with your own rules. If you put your own rules in place, the next

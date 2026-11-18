@@ -15,8 +15,9 @@ exactly one:
 - **Reporting shape**, for a procedure that is the end of the line: it rolls back where it began a
   transaction, logs, and returns a sentence. Shown in full in `PostOnePeriod` and referenced
   thereafter as *the standard reporting handler*.
-- **Propagating shape**, for a procedure whose caller depends on the outcome: local cleanup, then
-  `Err.Raise Err.Number, Err.Source, Err.Description`, no report. `AccrualHours` and
+- **Propagating shape**, for a procedure whose caller depends on the outcome: copy `Err` into
+  locals, local cleanup, then `Err.Raise` from the locals with `MODULE_NAME.PROC_NAME->` in front of
+  the source, no report. `AccrualHours` and
   `TimeOffEntryCheck` take it, because the posting code and the Data Macro both act on their answer.
 
 **The module header, `modTimeOffRules`**
@@ -138,6 +139,9 @@ Public Function AccrualHours(ByVal lEmp As Long, ByVal lCat As Long, ByVal dPeri
     Dim vHire  As Variant
     Dim vHours As Variant
     Dim lYears As Long
+    Dim lErrNumber      As Long
+    Dim sErrSource      As String
+    Dim sErrDescription As String
 
     On Error GoTo errHandler
     sWhy = ""
@@ -159,9 +163,14 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] propagating shape: local cleanup only, then pass it on.
+    ' [STANDARDS — error-handling.md] propagating shape: copy Err, local cleanup only, then pass it on
+    '            with this procedure named in the source.
+    '            Adapted from AccessCodeLib (access-codelib.net), data/dao/DaoHandler.cls, BSD 3-Clause License.
+    lErrNumber = Err.Number
+    sErrSource = Err.Source
+    sErrDescription = Err.Description
     Set db = Nothing
-    Err.Raise Err.Number, Err.Source, Err.Description
+    Err.Raise lErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & sErrSource, sErrDescription
 End Function
 ```
 
@@ -199,6 +208,9 @@ Public Function TimeOffEntryCheck(ByVal vEmp As Variant, ByVal vCat As Variant, 
     Dim sReason As String
     Dim sActive As String
     Dim dEffect As Double
+    Dim lErrNumber      As Long
+    Dim sErrSource      As String
+    Dim sErrDescription As String
 
     On Error GoTo errHandler
     If IsNull(vEmp) Or IsNull(vCat) Or IsNull(vReason) Or IsNull(vDate) Or IsNull(vHours) Then GoTo Cleanup
@@ -261,9 +273,13 @@ errHandler:
     ' [STANDARDS — error-handling.md] propagating shape. An unexpected error here refuses the save:
     '            the macro raises it and Access shows its own message. Nothing is logged unless the
     '            build makes it so; the build record says which.
+    '            Adapted from AccessCodeLib (access-codelib.net), data/dao/DaoHandler.cls, BSD 3-Clause License.
+    lErrNumber = Err.Number
+    sErrSource = Err.Source
+    sErrDescription = Err.Description
     If Not rs Is Nothing Then rs.Close
     Set rs = Nothing
     Set db = Nothing
-    Err.Raise Err.Number, Err.Source, Err.Description
+    Err.Raise lErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & sErrSource, sErrDescription
 End Function
 ```

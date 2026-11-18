@@ -3,9 +3,9 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.10.0
-status: stable
-status_fingerprint: c8cb761a98d0
+version: 0.11.0
+status: review
+status_fingerprint: 99061dbdcf52
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog
@@ -33,8 +33,8 @@ warnings:
     loops, or stops the application outright. Every write path here is guarded, and each failure
     steps down to the next option rather than propagating.
   - Any On Error statement clears the Err object, and so do Resume, Exit Sub, and Exit Function.
-    LogError therefore copies Err.Number and Err.Description into local variables on its first two
-    lines, BEFORE its own On Error Resume Next guard. Putting the guard first — the natural
+    LogError therefore copies Err.Number, Err.Description and Err.Source into local variables on its
+    first three lines, BEFORE its own On Error Resume Next guard. Putting the guard first — the natural
     instinct when hardening a logger — silently records error 0 with an empty description on
     every single call. Do not reorder those lines.
   - VBA does not run at all outside a Trusted Location — Access silently disables it and nothing
@@ -61,7 +61,7 @@ related:
 
 # Error Logging — VBA Scaffold
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-18.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

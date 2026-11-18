@@ -3,9 +3,9 @@ template: error-logging-schema
 title: Error Logging — Table Schema
 domain: errors
 type: table-schema
-version: 0.3.0
+version: 0.4.0
 status: review
-status_fingerprint: 4bd1b131ca7b
+status_fingerprint: 32a7e75c5b17
 platform_facts: [target-file, sql-insert-truncation]
 steps: [01-checks, 02-tables, 03-run-the-checks]
 standards_layer:
@@ -32,7 +32,7 @@ warnings:
 
 # Error Logging — Table Schema
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-18.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -82,6 +82,7 @@ Grain: one row per error reported to `LogError`.
 | `ErrorLogID` | AutoNumber | PK | Surrogate key. Also serves as the **reference number** shown to the person at the keyboard, where the wizard's Step 6 includes one — so a support call can name the exact row. |
 | `ErrorNumber` | Long | Required | `Err.Number`, read on the logger's first line before anything can clear it. |
 | `ErrorDescription` | Text(255) | Required, `AllowZeroLength = True` | `Err.Description`, **truncated** to fit rather than allowed to fail on length. A description longer than the field is a shortened record; a refused write is no record at all. **A real `Err.Description` can legitimately be an empty string** — this table has no control over what the engine supplies, and a log's job is to record whatever arrived, not to reject it. Without `AllowZeroLength = True`, `Required` on its own refuses that write outright. |
+| `ErrorSource` | Text(255) | Required, `AllowZeroLength = True` | `Err.Source`, read with the number and description, **truncated** to fit like `ErrorDescription`. For an error that passed through propagating procedures (`standards/error-handling.md`), the path it took, outermost first: `modOrder.PostOrder->modOrder.WriteLines->MyDatabase`. Otherwise the project or library that raised it. May be empty. (The path format is adapted from AccessCodeLib, access-codelib.net, BSD 3-Clause License.) |
 | `ModuleName` | Text(100) | Required | The module the failing line sits in, supplied by whichever reporting method the wizard's Step 2 chose. Both methods produce the same bare module name, so this column carries one format. |
 | `ProcedureName` | Text(100) | Required | The procedure the failing line sits in. |
 | `ErrorLineNumber` | Long | Required | `Erl` — the last numbered line executed before the failure. **`0` where the procedure carries no line numbers**, which is a legitimate answer and not a missing value; the column is never Null. |
@@ -117,8 +118,8 @@ would relate them.
    ACE database engine — not VBA — evaluates anything handed to it as text, so `Now()` and
    `Environ()` are not available to it (see `templates/_materialization.md` rule 5); a default
    depending on either would block the insert outright.
-4. **`ErrorDescription` is truncated to fit, never allowed to overflow.** A shortened description
-   still names the problem; a failed write names nothing.
+4. **`ErrorDescription` and `ErrorSource` are truncated to fit, never allowed to overflow.** A
+   shortened value still names the problem; a failed write names nothing.
 5. **`ErrorUser` is never empty.** `Environ$("USERNAME")` comes back empty in some contexts — a
    scheduled task, a service account, a locked-down profile — and the column is Required, so an
    empty result would block the insert. It falls back to `"Unknown"`, matching the rule

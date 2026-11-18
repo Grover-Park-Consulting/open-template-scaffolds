@@ -27,7 +27,15 @@ Private Const ERROR_LOG_FILE        As String = "ErrorLog.txt"
 ' [SCHEMA] tblErrorLog.ErrorDescription is Text(255). A longer description is
 '          truncated to fit, never allowed to fail the write (schema Business Rule 4).
 Private Const ERROR_DESCRIPTION_MAX As Long = 255
+
+' [SCHEMA] tblErrorLog.ErrorSource is Text(255), truncated the same way.
+Private Const ERROR_SOURCE_MAX      As Long = 255
 ```
+
+**A `tblErrorLog` built from schema version 0.3.0 or earlier has no `ErrorSource` column.**
+`CreateErrorLogTable` leaves an existing table as it is, so add the column by hand first (Text(255),
+Required, `AllowZeroLength = True`). Without it, every write to the table also lands in the text
+file, because the missing column leaves an error that marks the write as failed.
 
 ### LogError — `Public Sub` (the logger every handler calls)
 
@@ -42,8 +50,8 @@ itself. An error raised here would re-enter the handler that called it. It is gu
 instead, and each failure steps down to the next option rather than propagating. See
 `error-handling.md`, "The logger itself is the one exception".
 
-**The order of the first two statements is load-bearing.** `Err` is cleared by any `On Error`
-statement — including the guard on the third line. Read the error first, guard second. Swapping
+**The order of the first three statements is load-bearing.** `Err` is cleared by any `On Error`
+statement — including the guard on the fourth line. Read the error first, guard second. Swapping
 them logs error 0 with an empty description, on every call, silently.
 
 ```vba
@@ -54,14 +62,19 @@ Public Sub LogError(ByVal sModule As String, _
     '            Nothing in here may raise an error of its own.
     Dim lErrNumber      As Long
     Dim sErrDescription As String
+    Dim sErrSource      As String
     Dim lLogID          As Long
     Dim bRecorded       As Boolean
 
     ' [SCAFFOLD] Read Err FIRST. The On Error statement below clears it, and so would
     '            any other On Error statement, Resume, Exit Sub, or Exit Function. These
-    '            two lines must stay above the guard.
+    '            three lines must stay above the guard.
     lErrNumber = Err.Number
     sErrDescription = Err.Description
+    ' [STANDARDS - error-handling.md] For an error that came through propagating
+    '            procedures, the path it took. Adapted from AccessCodeLib
+    '            (access-codelib.net), base/modErrorHandler.bas, BSD 3-Clause License.
+    sErrSource = Err.Source
 
     ' [STANDARDS - error-handling.md] The documented exception: the logger is guarded
     '            rather than handled, because a handler here would call itself.
@@ -71,21 +84,26 @@ Public Sub LogError(ByVal sModule As String, _
     If Len(sErrDescription) > ERROR_DESCRIPTION_MAX Then
         sErrDescription = Left$(sErrDescription, ERROR_DESCRIPTION_MAX)
     End If
+    If Len(sErrSource) > ERROR_SOURCE_MAX Then
+        sErrSource = Left$(sErrSource, ERROR_SOURCE_MAX)
+    End If
 
     ' [WIZARD Step 3 - where errors are recorded] >>> keep ONE of the three blocks <<<
 
     ' --- "A table in this database" ---
-    ' bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sModule, sProcedure, _
-    '                               lLine, lLogID)
+    ' bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sErrSource, sModule, _
+    '                               sProcedure, lLine, lLogID)
 
     ' --- "A text file" ---
-    ' bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sModule, sProcedure, lLine)
+    ' bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sErrSource, sModule, _
+    '                              sProcedure, lLine)
 
     ' --- "The table, falling back to the text file" (preferred) ---
-    bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sModule, sProcedure, _
-                                  lLine, lLogID)
+    bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sErrSource, sModule, _
+                                  sProcedure, lLine, lLogID)
     If Not bRecorded Then
-        bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sModule, sProcedure, lLine)
+        bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sErrSource, sModule, _
+                                     sProcedure, lLine)
     End If
 
     ShowErrorToUser lErrNumber, sErrDescription, sModule, sProcedure, lLine, lLogID, bRecorded
@@ -105,6 +123,7 @@ application that must not fail on the contents of its own input.
 ```vba
 Private Function WriteErrorToTable(ByVal lErrNumber As Long, _
                                    ByVal sErrDescription As String, _
+                                   ByVal sErrSource As String, _
                                    ByVal sModule As String, _
                                    ByVal sProcedure As String, _
                                    ByVal lLine As Long, _
@@ -136,6 +155,7 @@ Private Function WriteErrorToTable(ByVal lErrNumber As Long, _
     rs.AddNew
     rs!ErrorNumber = lErrNumber
     rs!ErrorDescription = sErrDescription
+    rs!ErrorSource = sErrSource
     rs!ModuleName = sModule
     rs!ProcedureName = sProcedure
     rs!ErrorLineNumber = lLine
@@ -167,6 +187,7 @@ in this case — there is no `ErrorLogID` to quote.
 ```vba
 Private Function WriteErrorToFile(ByVal lErrNumber As Long, _
                                   ByVal sErrDescription As String, _
+                                  ByVal sErrSource As String, _
                                   ByVal sModule As String, _
                                   ByVal sProcedure As String, _
                                   ByVal lLine As Long) As Boolean
@@ -192,7 +213,8 @@ Private Function WriteErrorToFile(ByVal lErrNumber As Long, _
              sModule & "." & sProcedure & vbTab & _
              "line " & lLine & vbTab & _
              lErrNumber & vbTab & _
-             sErrDescription
+             sErrDescription & vbTab & _
+             sErrSource
 
     Err.Clear
     iFile = FreeFile

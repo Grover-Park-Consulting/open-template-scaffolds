@@ -229,6 +229,7 @@ that before choosing.
 | `prompts/BuildNewTables-StartHere.md` | The copy-paste form of the workflow above |
 | `examples/northwind-stocktake/` | A complete worked example (filled prompt + generated output) |
 | `FREEZE.md` | The human-facing-text freeze — which files may not be reworded, and how to request a lift |
+| `reference/house-comparisons/` | One file per outside source reviewed: each point adopted, kept as a house difference, ruled out, or parked. A record; never read during a run |
 | `templates/_COVERAGE.md` | Which of the four template types each domain currently has |
 
 **Load only what the task needs:** the relevant template plus its standards, never the whole library.

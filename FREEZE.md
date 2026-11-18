@@ -220,6 +220,19 @@ so an assistant doesn't mistake old grounds for new permission:
   hand-copied fingerprint, date and version were bookkeeping a tool can do. Replaces the old
   wording of those two passages; no other text moves.
 
+- **2026-11-18, wholesale for the AccessCodeLib adoption, approved by George.** Additions to
+  `standards/query-style.md` (§4: SQL with parameters on a temporary QueryDef, locale-independent
+  literals replacing the `#mm/dd/yyyy#` bullet, whole-last-day date ranges; §5: an empty value adds
+  no condition), `standards/error-handling.md` (the propagating shape copies `Err` first and names
+  itself in `Err.Source`; its example, the recovery idiom and condition 3 change to match), and
+  `standards/README.md` (a new *Sources* section). Grounds: George chose to adopt these methods from
+  AccessCodeLib (access-codelib.net, BSD 3-Clause) with the source credited in the code itself. The
+  propagating-shape change also corrects an error: a test on 2026-11-18 showed the old example
+  raising error 5 in place of the real error when its cleanup releases a class. Also approved the
+  same day: `templates/errors/error-logging-scaffold.md`, the second `warnings` entry now names
+  three values copied before the guard (`Err.Source` added), because the logger records the source
+  path in a new `ErrorSource` column. A correction the change made necessary, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

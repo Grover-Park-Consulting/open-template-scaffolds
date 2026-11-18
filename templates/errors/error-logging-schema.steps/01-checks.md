@@ -18,14 +18,14 @@ baseline checks are marked not applicable rather than skipped silently.
 | # | Check |
 |---|---|
 | 1 | An ordinary insert into `tblErrorLog`, supplying every Required column, succeeds. |
-| 2 | An insert with `ErrorDescription = ""` (a zero-length string, not Null) succeeds — confirms `AllowZeroLength = True` actually took on the built table, not only that the field table says so. |
+| 2 | An insert with `ErrorDescription = ""` and `ErrorSource = ""` (zero-length strings, not Null) succeeds — confirms `AllowZeroLength = True` actually took on the built table, not only that the field table says so. |
 | 3 | An insert omitting any one Required column in turn is refused. |
 | 4 | Not applicable — no unique index beyond the PK is declared. |
 | 5 | Not applicable — `## Relationships` declares none, by design (Business Rule 2). |
 | 6 | Not applicable — no `seeds` are declared. |
 | 7 | Not applicable — audit columns are deliberately not applied to this table (see Standards Layer). |
 | 8 | Not applicable — no FK column is declared on `tblErrorLog` (see Relationships: "deliberately unrelated"), so there is no insert-side reference to test. |
-| 9 | A value longer than `ModuleName`, `ProcedureName` or `ErrorUser` (each Text(100)) is refused on every route the logger writes by, not cut short; `ErrorDescription` is the one field the logger shortens to fit, by Business Rule 4. Confirm both halves of that distinction on the logger's own write routes. A SQL `INSERT` the logger does not make is not tested (`_template-schema.md` §4.2 item 8). |
+| 9 | A value longer than `ModuleName`, `ProcedureName` or `ErrorUser` (each Text(100)) is refused on every route the logger writes by, not cut short; `ErrorDescription` and `ErrorSource` are the two fields the logger shortens to fit, by Business Rule 4. Confirm both halves of that distinction on the logger's own write routes. A SQL `INSERT` the logger does not make is not tested (`_template-schema.md` §4.2 item 8). |
 | 10 | `Description` is present on every field of the built table, matching this template's own Purpose & rules text — confirms the second-pass `Description` set (`_materialization.md` rule 2) actually ran. |
 | 11 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming `tblErrorLog` as already existing — never a bare "duplicate object" error. |
 
