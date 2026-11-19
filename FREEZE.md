@@ -237,6 +237,12 @@ so an assistant doesn't mistake old grounds for new permission:
   words added: "VBA variable". Grounds: `naming-conventions.md` gained §7 (VBA variable and constant
   names) in the 2026-11-16 standards merge, and the row's description left it out.
 
+- **2026-11-19 (×1): `standards/error-handling.md`, "Transaction guard" and its two later
+  references, approved by George.** The guard flag `bInTrans` renamed `booInTrans`, with the same
+  rename in both scaffolds' code (a name change only; no status review opened). Grounds: `boo` is
+  the one Boolean prefix across the standards. Same day `standards/naming-conventions.md` §7
+  dropped its "older prefixes" sentence.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

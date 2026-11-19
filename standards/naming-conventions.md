@@ -260,7 +260,7 @@ A variable's name starts with a prefix for its type, then the value in PascalCas
 | `str` | String | `strSQL`, `strWhere` |
 | `lng` | Long | `lngIndividualID` |
 | `int` | Integer | `intIndex` |
-| `boo` | Boolean (canonical) | `booEnabled` |
+| `boo` | Boolean | `booEnabled` |
 | `dt` | Date/Time | `dtMailedDate` |
 | `dbl` | Double | `dblValue` |
 | `db` | Database object | `db As DAO.Database` |
@@ -276,6 +276,5 @@ A variable's name starts with a prefix for its type, then the value in PascalCas
 | `varX` | Variant (For Each loop) | `varX As Variant` |
 | `m` | Private class field | `mForm` |
 
-Every object variable carries its type's prefix. `bol` and `b` are older Boolean prefixes; use `boo`
-in new code. Constants are PascalCase: `Private Const MaxRetries As Long = 3`. An Enum's members
+Every object variable carries its type's prefix. `boo` is the only Boolean prefix. Constants are PascalCase: `Private Const MaxRetries As Long = 3`. An Enum's members
 take no prefix (`design-principles.md`, *Name the fixed numbers*).

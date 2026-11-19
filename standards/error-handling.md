@@ -308,19 +308,19 @@ first two lines below do, and that is true by construction.
 ```vba
 Dim ws       As DAO.Workspace
 Dim db       As DAO.Database
-Dim bInTrans As Boolean
+Dim booInTrans As Boolean
 
 Set ws = DBEngine.Workspaces(0)
 Set db = ws.Databases(0)          ' same workspace as BeginTrans
 
 ws.BeginTrans
-bInTrans = True
+booInTrans = True
 db.Execute strSQL, dbFailOnError + dbSeeChanges
 ws.CommitTrans
-bInTrans = False
+booInTrans = False
 ...
 errHandler:
-      If bInTrans Then ws.Rollback
+      If booInTrans Then ws.Rollback
       LogError MODULE_NAME, PROC_NAME, Erl
       Resume Cleanup
       Resume
@@ -392,7 +392,7 @@ which `Erl` in the logging procedure cannot, since it reports only the line of t
 records the path only if it reads `Err.Source`.
 
 The procedure whose next action depends on this one is the one that logs — and, if it began a
-transaction, rolls back, per the transaction guard above (`If bInTrans Then ws.Rollback`). Logging
+transaction, rolls back, per the transaction guard above (`If booInTrans Then ws.Rollback`). Logging
 the same failure twice — once in the called procedure, once in the caller — is not a safeguard; it
 is two records of one event, and whoever reads the log afterward cannot tell that from two separate
 failures.

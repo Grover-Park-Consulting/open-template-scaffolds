@@ -32,7 +32,7 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     Dim db       As DAO.Database
     Dim rs       As DAO.Recordset
     Dim sSql     As String
-    Dim bInTrans As Boolean
+    Dim booInTrans As Boolean
 
     On Error GoTo errHandler
     ' [STANDARDS — error-handling.md, "Transaction guard"] the Database used for every write and
@@ -43,7 +43,7 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     Set db = ws.Databases(0)          ' same workspace as BeginTrans
 
     ws.BeginTrans
-    bInTrans = True
+    booInTrans = True
 
     ' [BUSINESS LOGIC #5] ONE: insert the StockTakeSession row (status = Open; the date defaults to
     '            today where none was passed; ConductedByEmployeeID left null where 0 was passed)
@@ -77,7 +77,7 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
     ' >>> call EvaluateVariance(lNewCountID, db) once per newly created StockTakeCountID <<<
 
     ws.CommitTrans
-    bInTrans = False
+    booInTrans = False
 
 Cleanup:
     On Error Resume Next
@@ -89,7 +89,7 @@ errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block (see ProcessScan), plus the
     '            transaction guard's own rollback: an error partway through ONE, TWO or THREE must
     '            not leave a session row with some, but not all, of its baseline lines.
-    If bInTrans Then ws.Rollback: bInTrans = False
+    If booInTrans Then ws.Rollback: booInTrans = False
     Resume Cleanup
 End Function
 ```
@@ -108,7 +108,7 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
     Dim db         As DAO.Database
     Dim lProductID As Long
     Dim lCountID   As Long
-    Dim bInTrans   As Boolean
+    Dim booInTrans   As Boolean
 
     On Error GoTo errHandler
     ' [STANDARDS — error-handling.md, "Transaction guard"] db comes from the same Workspace the
@@ -118,7 +118,7 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
     Set db = ws.Databases(0)          ' same workspace as BeginTrans
 
     ws.BeginTrans
-    bInTrans = True
+    booInTrans = True
 
     lProductID = ResolveScanCode(sScanCode)
     If lProductID = 0 Then
@@ -141,7 +141,7 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
 
 Commit:
     ws.CommitTrans
-    bInTrans = False
+    booInTrans = False
 
 Cleanup:
     Set db = Nothing: Set ws = Nothing
@@ -156,7 +156,7 @@ errHandler:
     '            a counter mid-scan with something they cannot act on. Option 1 (LogError) is the
     '            only choice here — where it is not yet installed, build error-logging-scaffold.md
     '            first rather than falling back to a message box in ProcessScan.
-    If bInTrans Then ws.Rollback: bInTrans = False
+    If booInTrans Then ws.Rollback: booInTrans = False
     LogError MODULE_NAME, PROC_NAME, Erl
     Resume Cleanup
     Resume

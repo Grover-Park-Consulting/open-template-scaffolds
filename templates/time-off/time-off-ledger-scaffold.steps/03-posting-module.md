@@ -75,7 +75,7 @@ Private Function PostOnePeriod(ByVal lEmp As Long, ByVal lCat As Long, ByVal dPe
     Const PROC_NAME As String = "PostOnePeriod"
     Dim ws       As DAO.Workspace
     Dim db       As DAO.Database
-    Dim bInTrans As Boolean
+    Dim booInTrans As Boolean
     Dim dHours   As Double
     Dim sWhy     As String
     Dim lResult  As Long
@@ -85,7 +85,7 @@ Private Function PostOnePeriod(ByVal lEmp As Long, ByVal lCat As Long, ByVal dPe
     Set ws = DBEngine.Workspaces(0)
     Set db = ws.Databases(0)
     ws.BeginTrans
-    bInTrans = True
+    booInTrans = True
     Set gdbTxn = db                    ' the checks the macro runs read through this transaction
     LockEmployee db, lEmp
 
@@ -101,7 +101,7 @@ Private Function PostOnePeriod(ByVal lEmp As Long, ByVal lCat As Long, ByVal dPe
     ' >>> the three branches <<<
 
     ws.CommitTrans
-    bInTrans = False
+    booInTrans = False
     PostOnePeriod = lResult
 
 Cleanup:
@@ -116,11 +116,11 @@ errHandler:
     '            is told only that something unexpected happened and was recorded.
     If ExpectedRefusal(Err.Number) Then
         sMsg = "Not posted: " & Err.Description
-        If bInTrans Then ws.Rollback
-        bInTrans = False
+        If booInTrans Then ws.Rollback
+        booInTrans = False
     Else
-        If bInTrans Then ws.Rollback
-        bInTrans = False
+        If booInTrans Then ws.Rollback
+        booInTrans = False
         LogError MODULE_NAME, PROC_NAME, Erl
         sMsg = "Not posted: an unexpected problem occurred and was recorded."
     End If
@@ -253,7 +253,7 @@ Public Function ReplaceTimeOffEntry(ByVal lEntryID As Long, ByVal dNewHours As D
     Const PROC_NAME As String = "ReplaceTimeOffEntry"
     Dim ws       As DAO.Workspace
     Dim db       As DAO.Database
-    Dim bInTrans As Boolean
+    Dim booInTrans As Boolean
 
     On Error GoTo errHandler
     ' [BUSINESS LOGIC #10] Before the transaction: read the entry (snapshot); refuse, with a
@@ -262,7 +262,7 @@ Public Function ReplaceTimeOffEntry(ByVal lEntryID As Long, ByVal dNewHours As D
     Set ws = DBEngine.Workspaces(0)
     Set db = ws.Databases(0)
     ws.BeginTrans
-    bInTrans = True
+    booInTrans = True
     Set gdbTxn = db
     LockEmployee db, lEmp               ' held across BOTH writes, not released between them
     gbReplacing = True                  ' tells TimeOffEntryCheck a replacement is allowed
@@ -275,7 +275,7 @@ Public Function ReplaceTimeOffEntry(ByVal lEntryID As Long, ByVal dNewHours As D
     ' [SCAFFOLD] The Data Macro judges the Correction here, and must SEE the corrected entry written
     '            a moment ago. It reads through gdbTxn, which is why gdbTxn is set above.
     ws.CommitTrans
-    bInTrans = False
+    booInTrans = False
 
 Cleanup:
     On Error Resume Next
@@ -289,8 +289,8 @@ errHandler:
     '            write rolls back BOTH, so the corrected entry is not left behind, and the answer
     '            says the ledger holds what it held before. A refusal for time taken that the
     '            corrected hours no longer cover is the table's own sentence, passed through.
-    If bInTrans Then ws.Rollback
-    bInTrans = False
+    If booInTrans Then ws.Rollback
+    booInTrans = False
     ' >>> ExpectedRefusal branch as PostOnePeriod; else LogError MODULE_NAME, PROC_NAME, Erl <<<
     Resume Cleanup
     Resume
