@@ -233,6 +233,10 @@ so an assistant doesn't mistake old grounds for new permission:
   three values copied before the guard (`Err.Source` added), because the logger records the source
   path in a new `ErrorSource` column. A correction the change made necessary, not a rewording.
 
+- **2026-11-19 (×1): `standards/README.md`, the `naming-conventions` row, approved by George.** Two
+  words added: "VBA variable". Grounds: `naming-conventions.md` gained §7 (VBA variable and constant
+  names) in the 2026-11-16 standards merge, and the row's description left it out.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

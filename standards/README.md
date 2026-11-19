@@ -26,7 +26,7 @@ file(s) here and applies them.
 
 | File | `standards_layer` value | Covers |
 |---|---|---|
-| [`naming-conventions.md`](naming-conventions.md) | `naming-conventions` | Object, table, and field/column naming + the qualified-field rule (Access + SQL Server) |
+| [`naming-conventions.md`](naming-conventions.md) | `naming-conventions` | Object, table, field/column, and VBA variable naming + the qualified-field rule (Access + SQL Server) |
 | [`audit-columns.md`](audit-columns.md) | `audit-columns` | The `CreatedDate` / `CreatedBy` / `ModifiedDate` / `ModifiedBy` / `AccessTS` set and how it's maintained |
 | [`error-handling.md`](error-handling.md) | `error-handling` | The VBA `errHandler` / central-logging pattern for any code generated alongside |
 | [`query-style.md`](query-style.md) | `query-style` | How VBA and saved queries write and run SQL — where SQL lives, aliasing/qualification, formatting, safe criteria |
