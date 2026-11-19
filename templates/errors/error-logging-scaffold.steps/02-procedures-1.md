@@ -1,7 +1,7 @@
 ---
 step: 02-procedures-1
 title: "The procedures, part 1 of 3"
-platform_facts: [open-existing-startup, mcp-module-import, mcp-line-numbers, host-helper-reuse, sql-insert-truncation, dao-table-build, vbe-line-continuation, sql-server-ddl]
+platform_facts: [open-existing-startup, mcp-module-import, mcp-line-numbers, host-helper-reuse, sql-insert-truncation, vbe-line-continuation]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.
@@ -31,11 +31,6 @@ Private Const ERROR_DESCRIPTION_MAX As Long = 255
 ' [SCHEMA] tblErrorLog.ErrorSource is Text(255), truncated the same way.
 Private Const ERROR_SOURCE_MAX      As Long = 255
 ```
-
-**A `tblErrorLog` built from schema version 0.3.0 or earlier has no `ErrorSource` column.**
-`CreateErrorLogTable` leaves an existing table as it is, so add the column by hand first (Text(255),
-Required, `AllowZeroLength = True`). Without it, every write to the table also lands in the text
-file, because the missing column leaves an error that marks the write as failed.
 
 ### LogError — `Public Sub` (the logger every handler calls)
 

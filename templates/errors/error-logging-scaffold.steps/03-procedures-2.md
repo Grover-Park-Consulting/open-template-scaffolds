@@ -1,7 +1,7 @@
 ---
 step: 03-procedures-2
 title: "The procedures, part 2 of 3 (from ShowErrorToUser)"
-platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-table-build, vbe-line-continuation]
+platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-table-build, vbe-line-continuation, sql-server-ddl]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.
@@ -86,6 +86,11 @@ AutoNumber is a `dbLong` field with `dbAutoIncrField`, and the whole thing must 
 **`AllowZeroLength = True` on every text column is deliberate.** A Required text field that
 disallows zero-length strings refuses an empty value — and `Err.Description` is sometimes empty.
 That is exactly the kind of refusal schema Business Rule 2 forbids.
+
+**A `tblErrorLog` built from schema version 0.3.0 or earlier has no `ErrorSource` column.** Because
+an existing table is left alone, add the column by hand first (Text(255), Required,
+`AllowZeroLength = True`). Without it, every write to the table also lands in the text file, because
+the missing column leaves an error that marks the write as failed.
 
 ```vba
 Public Function CreateErrorLogTable(Optional bSilent As Boolean = False) As String
