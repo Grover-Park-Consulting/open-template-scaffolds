@@ -340,7 +340,7 @@ every template that creates a column receiving values from other columns.
 #### Index order
 <!-- fact: dao-table-build.index-order target: access -->
 
-**Both index orders are valid.** The sample above appends indexes to `tdf.Indexes` *before*
+**Both index orders are valid.** The sample build Sub in this fact appends indexes to `tdf.Indexes` *before*
 `db.TableDefs.Append`; `templates/errors/error-logging-scaffold.md` appends the table first and builds
 its indexes after. Both are proven by running them. Neither corrects the other — **don't rewrite
 working code to match whichever you saw first.** Only field `Description`s are order-bound, and only

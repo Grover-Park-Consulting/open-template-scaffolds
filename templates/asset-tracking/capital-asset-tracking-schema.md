@@ -5,7 +5,7 @@ domain: asset-tracking
 type: table-schema
 version: 0.6.0
 status: stable
-status_fingerprint: 8085f77f29d6
+status_fingerprint: ac9ae51efd0f
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]

@@ -5,7 +5,7 @@ domain: audit
 type: table-schema
 version: 0.7.0
 status: review
-status_fingerprint: c684a0c45b26
+status_fingerprint: 5ee1c4c542f0
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling]

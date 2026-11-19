@@ -5,7 +5,7 @@ domain: scheduling-assignment
 type: table-schema
 version: 0.5.0
 status: stable
-status_fingerprint: 8d04c07b370c
+status_fingerprint: 854fbbf8d634
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling]

@@ -5,7 +5,7 @@ domain: time-off
 type: table-schema
 version: 0.4.0
 status: draft
-status_fingerprint: b3d6c70c0ec5
+status_fingerprint: 959805bacea1
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tlkpTimeOffCategory

@@ -5,7 +5,7 @@ domain: stocktakescan
 type: table-schema
 version: 0.9.1
 status: review
-status_fingerprint: cf5e9ac69861
+status_fingerprint: b9df1d4547e0
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products

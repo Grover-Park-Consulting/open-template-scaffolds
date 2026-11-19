@@ -5,7 +5,7 @@ domain: time-off
 type: outcome-first
 version: 0.4.6
 status: stable
-status_fingerprint: 66b0573b98a4
+status_fingerprint: bf1deaefe665
 implements: time-off-ledger-schema
 standards_layer:
   - audit-columns

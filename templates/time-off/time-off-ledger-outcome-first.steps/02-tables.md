@@ -10,7 +10,7 @@ platform_facts: [open-existing-startup, dao-table-build, sql-server-ddl, sql-ins
 
 Open the database the developer supplied, as the facts below say. Build the tables `time-off-ledger-schema`
 defines, where they are not there already. Fetch the parts of that schema you need with `get_part`:
-its checks (step 1), its tables (step 2) and Data Macros (step 3). Its other parts repeat what you already hold: skip
+its checks (step 1) and its tables (step 2). Its other parts repeat what you already hold: skip
 them.
 
 **Build the tables only, and confirm they exist before you fetch step 3.** If you build the tables

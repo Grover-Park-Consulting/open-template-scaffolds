@@ -243,6 +243,10 @@ so an assistant doesn't mistake old grounds for new permission:
   the one Boolean prefix across the standards. Same day `standards/naming-conventions.md` §7
   dropped its "older prefixes" sentence.
 
+- **2026-11-19 (×1): `templates/_template-schema.md`, the `platform_facts` row, approved by George.**
+  Two sentences added: a child id (`parent.child`) and the `target` marker. Grounds: the server
+  delivers facts in pieces and by platform since `ab565ad`, and the row described only whole facts.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

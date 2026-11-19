@@ -3,9 +3,9 @@ template: stocktake-scan-scaffold
 title: Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.11.2
+version: 0.11.3
 status: review
-status_fingerprint: 6ed81ecbe34f
+status_fingerprint: 40d91b39e8c7
 extends: Northwind (Access Developer Edition)
 implements: stocktake-schema
 requires_tables:
@@ -18,7 +18,7 @@ requires_tables:
   - ProductVarianceAllowance
   - SystemSettings
 platform_facts: [target-file, sql-insert-truncation, domain-function-transaction, row-lock-errors, ace-update-aggregate]
-steps: [01-open-and-confirm-tables, 02-module, 03-checks]
+steps: [01-open-and-confirm-tables, 02-module-1, 03-module-2, 04-checks]
 standards_layer:
   - error-handling
   - query-style
@@ -48,7 +48,7 @@ related:
 
 # Scanned Stocktake — Scan-Processing VBA Scaffold
 
-**Status last determined:** 2026-11-02.
+**Status last determined:** 2026-11-19.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
