@@ -908,8 +908,10 @@ code has still never run. Tell them:
 
 The entity caveat below is one the developer can do nothing about; handle it silently.
 
-Then **ask which platform the tables are for**, and generate the matching artifact (keys,
-relationships, indexes, lookup tables, and **seed rows** throughout):
+Then **ask which platform the tables are for**, and pass the answer as `target` (`access` or
+`sqlserver`) on every `get_part` from then on, so the facts for the other platform stay out.
+Generate the matching artifact (keys, relationships, indexes, lookup tables, and **seed rows**
+throughout):
 - **Access (ACE) local tables** → a **VBA `Sub` using DAO**, built as the fact
   `dao-table-build` delivered with the build step says.
 - **SQL Server** → `CREATE TABLE` DDL.

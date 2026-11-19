@@ -250,7 +250,8 @@ class TestGetTemplate(unittest.TestCase):
             front = parts[0]["front_matter"]
             stds = [s["name"] for p in parts for s in p.get("standards", [])]
             self.assertEqual(sorted(stds), sorted(front["standards_layer"]), t["template"])
-            facts = {f["id"] for p in parts for f in p.get("platform_facts", [])}
+            # Several children of one fact arrive as one entry whose id lists them.
+            facts = {i for p in parts for f in p.get("platform_facts", []) for i in f["id"].split(", ")}
             self.assertTrue(set(front["platform_facts"]) <= facts, t["template"])
             self.assertEqual([p["part"] for p in parts],
                              [q["part"] for q in parts[0]["parts"]], t["template"])

@@ -1,7 +1,7 @@
 ---
 step: 02-procedures-1
 title: "The procedures, part 1 of 2"
-platform_facts: [mcp-module-import, mcp-line-numbers, recordset-append-crash, sql-insert-truncation, dao-table-build, vbe-line-continuation, vba-import-xml-entities]
+platform_facts: [mcp-module-import, mcp-line-numbers, recordset-append-crash, sql-insert-truncation, dao-table-build.rules, vbe-line-continuation, vba-import-xml-entities]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

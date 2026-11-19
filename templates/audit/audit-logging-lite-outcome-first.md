@@ -5,7 +5,7 @@ domain: audit
 type: outcome-first
 version: 0.11.0
 status: stable
-status_fingerprint: 74d3448cb8db
+status_fingerprint: 7d4035c12b29
 implements: audit-logging-lite-schema
 platform_facts: [target-file]
 steps: [01-checks, 02-limits, 03-tables, 04-data-macros, 05-code, 06-run-the-checks]
@@ -377,23 +377,6 @@ named above.
   *Auditing cannot be got around by moving the database somewhere Access does not trust*, which puts
   the database where its code will not run and confirms that an edit is either logged or refused.
 
-- **Read the proven encoding of that mechanism rather than deriving it.** A Data Macro can only be
-  created as an XML document loaded into the table, and the shape of that document is fixed by
-  Access. There is nothing in it for you to decide and no second way to write it, so working it out
-  by trial and error buys nothing and costs a great deal: the load fails with one error number that
-  says only that the text cannot be read as a Data Macro, and never says which part is wrong. Use the
-  fact `data-macro-rules` delivered with this template, and read the working generator in
-  `templates/audit/audit-logging-lite-scaffold.md`, the rules-based method that produces this same
-  result. **Read them for the shape of the document and nothing else.** How the work divides, what
-  the procedures are called, where things live, and what the build does are yours, exactly as
-  declared under *Free to choose alternatives* — reading that file settles none of them, and copying
-  its decomposition would be importing a route you were not given. **One thing in the fact
-  `data-macro-rules` is outside that narrowing and does bind here: rule 6, about a
-  field that receives values from other fields.** The log's before-and-after value columns are such
-  a field — every audited field in the database writes into them — so they hold the widest text the
-  engine has and they accept a value set to nothing at all. That is not a route decision and it is
-  not open under *Free to choose alternatives*; a log that cannot record a field emptied is a log
-  that loses the change it exists to record.
 - **Apply every standard delivered with this template.** Naming, the audit column names, error handling and
   query style all come from there and never from this file. Lines marked **[your standards]** in
   *The same behavior every time, not the same structure* are outcomes that layer requires; they are
@@ -436,13 +419,6 @@ named above.
   every other build it is a whole number, exactly as it is today** — no such key in the database, or
   one found and the choice declined. A build that produces a text key column without both conditions
   holding is wrong.
-- **The expression follows the column, not the key's type.** Where the log's key column holds whole
-  numbers — which is every build but the one above — the macro writes the key bare, as it does today.
-  **Where the column holds text, the macro writes the key with the string conversion forced** —
-  `[Table].[Key] & ""`, or `CStr([Table].[Key])`. Assigning the key bare into a text column copies
-  its sixteen bytes in as eight characters of unreadable text. Nothing raises an error, the log row
-  is still written, and it still names the table, the field and the new value — so every check in
-  this file passes over it. This is the one fault here that no check will catch for you.
 - **Every check is attempted, and that is a gate, not advice.** You do not decide that a check is not
   run, and nothing in this file, in the standards layer, or in anything said during the run relieves
   you of one. A check whose attempt stopped short is not passed, and its entry says what you did and
@@ -469,9 +445,6 @@ named above.
   caller gets a raised error instead of the report the procedure exists to produce. Every entry point a
   person runs directly is such a procedure. The helpers beneath them should re-raise, which is what the
   layer is for.
-- **Whatever proves an attachment is this system's own work must be written by the build itself.** A
-  mark inside the attachment is the only thing that survives every naming convention. Verified: such a
-  mark survives being loaded and read back unchanged.
 
 ## Extra options
 

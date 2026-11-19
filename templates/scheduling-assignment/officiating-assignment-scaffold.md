@@ -5,7 +5,7 @@ domain: scheduling-assignment
 type: vba-scaffold
 version: 0.10.1
 status: review
-status_fingerprint: 7ff8ab2ba548
+status_fingerprint: ef2c3e205e20
 implements: officiating-assignment-schema
 requires_tables:
   - tblGame
@@ -16,7 +16,7 @@ requires_tables:
   - tblTeam
   - tlkpPlayLevel
   - tblAppSetting
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules, recordset-append-crash, app-startup-autoexec]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash, app-startup-autoexec.autoexec-build]
 steps: [01-open-and-confirm-tables, 02-procedures-1, 03-procedures-2, 04-checks]
 standards_layer:
   - error-handling

@@ -5,7 +5,7 @@ domain: stocktakescan
 type: table-schema
 version: 0.9.1
 status: review
-status_fingerprint: 109ef8e63833
+status_fingerprint: cf5e9ac69861
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
@@ -16,8 +16,8 @@ requires_fields:
 new_fields:
   - Products.SKUBarCode
   - Products.QuantityInPackage
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules, rename-referenced]
-steps: [01-checks, 02-tables, 03-run-the-checks]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, rename-referenced]
+steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer:
   - audit-columns
   - naming-conventions

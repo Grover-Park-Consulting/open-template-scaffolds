@@ -5,9 +5,9 @@ domain: library
 type: outcome-first
 version: 0.2.0
 status: stable
-status_fingerprint: d89f50b1766b
+status_fingerprint: 75df2a2d0f3a
 implements: catalog-schema
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
 standards_layer:
   - audit-columns

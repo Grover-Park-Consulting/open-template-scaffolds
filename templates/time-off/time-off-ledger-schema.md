@@ -5,7 +5,7 @@ domain: time-off
 type: table-schema
 version: 0.4.0
 status: draft
-status_fingerprint: 59caec9b80ea
+status_fingerprint: b3d6c70c0ec5
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tlkpTimeOffCategory
@@ -17,8 +17,8 @@ seeds:
   - tlkpEntryReason.Earned
   - tlkpEntryReason.Taken
   - tlkpEntryReason.Correction
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules, domain-function-transaction, row-lock-errors, recordset-append-crash]
-steps: [01-checks, 02-tables, 03-run-the-checks]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, domain-function-transaction, row-lock-errors, recordset-append-crash]
+steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 house_assumptions:
   - "tblTimeOffEntry — the balance is never stored; it is the sum of TimeOffHours for an employee and a time off category, computed whenever it is needed (Business Rule 2). A stored balance is an Extra Option"
   - "tblTimeOffEntry.TimeOffHours — hours are kept in quarter-hour steps, so sums are exact; an entry whose hours are not a multiple of a quarter hour is refused (Business Rule 8). A shop that tracks finer fractions changes the field's type and lifts that refusal"

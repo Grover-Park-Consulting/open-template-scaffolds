@@ -5,7 +5,7 @@ domain: library
 type: vba-scaffold
 version: 0.5.1
 status: review
-status_fingerprint: 7e37b9df63d1
+status_fingerprint: 20af3e015760
 implements: catalog-schema
 requires_tables:
   - tblPublication

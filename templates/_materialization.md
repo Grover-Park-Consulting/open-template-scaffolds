@@ -115,7 +115,7 @@ code, on every machine: each person's front end as well as the back end. Put a c
 check in a trusted folder too.
 
 ### SQL Server → DDL
-<!-- fact: sql-server-ddl route: build -->
+<!-- fact: sql-server-ddl route: build target: sqlserver -->
 
 `CREATE TABLE` statements with primary keys, foreign keys, indexes, the lookup tables, and `INSERT` seed
 rows. Field comments become inline comments or extended properties.
@@ -125,8 +125,14 @@ rows. Field comments become inline comments or extended properties.
 
 Access local tables are **not** built from a `CREATE TABLE` query — they're built in a VBA `Sub` with
 DAO, because that is the only way to carry a field's **`Description`** (the integral comments) and to set
-AutoNumber, indexes, and relationships fully. This pattern is **proven by running it** (see the four
-rules below); generalize it to any `table-schema`:
+AutoNumber, indexes, and relationships fully. This pattern is **proven by running it** (see the rules
+below); generalize it to any `table-schema`.
+
+Naming, audit columns, and types follow the active standards; the `errHandler` is the standards-layer
+one (the **dependency-free message-box default** unless `error-handling.md` specifies a central logger).
+
+#### The build Sub, as a sample
+<!-- fact: dao-table-build.sample target: access -->
 
 ```vba
 Option Compare Database
@@ -268,6 +274,9 @@ Private Function TableExists(db As DAO.Database, ByVal sName As String) As Boole
 End Function
 ```
 
+#### Five rules that make the build run
+<!-- fact: dao-table-build.rules target: access -->
+
 **Five rules that make the generated Sub actually run** — each learned by running it against a real
 database:
 
@@ -292,6 +301,9 @@ database:
    then `db.Execute "INSERT INTO … (…, CreatedBy) VALUES (…, '" & sUser & "')", dbFailOnError`.
    (`CurrentUser()` *is* engine-known, but returns `"Admin"` without workgroup security — the
    resolved Windows user name is preferred.)
+
+#### A field that is a sink
+<!-- fact: dao-table-build.sinks -->
 
 **One more rule, and the only one here not learned by running the Sub.** The five above are about
 the build finishing. This one is about what the tables have to hold afterwards, and it applies in
@@ -325,14 +337,14 @@ every template that creates a column receiving values from other columns.
    covered by the carve-out above. `templates/errors/error-logging-schema.md`'s `ErrorDescription`
    is the proven case.
 
+#### Index order
+<!-- fact: dao-table-build.index-order target: access -->
+
 **Both index orders are valid.** The sample above appends indexes to `tdf.Indexes` *before*
 `db.TableDefs.Append`; `templates/errors/error-logging-scaffold.md` appends the table first and builds
 its indexes after. Both are proven by running them. Neither corrects the other — **don't rewrite
 working code to match whichever you saw first.** Only field `Description`s are order-bound, and only
 for the reason rule 2 gives.
-
-Naming, audit columns, and types follow the active standards; the `errHandler` is the standards-layer
-one (the **dependency-free message-box default** unless `error-handling.md` specifies a central logger).
 
 ### Audit-field stamping — the Before Change data macro
 <!-- fact: data-macro-rules -->
@@ -341,7 +353,10 @@ The audit columns (`standards/audit-columns.md`) are **Required** but can't be f
 `CreatedBy` needs the current user, and the engine can't evaluate `Environ()` in a default (rule 5),
 so a generated table with a `Required` `CreatedBy` and no macro **rejects every insert**. Access's
 answer is a **Before Change data macro**, which **cannot be built with DAO** — write it as a UTF-16
-XML file and load it. Proven by running it against a generated table:
+XML file and load it. Proven by running it against a generated table.
+
+#### The stamping macro, as an example
+<!-- fact: data-macro-rules.example -->
 
 **Read this example for the stamping, not for the namespace.** It writes one Before Change event and
 nothing else, and the namespace it declares is incidental to what it demonstrates — rule 3 below
@@ -401,6 +416,9 @@ Public Function AuditUser() As String
     If Len(AuditUser) = 0 Then AuditUser = "Unknown"
 End Function
 ```
+
+#### Rules learned by running it
+<!-- fact: data-macro-rules.rules -->
 
 **Rules learned by running it:**
 1. **Before Change fires before Required validation** — so the macro satisfies a `Required` `CreatedBy`.
@@ -472,6 +490,9 @@ End Function
       `=[sRefusal]` are evaluated; `[sRefusal]` without the `=` shows the person the text
       `[sRefusal]`.
 13. **`SetLocalVar`'s arguments are named `Name` and `Value`.**
+
+#### Before attaching one, read what is already there
+<!-- fact: data-macro-rules.existing -->
 
 **Before attaching any Data Macro to a table, read what's already there — never generate one on the
 assumption the slot is empty.** A table's whole Data Macro set for one event lives in **one
@@ -1086,6 +1107,9 @@ visible effect worth expecting: **Access hides objects whose names begin with `U
 navigation pane** until *Show System Objects* is turned on. The runnable code that uses it is
 `templates/app-startup/app-startup-scaffold.md`.
 
+#### External file assets
+<!-- fact: app-startup-autoexec.file-assets -->
+
 **External file assets — create the folder *and* copy the file in.** When a template stores a
 **two-part reference** to an external asset — a file **name** in a table plus a folder from a
 settings row, e.g. `tblOfficial.PhotoFileName` + `tblAppSetting.OfficialPhotoFolder` — the build must
@@ -1107,6 +1131,9 @@ do two things the reference alone does not imply:
    file's original name only points the record at a file outside the app, which blanks on retrieval.
    A collision-free convention such as `Official_<OfficialID>.<ext>` keeps one asset per record and
    lets a re-select overwrite cleanly. (This means the record must be saved first, so its key exists.)
+
+#### Building the AutoExec macro
+<!-- fact: app-startup-autoexec.autoexec-build -->
 
 **The AutoExec build gotcha** (sits beside the data-macro and DDL-`DEFAULT` gotchas above). DAO
 **cannot** create a macro. `Application.LoadFromText acMacro` on modern Access **rejects** the modern
@@ -1143,6 +1170,9 @@ and opening the file. The eight-line classic text **without** the `_AXL:` block 
 Access MCP server's code-setting tool (proven with object type `macro`) and **fails** through
 `LoadFromText`. In any file the developer imports themselves — a staged scaffold's own files, or code
 handed over as `PROPOSED CODE` — the `_AXL:` block is required.
+
+#### Closing the Shift-key bypass
+<!-- fact: app-startup-autoexec.bypass-key -->
 
 **The `AllowBypassKey` gotcha.** Closing Access's own Shift-key bypass — so holding Shift while
 opening a file no longer skips `AutoExec` and the startup settings — means setting the database

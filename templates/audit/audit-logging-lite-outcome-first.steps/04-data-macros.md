@@ -93,3 +93,27 @@ facts; it does not re-solve them.
 - Access's own session user name and the Windows account name are different things and are obtained
   differently. A database with no workgroup security reports the same placeholder for every person
   under the first of the two.
+
+**From the master's instructions to the AI assistant, for this step.** They bind as the master's do.
+
+- **Read the proven encoding of that mechanism rather than deriving it.** A Data Macro can only be
+  created as an XML document loaded into the table, and the shape of that document is fixed by
+  Access. There is nothing in it for you to decide and no second way to write it, so working it out
+  by trial and error buys nothing and costs a great deal: the load fails with one error number that
+  says only that the text cannot be read as a Data Macro, and never says which part is wrong. Use the
+  fact `data-macro-rules` delivered with this template, and read the working generator in
+  `templates/audit/audit-logging-lite-scaffold.md`, the rules-based method that produces this same
+  result. **Read them for the shape of the document and nothing else.** How the work divides, what
+  the procedures are called, where things live, and what the build does are yours, exactly as
+  declared under *Free to choose alternatives* — reading that file settles none of them, and copying
+  its decomposition would be importing a route you were not given.
+- **The expression follows the column, not the key's type.** Where the log's key column holds whole
+  numbers — which is every build but the Replication ID one in the master — the macro writes the key bare, as it does today.
+  **Where the column holds text, the macro writes the key with the string conversion forced** —
+  `[Table].[Key] & ""`, or `CStr([Table].[Key])`. Assigning the key bare into a text column copies
+  its sixteen bytes in as eight characters of unreadable text. Nothing raises an error, the log row
+  is still written, and it still names the table, the field and the new value — so every check in
+  this file passes over it. This is the one fault here that no check will catch for you.
+- **Whatever proves an attachment is this system's own work must be written by the build itself.** A
+  mark inside the attachment is the only thing that survives every naming convention. Verified: such a
+  mark survives being loaded and read back unchanged.

@@ -5,7 +5,7 @@ domain: time-off
 type: vba-scaffold
 version: 0.4.1
 status: draft
-status_fingerprint: 01c2d0f2d75e
+status_fingerprint: 9df5f5e82cc8
 implements: time-off-ledger-schema
 requires_tables:
   - tlkpTimeOffCategory
@@ -40,7 +40,7 @@ new_procedures:
   - PostTimeTaken
   - CancelTimeOffEntry
   - ReplaceTimeOffEntry
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules, domain-function-transaction, row-lock-errors, recordset-append-crash, app-startup-autoexec]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, domain-function-transaction, row-lock-errors, recordset-append-crash, app-startup-autoexec.autoexec-build]
 steps: [01-open-and-confirm-tables, 02-rules-module, 03-posting-module, 04-checks]
 warnings:
   - These procedures write real rows into the ledger, and the ledger is never edited or deleted once

@@ -5,9 +5,9 @@ domain: asset-tracking
 type: table-schema
 version: 0.6.0
 status: stable
-status_fingerprint: 553a933bcc4f
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules]
-steps: [01-checks, 02-tables, 03-run-the-checks]
+status_fingerprint: 8085f77f29d6
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
+steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
 new_tables: [tblAsset, tblAssetHistory, tblInventoryAuditSession, tblInventoryAuditScan, tblSite, tblRoom, tblDepartment, tblCustodian, tlkpAssetCategory, tlkpAssetStatus, tlkpFundingSource, tlkpDepreciationMethod, tlkpHistoryChangeType, tlkpScanResult]
 house_assumptions:

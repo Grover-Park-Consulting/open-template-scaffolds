@@ -18,7 +18,8 @@ except ImportError:
 
 from library import (_METHOD_BUILD, _METHOD_EVERY_RUN, _METHOD_HANDOVER, GATE_PATH,
                      RESPONSE_LIMIT, ROUTES, SETTLED_NOTE, _sha, compose, iter_standards,
-                     iter_templates, read_method, read_platform_facts, serialized_size,
+                     iter_templates, read_method, read_platform_facts, resolve_facts,
+                     serialized_size,
                      settled_block, validate_library)
 
 _STANDARD_ORDER = ("Fetch this before you draft any part of the design. Do not draft from what you "
@@ -242,7 +243,7 @@ def get_template(template: str, route: str = "", have_method: bool = False) -> d
 
 
 @mcp.tool()
-def get_part(template: str, part: str, route: str = "") -> dict:
+def get_part(template: str, part: str, route: str = "", target: str = "") -> dict:
     """Return one part of a template, named in the `parts` list `get_template` returned.
 
     Fetch the parts in order, each when its `when` says, by following the
@@ -262,9 +263,13 @@ def get_part(template: str, part: str, route: str = "") -> dict:
     Quote one line per part in the build record, with when it arrived; a part
     never fetched then shows.
     `next` is null after the last part. Pass the same `route` as the run's.
-    Raises ValueError for an unknown template, part, or route.
+    Pass `target="access"` or `target="sqlserver"` once the developer has said
+    which platform the tables are built on: platform facts for the other
+    platform are then left out. Leave it empty until then; everything is sent.
+    `next` carries `target` once given; pass it on.
+    Raises ValueError for an unknown template, part, route or target.
     """
-    return compose(template, part, _route_or_raise(route))
+    return compose(template, part, _route_or_raise(route), target=target)
 
 
 @mcp.tool()
@@ -388,14 +393,8 @@ def get_facts(facts: list[str]) -> dict:
     answer would pass the response limit, naming the ids to ask for in separate calls.
     Read-only.
     """
-    found, missing = read_platform_facts()[0], []
-    out = []
-    for fid in facts or []:
-        hit = found.get(str(fid).strip().lower())
-        if hit:
-            out.append({k: hit[k] for k in ("id", "heading", "content")})
-        else:
-            missing.append(str(fid))
+    found, missing = resolve_facts(facts)
+    out = [{k: f[k] for k in ("id", "heading", "content")} for f in found]
     result = {"platform_facts": out, "facts_missing": missing,
               "served": {"part": "platform-facts", "sha": _sha(*[f["content"] for f in out])}}
     if serialized_size(result) > RESPONSE_LIMIT:

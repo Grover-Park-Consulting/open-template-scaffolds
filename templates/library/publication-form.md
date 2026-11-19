@@ -5,7 +5,7 @@ domain: library
 type: form-spec
 version: 0.5.1
 status: review
-status_fingerprint: 5526231bc452
+status_fingerprint: 47e618843df5
 implements: catalog-schema
 record_source: qryPublication_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]

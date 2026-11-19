@@ -5,13 +5,13 @@ domain: audit
 type: vba-scaffold
 version: 0.19.2
 status: stable
-status_fingerprint: a8cc0cbabd8e
+status_fingerprint: df7b330b4d53
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
   - tblLongTextBackup
   - tblAuditLogConfig
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules, domain-function-transaction]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, domain-function-transaction]
 steps: [01-wizard-questions, 02-before-the-modules, 03-sample-tables-and-readiness, 04-audit-tables-and-config, 05-generator, 06-create-all-data-macros, 07-after-macro-builders, 08-before-macro-builders, 09-long-text-admin-verify, 10-run-the-sequence, 11-checks]
 standards_layer:
   - error-handling

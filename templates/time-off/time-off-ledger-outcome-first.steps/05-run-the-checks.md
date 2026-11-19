@@ -1,5 +1,5 @@
 ---
-step: 04-run-the-checks
+step: 05-run-the-checks
 title: Run every check and record each one
 platform_facts: [mcp-run-procedure, mcp-file-release, row-lock-errors]
 ---

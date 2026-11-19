@@ -1,7 +1,7 @@
 ---
 step: 04-procedures-3
 title: "The procedures, part 3 of 3 (from LinkErrorLogTable)"
-platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-table-build, vbe-line-continuation]
+platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-table-build.rules, vbe-line-continuation]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

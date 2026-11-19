@@ -140,11 +140,19 @@ def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
     Lines inside code fences are never read as headings. A marker may end in
     `route: build` (`<!-- fact: dao-table-build route: build -->`): the section is
     then needed only on the build route, and its `route` is "build" ("" otherwise).
+    A marker may also end in `target: access` or `target: sqlserver`: the section is
+    then needed only when the run builds for that platform (`target`, "" otherwise).
+
+    A section nested inside another may carry a child id, `parent.child`. The child
+    inherits the parent's route and target unless it states its own, and the parent
+    records `intro`: its own text up to its first child, which is what a run that
+    asks for one child receives alongside it (see `resolve_facts`).
     Returns (sections, duplicate_ids); a duplicated id keeps its first section.
     """
     if not path.is_file():
         return {}, []
-    mark = re.compile(r"^<!--\s*" + kind + r":\s*([a-z0-9-]+)(?:\s+route:\s*(build))?\s*-->$")
+    mark = re.compile(r"^<!--\s*" + kind + r":\s*([a-z0-9-]+(?:\.[a-z0-9-]+)?)"
+                      r"((?:\s+(?:route|target):\s*[a-z]+)*)\s*-->$")
     lines = path.read_text(encoding="utf-8").splitlines()
     heads, fence = [], False
     for i, ln in enumerate(lines):
@@ -166,9 +174,71 @@ def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
         if fid in facts:
             dupes.append(fid)
             continue
+        attrs = dict(re.findall(r"(route|target):\s*([a-z]+)", m.group(2) or ""))
         facts[fid] = {"id": fid, "heading": lines[h].lstrip("#").strip(),
-                      "content": "\n".join(lines[h:end]).strip(), "route": m.group(2) or ""}
+                      "content": "\n".join(lines[h:end]).strip(),
+                      "route": attrs.get("route", ""), "target": attrs.get("target", ""),
+                      "_start": h, "_end": end, "_explicit": attrs}
+    for fid, f in facts.items():
+        children = [c for c in facts.values() if c["id"].startswith(fid + ".")]
+        if "." in fid:
+            parent = facts.get(fid.split(".")[0])
+            if parent:
+                f["route"] = f["_explicit"].get("route", parent["_explicit"].get("route", ""))
+                f["target"] = f["_explicit"].get("target", parent["_explicit"].get("target", ""))
+        if children:
+            first = min(c["_start"] for c in children)
+            f["intro"] = "\n".join(lines[f["_start"]:first]).strip()
+            f["children"] = sorted((c["id"] for c in children), key=lambda c: facts[c]["_start"])
+    for f in facts.values():
+        for k in ("_start", "_end", "_explicit"):
+            f.pop(k, None)
     return facts, dupes
+
+
+def resolve_facts(ids, target: str = "") -> tuple[list[dict], list[str]]:
+    """The facts a step declared, as the run receives them, and the ids that match none.
+
+    A parent id sends the whole section, children included. A child id sends the
+    parent's intro plus that child; several children of one parent arrive together
+    as one entry, in the order the file holds them. A child is skipped when its
+    parent is also declared. With `target` given, a section (or child) marked for the
+    other platform is left out; with none, everything is sent.
+    """
+    facts, _ = read_platform_facts()
+    target = (target or "").strip().lower()
+    wanted = [str(f).strip().lower() for f in ids or []]
+    missing = [str(f) for f in ids or [] if str(f).strip().lower() not in facts]
+    off = lambda f: bool(target and f.get("target") and f["target"] != target)
+    out, groups = [], {}
+    for fid in wanted:
+        if fid not in facts or off(facts[fid]):
+            continue
+        f = facts[fid]
+        parent = fid.split(".")[0]
+        if "." in fid:
+            if parent in wanted or off(facts.get(parent, {})):
+                continue
+            if parent not in groups:
+                groups[parent] = {"id": parent, "heading": facts[parent]["heading"],
+                                  "route": facts[parent]["route"], "picked": []}
+                out.append(groups[parent])
+            groups[parent]["picked"].append(fid)
+            continue
+        content = f["content"]
+        for c in f.get("children", []):
+            if off(facts[c]):
+                content = content.replace(facts[c]["content"], "").strip()
+        out.append({"id": fid, "heading": f["heading"], "content": content, "route": f["route"]})
+    for g in groups.values():
+        chosen = g.pop("picked")
+        picked = [c for c in facts[g["id"]]["children"] if c in chosen]
+        g["id"] = ", ".join(picked)
+        parent = picked[0].split(".")[0]
+        g["content"] = "\n\n".join([facts[parent]["intro"]] + [facts[c]["content"] for c in picked])
+        # Sent with the design parts if any picked child is needed there.
+        g["route"] = "build" if all(facts[c]["route"] == "build" for c in picked) else ""
+    return out, missing
 
 
 # --- The run plan: a template delivered as parts, one per call --------------
@@ -181,6 +251,7 @@ def _read_marked(path: Path, kind: str) -> tuple[dict[str, dict], list[str]]:
 # them into parts, and each answer names the next call and when to make it.
 
 RESPONSE_LIMIT = 45000
+TARGETS = ("", "access", "sqlserver")
 # Standards read while building; every other standard is read while designing.
 _BUILD_STANDARDS = ("error-handling", "query-style", "startup-conventions")
 # ST: every template declares steps. Off until the rollout finishes, as FM9 was.
@@ -347,11 +418,8 @@ def _split(name: str, items: list[dict]) -> list[tuple[str, list[dict]]]:
     return [(f"{name}-{i}", g) for i, g in enumerate(groups, 1)]
 
 
-def _facts(ids) -> tuple[list[dict], list[str]]:
-    facts, _ = read_platform_facts()
-    found = [{"id": str(f), "heading": facts[str(f)]["heading"], "content": facts[str(f)]["content"],
-              "route": facts[str(f)]["route"]} for f in ids or [] if str(f) in facts]
-    return found, [str(f) for f in ids or [] if str(f) not in facts]
+def _facts(ids, target: str = "") -> tuple[list[dict], list[str]]:
+    return resolve_facts(ids, target)
 
 
 def _standards(names) -> tuple[list[dict], list[str]]:
@@ -381,7 +449,7 @@ def _method(ids) -> tuple[list[dict], list[str]]:
     return found, [m for m in ids if m not in sections]
 
 
-def plan(path: Path, front: dict, body: str) -> list[dict]:
+def plan(path: Path, front: dict, body: str, target: str = "") -> list[dict]:
     """Every part a run can fetch for this template, in order, both routes.
 
     Each part is `{part, title, when, route, ...}` plus what composes it. A
@@ -391,7 +459,7 @@ def plan(path: Path, front: dict, body: str) -> list[dict]:
     """
     layer = [str(s) for s in front.get("standards_layer") or []]
     steps = read_steps(path, front)
-    facts, _ = _facts(front.get("platform_facts"))
+    facts, _ = _facts(front.get("platform_facts"), target)
     design_facts = [f for f in facts if f["route"] != "build"]
     build_facts = [f for f in facts if f["route"] == "build"]
 
@@ -470,10 +538,12 @@ def _shown(parts: list[dict], route: str) -> list[dict]:
 
 
 def compose(template: str, part: str = "master", route: str = "",
-            have_method: bool = False) -> dict:
+            have_method: bool = False, target: str = "") -> dict:
     """One part of a template, exactly as the server answers it.
 
-    Raises ValueError for an unknown template or part id.
+    `target` ("access", "sqlserver" or empty) leaves out platform facts marked for
+    the other platform; empty sends them all. Once given, `next` carries it on.
+    Raises ValueError for an unknown template, part id or target.
     """
     tid = template.strip().lower()
     for path, front, body in iter_templates():
@@ -482,7 +552,10 @@ def compose(template: str, part: str = "master", route: str = "",
     else:
         raise ValueError(f"No template with id '{template}'. "
                          "Use list_templates or search_templates to find valid ids.")
-    parts = plan(path, front, body)
+    target = (target or "").strip().lower()
+    if target not in TARGETS:
+        raise ValueError(f"target must be 'access', 'sqlserver' or empty, not '{target}'.")
+    parts = plan(path, front, body, target)
     visible = _shown(parts, route)
     ids = [p["part"] for p in parts]
     pid = part.strip().lower()
@@ -553,7 +626,7 @@ def compose(template: str, part: str = "master", route: str = "",
             if q.get("step") and q["step"]["n"] < s["n"]:
                 earlier += _body_method(q["step"]["body"])
         method, _ = _method([m for m in _body_method(s["body"]) if m not in earlier])
-        facts, facts_missing = _facts(s["front"].get("platform_facts"))
+        facts, facts_missing = _facts(s["front"].get("platform_facts"), target)
         result.update({"step": s["n"], "of": sum(1 for q in parts if q.get("step")),
                        "rule": _STEP_RULE,
                        "body": s["body"],
@@ -577,6 +650,8 @@ def compose(template: str, part: str = "master", route: str = "",
         nxt = chain[chain_ids.index(pid) + 1]
         result["next"] = {"call": "get_part", "template": front.get("template"),
                           "part": nxt["part"], "route": cr, "when": nxt["when"]}
+        if target:
+            result["next"]["target"] = target
     elif route == "handover" and chain is visible:
         result["next"] = None
         result["after_design"] = _DESIGN_END
@@ -1018,7 +1093,9 @@ def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> lis
             size = serialized_size(compose(str(front.get("template")), p["part"], route, True))
             if size > RESPONSE_LIMIT:
                 errors.append(f"SZ1: part '{p['part']}' (route '{route or 'both'}') is {size} "
-                              f"characters; the limit is {RESPONSE_LIMIT}")
+                              f"characters; the limit is {RESPONSE_LIMIT}. Move text into a step, "
+                              "or narrow a fact to the children the step uses "
+                              "(mcp-server/part_sizes.py shows every part's size)")
                 break
     return errors
 

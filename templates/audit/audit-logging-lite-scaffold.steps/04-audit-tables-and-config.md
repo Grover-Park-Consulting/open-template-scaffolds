@@ -1,7 +1,7 @@
 ---
 step: 04-audit-tables-and-config
 title: "The three audit tables and the config table"
-platform_facts: [dao-table-build, sql-server-ddl, sql-insert-truncation]
+platform_facts: [dao-table-build.rules, dao-table-build.sinks, sql-server-ddl, sql-insert-truncation]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

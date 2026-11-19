@@ -1,7 +1,7 @@
 ---
 step: 03-procedures-2
 title: "The procedures, part 2 of 3 (from ShowErrorToUser)"
-platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-table-build, vbe-line-continuation, sql-server-ddl]
+platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-table-build.rules, dao-table-build.sinks, dao-table-build.index-order, vbe-line-continuation, sql-server-ddl]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.
