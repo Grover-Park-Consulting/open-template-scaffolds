@@ -285,8 +285,8 @@ _WHEN = {
     "master": "now",
     "standards-gate": _GATE_ORDER,
     "lessons": "Fetch this straight after the gate, before any design question.",
-    "design-standards": ("Fetch this before you ask the standards gate's first question. Ask no "
-                         "design question until it has arrived."),
+    "design-standards": ("Fetch this straight after the lessons, before any design question. The "
+                         "gate may have changed these files; this is the text it settled."),
     "design-facts": ("Fetch this before you draft any part of the design. Do not draft from what "
                      "you already know about Access: these facts are what make the design right."),
     "build-method": ("Fetch this only after the developer chooses Build it. Open, create or "

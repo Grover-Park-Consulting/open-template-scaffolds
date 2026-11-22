@@ -384,8 +384,9 @@ has just been made, the slot holds the next candidate, or drops.
 being handed a blank. That distinction is the whole of this step: the same open question is fine once
 it has been asked for, and is a failed step when it arrives unbidden.
 
-**Summarize the file first, then ask.** The developer cannot choose a part of a file they have not
-been shown. That summary is not the step and does not replace it.
+**Summarize the file first, then ask.** Fetch that file with `get_standards` and the file's name.
+The developer cannot choose a part of a file they have not been shown. That summary is not the step
+and does not replace it.
 
 ---
 
@@ -412,6 +413,17 @@ Say it once, in the line between that answer and the next question:
 > *"Before I change anything: I've put a copy of the rules exactly as they came with the library in
 > a folder called `standards-original`, next to the rules themselves. If you ever want them back,
 > they're there and I can put them back for you."*
+
+### 5.1 What a change carries into
+
+**Say this line immediately before every question whose answer changes the rules for later builds:
+Step G2.n-b, each Step G2.n-b-2, and Step G1-again when `Go back to the library's rules` is offered.
+Say it every time, not once per run.** It is part of the decision, so it goes before the question,
+never in *Tell me more*, which a developer may never open.
+
+> *"Changing the rules here, or going back to the library's rules, carries into every build after
+> this one: those builds follow the rules as you leave them, which should make them better, but they
+> can no longer be compared like-for-like with builds made before."*
 
 ---
 

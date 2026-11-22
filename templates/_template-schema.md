@@ -863,14 +863,15 @@ divides like the others, without a code step. No size or type test decides wheth
 1. `master`: the template file itself, from `get_template`.
 2. `standards-gate`: the standards gate (`templates/_standards-gate.md`), which every run asks
    before any other question. A from-scratch run gets it from `get_standards`.
-3. `design-standards`: the standards the design follows.
-4. `design-facts`: the platform facts the design depends on.
-5. Any step marked `route: both` (below).
-6. `build-method` (Build it) or `handover-method` (Proposed code): how the chosen ending is
+3. `lessons`: what earlier builds learned about the mechanisms the template uses.
+4. `design-standards`: the standards the design follows, as the gate settled them.
+5. `design-facts`: the platform facts the design depends on.
+6. Any step marked `route: both` (below).
+7. `build-method` (Build it) or `handover-method` (Proposed code): how the chosen ending is
    conducted. The master lists the handover route only as far as the design phase.
-7. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
+8. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
    `startup-conventions`).
-8. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.
+9. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.
 
 Every answer names the next call and when to make it (`next`), and carries `served` (part, version,
 hash), so a build record shows every part fetched and any part that was not. A standards or facts

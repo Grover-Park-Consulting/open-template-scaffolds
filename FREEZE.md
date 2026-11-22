@@ -247,6 +247,12 @@ so an assistant doesn't mistake old grounds for new permission:
   Two sentences added: a child id (`parent.child`) and the `target` marker. Grounds: the server
   delivers facts in pieces and by platform since `ab565ad`, and the row described only whole facts.
 
+- **2026-11-22 (×1): `templates/_template-schema.md` §13's parts list, approved by George.** The
+  `lessons` part added as item 3 (the server has delivered it after the gate since the lesson store
+  shipped; the list left it out), later items renumbered, and `design-standards` notes it carries the
+  standards as the gate settled them. Grounds: the list described the parts wrongly. An addition and a
+  renumbering, not a rewording.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 
