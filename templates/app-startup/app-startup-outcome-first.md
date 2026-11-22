@@ -3,9 +3,9 @@ template: app-startup-outcome-first
 title: Application Startup and Back-End Relinking — outcome-first method
 domain: app-startup
 type: outcome-first
-version: 0.3.0
-status: stable
-status_fingerprint: db13af18de85
+version: 0.4.0
+status: review
+status_fingerprint: af04734ea591
 platform_facts: [target-file, app-startup-autoexec]
 steps: [01-checks, 02-code, 03-run-the-checks]
 standards_layer:
@@ -38,7 +38,7 @@ related:
 
 # Application Startup and Back-End Relinking — outcome-first method
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-22.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose application this is. The section after that is addressed to the AI assistant building it, and

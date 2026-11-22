@@ -43,7 +43,7 @@ Private Const mstrBackEndPathSetting As String = "BackEndPath"
 ```vba
 Public Function Startup() As Boolean
     ' [SCAFFOLD] The only thing AutoExec runs, and the one place open-time work happens -
-    '            including whatever open-time work an incumbent AutoExec already did (step 0).
+    '            including, once you switch it on, what your existing AutoExec did (step 0).
     '            The order below is not stylistic - see the comment at step 2.
     '            Returns False when the application must not carry on; each step has
     '            already told the user why.
@@ -53,12 +53,15 @@ Public Function Startup() As Boolean
 
     On Error GoTo errHandler
 
-    ' 0. Whatever the incumbent AutoExec did before this scaffold replaced it goes here, first,
-    '    if there was anything — see the Prerequisites note on reading the existing AutoExec
-    '    macro before building. Leaving this step empty is correct when there was nothing to
-    '    carry over; skipping it without checking is how a working application silently loses
-    '    open-time work it depended on.
-    ' >>> whatever the incumbent's own open-time initialization did, if anything <<<
+    ' 0. PROPOSED, commented out: what your existing AutoExec does today, translated to VBA
+    '    from reading it. Your AutoExec has not been changed. Choose one:
+    '    - Review these lines against your AutoExec, switch them on, and make
+    '      RunCode Startup() your AutoExec's only action; or
+    '    - Leave them off, and add RunCode Startup() at the top of your AutoExec, above its
+    '      own actions.
+    '    Doing both runs that work twice. Empty when there was no AutoExec, or it did no
+    '    open-time work. AutoExec_NewCommandsToAdd holds the RunCode Startup() action.
+    ' >>> the existing AutoExec's open-time work, each line commented out <<<
 
     ' 1. The data connection comes first. Nothing else is meaningful without it.
     If Not EnsureBackEndLink() Then GoTo Cleanup

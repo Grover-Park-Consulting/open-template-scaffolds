@@ -3,9 +3,9 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.5.1
-status: stable
-status_fingerprint: 3eecddfdc61b
+version: 0.6.0
+status: review
+status_fingerprint: 2d6af669512b
 requires_tables:
   - USysLocalSetting
 platform_facts: [target-file, app-startup-autoexec]
@@ -54,7 +54,7 @@ related:
 
 # Application Startup and Back-End Relinking — VBA Scaffold
 
-**Status last determined:** 2026-10-30.
+**Status last determined:** 2026-11-22.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -104,7 +104,7 @@ Three layers, kept distinct throughout:
 | Object | Role |
 |---|---|
 | `USysLocalSetting` | A table **in the front end, not linked** — this scaffold's memory of where the back end is. Defined below. |
-| An `AutoExec` macro | Its only action is `RunCode Startup()`. Built per `templates/_materialization.md` → *The AutoExec build gotcha*. **Read the existing `AutoExec` macro before replacing it.** A database already in use may have one calling its own open-time work — initializing global variables, reading an application version, anything else the rest of the application depends on having run. Replacing its action with `RunCode Startup()` and nothing else silently drops that work; find out what it did and fold it into `Startup()` (see the step marked for it below) before building, never after a developer reports something broken that used to work. |
+| An `AutoExec` macro | Its only action is `RunCode Startup()`. Built per `templates/_materialization.md` → *The AutoExec build gotcha* where the database has none. **Where one exists, leave it as it is** and hand over `AutoExec_NewCommandsToAdd` (method `backup-question`). Read the existing one first: a database already in use may have it calling its own open-time work — initializing global variables, reading an application version, anything else the rest of the application depends on having run. Write that work into `Startup()` at step 0, commented out, as a proposed translation for the developer to review and switch on. A translation nobody has checked can silently drop work the application depends on, so the developer sees it before it runs. |
 | One table the back end must contain | Named by you; `BackEndIsReachable` looks for it to prove a chosen file really is this application's data file. |
 | A startup form | The switchboard, menu, or home form `Startup()` opens once everything checks out. |
 | A central error logger | `error-handling.md`. **It must not write to the back end** — see *Standards Layer*. |

@@ -186,8 +186,36 @@ worded the same in every template.** `Yes, I have a backup`, described as "A cop
 go back to if anything goes wrong." `Not yet`, described as "I'll make one now. The build waits until
 I tell you it's done." It has no preferred choice (write `**Preferred:** none`).
 
-**Ask it on the build route only.** On the handover route you change nothing, and `handover-code`
-step 6 tells the developer to back up.
+**Ask it on the build route only.** On the handover route the stop travels with the code
+(`handover-code` step 6).
+
+**Both routes write the same setup code, with the backup stop in it.** At the start of every
+procedure the developer is told to run that changes tables or data, put the backup stop below: Yes
+and No buttons, No selected by default, the open file's full path shown, and No ending the procedure
+with nothing changed. Give each such procedure `Optional ByVal booBackupConfirmed As Boolean =
+False`, and skip the stop only when it is True. The build route passes True after the developer
+answers `Yes, I have a backup`; the developer, running it themselves, never needs to.
+
+Backup stop, as the message box text:
+
+> This will change the tables in:
+> \<full path of the open database\>
+>
+> Have you made a backup copy of this database?
+>
+> Yes: continue.
+> No: stop now. Nothing has been changed.
+
+**Never change an existing `AutoExec` macro, and never hand one over to import.** Importing one
+replaces theirs without asking. On the handover route, and on the build route where the database
+already has an `AutoExec`, put the commands that must run when the database opens in a macro named
+`AutoExec_NewCommandsToAdd`, in the `_AXL:` format the platform fact `app-startup-autoexec`
+gives, and say this paragraph to the developer, unchanged:
+
+> We have provided a macro with the commands needed to update your AutoExec macro to support the
+> additional functionality. We do not alter your existing AutoExec. The macro is named
+> AutoExec_NewCommandsToAdd and does nothing on its own: copy its commands to the top of your
+> AutoExec. If your database has no AutoExec, rename AutoExec_NewCommandsToAdd to AutoExec.
 
 **Ask it as soon as the developer says the database is one they already use, before any question
 about its layout.** A stop belongs before the detail questions, so the developer is not asked about
@@ -776,6 +804,10 @@ run.** The developer chose Proposed code at the ending question (`run-ending`). 
 platform facts and steps for writing the code arrive in the parts after this one: write no code until
 they have.
 
+The template lists a backup question and permission to change the tables among what the developer
+supplies. On this route neither is asked. When the developer chooses Proposed code, say so in one
+sentence: the backup stop is in the code, and importing it is their permission.
+
 1. Write the code as files the developer can import: Access objects as text files in the format
    `LoadFromText` reads, code modules as importable files, SQL as script files. Take each format from
    the platform facts you were given; invent none.
@@ -843,8 +875,29 @@ they have.
       run.
 
    End the section with a notes line: `Optional. Do not include confidential information.`
-6. Tell the developer to back up the database before importing. The backup order in `access-gate`
-   stops a build and nothing else; it does not hold this code back.
+6. **Put the backup warning in the code you hand over, in three places, every time.** The developer
+   may import into a database they use for real work; you cannot know which.
+   - A file named `00-READ-FIRST.txt` whose first paragraph is the read-first text below, and a
+     first instruction in your message that points to it.
+   - Under the `PROPOSED CODE` line in every module, the module warning below.
+   - In every setup procedure, the backup stop the method `backup-question` gives.
+
+   Hand over no `AutoExec`: where the code needs commands to run when the database opens, hand over
+   `AutoExec_NewCommandsToAdd` as `backup-question` says, and put its paragraph in
+   `00-READ-FIRST.txt`.
+
+   Read-first text, for the developer:
+
+   > BEFORE YOU IMPORT ANYTHING: make a backup copy of the database you will import this code into.
+   > Importing adds objects to that database and replaces, without asking, any object that already
+   > has the same name. Running the setup changes its tables. If that database is one you use for
+   > real work, try this code in a copy of it first.
+
+   Module warning, as comment lines:
+
+   > Back up the database before you import or run this. Read 00-READ-FIRST.txt.
+   > The setup asks you to confirm a backup before it changes anything. You may remove that
+   > question; if you do, the consequences are yours.
 7. The build record says the code was not run and every check is *not run*. Ask the developer, as a
    question, where the files and the record go: there is no `.accdb` of yours to sit beside.
 
@@ -919,6 +972,17 @@ throughout):
   default** (a message box) unless the house `error-handling.md` specifies a central logger.
 
 Apply the standards throughout, exactly as in the approved design spec.
+
+### Setup procedures and the AutoExec macro
+
+Run each setup procedure with `booBackupConfirmed:=True` (method `backup-question`).
+
+**Where the database has no `AutoExec` macro, build it** as the platform fact `app-startup-autoexec`
+says, and name it in the permission panel as a macro that runs every time the database opens.
+**Where one exists, leave it untouched.** Build `AutoExec_NewCommandsToAdd` instead, as
+`backup-question` says, and put its paragraph at the top of the hand-over. To run the checks that
+depend on what happens at open, add those commands to the `AutoExec` in the throwaway check copy, never
+in the supplied file.
 
 ### Building it with no template
 
