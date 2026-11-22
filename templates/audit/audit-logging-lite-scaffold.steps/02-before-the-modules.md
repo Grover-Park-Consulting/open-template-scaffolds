@@ -81,15 +81,14 @@ Option Explicit
 ' the wizard, and the only audit-scope decision that is written into code rather than set as
 ' data afterward. Set it before the module is imported; nothing at run time changes it, so a
 ' re-run of the scan always draws the same boundary as the first run did.
-'   "Standard" — tables named tbl... or tlkp..., the naming convention these templates follow.
-'   "All"      — every table in this file.
-'   "List"     — only the tables named in AUDIT_SCOPE_LIST, separated by semicolons.
-' Four kinds of table are out of scope under every mode, and IsAuditCandidateTable tests for
+'   "List" — only the tables named in AUDIT_SCOPE_LIST, separated by semicolons: the list
+'            the developer confirmed or gave. Chosen by what each table holds, not its name.
+'   "All"  — every table in this file.
+' Three kinds of table are out of scope under every mode, and IsAuditCandidateTable tests for
 ' them before it reads this setting: Access's own (MSys), the developer's own hidden tables
-' (USys) unless named in the list, temporary tables (tmp), and linked tables, which cannot
-' carry a Data Macro at all.
+' (USys) unless named in the list, and linked tables, which cannot carry a Data Macro at all.
 ' >>> set these to the developer's answer before you import this module <<<
-Private Const AUDIT_SCOPE_MODE As String = "Standard"
+Private Const AUDIT_SCOPE_MODE As String = "List"
 Private Const AUDIT_SCOPE_LIST As String = ""
 
 ' [BUSINESS LOGIC — schema Business Rule 4] Whether tables keyed by a Replication ID are
@@ -145,14 +144,13 @@ Public Const AUDIT_MACRO_MARKER_FULL As String = "OTS-AUDIT-DATAMACRO-GENERATED 
 **To the AI assistant — before you import the module.** `AUDIT_SCOPE_MODE` carries Step 4's answer
 and `AUDIT_SCOPE_LIST` carries the table names where that answer was a list. Set them here, in the
 module text, before the import. There is no run-time argument for either and no dialog that asks
-later: a module imported with the shipped values audits `tbl` and `tlkp` tables and nothing else.
+later: a module imported with the shipped values has an empty list, and the scan stops, saying no
+table is in scope.
 
-**Never fill either in from what the tables are called.** A database whose tables happen to be named
-`tbl...` is not thereby a database whose owner wants all of them audited, and one whose tables are
-named some other way is not thereby asking for a list. Step 4 is the only source for these two
-values.
+**Never fill either in from what the tables are called.** Step 4 is the only source for these two
+values: the list the developer confirmed or gave, never one they have not seen.
 
-**Write the list exactly as the developer gave it**, one table name per entry, separated by
+**Write the list exactly as the developer confirmed or gave it**, one table name per entry, separated by
 semicolons: `"tblClient;tblSupportTicket"`. Spaces around a semicolon are ignored, so a name may
 itself contain spaces. A name that is not a table in this file simply never matches, and the scan
 then reports fewer tables than the developer expects — read the names back to them before you set

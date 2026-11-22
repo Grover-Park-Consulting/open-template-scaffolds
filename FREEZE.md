@@ -253,6 +253,17 @@ so an assistant doesn't mistake old grounds for new permission:
   standards as the gate settled them. Grounds: the list described the parts wrongly. An addition and a
   renumbering, not a rewording.
 
+- **2026-11-22 (×1 session, two files), approved by George: rules keyed on purpose, not on a
+  keyword or a name.** `standards/error-handling.md`: option 2's line-number sentence, line-numbering
+  bullet 1 and conformance condition 6 now key line numbers and `Erl` on whether the procedure's
+  handler is designed to report where the error happened. Condition 6 had said every procedure with
+  an `errHandler:` is numbered, contradicting option 2 and the bullet (missed in the 2026-10-19 lift).
+  `standards/audit-columns.md`: the five columns go on tables a build creates or changes that hold
+  the application's data, decided by what the table holds, never its `tbl`/`tlkp` prefix (which fails
+  silently on unprefixed or suffix-named tables); administration tables and logs are exempt;
+  attaching Data Macros is not a change; adding the columns to an untouched existing table is offered,
+  not done. The reader-facing line 9 and the `USys` note follow. Corrections of errors.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

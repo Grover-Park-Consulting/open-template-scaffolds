@@ -3,9 +3,9 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.19.2
-status: stable
-status_fingerprint: df7b330b4d53
+version: 0.20.0
+status: review
+status_fingerprint: c49f66e37f11
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -56,9 +56,10 @@ build_paths:
   - "Path B — Add it to a real database you already have: skip Zero_CreateSampleTables and point
     the generator at your own existing tables instead. Back up the file first (see warnings)."
 house_assumptions:
-  - "Audit scope (AUDIT_SCOPE_MODE) — chosen by the developer at wizard Step 4, never inferred from
-    what the tables are called without being told to. The Standard answer matches tbl/tlkp naming,
-    but only because the developer picked that answer over List or All, which are offered equally."
+  - "Audit scope (AUDIT_SCOPE_MODE) — chosen by the developer at wizard Step 4, by what each table
+    holds, never by what it is called. The preferred answer is a list the assistant proposes from
+    each table's fields and use and the developer confirms; a name's prefix or suffix is a clue,
+    never the test."
   - "Identity source (AuditUser) — the Windows account name is the preferred choice for the name
     recorded against a change, and what this template ships with. The developer can override it
     before generating — with the database's own identity function, where one already tracks the
@@ -144,7 +145,7 @@ warnings:
 
 # Access Audit Logging (Lite) — VBA Scaffold
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-22.
 
 ## Contents
 
@@ -321,12 +322,11 @@ and no other template runs it.
   annotated in place: `BackupLongTextFieldsDM` stays quiet (it runs inside every save).
 - **Query style** — the inline SQL kept here is from the proven source; rewrite per
   `query-style.md` if your house centralizes SQL differently.
-- **Naming conventions** — the `Standard` scope setting is the naming convention made
-  executable: `tbl` and `tlkp` tables, never `tmp`. It is one of the three answers Step 4 offers,
-  not the only one. `AUDIT_SCOPE_MODE` holds the answer, `IsAuditCandidateTable` reads it, and both
-  the config scan and `One_CheckAuditReadiness` call that — so scope is one setting in one place
-  whichever answer was given. A practice on another convention answers `List` or `All` rather than
-  editing a test.
+- **Naming conventions** — no scope test reads a table's name, apart from Access's own `MSys`
+  tables and the developer's `USys` tables. Which tables hold the application's data is decided at
+  Step 4 by what each holds, so any naming convention, or none, works the same. `AUDIT_SCOPE_MODE`
+  and `AUDIT_SCOPE_LIST` hold the answer, `IsAuditCandidateTable` reads them, and both the config
+  scan and `One_CheckAuditReadiness` call that — so scope is one setting in one place.
 - **Design principles** — one job per procedure throughout: one sample-data setup (Path A only),
   three numbered entry points, one safety check, five single-macro builders, one comparison
   helper, one staging function, one admin reset.

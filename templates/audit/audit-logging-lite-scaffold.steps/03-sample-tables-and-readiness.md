@@ -516,11 +516,12 @@ scanned, or the reverse.
 **It carries out Step 4's answer; it does not make it.** `AUDIT_SCOPE_MODE` holds that answer, and
 this function reads it. Everything finer-grained is a flag in the config table rather than code.
 
-**Four exclusions are tested before the mode is read, so no answer can let one through.** Access's
-own system tables and temporary tables are never audited; the developer's own hidden tables are
-theirs, and are in scope only where they named one themselves; and a linked table cannot carry a
-Data Macro at all, so including one would fail at the last step rather than the first. The linked
-test is first of the four because it is the one a developer can ask for by name.
+**Three exclusions are tested before the mode is read, so no answer can let one through.** Access's
+own system tables are never audited; the developer's own hidden tables are theirs, and are in scope
+only where they named one themselves; and a linked table cannot carry a Data Macro at all, so
+including one would fail at the last step rather than the first. The linked test is first of the
+three because it is the one a developer can ask for by name. **No other test reads a table's name:**
+which tables hold the application's data was decided at Step 4, by what each holds.
 
 **It takes the table itself, not the table's name.** The linked test needs the table definition, and
 a function that receives the whole thing cannot be called in a way that skips the check.
@@ -528,7 +529,7 @@ a function that receives the whole thing cannot be called in a way that skips th
 ```vba
 Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
     ' [BUSINESS LOGIC — scan boundary] Reads AUDIT_SCOPE_MODE, set in the module-level
-    '            declarations from Step 4's answer. The four exclusions below hold under
+    '            declarations from Step 4's answer. The three exclusions below hold under
     '            every mode and are tested first, so no setting and no table list can let
     '            one of them in.
     Dim sName As String
@@ -550,16 +551,11 @@ Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
         Exit Function
     End If
 
-    ' Temporary and working tables.
-    If Left$(sName, 3) = "tmp" Then Exit Function
-
     Select Case AUDIT_SCOPE_MODE
-        Case "All"
-            IsAuditCandidateTable = True
         Case "List"
             IsAuditCandidateTable = IsNamedInScopeList(sName)
-        Case "Standard"
-            IsAuditCandidateTable = (Left$(sName, 3) = "tbl" Or Left$(sName, 4) = "tlkp")
+        Case "All"
+            IsAuditCandidateTable = True
         Case Else
             ' [SCAFFOLD] A mode nobody defined is a typo in the constant, and the safe
             '            reading of a typo is not "audit nothing" — that is the failure
@@ -567,7 +563,7 @@ Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
             '            instead, where both callers' error blocks will report it.
             Err.Raise vbObjectError + 513, "IsAuditCandidateTable", _
                 "AUDIT_SCOPE_MODE is set to """ & AUDIT_SCOPE_MODE & """. It has to be " & _
-                """Standard"", ""All"" or ""List""."
+                """List"" or ""All""."
     End Select
 End Function
 ```

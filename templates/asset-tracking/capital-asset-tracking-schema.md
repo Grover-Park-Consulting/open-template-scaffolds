@@ -5,7 +5,7 @@ domain: asset-tracking
 type: table-schema
 version: 0.6.0
 status: stable
-status_fingerprint: ac9ae51efd0f
+status_fingerprint: d183825992f4
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
@@ -303,7 +303,8 @@ without this flag there is no way to say so (Business Rule 4).
 ## Standards Layer
 
 - **Audit columns** — the house default set (`CreatedDate` / `CreatedBy` / `ModifiedDate` /
-  `ModifiedBy`) on every `tbl`/`tlkp` table, maintained by the active standards layer's mechanism
+  `ModifiedBy`) on every table this template creates, since each holds the application's data,
+  maintained by the active standards layer's mechanism
   (`standards/audit-columns.md`). The contributing host's own database stamped who-and-when its
   own way (`AddedBy`/`AddedOn`/`ModifiedBy`/`ModifiedOn`, for one), and a target database may do
   the same. Check the target database's existing convention before naming any new audit column and

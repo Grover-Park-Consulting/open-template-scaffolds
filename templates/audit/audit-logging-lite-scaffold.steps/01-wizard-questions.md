@@ -163,26 +163,49 @@ undo, and it is the only one that covers everything at once.
 
 | Option | Short description |
 |---|---|
-| `Tables named tbl… or tlkp…` | Your data and lookup tables, in the naming style these templates follow. |
-| `Every table in this file` | All of them, apart from the four kinds that are never included. |
+| `The tables you propose` | I look at every table and propose the ones that hold your data; you confirm or change the list. |
+| `Every table in this file` | All of them, apart from the three kinds that are never included. |
 | `A different set — I'll tell you which` | You give me the table names, and only those are used. |
 
-**Preferred:** `Tables named tbl… or tlkp…` — the naming style these templates follow, which is
-where those prefixes are defined.
+**Preferred:** `The tables you propose` — it decides by what each table holds, which a table's name
+only hints at.
 
 **Skip when:** Step 1 chose the try-it-out demo. The demo's scope is fixed to the three tables it
-creates, which are named in this same convention — asking here would offer `Every table in this
-file` or a named list, either of which could reach real tables sharing the file the demo was built
-into, and Step 3's backup gate was skipped on the promise that a demo run touches nothing you
-already have. Set `AUDIT_SCOPE_MODE = "Standard"` for the demo without asking.
+creates — asking here would offer `Every table in this file` or another list, either of which could
+reach real tables sharing the file the demo was built into, and Step 3's backup gate was skipped on
+the promise that a demo run touches nothing you already have. Set `AUDIT_SCOPE_MODE = "List"` and
+`AUDIT_SCOPE_LIST = "tblClient;tlkpTicketPriority;tblSupportTicket"` for the demo without asking.
 
 **To the AI assistant: three answers plus `Tell me more` fills the control, so there is no room on
 this step for `Go back to the previous question`.** That is expected here rather than an omission,
-the same as on Step 2. Whichever answer comes back, set `AUDIT_SCOPE_MODE` in the module-level
-declarations before the module is imported — `"Standard"`, `"All"` or `"List"` — and set
-`AUDIT_SCOPE_LIST` as well where the answer was a list of names. Nothing at run time changes either
-value. **Ask this step even where the answer looks obvious from the table names**, which is the one
-place it must not be read from.
+the same as on Step 2.
+
+**On `The tables you propose`, decide each table by what it holds, never by its name alone.** Read
+every local table in your copy: its fields, its relationships, and whether people add, change or
+delete its records as part of the application's work. A table that holds the application's data is
+proposed; one that supports the application's administration (settings, configuration, staging,
+working tables, logs) is not. A name's prefix or suffix is a clue, never the test.
+
+**Show every local table in the file, each marked *proposed*, *not proposed* or *unsure*, with one
+line saying why.** The three kinds never included (linked, `MSys`, `USys`) appear too, with that
+reason. Every other reason names something you saw besides the name: a field, a relationship, a
+form, the row count.
+
+Clues, none decisive:
+- **Data:** related to other tables by keys, or edited through a form, a lookup list included.
+  Stamping columns already present are a strong clue.
+- **Administration:** one row, or name-and-value pairs, with no relationships. Rows written only by
+  code, carrying their own date and person: a log. Emptied and refilled by an import or a procedure:
+  staging.
+- **The name:** a prefix or suffix points one way.
+
+**Where the clues disagree, mark the table *unsure*, with the reason.** The developer decides it.
+Ask through the selection control: `Use this list`, or `Change it` (they say what to add or remove).
+Ask again after every change until they choose `Use this list`.
+
+Whichever answer comes back, set `AUDIT_SCOPE_MODE` in the module-level declarations before the
+module is imported — `"List"` for the first and third answers, `"All"` for the second — and set
+`AUDIT_SCOPE_LIST` to the confirmed or given names. Nothing at run time changes either value.
 
 <details>
 <summary>Tell me more about which tables get audited</summary>
@@ -192,20 +215,20 @@ finer-grained
 choice — which tables, which individual fields — is a flag you set in the config table afterward,
 as data. That is deliberate: changing your mind about a field should not mean editing VBA.
 
-**Four kinds of table are left out whatever you choose here**, because including them either cannot
+**Three kinds of table are left out whatever you choose here**, because including them either cannot
 work or is not this system's business:
 
 - **Access's own system tables**, whose names begin `MSys`. Never touched.
 - **Your own hidden tables**, whose names begin `USys`. Yours to manage, so one is included only
   where you name it yourself in the third answer.
-- **Temporary and working tables**, whose names begin `tmp`.
 - **Linked tables** — tables that live in another file and only appear in this one. Access cannot
   attach the tracking to a linked table at all: it has to be built in the file where the table
   really lives, which is what Step 2 was asking. Name one in the third answer and it is left out,
   and the report says which, rather than passing over it quietly.
 
-If your tables are not named in any consistent way, the third answer is the one to take — you say
-which tables, and no rule about names is applied to any of them.
+`Every table in this file` includes working and staging tables, if your file has any. The first
+answer leaves them out, because it looks at what each table holds rather than what it is called;
+you see the list and confirm it before anything is built.
 
 </details>
 

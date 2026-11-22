@@ -88,7 +88,7 @@ written against.
 <summary>Tell me more about these rules</summary>
 
 The rules live in seven short files that came with the library. They are the reason a table comes
-out named one way rather than another, and the reason every table gets the same five columns
+out named one way rather than another, and the reason every table holding your data gets the same five columns
 recording who changed a record and when. The templates were written against them, so changing a rule
 changes what every template builds — not just this one.
 
@@ -176,7 +176,9 @@ How many columns are added depends on where the tables live. **Four are added to
 Access file** — who created the record and when, who last changed it and when. **A table in SQL
 Server gets a fifth**, one the database maintains itself so it can tell whether someone else changed
 a record while you had it open. Access has nothing of its own that does that, so on a table in an
-Access file the fifth column is not added at all. They go at the end, in that order, on every table.
+Access file the fifth column is not added at all. They go at the end, in that order, on every table
+that holds your data. Tables that only keep the application running, such as its settings, do not
+get them.
 
 The house audit columns are the record any template writes to when it changes a row, so their names
 are built into the code you get. If you change the names here, the code changes with them.

@@ -455,11 +455,10 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
         sReport = "Stopped. No table in this file is in scope, so nothing was written to " & _
             "tblAuditLogConfig and nothing has been built." & vbCrLf & vbCrLf & _
             "The scope setting at the top of this module is """ & AUDIT_SCOPE_MODE & """:" & vbCrLf & _
-            "  Standard - tables named tbl... or tlkp..." & vbCrLf & _
-            "  All      - every table in this file." & vbCrLf & _
-            "  List     - only the tables named in AUDIT_SCOPE_LIST." & vbCrLf & vbCrLf & _
-            "Set it to match the tables in this file and run this again. System tables, " & _
-            "temporary tables and linked tables are left out whichever one is set."
+            "  List - only the tables named in AUDIT_SCOPE_LIST." & vbCrLf & _
+            "  All  - every table in this file." & vbCrLf & vbCrLf & _
+            "Set it to match the tables in this file and run this again. System tables " & _
+            "and linked tables are left out whichever one is set."
         GoTo Cleanup
     End If
 

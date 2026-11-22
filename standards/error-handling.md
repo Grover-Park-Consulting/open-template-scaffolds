@@ -132,7 +132,8 @@ Tells the person something went wrong and **records nothing** — once they clos
 trace it happened. Reasonable for a one-off utility or a demonstration, where a log file would be
 clutter. Not reasonable for anything someone else will rely on.
 
-This handler never reads `Erl`, so its procedures carry **no line numbers**. If a procedure
+This handler does not report where the error happened, so its procedures carry **neither line
+numbers nor `Erl`**. If a procedure
 declares `MODULE_NAME` and `PROC_NAME` (option 1) but this handler never uses them, leave them in
 and comment them: they are part of the fuller method above, kept as a forward-looking pre-set-up so
 that adding a logger later does not mean editing every procedure.
@@ -264,9 +265,9 @@ End Sub
 
 ## Line numbering
 
-- Add line numbers **only** in procedures that have an `errHandler:` block that reads `Erl` (so `Erl`
-  returns a useful value). Procedures with no `errHandler`, or an option 2 handler, have **no** line
-  numbers.
+- Add line numbers **only** where the procedure's error handler is designed to report where the
+  error happened; that handler reads `Erl`. A procedure whose handler does not report the location,
+  or that has no handler, carries neither.
 - Increment by 10 from 100; restart at a round number for `Cleanup:` and `errHandler:`.
 - **Renumber a procedure you edit, or strip its numbers entirely.** Numbers that no longer match the
   lines are worse than none — `Erl` reports a line where nothing failed.
@@ -445,7 +446,8 @@ error handler"; conditions 7 and 8 still apply.
    whoever depends on the outcome").
 4. No procedure with an `errHandler:` block exits by a route that skips `Cleanup:`.
 5. `On Error Resume Next` appears only inside a `Cleanup:` block and inside the logger.
-6. Every procedure with an `errHandler:` block is line-numbered; every procedure without one is not.
+6. A procedure whose error handler reports where the error happened carries line numbers and reads
+   `Erl`. Every other procedure carries neither.
 7. Every logger the generated code calls exists in the built database.
 8. Where a transaction is used, the `Database` object every write inside it goes through was
    obtained from the same `Workspace` the transaction was begun on, and no domain function is read
