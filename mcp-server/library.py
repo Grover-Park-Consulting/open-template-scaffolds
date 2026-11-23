@@ -281,6 +281,14 @@ def settled_block() -> str | None:
     block = text[start:] if end is None else text[start:start + len(SETTLED_HEADING) + end.start()]
     return block.strip()
 
+MECHANISMS_RULE = (
+    "The lessons here are the ones every build gets. Before the first design question, name each "
+    "mechanism in `mechanisms_available` that this template's build uses, judged from the master you "
+    "hold, with one clause saying where the template uses it. Judge by what the build does, never by a "
+    "word in the template. Then call `get_lessons` with those names and read its answer as the rule "
+    "below says. Do not skip the call because the lessons here look enough. Write each name with its "
+    "clause in the build record, followed by that call's `record_line`.")
+
 _WHEN = {
     "master": "now",
     "standards-gate": _GATE_ORDER,
@@ -588,7 +596,9 @@ def compose(template: str, part: str = "master", route: str = "",
             result["platform_facts_missing"] = facts_missing
     elif pid == "lessons":
         from lessons_sync import deliver  # imported here: lessons_sync imports this module
-        result.update(deliver([str(m) for m in front.get("mechanisms") or []]))
+        # The lessons every build gets; the assistant names the template's own mechanisms.
+        result.update(deliver([]))
+        result["mechanisms_rule"] = MECHANISMS_RULE
         result["served"] = {"template": front.get("template"), "part": pid, "version": version,
                             "sha": _sha(*[l["id"] + l["lesson"] for l in result["lessons"]])}
     elif p.get("gate"):

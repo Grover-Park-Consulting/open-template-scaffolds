@@ -253,7 +253,7 @@ def ensure_index(lessons_dir: Path = DEFAULT_LESSONS, store_dir: Path | None = N
 
 
 LESSONS_RULE = (
-    "Read every lesson below before the first design question. Do not search for lessons yourself. "
+    "Read every lesson below before the first design question. Do not open the lesson files yourself. "
     "Each lesson's `action` says what to do. apply: do it and do not alert the developer. state: tell "
     "the developer before the design, as a consideration. ask: when the developer chooses, or has "
     "already chosen, what `triggers_when` names, tell them before they commit what they would have to "

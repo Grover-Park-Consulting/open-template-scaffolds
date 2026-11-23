@@ -863,7 +863,8 @@ divides like the others, without a code step. No size or type test decides wheth
 1. `master`: the template file itself, from `get_template`.
 2. `standards-gate`: the standards gate (`templates/_standards-gate.md`), which every run asks
    before any other question. A from-scratch run gets it from `get_standards`.
-3. `lessons`: what earlier builds learned about the mechanisms the template uses.
+3. `lessons`: the lessons every build gets, and the mechanism table. The AI assistant names the
+   mechanisms the template's build uses and fetches their lessons with `get_lessons`.
 4. `design-standards`: the standards the design follows, as the gate settled them.
 5. `design-facts`: the platform facts the design depends on.
 6. Any step marked `route: both` (below).

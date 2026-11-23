@@ -588,6 +588,12 @@ build done** — every saved query, every form and report's record source, every
 Whether the front end exists yet is the only condition: a schema built before any front end exists
 has nothing to sweep.
 
+**Sweep the data macros too, front end or not.** A rename never updates a data macro that names the
+field, on its table or any other, and gives no message; the next insert fails with "The identifier
+'[old name]' could not be found" and saves nothing. Export each table's macros
+(`SaveAsText acTableDataMacro`), read the text as UTF-16, and rewrite every macro that names the old
+field.
+
 ### The VBE's ~25 line-continuation limit on one statement
 <!-- fact: vbe-line-continuation route: build -->
 

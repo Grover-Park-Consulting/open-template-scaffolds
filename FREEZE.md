@@ -264,6 +264,13 @@ so an assistant doesn't mistake old grounds for new permission:
   attaching Data Macros is not a change; adding the columns to an untouched existing table is offered,
   not done. The reader-facing line 9 and the `USys` note follow. Corrections of errors.
 
+- **2026-11-23 (×1), approved by George: the AI assistant names a template's mechanisms.**
+  `templates/_template-schema.md` §13 parts list item 3. It said the `lessons` part carries what
+  earlier builds learned about the mechanisms the template uses; no template could declare its
+  mechanisms, so the part delivered only the lessons every build gets. The part now also carries the
+  mechanism table, and the assistant names the template's mechanisms and calls `get_lessons`.
+  Grounds: the list described the part wrongly.
+
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.
 

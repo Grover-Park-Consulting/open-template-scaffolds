@@ -115,20 +115,13 @@ class TestLessons(unittest.TestCase):
         self.assertEqual(len(got["served"]["sha"]), 12)
         self.assertTrue(got["next"]["when"].startswith("Fetch "))
 
-    def test_a_template_with_mechanisms_gets_those_lessons(self):
-        real_iter = library.iter_templates
-
-        def with_mechanisms():
-            for path, front, body in real_iter():
-                if front.get("template") == "stocktake-schema":
-                    front = {**front, "mechanisms": ["ace-sql"]}
-                yield path, front, body
-
-        before = {l["id"] for l in get_part("stocktake-schema", "lessons")["lessons"]}
-        with patch.object(library, "iter_templates", with_mechanisms):
-            after = {l["id"] for l in get_part("stocktake-schema", "lessons")["lessons"]}
-        self.assertNotIn("no-count-distinct", before)
-        self.assertIn("no-count-distinct", after)
+    def test_the_lessons_part_asks_the_assistant_to_name_the_mechanisms(self):
+        got = get_part("stocktake-schema", "lessons")
+        names = {m["name"] for m in got["mechanisms_available"]}
+        self.assertIn("data-macro", names)
+        self.assertIn("get_lessons", got["mechanisms_rule"])
+        always = {"error-handling", "vba-generation", "build-verification"}
+        self.assertEqual({l["mechanism"] for l in got["lessons"]} - always, set())
 
     def test_get_lessons_tool_answers_without_a_template(self):
         got = unwrap(server.get_lessons)(["ace-sql", "not-a-mechanism"])
