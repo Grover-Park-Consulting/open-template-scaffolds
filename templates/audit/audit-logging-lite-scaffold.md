@@ -3,9 +3,9 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.20.0
+version: 0.21.0
 status: review
-status_fingerprint: c49f66e37f11
+status_fingerprint: b63fbdacc831
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -27,6 +27,7 @@ new_procedures:
   - Three_PopulateConfigTable
   - IsAuditCandidateTable
   - IsNamedInScopeList
+  - IsNamedInList
   - IsAuditableKeyType
   - IsUnauditableFieldType
   - ListOpenObjects
@@ -89,8 +90,9 @@ warnings:
   - This module must run in the same accdb as the audited tables — the back end of a split
     design. modAuditLongText (BOTH AuditUser and BackupLongTextFieldsDM) must additionally exist in
     every front end, because a data macro fired by a front-end edit resolves the function there.
-    AuditUser is needed on every build, Long Text or not, because the stamping macro calls it on
-    every table — without it in the front end, front-end inserts fail outright. Where a build uses
+    AuditUser is needed on every build, Long Text or not, because the generated macros call it on
+    every audited table — without it in the front end, front-end inserts into a table this system
+    stamps fail outright. Where a build uses
     the host database's own identity function instead of AuditUser, that requirement moves with it to
     whichever module holds that function — the same rule, a different file — and modAuditLongText is
     then needed only where there is a Long Text field. The copies must be kept identical by hand;
@@ -131,9 +133,11 @@ warnings:
     Three_PopulateConfigTable names any the developer asked for by name, so the omission is visible
     rather than silent.
   - Application.LoadFromText replaces a table's ENTIRE macro set — it never merges. This generator
-    therefore emits the house audit-column stamping (standards/audit-columns.md) and the change
-    auditing TOGETHER, in one Before Change macro, so that one macro carries both and neither can
-    replace the other. Any
+    therefore emits the house audit-column stamping (standards/audit-columns.md), on the tables
+    in AUDIT_STAMP_LIST, and the change auditing TOGETHER, in one Before Change macro, so that one
+    macro carries both and neither can replace the other. A table whose columns a default or the
+    database's own code fills is not listed - the generator adds to what a table does, and never
+    takes over what already fills those columns. Any
     OTHER Data Macro a table already carries — business logic of your own, written for reasons
     unrelated to this system — is still replaced. And where a table already stamps who-and-when, that
     macro is replaced by this generator's version, which may not behave identically — an existing one
@@ -145,7 +149,7 @@ warnings:
 
 # Access Audit Logging (Lite) — VBA Scaffold
 
-**Status last determined:** 2026-11-22.
+**Status last determined:** 2026-11-23.
 
 ## Contents
 

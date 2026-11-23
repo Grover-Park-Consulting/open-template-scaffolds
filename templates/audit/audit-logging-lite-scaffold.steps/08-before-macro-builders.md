@@ -16,16 +16,18 @@ stamping the house audit columns, and staging Long Text values before they're ov
 be loaded as separate macros. The second load would silently delete the first. They are generated
 together instead:
 
-1. **Stamp the house audit columns** (`standards/audit-columns.md`), on any table that carries them.
-   Without this, a `Required` `CreatedBy` with nothing able to fill it **rejects every insert**.
+1. **Stamp the house audit columns** (`standards/audit-columns.md`), on the tables in
+   `AUDIT_STAMP_LIST` that carry them. On those tables nothing else fills them, so without this a
+   `Required` `CreatedBy` **rejects every insert**. A table whose columns a default or the
+   database's own code fills is not listed, and its columns are left to that.
 2. **Stage Long Text old values** ahead of an update, by calling `BackupLongTextFieldsDM` for each
    Long Text field — the workaround for a Data Macro being unable to read `[Old].[LongTextField]`.
 
 Both key on the same test, `IsNull([Old].[PK])` — true on an insert, false on an update — so they
 merge into one conditional block with no conflict.
 
-The function looks at what the table actually has and emits only what applies. A table carrying
-neither the audit columns nor a Long Text field gets an **empty string back**, meaning no Before
+The function looks at what the table actually has and emits only what applies. A table with
+neither stamping to do nor a Long Text field gets an **empty string back**, meaning no Before
 Change macro at all — that table's set is just the three After macros.
 
 **Why the branches are assembled before the XML:** a branch with no actions in it would produce an
@@ -39,7 +41,7 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     ' [SCAFFOLD + STANDARDS — audit-columns.md] BeforeChange carries TWO jobs, because
     '            LoadFromText replaces a table's whole macro set and they cannot be
     '            loaded separately without one destroying the other:
-    '              1. Stamp the house audit columns (any table that carries them).
+    '              1. Stamp the house audit columns (tables in AUDIT_STAMP_LIST).
     '              2. Stage Long Text old values ahead of an update (Long Text tables).
     '            Both key on the same discriminator, IsNull([Old].[PK]).
     '            Returns "" when the table needs neither — no BeforeChange macro at all.
@@ -53,16 +55,23 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     Dim bHasCreatedBy As Boolean
     Dim bHasModifiedDate As Boolean
     Dim bHasModifiedBy As Boolean
+    Dim bStamp As Boolean
 
-    ' What does this table actually carry? The audit columns arrive with IsAuditable
-    ' False (they are always seeded off) — presence is what decides stamping, not the flag.
+    ' [STANDARDS — audit-columns.md] Stamp only where AUDIT_STAMP_LIST says the generator
+    '            fills the columns. Matching column names alone would take over columns a
+    '            default or the database's own code already fills, and overwrite them.
+    '            Within a listed table, presence decides which of the four are stamped;
+    '            they arrive with IsAuditable False (always seeded off), so not the flag.
+    bStamp = IsNamedInList(AUDIT_STAMP_LIST, sTableName)
     bHasLongText = False
     For Each fieldInfo In fieldList
         sFieldName = fieldInfo(0)
-        If StrComp(sFieldName, AUDIT_CREATED_DATE, vbTextCompare) = 0 Then bHasCreatedDate = True
-        If StrComp(sFieldName, AUDIT_CREATED_BY, vbTextCompare) = 0 Then bHasCreatedBy = True
-        If StrComp(sFieldName, AUDIT_MODIFIED_DATE, vbTextCompare) = 0 Then bHasModifiedDate = True
-        If StrComp(sFieldName, AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasModifiedBy = True
+        If bStamp Then
+            If StrComp(sFieldName, AUDIT_CREATED_DATE, vbTextCompare) = 0 Then bHasCreatedDate = True
+            If StrComp(sFieldName, AUDIT_CREATED_BY, vbTextCompare) = 0 Then bHasCreatedBy = True
+            If StrComp(sFieldName, AUDIT_MODIFIED_DATE, vbTextCompare) = 0 Then bHasModifiedDate = True
+            If StrComp(sFieldName, AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasModifiedBy = True
+        End If
         If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then bHasLongText = True
     Next fieldInfo
 

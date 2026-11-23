@@ -580,18 +580,29 @@ table name that itself contains spaces is unaffected.
 
 ```vba
 Private Function IsNamedInScopeList(sTableName As String) As Boolean
+    IsNamedInScopeList = IsNamedInList(AUDIT_SCOPE_LIST, sTableName)
+End Function
+```
+
+### IsNamedInList — `Private Function` → `Boolean`
+
+**Is this table named in this list?** The test behind `IsNamedInScopeList`, and behind
+`BuildBeforeChangeMacro`'s reading of `AUDIT_STAMP_LIST`.
+
+```vba
+Private Function IsNamedInList(ByVal sList As String, ByVal sTableName As String) As Boolean
     ' [SCAFFOLD] Exact match against one entry, never a partial one: "tblOrder" must not
     '            match "tblOrderLine".
     Dim vNames As Variant
     Dim i As Long
 
-    IsNamedInScopeList = False
-    If Len(AUDIT_SCOPE_LIST) = 0 Then Exit Function
+    IsNamedInList = False
+    If Len(sList) = 0 Then Exit Function
 
-    vNames = Split(AUDIT_SCOPE_LIST, ";")
+    vNames = Split(sList, ";")
     For i = LBound(vNames) To UBound(vNames)
         If StrComp(Trim$(vNames(i)), sTableName, vbTextCompare) = 0 Then
-            IsNamedInScopeList = True
+            IsNamedInList = True
             Exit Function
         End If
     Next i

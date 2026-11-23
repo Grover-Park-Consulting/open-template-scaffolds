@@ -48,7 +48,8 @@ you can act on right now:
 - **This module runs in the same file as the tables it audits** — the back end of a split design.
   Data Macros attach to tables in the file the tables actually live in.
 - **`modAuditLongText` goes in every front end as well**, because it holds `AuditUser()`, which the
-  stamping macro calls on every table. Without it there, a front end cannot insert a row at all. If
+  generated macros call on every audited table. Without it there, a front end cannot insert a row
+  into a table whose who-and-when columns this system fills. If
   this build uses a function your own database already has for that instead, the same requirement
   applies to whichever module holds that one.
 
@@ -174,7 +175,9 @@ only hints at.
 creates — asking here would offer `Every table in this file` or another list, either of which could
 reach real tables sharing the file the demo was built into, and Step 3's backup gate was skipped on
 the promise that a demo run touches nothing you already have. Set `AUDIT_SCOPE_MODE = "List"` and
-`AUDIT_SCOPE_LIST = "tblClient;tlkpTicketPriority;tblSupportTicket"` for the demo without asking.
+`AUDIT_SCOPE_LIST = "tblClient;tlkpTicketPriority;tblSupportTicket"` for the demo without asking,
+and `AUDIT_STAMP_LIST` to the same three: step 0 gives them their who-and-when columns, and nothing
+else fills them.
 
 **To the AI assistant: three answers plus `Tell me more` fills the control, so there is no room on
 this step for `Go back to the previous question`.** That is expected here rather than an omission,

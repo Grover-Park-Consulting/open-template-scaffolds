@@ -91,6 +91,9 @@ copy both and keep them together.
      - the log shows the whole of what is in that field after the edit
 8. **Stamping columns fill themselves.**
    - If your tables also carry their own stamping columns, confirm they were not changed.
+   - Where your own code or a column default fills them, add a record the way you always do and
+     confirm they hold what that code or default put there. Run the steps below on a table whose
+     columns the build fills.
    - Add a record without touching those four columns
      - the "created" pair fills in
      - whether the "last changed" pair fills in as well is set by your own rules about those four
@@ -110,7 +113,7 @@ copy both and keep them together.
      four fill on creation, all four fill. **You are told which one your rules produce before
      anything is built**, so you can say at that point if you wanted the other.
 9. **A table for which you switched off audit logging is not logged, but stamping still works.**
-   - Pick a table
+   - Pick a table whose stamping columns the build fills
    - Switch every one of its fields off in the configuration table
    - Build again
    - Change one or more fields in a record in that table

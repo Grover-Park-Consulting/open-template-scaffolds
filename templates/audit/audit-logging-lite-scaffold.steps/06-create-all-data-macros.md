@@ -12,14 +12,16 @@ platform_facts: [data-macro-rules, vba-import-xml-entities]
 
 Builds one table's macro XML into a single document, writes it UTF-16, and loads it with
 `LoadFromText acTableDataMacro`. **How many macros a table gets varies** (schema Business Rule 2) —
-the three After macros whenever anything is being audited, BeforeChange whenever the table carries
-the house audit columns or an auditable Long Text field, BeforeDelete only for Long Text.
+the three After macros whenever anything is being audited, BeforeChange whenever the generator
+stamps the table's house audit columns (`AUDIT_STAMP_LIST`) or it has an auditable Long Text field,
+BeforeDelete only for Long Text.
 
-**The insert-blocking trap this guards against.** Every table in scope gets its **audit-column
-stamping** macro, including a table with no auditable fields. A table with nothing worth auditing
-still has records created and changed on it, so it still needs the who-and-when stamp.
-`CreatedDate` and `CreatedBy` are `Required`, and no column default can reach the Windows username,
-so a table left without that macro **would reject every insert**. Nobody could add a record to it
+**The insert-blocking trap this guards against.** Every table in `AUDIT_STAMP_LIST` gets its
+**audit-column stamping** macro, including a table with no auditable fields. A table with nothing
+worth auditing still has records created and changed on it, so it still needs the who-and-when stamp.
+On a listed table nothing else fills `CreatedDate` and `CreatedBy`, they are `Required`, and no column
+default can reach the Windows username, so a listed table left without that macro **would reject
+every insert**. Nobody could add a record to it
 through any interface. Switching auditing off for a
 table is the ordinary Path B workflow, so it must never break writing to that table. The audit
 actions are skipped; the stamping macro is still written. Only a table needing neither is skipped.
@@ -103,25 +105,29 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
             lAuditableCount = lAuditableCount + 1
             If fieldInfo(1) = dbMemo Then bHasLongText = True
         End If
-        ' [SCAFFOLD] Presence of the tracking columns, for the report only — the same test
-        '            BuildBeforeChangeMacro makes when it decides whether to emit stamping.
+        ' [SCAFFOLD] Whether this table is stamped, for the report only — the same test
+        '            BuildBeforeChangeMacro makes when it decides whether to emit stamping:
+        '            listed in AUDIT_STAMP_LIST and carrying the tracking columns.
         '            Outside the IsAuditable test above, because tracking columns are always
         '            seeded off and would never be seen there.
-        If StrComp(fieldInfo(0), AUDIT_CREATED_DATE, vbTextCompare) = 0 _
-            Or StrComp(fieldInfo(0), AUDIT_CREATED_BY, vbTextCompare) = 0 _
-            Or StrComp(fieldInfo(0), AUDIT_MODIFIED_DATE, vbTextCompare) = 0 _
-            Or StrComp(fieldInfo(0), AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasAuditColumns = True
+        If IsNamedInList(AUDIT_STAMP_LIST, sTableName) Then
+            If StrComp(fieldInfo(0), AUDIT_CREATED_DATE, vbTextCompare) = 0 _
+                Or StrComp(fieldInfo(0), AUDIT_CREATED_BY, vbTextCompare) = 0 _
+                Or StrComp(fieldInfo(0), AUDIT_MODIFIED_DATE, vbTextCompare) = 0 _
+                Or StrComp(fieldInfo(0), AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasAuditColumns = True
+        End If
     Next fieldInfo
 
     ' BeforeChange carries the audit-column stamping as well as Long Text staging, so it is
     ' built for every table; it comes back "" only when neither job applies to this one.
     sBeforeChange = BuildBeforeChangeMacro(sTableName, fieldList, sPrimaryKeyField)
 
-    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. Every table in scope gets the audit-column
-    '            stamping macro, including a table with nothing auditable: records are still
-    '            created and changed on it, so it still needs the who-and-when stamp.
-    '            CreatedDate and CreatedBy are Required, with no default able to reach the
-    '            username, so a table left without that macro would reject EVERY insert.
+    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. Every table in AUDIT_STAMP_LIST gets the
+    '            audit-column stamping macro, including one with nothing auditable: records
+    '            are still created and changed on it, so it still needs the who-and-when
+    '            stamp. On a listed table nothing else fills CreatedDate and CreatedBy, they
+    '            are Required, and no default can reach the username, so a listed table
+    '            left without that macro would reject EVERY insert.
     '            Turning auditing off for a table is the normal Path B workflow, so it must
     '            never break writing to that table: the audit actions are skipped, the
     '            stamping macro is still emitted. Only a table that needs neither is skipped.
@@ -260,11 +266,11 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
                 sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (stamping)"
             Else
                 sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (Long Text staging only — " & _
-                    "no tracking columns found on this table, so nothing is stamped)"
+                    "this table's tracking columns are not stamped here: none, or filled elsewhere)"
             End If
         Else
-            sWhatWasBuilt = sWhatWasBuilt & " (no tracking columns found on this table, " & _
-                "so nothing is stamped)"
+            sWhatWasBuilt = sWhatWasBuilt & " (this table's tracking columns are not stamped " & _
+                "here: none, or filled elsewhere)"
         End If
         If bHasLongText Then sWhatWasBuilt = sWhatWasBuilt & " + BeforeDelete"
     End If

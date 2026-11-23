@@ -871,6 +871,28 @@ def validate_template(front: dict, body: str, stem: str) -> list[str]:
         errors += _validate_outcome_first(front, sections)
     elif typ == "form-spec":
         errors += _validate_form_spec(front, sections)
+    errors += datamacro_ansi_errors(body)
+    return errors
+
+
+_VBA_BLOCK = re.compile(r"^```vba[^\n]*\n(.*?)^```", re.M | re.S | re.I)
+_ANSI_WRITE = re.compile(r"\bOpen\b[^\n]*\bFor\s+(?:Output|Append)\b|\bPrint\s*#", re.I)
+
+
+def datamacro_ansi_errors(body: str) -> list[str]:
+    """DM1: a vba block that writes a Data Macro document with VBA's own file statements.
+
+    `Open ... For Output` and `Print #` write ANSI; LoadFromText needs UTF-16
+    (fact `data-macro-rules`). A run copies template code before it weighs a rule
+    about it, so the template's own code must never be the wrong example.
+    """
+    errors = []
+    for block in _VBA_BLOCK.findall(body):
+        if "DataMacros" in block and _ANSI_WRITE.search(block):
+            first = next((l.strip() for l in block.splitlines() if l.strip()), "")
+            errors.append(f"DM1: vba block '{first[:60]}' writes a DataMacros document with "
+                          "Open/Print #, which writes ANSI; write it UTF-16 with "
+                          "CreateTextFile(path, True, True)")
     return errors
 
 

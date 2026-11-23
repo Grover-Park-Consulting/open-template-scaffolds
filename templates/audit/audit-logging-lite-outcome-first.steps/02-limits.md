@@ -44,8 +44,8 @@ Either way nothing here does them. The template build won't tell you what it isn
   the report. Putting them back is yours to do if you wish, after the template build is complete.
   **The same thing happens when you take the audit logging back off, and it is worth knowing before you
   do.** Access holds a table's automatic behaviour as one whole, so removing this template's part of it
-  clears the rest along with it — including whatever was there before the build. Where a table filled its
-  own four stamping columns, it stops filling them once the audit logging is removed. The table still
+  clears the rest along with it — including whatever was there before the build. Where a table's own
+  Data Macro filled its four stamping columns, it stops filling them once the audit logging is removed. The table still
   works and still accepts records; what stops, without saying so, is the stamping. The file written
   before the replacement is what puts it back.
 - **Tidying up the files it writes.** Each time the build attaches Data Macros to a table, or removes

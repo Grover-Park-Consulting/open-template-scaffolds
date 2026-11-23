@@ -3,11 +3,11 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.11.0
-status: stable
-status_fingerprint: 7d4035c12b29
+version: 0.12.0
+status: review
+status_fingerprint: 2eb8496f8278
 implements: audit-logging-lite-schema
-platform_facts: [target-file]
+platform_facts: [target-file, data-macro-rules.rules]
 steps: [01-checks, 02-limits, 03-tables, 04-data-macros, 05-code, 06-run-the-checks]
 standards_layer:
   - audit-columns
@@ -29,7 +29,7 @@ warnings:
 
 # Access Audit Logging (Lite) — outcome-first method
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-23.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -110,11 +110,13 @@ itself: the log row is still built by Data Macro steps, the same as for every ot
 table holds long-text values and nothing else.
 
 **Your tables may already carry four fields to identify who created each record and when, and who last
-changed it and when.** These are the four stamping columns your standards layer names, and the build
-takes over filling them. Where a table has them they are filled by the same automatic Data Macro
-behaviour that writes the log, on every table in scope, including a table where you have switched audit
-logging off. **You do not have to choose between those columns and the log, and you do not have to keep
-whatever was filling them before.** The two answer different questions — the columns say who last
+changed it and when.** These are the four stamping columns your standards layer names. **The build
+adds to what your tables already do; it does not take over what already fills those columns.** Where
+automatic Data Macro behaviour already fills them, the build carries that on, because attaching the
+audit logging replaces a table's Data Macros; it keeps doing so where you have switched audit logging
+off. Where your forms, your code or a column default fill them, the build leaves them to it. Where
+nothing fills them, you are asked. **You do not have to choose between those columns and the log.**
+The two answer different questions — the columns say who last
 touched a record, the log says what each field held before and after — and keeping both is the normal
 result.
 
@@ -173,10 +175,12 @@ You can confirm these behaviors with the validation checks listed above.
   that is the person deleting the record, never the person who last changed it.** The record's own
   last-changed column names somebody else — whoever edited it before — and a log row that borrows
   that name reports the wrong person as having deleted it.
-- **[your standards]** When present, the four created-and-changed stamping columns are filled by the database
-  itself, on every table in scope, including tables with all auditing switched off. A table in scope
-  that ends up without that behaviour would reject every insert, because those columns are required
-  and nothing else can supply a person's name. **Which of the four fill on a new record is your
+- **[your standards]** Whatever fills the four created-and-changed stamping columns before the build keeps
+  filling them after it. Where a Data Macro filled them, or nothing did and the developer chose that
+  the build should, they are filled by the database itself, including on tables with all auditing
+  switched off; such a table left without that behaviour would reject every insert, because those
+  columns are required and nothing else there supplies a person's name. Where the developer's own
+  code or a column default fills them, the build leaves them to it. **Which of the four fill on a new record is your
   layer's rule and not this template's** — the last-changed pair may stay empty until the first
   change, or fill at the same time as the created pair — and the developer is told which one their
   rules produce before anything is built.

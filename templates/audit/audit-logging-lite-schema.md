@@ -3,9 +3,9 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.7.0
+version: 0.7.1
 status: review
-status_fingerprint: 5ee1c4c542f0
+status_fingerprint: d0a0e6f1972a
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling]
@@ -72,7 +72,7 @@ house_assumptions:
 
 # Access Audit Logging (Lite) — Table Schema
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-23.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -289,8 +289,10 @@ read names at all (everything inside the boundary is then decided by `IsAuditabl
    so read them as two questions rather than one branch:
    - **The three After macros** (AfterInsert, AfterUpdate, AfterDelete) are the audit trail
      itself. A table gets them whenever any of its fields is being audited.
-   - **BeforeChange** is added when the table carries the house audit columns
-     (`standards/audit-columns.md`) **or** has an audited Long Text field — because that one
+   - **BeforeChange** is added when the build fills the table's house audit columns
+     (`standards/audit-columns.md`) **or** it has an audited Long Text field. The build fills them
+     where nothing else does: on tables it built, and where a Data Macro it replaces filled them;
+     columns the developer's own code or a default fills are left to that. That one
      macro does both jobs: stamping the audit columns, and staging Long Text values before an
      update overwrites them. It has to be one macro, not two: attaching a Data Macro set
      **replaces** whatever the table had, so a second one would delete the first.

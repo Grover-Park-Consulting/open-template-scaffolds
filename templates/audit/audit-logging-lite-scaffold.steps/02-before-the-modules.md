@@ -56,9 +56,9 @@ describes. Choosing the host's function departs from `audit-columns.md`, which n
 it holds for this build and is not written back to `standards/`.
 
 **The front-end placement requirement belongs to whichever function is chosen, not to
-`AuditUser()`.** The stamping macro calls it on every table, and a macro firing because somebody
-edited through a link resolves the function in **that person's front end** — absent, and that front
-end cannot insert a row at all. Everything this template says about putting `modAuditLongText` in
+`AuditUser()`.** The generated macros call it on every audited table, and a macro firing because
+somebody edited through a link resolves the function in **that person's front end** — absent, and
+that front end cannot insert a row into a table this system stamps. Everything this template says about putting `modAuditLongText` in
 every front end is that requirement wearing `AuditUser()`'s name. Choose the host's function and the
 requirement does not go away: it moves to whichever module holds it, which is a module this template
 does not own and will not place for you. Say which module that is, and tell the developer it now has
@@ -119,8 +119,8 @@ Private Const AUDIT_KEY_LOCAL_VAR As String = "varKeyText"
 
 ' [STANDARDS — audit-columns.md] The house audit column names, in ONE place.
 ' Three procedures below use them: Three_PopulateConfigTable (to seed them
-' not-auditable), BuildBeforeChangeMacro (to stamp them), and
-' Zero_CreateSampleTables (to create them on the sample tables).
+' not-auditable), BuildBeforeChangeMacro (to stamp them, on the tables in
+' AUDIT_STAMP_LIST), and Zero_CreateSampleTables (to create them on the sample tables).
 ' A shop that forks this library and renames its audit columns changes these
 ' four lines and nothing else. AccessTS is deliberately absent — it is a SQL
 ' Server rowversion and does not apply to a local Access table.
@@ -128,6 +128,15 @@ Private Const AUDIT_CREATED_DATE  As String = "CreatedDate"
 Private Const AUDIT_CREATED_BY    As String = "CreatedBy"
 Private Const AUDIT_MODIFIED_DATE As String = "ModifiedDate"
 Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
+
+' [STANDARDS — audit-columns.md] The tables whose four columns above this generator fills,
+' separated by semicolons. The generator adds to what a table already does; it never takes
+' over what already fills those columns. So a table is listed only where its existing Data
+' Macro stamped them (the replacement must carry that on), where nothing fills them and the
+' developer chose that the generator should, or where this build added them. A table whose
+' columns a default or the database's own code fills is left out. Empty = stamp nothing.
+' >>> set this from what you found, before you import this module <<<
+Private Const AUDIT_STAMP_LIST As String = ""
 
 ' [SCAFFOLD] The mark that says this generator wrote a macro set. Every macro it emits
 ' carries the full form in a <Comment>, and MacroBackupIsOurs looks for the stable form
@@ -156,27 +165,28 @@ itself contain spaces. A name that is not a table in this file simply never matc
 then reports fewer tables than the developer expects — read the names back to them before you set
 this.
 
-**To the AI assistant — Path B, before you import the module.** These four values name the columns
-the generator stamps. A host database that already carries tracking columns may name them something
-else — `AddedOn`/`AddedBy`/`ModifiedOn`/`ModifiedBy` is one form you will meet, and there are others.
+**To the AI assistant — Path B, before you import the module.** These four values name the
+who-and-when columns, and `AUDIT_STAMP_LIST` names the tables where the generator fills them. A host
+database that already carries tracking columns may name them something else —
+`AddedOn`/`AddedBy`/`ModifiedOn`/`ModifiedBy` is one form you will meet, and there are others.
 
-**First find out how the host fills those columns today, because it changes what every answer below
-costs.** There are three ways and you cannot tell them apart without looking:
+**The generator adds to what a table already does; it never takes over what already fills those
+columns.** So first find out, table by table, how the host fills them today. There are three ways
+and you cannot tell them apart without looking:
 
 - **A data macro on the table.** The generator replaces a table's entire macro set, so the host's
-  stamping is overwritten by the generated one automatically, and the original is written to
-  `DataMacroBackups\` first. Nothing extra for anyone to do — but read the old macro before you
-  replace it and tell the developer if it did anything the generated one will not.
-- **A column default.** Common on a date column; it cannot fill a user-name column, because the
-  engine cannot reach the current user from a default. The generator never touches defaults, so it
-  stays and keeps firing. A default and the generated macro both writing the same column is
-  harmless — Before Change runs at the engine and its value is the one that lands — but say that you
-  found it.
-- **VBA — a form's Before Update, a save routine, anywhere else.** The generator does not touch VBA.
-  That code keeps running after the build, alongside the generated macro, both writing the same
-  columns. Search the database's own modules and form code for the four column names so you know
-  whether this is the case, and tell the developer what you found. Retiring their code is their
-  call, not this template's.
+  stamping would be lost. List the table in `AUDIT_STAMP_LIST`: the generated macro carries the
+  stamping on, and the original is written to `DataMacroBackups\` first. Read the old macro before
+  you replace it and tell the developer if it did anything the generated one will not.
+- **A column default, or VBA** — a form's Before Update, a save routine, an import. Search the
+  database's own modules and form code for the four column names. Leave the table out of the list:
+  the generator touches neither defaults nor VBA, so they keep filling the columns as before.
+  Stamping on top of them would overwrite every value they write, including any they set on
+  purpose, such as an import that carries a record's original creator.
+- **Nothing fills them.** Ask, through the selection control, whether the generator should.
+
+**Say in the design spec, table by table, which of these you found and whether the table is
+listed.** It is a change to how the developer's tables behave, so it is never left to the code.
 
 **When the host's names differ from the four above, ask. Never settle it yourself.** Put it through
 the selection control as its own question, and name it as a question this database added rather than
@@ -184,7 +194,7 @@ folding it into the template's own count. The two answers, and both belong in th
 
 - **Use the names this database already has.** No columns are added. Set the four values above to
   the host's names. `Three_PopulateConfigTable` then seeds those columns not-auditable, and
-  `BuildBeforeChangeMacro` stamps them, exactly as it would the library's own names.
+  `BuildBeforeChangeMacro` stamps them on the tables in `AUDIT_STAMP_LIST`.
 - **Use the library's names.** The host's four columns are replaced by the library's four. Leave the
   values above as shipped; they seed and stamp the library's columns. **Say what this costs before
   they choose it, because nothing here does it for them:** the four columns have to be added, the
@@ -195,20 +205,16 @@ folding it into the template's own count. The two answers, and both belong in th
   it names are gone.** Check whether the tables hold data and say so when you ask: on an empty table
   this is cheap; on a table with history it is not.
 
-**When no table carries tracking columns**, there is nothing to reconcile and nothing to ask. Leave
-the four values above as shipped, and **tell the developer that these four columns will be added to
-each table they chose to audit.** Two things belong in what you tell them: `CreatedDate` and
-`CreatedBy` are required, so a table that already holds rows needs the column added, filled, and only
-then marked required; and every row that was already there will carry the date the columns were added
-rather than the date the record was really created, because that history was never kept.
-
-**When some tables carry them and others don't, ask what happens to the ones that don't** — the split
-is usually a decision somebody already made, and overriding it silently is the wrong move. Two
-answers: add the four columns so every audited table stamps who and when, or leave those tables as
-they are, in which case they still get their audit trail and simply have nothing to stamp. Both work.
-Say which tables you're asking about, by name.
+**When a table carries no tracking columns, the build adds none:** attaching Data Macros does not
+change a table's fields (`standards/audit-columns.md`). Offer adding them as a question, naming the
+tables. Two things belong in it: `CreatedDate` and `CreatedBy` are required, so a table that already
+holds rows needs the column added, filled, and only then marked required; and every row already there
+will carry the date the columns were added rather than the date the record was really created,
+because that history was never kept. Without them a table still gets its audit trail and simply has
+nothing to stamp. A table that gets them goes in `AUDIT_STAMP_LIST`, since nothing else fills them.
 
 Left as shipped on a host that names them differently, with nobody asked, they match no column: the
 host's tracking columns get seeded as ordinary tracked fields, `BuildBeforeChangeMacro` emits no
 stamping for any table, and because loading a macro set replaces the whole set, a table that arrived
-with stamping loses it. Nothing errors.
+with stamping loses it. A table whose stamping macro is left out of `AUDIT_STAMP_LIST` loses it the
+same way. Nothing errors.

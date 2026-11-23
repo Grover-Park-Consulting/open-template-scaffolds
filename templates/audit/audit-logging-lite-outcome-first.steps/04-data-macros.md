@@ -24,7 +24,7 @@ belongs in one of those three sections, and finding one is worth reporting.
 `templates/_materialization.md` (the library-wide Data Macro reference — the UTF-16 write
 requirement, the replaces-not-merges behavior, the namespace rewrite on export, and the Long Text
 `[Old]` limitation are all rules stated there) or in the working code of the paired scaffold,
-`audit-logging-lite-scaffold.md` (which shows the actual staging mechanism for a Long Text value,
+`audit-logging-lite-scaffold` (which shows the actual staging mechanism for a Long Text value,
 the comment-based ownership marker, and the System-table read boundary). This section names the
 facts; it does not re-solve them.
 
@@ -101,9 +101,9 @@ facts; it does not re-solve them.
   Access. There is nothing in it for you to decide and no second way to write it, so working it out
   by trial and error buys nothing and costs a great deal: the load fails with one error number that
   says only that the text cannot be read as a Data Macro, and never says which part is wrong. Use the
-  fact `data-macro-rules` delivered with this template, and read the working generator in
-  `templates/audit/audit-logging-lite-scaffold.md`, the rules-based method that produces this same
-  result. **Read them for the shape of the document and nothing else.** How the work divides, what
+  fact `data-macro-rules` delivered with this template, and read the working generator in the
+  `audit-logging-lite-scaffold` template, the rules-based method that produces this same result:
+  fetch its parts `step-7` and `step-8` with `get_part`. **Read them for the shape of the document and nothing else.** How the work divides, what
   the procedures are called, where things live, and what the build does are yours, exactly as
   declared under *Free to choose alternatives* — reading that file settles none of them, and copying
   its decomposition would be importing a route you were not given.

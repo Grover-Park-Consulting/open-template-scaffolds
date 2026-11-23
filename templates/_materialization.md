@@ -451,7 +451,8 @@ End Function
    `<CreateRecord><Data Alias="X"><Reference>TableName</Reference></Data><Statements>…</Statements></CreateRecord>`,
    with `LookUpRecord` carrying a `<WhereCondition>` inside its `<Data>`. A record created inside a
    `LookUpRecord` takes no alias, and its fields are then named with the table rather than an alias.
-   `templates/audit/audit-logging-lite-scaffold.md` holds a working generator for all five events.
+   The `audit-logging-lite-scaffold` template's steps 7 and 8 hold a working generator for all five
+   events.
 7. **Every reference inside a `LookUpRecord`'s `WhereCondition` must be qualified with an explicit
    table name, on both sides, always.** An unqualified reference to the *outer* row's own field
    fails loudly, error **3890**. But where the same field name exists on **both** the outer table
@@ -460,14 +461,14 @@ End Function
    arbitrary row and make a check pass when it should have failed. Qualify both sides even where the
    unqualified form happens to resolve correctly today: `[tblOfficial].[OfficialID]=[tblGameOfficial].[OfficialID]`,
    never `[tblOfficial].[OfficialID]=[OfficialID]`.
-8. **Inside a `LookUpRecord` or `CreateRecord`, the triggering row's own fields and `[Old]` are out
-   of scope.** Once inside one of these, the "current record" context becomes the looked-up or
-   created table — a direct reference to the outer row's own field, or to `[Old]`, fails with error
-   **3890**. Lift whatever's needed from the outer row into a local variable with `SetLocalVar`
-   *before* entering the `LookUpRecord`/`CreateRecord`, and reference that local variable inside it —
-   never the outer row's field directly. (Rule 7 above is the further, quieter case: even a
-   qualified-looking reference can still resolve to the wrong place if both sides of a
-   `WhereCondition` aren't pinned to a real table.)
+8. **Inside a `LookUpRecord`, an unqualified reference to the triggering row's own field fails with
+   error 3890** ("The identifier '[AcquisitionCost]' could not be found"), on every save. Observed
+   once (2026-09-24). Lifting the value into a local variable with `SetLocalVar` before the lookup,
+   and comparing outside it, worked. **Qualified references to the triggering row do resolve** inside
+   a `LookUpRecord`'s statements and inside `CreateRecord`, nested or not: `[Old].[<field>]` and
+   `[<table>].[<field>]`, as the audit scaffold's generator writes them. Its build of 2026-09-22
+   logged old and new values, long text included, through both. Untested: an unqualified reference
+   inside `CreateRecord`.
 9. **`CreateRecord` is not supported from a Before Change event — it fails at run time with error
    3873.** `BeforeChange` is for stamping and staging Long Text values only; anything that creates a
    row belongs in `AfterInsert`, `AfterUpdate`, or `AfterDelete` instead.

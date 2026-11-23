@@ -232,8 +232,9 @@ do. The tables it could not do keep the macros they already had; the rest are fi
 the report at the end says how many were built and how many failed. Close everything and run it
 again.
 
-**A table with auditing switched off still gets a stamping macro.** That is not an oversight: the
-house audit columns are `Required`, and a table with no macro at all has no way to fill them, so it
-would refuse every insert.
+**A table whose who-and-when columns this system fills still gets a stamping macro with auditing
+switched off.** That is not an oversight: the house audit columns are `Required`, and on that table
+nothing else fills them, so without the macro it would refuse every insert. Where your own code or a
+column default fills those columns, this system leaves them to it.
 
 </details>

@@ -11,7 +11,7 @@ platform_facts: [domain-function-transaction, mcp-module-import, mcp-line-number
 ### AuditUser — `Public Function` → `String` (module `modAuditLongText` — back end AND front end)
 
 **The single most important four lines in this template, and the easiest to leave out.** Every
-generated stamping macro calls `AuditUser()` on **every** table — Long Text or not — to fill
+generated stamping macro calls `AuditUser()` on **every** table it stamps — Long Text or not — to fill
 `CreatedBy` and `ModifiedBy`. Those columns are `Required`, so a table whose macro cannot resolve
 this function **rejects every insert**, with an error that names the function rather than the cause.
 
@@ -211,7 +211,8 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
     Dim strBackupFile As String
     Dim strTableName As String
     Dim strSummary As String
-    Dim intFileNum As Integer
+    Dim fso As Object
+    Dim txtFile As Object
     Dim intMacrosRemoved As Integer
     Dim intMacrosKept As Integer
 
@@ -227,14 +228,15 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
         MkDir strBackupPath
     End If
 
-    ' An empty macro document: loading it replaces (removes) a table's data macros
+    ' An empty macro document: loading it replaces (removes) a table's data macros.
+    ' Written UTF-16 (CreateTextFile third argument True), as LoadFromText requires.
     strTempFile = Environ("TEMP") & "\BlankDataMacro.xml"
-    intFileNum = FreeFile
-    Open strTempFile For Output As intFileNum
-    Print #intFileNum, "<?xml version=""1.0"" encoding=""UTF-16""?>"
-    Print #intFileNum, "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2009/04/application"">"
-    Print #intFileNum, "</DataMacros>"
-    Close #intFileNum
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set txtFile = fso.CreateTextFile(strTempFile, True, True)
+    txtFile.Write "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>" & _
+        "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application""></DataMacros>"
+    txtFile.Close
+    Set txtFile = Nothing
 
     ' Tables with data macros: MSysObjects.LvExtra is non-null for them
     strSQL = "SELECT [Name] FROM MSysObjects " & _

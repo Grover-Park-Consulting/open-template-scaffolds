@@ -95,6 +95,20 @@ class TestValidateTemplateRules(unittest.TestCase):
         self.assertEqual(stems, set(EXPECTED_RULE), "fixture/expectation drift")
 
 
+class TestDataMacroAnsiWrite(unittest.TestCase):
+    ANSI = ('```vba\nOpen sPath For Output As #1\nPrint #1, "<DataMacros xmlns=""x""></DataMacros>"\n'
+            'Close #1\n```\n')
+    UTF16 = ('```vba\nSet t = fso.CreateTextFile(sPath, True, True)\n'
+             't.Write "<DataMacros xmlns=""x""></DataMacros>"\n```\n')
+    LOG = '```vba\nOpen sPath For Append As #1\nPrint #1, sEntry\n```\n'
+
+    def test_ansi_datamacro_write_fails(self):
+        self.assertTrue(any(e.startswith("DM1") for e in library.datamacro_ansi_errors(self.ANSI)))
+
+    def test_utf16_write_and_plain_text_log_pass(self):
+        self.assertEqual(library.datamacro_ansi_errors(self.UTF16 + self.LOG), [])
+
+
 class TestValidateLibrary(unittest.TestCase):
     def test_live_corpus_all_pass(self):
         result = validate_library()
