@@ -460,6 +460,9 @@ Moved to `templates/_method.md`, method `staged-procedures`.
 5. If `implements` is set, it is a well-formed template slug. *(Format only — `validate` does not
    open the named template or check that cited Business Rule numbers exist; that is the human
    review gate.)*
+6. A divided scaffold declares every procedure in a `route: both` step exactly as its skeleton does
+   (whitespace and line continuations aside), so the design is drafted from the template's own
+   signatures (§13).
 
 ### 8.6 Code that finds its own targets
 
@@ -867,11 +870,11 @@ divides like the others, without a code step. No size or type test decides wheth
    mechanisms the template's build uses and fetches their lessons with `get_lessons`.
 4. `design-standards`: the standards the design follows, as the gate settled them.
 5. `design-facts`: the platform facts the design depends on.
-6. Any step marked `route: both` (below).
+6. Any step marked `route: both` (below). An outcome-first template also gets the `route: both`
+   steps of the table template it `implements`, as `schema-step-N`.
 7. `build-method` (Build it) or `handover-method` (Proposed code): how the chosen ending is
    conducted. The master lists the handover route only as far as the design phase.
-8. `build-standards`: the standards the code follows (`error-handling`, `query-style`,
-   `startup-conventions`).
+8. `build-standards`: the standards only the code follows (`query-style`).
 9. Each remaining step, in order. A template not yet divided gets one `build-facts` part here instead.
 
 Every answer names the next call and when to make it (`next`), and carries `served` (part, version,
@@ -905,7 +908,8 @@ platform_facts: [vba-import-xml-entities, mcp-module-import, mcp-line-numbers]
   and by more than one step: it is delivered each time, at each point it is used.
 - `route: both` marks a step the design is drafted against (a checklist the design must pass, the
   wizard's design-time questions). It arrives with the design parts, on both routes. Such steps are
-  listed before every build step.
+  listed before every build step. A divided `vba-scaffold` has one, `00-procedures`: each procedure's
+  declaration exactly as its skeleton has it, and what it does.
 - `when:` overrides the default timing text for the step's part.
 - A step opens with an `##` heading or a reader line; one that opens on a `###` heading would be read
   as part of the previous step's section. Procedures in a step sit under a `## Procedures` heading
@@ -919,5 +923,6 @@ platform_facts: [vba-import-xml-entities, mcp-module-import, mcp-line-numbers]
 **Rules `validate` enforces:** every listed step has a file whose front matter parses and names it,
 with a `title` and a reader line (ST1, ST4), and no step file is unlisted (ST1); every step's facts
 resolve (ST2); no fact marked `route: build` sits in a divided template's master (ST3); `route: both`
-steps come first (ST5); and every part the run can fetch is within `RESPONSE_LIMIT`, measured as the
+steps come first (ST5); a divided `vba-scaffold`'s design step declares every procedure as its
+skeleton does (VS6); and every part the run can fetch is within `RESPONSE_LIMIT`, measured as the
 server sends it (SZ1). While the library is being divided, `steps` is optional (ST0 off).

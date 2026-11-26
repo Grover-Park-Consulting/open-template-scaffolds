@@ -211,6 +211,19 @@ class TestGetTemplate(unittest.TestCase):
         self.assertIn("every action in step 2 is done", when3)
         self.assertIn("even if you already know how", when3)
 
+    def test_design_shaping_text_arrives_before_approval(self):
+        # Trials 2026-11-24: text that changes the design arrived after approval in 8 runs.
+        design = walk("error-logging-outcome-first", route="handover")
+        names = [s["name"] for a in design for s in a.get("standards", [])]
+        self.assertIn("error-handling", names)
+        self.assertIn("schema-step-1", [a["part"] for a in design])
+        checks = next(a for a in design if a["part"] == "schema-step-1")
+        self.assertEqual(checks["schema"], "error-logging-schema")
+        startup = walk("app-startup-outcome-first", route="handover")
+        self.assertIn("startup-conventions", [s["name"] for a in startup for s in a.get("standards", [])])
+        scaffold = [a["part"] for a in walk("stocktake-scan-scaffold", route="handover")]
+        self.assertIn("step-1", scaffold)
+
     def test_gate_part_returns_the_settled_block_or_null(self):
         import tempfile
         block = "## How the standards were settled\n\nSettled 2026-08-03.\n\n| a | b |\n"
@@ -353,8 +366,9 @@ class TestSteps(unittest.TestCase):
     def test_steps_arrive_in_order_with_their_facts(self):
         parts = walk("time-off-ledger-scaffold", route="build")
         steps = [p for p in parts if p["part"].startswith("step-")]
-        self.assertEqual([p["step"] for p in steps], [1, 2, 3, 4])
-        self.assertIn("dao-table-build", [f["id"] for f in steps[0]["platform_facts"]])
+        # Step 1 is the design step (00-procedures); the build starts at step 2.
+        self.assertEqual([p["step"] for p in steps], [1, 2, 3, 4, 5])
+        self.assertIn("dao-table-build", [f["id"] for f in steps[1]["platform_facts"]])
         self.assertTrue(all(p["served"]["part"] == p["part"] for p in parts))
         self.assertNotIn("dao-table-build", parts[0]["front_matter"]["platform_facts"])
 
@@ -368,7 +382,7 @@ class TestSteps(unittest.TestCase):
     def test_the_wizard_method_comes_with_the_wizard_step(self):
         parts = walk("audit-logging-lite-scaffold")
         holders = [p["part"] for p in parts if "wizard" in [m["id"] for m in p.get("method", [])]]
-        self.assertEqual(holders, ["step-1"])
+        self.assertEqual(holders, ["step-2"])  # step-1 is the design step, 00-procedures
 
     def test_validate_reports_step_problems(self):
         path = next(p for p, f, _ in library.iter_templates()

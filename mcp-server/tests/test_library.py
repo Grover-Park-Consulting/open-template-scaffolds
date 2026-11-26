@@ -109,6 +109,26 @@ class TestDataMacroAnsiWrite(unittest.TestCase):
         self.assertEqual(library.datamacro_ansi_errors(self.UTF16 + self.LOG), [])
 
 
+class TestDesignDeclarations(unittest.TestCase):
+    """VS6: a scaffold's design step declares each procedure as its skeleton does."""
+    FRONT = {"type": "vba-scaffold", "new_procedures": ["DoIt", "Other"]}
+    CODE = ("```vba\nPublic Function DoIt(ByVal lID As Long, _\n"
+            "                     ByVal s As String) As Long\nEnd Function\n```\n")
+
+    def steps(self, design):
+        return [{"front": {"route": "both"}, "body": design}, {"front": {}, "body": self.CODE}]
+
+    def test_matching_declaration_passes_and_missing_one_fails(self):
+        design = "```vba\nPublic Function DoIt(ByVal lID As Long, ByVal s As String) As Long\n```\n"
+        errors = library._design_declaration_errors(self.FRONT, self.steps(design))
+        self.assertEqual(errors, ["VS6: procedure 'Other' has no declaration in a 'route: both' step"])
+
+    def test_drifted_declaration_fails(self):
+        design = "```vba\nPublic Function DoIt(ByVal lID As Long) As Long\n```\n"
+        errors = library._design_declaration_errors(self.FRONT, self.steps(design))
+        self.assertTrue(any("declared differently" in e for e in errors))
+
+
 class TestValidateLibrary(unittest.TestCase):
     def test_live_corpus_all_pass(self):
         result = validate_library()

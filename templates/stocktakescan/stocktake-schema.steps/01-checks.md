@@ -30,3 +30,17 @@ new tables, plus the two fields it grafts onto the existing `Products` table (ch
 
 Report against this list exactly as `_template-schema.md` §12.2 states for every checklist in the
 library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`.
+
+## Asked during the design
+
+**To the AI assistant:** Business Rule 3 leaves one choice to the developer. Ask it before you
+present the design, and record the answer in the design spec:
+
+*"What keeps each count line's counted quantity up to date as scans arrive?"*
+
+- `The scanning code`: "After each scan, the code adds up that line's valid scans. Nothing is
+  attached to the table, so a scan written some other way leaves the total out of date."
+- `A rule on the table`: "A small rule attached to the scan table recalculates the total whenever
+  a scan is saved, however it arrives. The database term for that rule is a Data Macro."
+
+No answer is preferred.

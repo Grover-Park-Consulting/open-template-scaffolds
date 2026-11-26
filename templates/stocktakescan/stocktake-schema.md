@@ -3,9 +3,9 @@ template: stocktake-schema
 title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.9.1
+version: 0.10.0
 status: review
-status_fingerprint: b9df1d4547e0
+status_fingerprint: 586e30eca033
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
@@ -43,7 +43,7 @@ house_assumptions:
 
 # Scanned Stocktake — Table Schema
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

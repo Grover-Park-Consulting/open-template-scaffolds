@@ -3,9 +3,9 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.4.1
+version: 0.6.0
 status: draft
-status_fingerprint: 9df5f5e82cc8
+status_fingerprint: d64e7093cc76
 implements: time-off-ledger-schema
 requires_tables:
   - tlkpTimeOffCategory
@@ -41,7 +41,7 @@ new_procedures:
   - CancelTimeOffEntry
   - ReplaceTimeOffEntry
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, domain-function-transaction, row-lock-errors, recordset-append-crash, app-startup-autoexec.autoexec-build]
-steps: [01-open-and-confirm-tables, 02-rules-module, 03-posting-module, 04-checks]
+steps: [00-procedures, 01-open-and-confirm-tables, 02-rules-module, 03-posting-module, 04-checks]
 warnings:
   - These procedures write real rows into the ledger, and the ledger is never edited or deleted once
     written, so a run that goes wrong cannot be undone by deleting what it wrote. A build against a
@@ -64,7 +64,7 @@ related:
 
 # Time Off Ledger — VBA Scaffold
 
-**Status last determined:** 2026-11-18.
+**Status last determined:** 2026-11-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -99,6 +99,11 @@ shape), and the open-time macro for posting. This is the VBA those pieces call.
 | `time-off-ledger-schema` tables | The five tables the code runs against |
 | A Data Macro on `tblTimeOffEntry` calling `TimeOffEntryCheck` | Where the checks run, on every route into the table |
 | A central error logger | `error-handling.md`; `error-logging-scaffold` builds one |
+
+**Where the database has no Data Macro on `tblTimeOffEntry`, ask before you present the design:** add
+it to this build, as `time-off-ledger-outcome-first` step 3 builds it, or leave it out, in which case
+nothing calls the checks and a posted entry can still be changed or deleted. Record the answer in the
+design spec.
 
 ### Ask before building
 

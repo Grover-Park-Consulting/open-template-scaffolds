@@ -3,9 +3,9 @@ template: officiating-assignment-scaffold
 title: Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.10.1
+version: 0.11.0
 status: review
-status_fingerprint: ef2c3e205e20
+status_fingerprint: 393acb35cf35
 implements: officiating-assignment-schema
 requires_tables:
   - tblGame
@@ -17,7 +17,7 @@ requires_tables:
   - tlkpPlayLevel
   - tblAppSetting
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash, app-startup-autoexec.autoexec-build]
-steps: [01-open-and-confirm-tables, 02-procedures-1, 03-procedures-2, 04-checks]
+steps: [00-procedures, 01-open-and-confirm-tables, 02-procedures-1, 03-procedures-2, 04-checks]
 standards_layer:
   - error-handling
   - query-style
@@ -48,7 +48,7 @@ warnings:
 
 # Officiating Assignment — Assignment & Pay VBA Scaffold
 
-**Status last determined:** 2026-11-02.
+**Status last determined:** 2026-11-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

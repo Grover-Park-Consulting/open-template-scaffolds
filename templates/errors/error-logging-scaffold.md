@@ -3,14 +3,14 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.11.0
+version: 0.12.0
 status: review
-status_fingerprint: cbf35beb7e2e
+status_fingerprint: 5a15dc301180
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog
 platform_facts: [target-file, sql-insert-truncation, host-helper-reuse]
-steps: [01-wizard, 02-procedures-1, 03-procedures-2, 04-procedures-3, 05-checks]
+steps: [00-procedures, 01-wizard, 02-procedures-1, 03-procedures-2, 04-procedures-3, 05-checks]
 standards_layer:
   - error-handling
   - naming-conventions
@@ -61,7 +61,7 @@ related:
 
 # Error Logging — VBA Scaffold
 
-**Status last determined:** 2026-11-18.
+**Status last determined:** 2026-11-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

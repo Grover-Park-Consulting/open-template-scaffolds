@@ -3,15 +3,15 @@ template: record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.5.1
+version: 0.6.0
 status: review
-status_fingerprint: 20af3e015760
+status_fingerprint: 60f89b40b2c8
 implements: catalog-schema
 requires_tables:
   - tblPublication
   - tblPublicationGenre
 platform_facts: [form-mapping-rules, form-layout-fidelity]
-steps: [01-open-and-confirm-tables, 02-procedures]
+steps: [00-procedures, 01-open-and-confirm-tables, 02-procedures]
 standards_layer:
   - design-principles
   - error-handling
@@ -32,7 +32,7 @@ warnings:
 
 # Record Finder for an Entry Form — VBA Scaffold
 
-**Status last determined:** 2026-11-02.
+**Status last determined:** 2026-11-26.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

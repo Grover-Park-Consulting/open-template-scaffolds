@@ -270,6 +270,14 @@ so an assistant doesn't mistake old grounds for new permission:
   mechanisms, so the part delivered only the lessons every build gets. The part now also carries the
   mechanism table, and the assistant names the template's mechanisms and calls `get_lessons`.
   Grounds: the list described the part wrongly.
+- 2026-11-26, approved by George ("copy as recommended, lift the freeze"):
+  `templates/_template-schema.md` §8.5 gains rule 6 (VS6) and §13 states that outcome-first
+  templates receive their table template's design steps, that `build-standards` now carries
+  `query-style` only, and that a divided `vba-scaffold` has a `00-procedures` design step.
+  `templates/errors/error-logging-scaffold.md`: `00-procedures` added to `steps`,
+  plus the version, date and fingerprint lines `template_status.py` writes; nothing else.
+  Grounds: the 2026-11-24 trials found design-shaping text arriving after approval in 8 runs.
+  Additions, and one corrected list.
 
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.

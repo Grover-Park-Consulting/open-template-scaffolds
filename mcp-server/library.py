@@ -252,8 +252,8 @@ def resolve_facts(ids, target: str = "") -> tuple[list[dict], list[str]]:
 
 RESPONSE_LIMIT = 45000
 TARGETS = ("", "access", "sqlserver")
-# Standards read while building; every other standard is read while designing.
-_BUILD_STANDARDS = ("error-handling", "query-style", "startup-conventions")
+# Standards read while building; every other standard arrives before the design.
+_BUILD_STANDARDS = ("query-style",)
 # ST: every template declares steps. Off until the rollout finishes, as FM9 was.
 REQUIRE_STEPS = False
 
@@ -308,6 +308,11 @@ _WHEN = {
 }
 _WHEN_DESIGN_STEP = ("Fetch this before you draft any part of the design. Do not draft from what "
                      "you already know: it carries what the design must satisfy.")
+_WHEN_SCHEMA_STEP = ("Fetch this before you draft any part of the design. It carries the checks "
+                     "the tables this template builds must pass.")
+_SCHEMA_STEP_RULE = ("These are the table template's checks. The design spec must satisfy each; "
+                     "the code is checked against them later. Do none of the table template's "
+                     "other steps.")
 _WHEN_FIRST_BUILD_STEP = (
     "Fetch this as soon as the build parts before it have arrived. Do none of this step's work "
     "before then, even if you already know how from another template or file: this step carries "
@@ -489,6 +494,18 @@ def plan(path: Path, front: dict, body: str, target: str = "") -> list[dict]:
         if str(s["front"].get("route", "")) == "both":
             parts.append({"part": f"step-{s['n']}", "title": str(s["front"].get("title") or s["step"]),
                           "route": "", "step": s})
+    # An outcome-first template builds the tables its schema defines, so the schema's
+    # design-time checks arrive with this design, not after approval.
+    if str(front.get("type", "")) == "outcome-first" and front.get("implements"):
+        for spath, sfront, _ in iter_templates():
+            if str(sfront.get("template", "")) == str(front["implements"]):
+                for s in read_steps(spath, sfront):
+                    if str(s["front"].get("route", "")) == "both":
+                        parts.append({"part": f"schema-step-{s['n']}", "route": "",
+                                      "title": f"{sfront['template']}: "
+                                               f"{s['front'].get('title') or s['step']}",
+                                      "schema_step": s, "schema": str(sfront["template"])})
+                break
     parts.append({"part": "build-method", "title": "How the build is conducted", "route": "build"})
     parts.append({"part": "handover-method", "title": "How the proposed code is written",
                   "route": "handover"})
@@ -516,6 +533,8 @@ def plan(path: Path, front: dict, body: str, target: str = "") -> list[dict]:
                 p["when"] = _WHEN_FIRST_BUILD_STEP
             else:
                 p["when"] = _WHEN_BUILD_STEP.format(prev=n - 1)
+        if p["part"].startswith("schema-step-"):
+            p["when"] = _WHEN_SCHEMA_STEP
         if p["part"].startswith("step-") and p["step"]["front"].get("when"):
             p["when"] = str(p["step"]["front"]["when"])
     return parts
@@ -620,6 +639,16 @@ def compose(template: str, part: str = "master", route: str = "",
         if pid.startswith("build-facts"):
             result["standards_in_force"] = _in_force(parts)
             result["standards_note"] = _STANDARDS_NOTE
+    elif "schema_step" in p:
+        s = p["schema_step"]
+        facts, facts_missing = _facts(s["front"].get("platform_facts"), target)
+        result.update({"schema": p["schema"], "rule": _SCHEMA_STEP_RULE, "body": s["body"],
+                       "platform_facts": [{k: f[k] for k in ("id", "heading", "content")}
+                                          for f in facts],
+                       "served": {"template": p["schema"], "part": f"step-{s['n']}",
+                                  "sha": _sha(s["path"].read_text(encoding="utf-8"))}})
+        if facts_missing:
+            result["platform_facts_missing"] = facts_missing
     elif pid in ("build-method", "handover-method"):
         method, missing = _method(_METHOD_BUILD if pid == "build-method" else _METHOD_HANDOVER)
         result["method"] = method
@@ -1071,6 +1100,45 @@ def _validate_form_spec(front, sections):
     return errors
 
 
+_DECL_RE = re.compile(r"^\s*(?:(?:Public|Private|Friend)\s+)?(?:Static\s+)?"
+                      r"(?:Function|Sub|Property\s+(?:Get|Let|Set))\s+(\w+)\b")
+
+
+def _declarations(text: str) -> dict[str, str]:
+    """Each procedure declared in a fenced vba block: name -> declaration, continuation
+    lines joined and whitespace collapsed. The first declaration of a name wins."""
+    out, in_vba, lines, i = {}, False, text.splitlines(), 0
+    while i < len(lines):
+        ln = lines[i]
+        if ln.strip().startswith("```"):
+            in_vba = ln.strip().lower().startswith("```vba") and not in_vba
+        elif in_vba and (m := _DECL_RE.match(ln)):
+            decl = [ln.strip()]
+            while decl[-1].endswith(" _") and i + 1 < len(lines):
+                i += 1
+                decl.append(lines[i].strip())
+            if m.group(1) not in out:
+                out[m.group(1)] = re.sub(r"\s+", " ", " ".join(d.rstrip("_") for d in decl)).strip()
+        i += 1
+    return out
+
+
+def _design_declaration_errors(front: dict, steps: list[dict]) -> list[str]:
+    """VS6: a divided vba-scaffold's design step declares every procedure exactly as its
+    code steps' skeletons do, so the design is drafted from the template's signatures."""
+    design = "\n".join(s["body"] for s in steps if str(s["front"].get("route", "")) == "both")
+    code = "\n".join(s["body"] for s in steps if str(s["front"].get("route", "")) != "both")
+    shown, built = _declarations(design), _declarations(code)
+    errors = []
+    for p in (_proc_base(x) for x in front.get("new_procedures") or []):
+        if p not in shown:
+            errors.append(f"VS6: procedure '{p}' has no declaration in a 'route: both' step")
+        elif p in built and shown[p] != built[p]:
+            errors.append(f"VS6: procedure '{p}' is declared differently in the design step "
+                          f"than in its skeleton")
+    return errors
+
+
 def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> list[str]:
     """The master/steps rules (ST) and the answer-size rule (SZ1)."""
     errors = []
@@ -1109,6 +1177,8 @@ def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> lis
     for f in sorted(folder.glob("*.md")) if folder.is_dir() else []:
         if f.stem not in listed:
             errors.append(f"ST1: {folder.name}/{f.name} is not listed under steps")
+    if str(front.get("type", "")) == "vba-scaffold":
+        errors += _design_declaration_errors(front, steps)
     facts, _ = read_platform_facts()
     for fid in front.get("platform_facts") or []:
         if facts.get(str(fid), {}).get("route") == "build":
