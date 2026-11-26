@@ -18,34 +18,34 @@ absent (house-specific; see `error-handling.md`).
 ### FinderRowSource — `Public Function` → `String`
 
 ```vba
-Public Function FinderRowSource(ByVal lCategoryID As Long, _
-                                ByVal sInitialLetter As String, _
-                                ByVal sKeywords As String) As String
+Public Function FinderRowSource(ByVal lngCategoryID As Long, _
+                                ByVal strInitialLetter As String, _
+                                ByVal strKeywords As String) As String
     ' [SCAFFOLD] Build the finder dropdown's row source: the entries matching the active
     '            filter, plus an "<All ...>" row that always sorts first. Keyword text,
     '            when present, wins; otherwise filter by category + first letter.
-    Dim sWhere As String
+    Dim strWhere As String
 
     On Error GoTo errHandler
 
-    If Len(Trim$(sKeywords)) > 0 Then
-        ' [BUSINESS LOGIC] keyword filter: split sKeywords on comma, trim and escape each
+    If Len(Trim$(strKeywords)) > 0 Then
+        ' [BUSINESS LOGIC] keyword filter: split strKeywords on comma, trim and escape each
         '            term, OR together LIKE '*term*' over the searchable text columns
         '            (title, notes). An all-blank input yields "" -> caller falls back.
-        ' >>> build sWhere per query-style.md <<<
-        sWhere = vbNullString
+        ' >>> build strWhere per query-style.md <<<
+        strWhere = vbNullString
     Else
         ' [BUSINESS LOGIC] category + first-letter filter over the sort-title column.
-        '            lCategoryID = 0 means "all categories"; sInitialLetter = "*" means
+        '            lngCategoryID = 0 means "all categories"; strInitialLetter = "*" means
         '            "all letters"; the four combinations give WHERE 1=1 / letter only /
         '            category only / category AND letter.
-        ' >>> build sWhere per query-style.md <<<
-        sWhere = vbNullString
+        ' >>> build strWhere per query-style.md <<<
+        strWhere = vbNullString
     End If
 
     ' [BUSINESS LOGIC] core SELECT returns (RecordID, DisplayText, 1 AS SortIndex) filtered
-    '            by sWhere; WithAllRow adds the sentinel + ordering.
-    ' >>> FinderRowSource = WithAllRow( "SELECT DISTINCT ... " & sWhere ) per query-style.md <<<
+    '            by strWhere; WithAllRow adds the sentinel + ordering.
+    ' >>> FinderRowSource = WithAllRow( "SELECT DISTINCT ... " & strWhere ) per query-style.md <<<
     FinderRowSource = WithAllRow(vbNullString)
 
 Cleanup:
@@ -62,13 +62,13 @@ End Function
 ### WithAllRow — `Private Function` → `String`
 
 ```vba
-Private Function WithAllRow(ByVal sCoreSelect As String) As String
+Private Function WithAllRow(ByVal strCoreSelect As String) As String
     ' [SCAFFOLD] Append the "<All ...>" sentinel row and the pick-list ordering to a core
     '            SELECT of (RecordID, DisplayText, 1 AS SortIndex) - the one home for the
     '            tail both filter paths share. Pure string builder: no errHandler.
     ' [BUSINESS LOGIC] the sentinel display text (e.g. "<All Publications>"), a 0 RecordID
     '            with SortIndex 0 (so it sorts first), and ORDER BY SortIndex, DisplayText.
-    ' >>> WithAllRow = sCoreSelect & " UNION ALL SELECT ... ORDER BY ..." per query-style.md <<<
+    ' >>> WithAllRow = strCoreSelect & " UNION ALL SELECT ... ORDER BY ..." per query-style.md <<<
     WithAllRow = vbNullString
 End Function
 ```
@@ -76,8 +76,8 @@ End Function
 ### JumpFormToRecord — `Public Sub`
 
 ```vba
-Public Sub JumpFormToRecord(ByVal frm As Access.Form, ByVal lRecordID As Long)
-    ' [SCAFFOLD] Narrow the form to the picked record - or show all when lRecordID = 0 -
+Public Sub JumpFormToRecord(ByVal frm As Access.Form, ByVal lngRecordID As Long)
+    ' [SCAFFOLD] Narrow the form to the picked record - or show all when lngRecordID = 0 -
     '            by rewriting the form's record-source WHERE server-side (only the wanted
     '            row is fetched). Uses RewriteWhere so a base query with no WHERE, or a
     '            multi-line one, is handled safely.
@@ -86,17 +86,17 @@ Public Sub JumpFormToRecord(ByVal frm As Access.Form, ByVal lRecordID As Long)
     '            related form - this is not a hypothetical to plan for later: it has actually
     '            happened in a real build of this pattern (see "One owner for the base query"
     '            under Parked). Check for other rewriters of the same query before building.
-    Dim sWhere As String
+    Dim strWhere As String
 
     On Error GoTo errHandler
 
     ' [BUSINESS LOGIC] 0 => all rows; otherwise the primary key equals the picked id.
-    ' >>> sWhere = IIf(lRecordID = 0, "1=1", "<PK> = " & lRecordID) <<<
-    sWhere = IIf(lRecordID = 0, "1=1", vbNullString)
+    ' >>> strWhere = IIf(lngRecordID = 0, "1=1", "<PK> = " & lngRecordID) <<<
+    strWhere = IIf(lngRecordID = 0, "1=1", vbNullString)
 
     ' [BUSINESS LOGIC] the base record source (saved-query name's SQL, or the form's own)
     '            and the sort column.
-    ' >>> frm.RecordSource = RewriteWhere(baseSQL, sWhere, "<SortColumn>") per query-style.md <<<
+    ' >>> frm.RecordSource = RewriteWhere(baseSQL, strWhere, "<SortColumn>") per query-style.md <<<
 
 Cleanup:
     Exit Sub
@@ -110,25 +110,25 @@ End Sub
 ### RewriteWhere — `Private Function` → `String`
 
 ```vba
-Private Function RewriteWhere(ByVal sBaseSQL As String, _
-                             ByVal sWhere As String, _
-                             ByVal sOrderBy As String) As String
-    ' [SCAFFOLD] Return the SELECT...FROM... head of sBaseSQL (everything before its first
+Private Function RewriteWhere(ByVal strBaseSQL As String, _
+                             ByVal strWhere As String, _
+                             ByVal strOrderBy As String) As String
+    ' [SCAFFOLD] Return the SELECT...FROM... head of strBaseSQL (everything before its first
     '            WHERE / GROUP BY / ORDER BY) with a fresh WHERE and ORDER BY appended.
     '            Pure string builder: no errHandler. This is the robust replacement for
     '            Left$(sql, InStr(sql, "WHERE") - 1), which crashes on a query with no
     '            WHERE and misreads a multi-line one.
-    Dim sHead As String
+    Dim strHead As String
 
     ' [STANDARDS — query-style.md] how the base SELECT is trimmed:
     ' >>> normalize CR/LF/Tab to spaces (Access stores query SQL multi-line); drop any
     '     trailing ";"; cut at the earliest of " WHERE " / " GROUP BY " / " ORDER BY "
     '     (space-delimited, case-insensitive, so an "...Order..." identifier is safe) <<<
-    sHead = sBaseSQL
+    strHead = strBaseSQL
 
-    RewriteWhere = sHead & _
-        " WHERE " & Trim$(sWhere) & _
-        IIf(Len(Trim$(sOrderBy)) > 0, " ORDER BY " & Trim$(sOrderBy), vbNullString)
+    RewriteWhere = strHead & _
+        " WHERE " & Trim$(strWhere) & _
+        IIf(Len(Trim$(strOrderBy)) > 0, " ORDER BY " & Trim$(strOrderBy), vbNullString)
 End Function
 ```
 
@@ -171,8 +171,8 @@ Private Sub cboCategory_AfterUpdate()
 End Sub
 
 ' A-Z letter chosen on the sub-picker -> rebuild for that letter (record it first).
-Private Sub ApplyLetter(ByVal sLetter As String)
-    Me.cboFinder.RowSource = FinderRowSource(Nz(Me.cboCategory, 0), sLetter, vbNullString)
+Private Sub ApplyLetter(ByVal strLetter As String)
+    Me.cboFinder.RowSource = FinderRowSource(Nz(Me.cboCategory, 0), strLetter, vbNullString)
     Me.cboFinder.Requery
 End Sub
 

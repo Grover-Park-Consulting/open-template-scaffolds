@@ -9,21 +9,21 @@ platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation]
 ### RelinkAllTables — `Private Function` → `Boolean`
 
 ```vba
-Private Function RelinkAllTables(ByVal sNewPath As String, _
-                                 ByVal sOldPath As String) As Boolean
-    ' [SCAFFOLD] Point every link that used to reach sOldPath at sNewPath instead.
+Private Function RelinkAllTables(ByVal strNewPath As String, _
+                                 ByVal strOldPath As String) As Boolean
+    ' [SCAFFOLD] Point every link that used to reach strOldPath at strNewPath instead.
     '            Two deliberate exclusions:
     '              - local tables (no Connect string) are not links and are left alone;
     '              - ODBC links (Connect starts "ODBC;") reach a different server entirely
     '                and must NOT be rewritten with a file path.
-    '            Passing an empty sOldPath repoints every Access file link - the right
+    '            Passing an empty strOldPath repoints every Access file link - the right
     '            behaviour on a front end with one back end, and the wrong one on a front
     '            end linked to two (see Parked).
     '            Returns False if nothing was relinked: an application whose links all
     '            failed, yet where no link matched, has a problem worth stopping for.
     Dim db        As DAO.Database
     Dim tdf       As DAO.TableDef
-    Dim lRelinked As Long
+    Dim lngRelinked As Long
 
     On Error GoTo errHandler
 
@@ -31,21 +31,21 @@ Private Function RelinkAllTables(ByVal sNewPath As String, _
 
     For Each tdf In db.TableDefs
         If Len(PathFromConnect(tdf.Connect)) > 0 Then
-            If Len(sOldPath) = 0 Or _
-               InStr(1, tdf.Connect, sOldPath, vbTextCompare) > 0 Then
+            If Len(strOldPath) = 0 Or _
+               InStr(1, tdf.Connect, strOldPath, vbTextCompare) > 0 Then
                 ' Only the path is replaced. Anything else the link carries - a database
                 ' password, for one - is kept, because rebuilding the string from scratch
                 ' would drop it and the refresh below would then fail.
-                tdf.Connect = ConnectWithNewPath(tdf.Connect, sNewPath)
+                tdf.Connect = ConnectWithNewPath(tdf.Connect, strNewPath)
                 ' RefreshLink is what actually re-establishes the connection; setting
                 ' Connect on its own only changes the stored text.
                 tdf.RefreshLink
-                lRelinked = lRelinked + 1
+                lngRelinked = lngRelinked + 1
             End If
         End If
     Next tdf
 
-    RelinkAllTables = (lRelinked > 0)
+    RelinkAllTables = (lngRelinked > 0)
 
 Cleanup:
     On Error Resume Next
@@ -99,32 +99,35 @@ End Function
 ### LocalSettingValue — `Public Function` → `String`
 
 ```vba
-Public Function LocalSettingValue(ByVal sSettingName As String) As String
+Public Function LocalSettingValue(ByVal strSettingName As String) As String
     ' [SCAFFOLD] Read one setting from the front end's own USysLocalSetting table. Returns
     '            an empty string when the setting has never been saved - which is the normal
     '            state of a newly built front end, not an error.
     '            This procedure and SaveLocalSetting are the only two that know WHERE the
     '            setting is kept; swap them both to move it to a text file or a constant.
     Dim db   As DAO.Database
+    Dim qdf  As DAO.QueryDef
     Dim rst  As DAO.Recordset
-    Dim sSQL As String
 
     On Error GoTo errHandler
 
     Set db = CurrentDb
 
-    ' [STANDARDS - query-style.md] a literal in a WHERE clause has its single quotes
-    '            doubled, so a value containing an apostrophe cannot break the statement.
-    sSQL = "SELECT SettingValue FROM USysLocalSetting " & _
-           "WHERE SettingName = '" & Replace$(sSettingName, "'", "''") & "';"
+    ' [STANDARDS - query-style.md] the name is a parameter, never part of the SQL text, so
+    '            a value containing an apostrophe cannot break the statement.
+    Set qdf = db.CreateQueryDef(vbNullString, _
+          "PARAMETERS [pSettingName] Text(255); " & _
+          "SELECT SettingValue FROM USysLocalSetting WHERE SettingName = [pSettingName];")
+    qdf.Parameters("pSettingName").Value = strSettingName
 
-    Set rst = db.OpenRecordset(sSQL, dbOpenSnapshot)
+    Set rst = qdf.OpenRecordset(dbOpenSnapshot)
     If Not rst.EOF Then LocalSettingValue = Nz(rst!SettingValue, vbNullString)
 
 Cleanup:
     On Error Resume Next
     If Not rst Is Nothing Then rst.Close
     Set rst = Nothing
+    Set qdf = Nothing
     Set db = Nothing
     Exit Function
 
@@ -138,38 +141,42 @@ End Function
 ### SaveLocalSetting — `Public Sub`
 
 ```vba
-Public Sub SaveLocalSetting(ByVal sSettingName As String, ByVal sSettingValue As String)
+Public Sub SaveLocalSetting(ByVal strSettingName As String, ByVal strSettingValue As String)
     ' [SCAFFOLD] Write one setting to USysLocalSetting, adding the row if it isn't there
     '            yet. Editable recordset rather than an UPDATE followed by an INSERT: one
     '            trip, and no window in which the row exists twice.
     Dim db   As DAO.Database
+    Dim qdf  As DAO.QueryDef
     Dim rst  As DAO.Recordset
-    Dim sSQL As String
 
     On Error GoTo errHandler
 
     Set db = CurrentDb
 
-    ' [STANDARDS - query-style.md] same quote-doubling rule as LocalSettingValue.
-    sSQL = "SELECT SettingName, SettingValue FROM USysLocalSetting " & _
-           "WHERE SettingName = '" & Replace$(sSettingName, "'", "''") & "';"
+    ' [STANDARDS - query-style.md] the name is a parameter, as in LocalSettingValue.
+    Set qdf = db.CreateQueryDef(vbNullString, _
+          "PARAMETERS [pSettingName] Text(255); " & _
+          "SELECT SettingName, SettingValue FROM USysLocalSetting " & _
+          "WHERE SettingName = [pSettingName];")
+    qdf.Parameters("pSettingName").Value = strSettingName
 
-    Set rst = db.OpenRecordset(sSQL, dbOpenDynaset)
+    Set rst = qdf.OpenRecordset(dbOpenDynaset)
 
     If rst.EOF Then
         rst.AddNew
-        rst!SettingName = sSettingName
+        rst!SettingName = strSettingName
     Else
         rst.Edit
     End If
 
-    rst!SettingValue = sSettingValue
+    rst!SettingValue = strSettingValue
     rst.Update
 
 Cleanup:
     On Error Resume Next
     If Not rst Is Nothing Then rst.Close
     Set rst = Nothing
+    Set qdf = Nothing
     Set db = Nothing
     Exit Sub
 

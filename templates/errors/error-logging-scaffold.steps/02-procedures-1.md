@@ -50,58 +50,58 @@ statement — including the guard on the fourth line. Read the error first, guar
 them logs error 0 with an empty description, on every call, silently.
 
 ```vba
-Public Sub LogError(ByVal sModule As String, _
-                    ByVal sProcedure As String, _
-                    ByVal lLine As Long)
+Public Sub LogError(ByVal strModule As String, _
+                    ByVal strProcedure As String, _
+                    ByVal lngLine As Long)
     ' [SCAFFOLD] Called from an errHandler block that is already dealing with a failure.
     '            Nothing in here may raise an error of its own.
-    Dim lErrNumber      As Long
-    Dim sErrDescription As String
-    Dim sErrSource      As String
-    Dim lLogID          As Long
-    Dim bRecorded       As Boolean
+    Dim lngErrNumber      As Long
+    Dim strErrDescription As String
+    Dim strErrSource      As String
+    Dim lngLogID          As Long
+    Dim booRecorded       As Boolean
 
     ' [SCAFFOLD] Read Err FIRST. The On Error statement below clears it, and so would
     '            any other On Error statement, Resume, Exit Sub, or Exit Function. These
     '            three lines must stay above the guard.
-    lErrNumber = Err.Number
-    sErrDescription = Err.Description
+    lngErrNumber = Err.Number
+    strErrDescription = Err.Description
     ' [STANDARDS - error-handling.md] For an error that came through propagating
     '            procedures, the path it took. Adapted from AccessCodeLib
     '            (access-codelib.net), base/modErrorHandler.bas, BSD 3-Clause License.
-    sErrSource = Err.Source
+    strErrSource = Err.Source
 
     ' [STANDARDS - error-handling.md] The documented exception: the logger is guarded
     '            rather than handled, because a handler here would call itself.
     On Error Resume Next
 
     ' [SCHEMA Business Rule 4] Truncate to fit rather than fail on length.
-    If Len(sErrDescription) > ERROR_DESCRIPTION_MAX Then
-        sErrDescription = Left$(sErrDescription, ERROR_DESCRIPTION_MAX)
+    If Len(strErrDescription) > ERROR_DESCRIPTION_MAX Then
+        strErrDescription = Left$(strErrDescription, ERROR_DESCRIPTION_MAX)
     End If
-    If Len(sErrSource) > ERROR_SOURCE_MAX Then
-        sErrSource = Left$(sErrSource, ERROR_SOURCE_MAX)
+    If Len(strErrSource) > ERROR_SOURCE_MAX Then
+        strErrSource = Left$(strErrSource, ERROR_SOURCE_MAX)
     End If
 
     ' [WIZARD Step 3 - where errors are recorded] >>> keep ONE of the three blocks <<<
 
     ' --- "A table in this database" ---
-    ' bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sErrSource, sModule, _
-    '                               sProcedure, lLine, lLogID)
+    ' booRecorded = WriteErrorToTable(lngErrNumber, strErrDescription, strErrSource, strModule, _
+    '                               strProcedure, lngLine, lngLogID)
 
     ' --- "A text file" ---
-    ' bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sErrSource, sModule, _
-    '                              sProcedure, lLine)
+    ' booRecorded = WriteErrorToFile(lngErrNumber, strErrDescription, strErrSource, strModule, _
+    '                              strProcedure, lngLine)
 
     ' --- "The table, falling back to the text file" (preferred) ---
-    bRecorded = WriteErrorToTable(lErrNumber, sErrDescription, sErrSource, sModule, _
-                                  sProcedure, lLine, lLogID)
-    If Not bRecorded Then
-        bRecorded = WriteErrorToFile(lErrNumber, sErrDescription, sErrSource, sModule, _
-                                     sProcedure, lLine)
+    booRecorded = WriteErrorToTable(lngErrNumber, strErrDescription, strErrSource, strModule, _
+                                  strProcedure, lngLine, lngLogID)
+    If Not booRecorded Then
+        booRecorded = WriteErrorToFile(lngErrNumber, strErrDescription, strErrSource, strModule, _
+                                     strProcedure, lngLine)
     End If
 
-    ShowErrorToUser lErrNumber, sErrDescription, sModule, sProcedure, lLine, lLogID, bRecorded
+    ShowErrorToUser lngErrNumber, strErrDescription, strModule, strProcedure, lngLine, lngLogID, booRecorded
 End Sub
 ```
 
@@ -116,59 +116,59 @@ containing an apostrophe would break a concatenated `INSERT`, and this is the on
 application that must not fail on the contents of its own input.
 
 ```vba
-Private Function WriteErrorToTable(ByVal lErrNumber As Long, _
-                                   ByVal sErrDescription As String, _
-                                   ByVal sErrSource As String, _
-                                   ByVal sModule As String, _
-                                   ByVal sProcedure As String, _
-                                   ByVal lLine As Long, _
-                                   ByRef lLogID As Long) As Boolean
+Private Function WriteErrorToTable(ByVal lngErrNumber As Long, _
+                                   ByVal strErrDescription As String, _
+                                   ByVal strErrSource As String, _
+                                   ByVal strModule As String, _
+                                   ByVal strProcedure As String, _
+                                   ByVal lngLine As Long, _
+                                   ByRef lngLogID As Long) As Boolean
     ' [SCAFFOLD] Guarded throughout; reports success as a Boolean instead of raising.
     Dim db    As DAO.Database
-    Dim rs    As DAO.Recordset
-    Dim sUser As String
+    Dim rst    As DAO.Recordset
+    Dim strUser As String
 
     On Error Resume Next
-    lLogID = 0
+    lngLogID = 0
 
     ' [SCHEMA Business Rule 5] Never empty - the column is Required, and an empty string
     '            would be refused by the very write we are trying to guarantee.
-    sUser = Environ$("USERNAME")
-    If Len(sUser) = 0 Then sUser = "Unknown"
+    strUser = Environ$("USERNAME")
+    If Len(strUser) = 0 Then strUser = "Unknown"
 
     Set db = CurrentDb
-    Set rs = db.OpenRecordset(ERROR_LOG_TABLE, dbOpenDynaset, dbAppendOnly)
+    Set rst = db.OpenRecordset(ERROR_LOG_TABLE, dbOpenDynaset, dbAppendOnly)
 
     ' [SCAFFOLD] The table may be missing, or the back end unreachable. Either way this
     '            is a False, not an error - the caller has somewhere else to try.
     If Err.Number <> 0 Then GoTo Cleanup
-    If rs Is Nothing Then GoTo Cleanup
+    If rst Is Nothing Then GoTo Cleanup
     Err.Clear
 
     ' [STANDARDS - query-style.md] A recordset append, not a concatenated INSERT: an
     '            apostrophe in Err.Description must not be able to break the write.
-    rs.AddNew
-    rs!ErrorNumber = lErrNumber
-    rs!ErrorDescription = sErrDescription
-    rs!ErrorSource = sErrSource
-    rs!ModuleName = sModule
-    rs!ProcedureName = sProcedure
-    rs!ErrorLineNumber = lLine
-    rs!ErrorOccurredOn = Now()
-    rs!ErrorUser = sUser
-    rs.Update
+    rst.AddNew
+    rst!ErrorNumber = lngErrNumber
+    rst!ErrorDescription = strErrDescription
+    rst!ErrorSource = strErrSource
+    rst!ModuleName = strModule
+    rst!ProcedureName = strProcedure
+    rst!ErrorLineNumber = lngLine
+    rst!ErrorOccurredOn = Now()
+    rst!ErrorUser = strUser
+    rst.Update
 
     If Err.Number = 0 Then
         ' [SCAFFOLD] The row is in. Read the reference number afterwards - if that part
         '            fails, the record still stands and only the number is missing.
         WriteErrorToTable = True
-        rs.Bookmark = rs.LastModified
-        lLogID = Nz(rs!ErrorLogID, 0)
+        rst.Bookmark = rst.LastModified
+        lngLogID = Nz(rst!ErrorLogID, 0)
     End If
 
 Cleanup:
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing
     Set db = Nothing
 End Function
 ```
@@ -180,47 +180,47 @@ the fallback where Step 3 chose both. **The timestamp at the start of the line i
 in this case — there is no `ErrorLogID` to quote.
 
 ```vba
-Private Function WriteErrorToFile(ByVal lErrNumber As Long, _
-                                  ByVal sErrDescription As String, _
-                                  ByVal sErrSource As String, _
-                                  ByVal sModule As String, _
-                                  ByVal sProcedure As String, _
-                                  ByVal lLine As Long) As Boolean
+Private Function WriteErrorToFile(ByVal lngErrNumber As Long, _
+                                  ByVal strErrDescription As String, _
+                                  ByVal strErrSource As String, _
+                                  ByVal strModule As String, _
+                                  ByVal strProcedure As String, _
+                                  ByVal lngLine As Long) As Boolean
     ' [SCAFFOLD] Guarded throughout; reports success as a Boolean instead of raising.
-    Dim iFile    As Integer
-    Dim sPath    As String
-    Dim sUser    As String
-    Dim sEntry   As String
-    Dim bWritten As Boolean
+    Dim intFile    As Integer
+    Dim strPath    As String
+    Dim strUser    As String
+    Dim strEntry   As String
+    Dim booWritten As Boolean
 
     On Error Resume Next
 
-    sPath = GetErrorLogFilePath()
-    If Len(sPath) = 0 Then Exit Function
+    strPath = GetErrorLogFilePath()
+    If Len(strPath) = 0 Then Exit Function
 
-    sUser = Environ$("USERNAME")
-    If Len(sUser) = 0 Then sUser = "Unknown"
+    strUser = Environ$("USERNAME")
+    If Len(strUser) = 0 Then strUser = "Unknown"
 
     ' [SCAFFOLD] Tab-separated so the file opens straight into a spreadsheet if anyone
     '            needs to sort it. The leading timestamp is what a support call quotes.
-    sEntry = Format$(Now(), "yyyy-mm-dd hh:nn:ss") & vbTab & _
-             sUser & vbTab & _
-             sModule & "." & sProcedure & vbTab & _
-             "line " & lLine & vbTab & _
-             lErrNumber & vbTab & _
-             sErrDescription & vbTab & _
-             sErrSource
+    strEntry = Format$(Now(), "yyyy-mm-dd hh:nn:ss") & vbTab & _
+             strUser & vbTab & _
+             strModule & "." & strProcedure & vbTab & _
+             "line " & lngLine & vbTab & _
+             lngErrNumber & vbTab & _
+             strErrDescription & vbTab & _
+             strErrSource
 
     Err.Clear
-    iFile = FreeFile
-    Open sPath For Append As #iFile
+    intFile = FreeFile
+    Open strPath For Append As #intFile
     If Err.Number = 0 Then
-        Print #iFile, sEntry
-        bWritten = (Err.Number = 0)
-        Close #iFile
+        Print #intFile, strEntry
+        booWritten = (Err.Number = 0)
+        Close #intFile
     End If
 
-    WriteErrorToFile = bWritten
+    WriteErrorToFile = booWritten
 End Function
 ```
 
@@ -233,7 +233,7 @@ the record.
 ```vba
 Private Function GetErrorLogFilePath() As String
     ' [SCAFFOLD] Guarded: a bad path returns the fallback, never an error.
-    Dim sFolder As String
+    Dim strFolder As String
 
     On Error Resume Next
 
@@ -241,26 +241,26 @@ Private Function GetErrorLogFilePath() As String
 
     ' --- "The front end's folder" (preferred; standards/startup-conventions.md section 4
     '     classes a local log as a per-user working folder, created per front end) ---
-    sFolder = CurrentProject.Path
+    strFolder = CurrentProject.Path
 
     ' --- "Your Documents folder" ---
     ' [SCAFFOLD] A Documents folder redirected into OneDrive is not on this path; the
     '            fallback below catches that and the log lands in the temp folder.
-    ' sFolder = Environ$("USERPROFILE") & "\Documents"
+    ' strFolder = Environ$("USERPROFILE") & "\Documents"
 
     ' --- "The back end's folder", read off the link the front end already has. Works
     '     only where ERROR_LOG_TABLE is a LINKED table - a local one has no Connect. ---
     ' Dim sConnect As String
     ' sConnect = CurrentDb.TableDefs(ERROR_LOG_TABLE).Connect
-    ' sFolder = Mid$(sConnect, InStr(sConnect, "DATABASE=") + 9)
-    ' sFolder = Left$(sFolder, InStrRev(sFolder, "\") - 1)
+    ' strFolder = Mid$(sConnect, InStr(sConnect, "DATABASE=") + 9)
+    ' strFolder = Left$(strFolder, InStrRev(strFolder, "\") - 1)
 
     ' [SCAFFOLD] Last resort. The temp folder always exists and is always writable, so
     '            there is no path by which this procedure returns nothing usable.
-    If Len(sFolder) = 0 Then sFolder = Environ$("TEMP")
-    If Len(Dir$(sFolder, vbDirectory)) = 0 Then sFolder = Environ$("TEMP")
+    If Len(strFolder) = 0 Then strFolder = Environ$("TEMP")
+    If Len(Dir$(strFolder, vbDirectory)) = 0 Then strFolder = Environ$("TEMP")
 
-    If Right$(sFolder, 1) <> "\" Then sFolder = sFolder & "\"
-    GetErrorLogFilePath = sFolder & ERROR_LOG_FILE
+    If Right$(strFolder, 1) <> "\" Then strFolder = strFolder & "\"
+    GetErrorLogFilePath = strFolder & ERROR_LOG_FILE
 End Function
 ```

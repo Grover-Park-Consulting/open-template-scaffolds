@@ -61,7 +61,7 @@ to save a few kilobytes is the wrong trade. But it does mean the folder is yours
 the newest file for a table is the one that matters.
 
 ```vba
-Private Function CreateAllDataMacros(sTableName As String, fieldList As Collection, sTempPath As String, Optional bSilent As Boolean = False) As String
+Private Function CreateAllDataMacros(strTableName As String, fieldList As Collection, strTempPath As String, Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Generate one table's Data Macros as a SINGLE XML document and attach it.
     '            How many macros that is depends on two independent things (schema
     '            Business Rule 2):
@@ -72,55 +72,55 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     '            Returns a one-line status ("OK ...", "SKIPPED ...", or "ERROR: ...") so the
     '            caller can report per-table results without relying on Debug.Print alone.
     Dim db As DAO.Database
-    Dim rsCheck As DAO.Recordset
-    Dim sXmlContent As String
-    Dim sBeforeChange As String
+    Dim rstCheck As DAO.Recordset
+    Dim strXmlContent As String
+    Dim strBeforeChange As String
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
     Dim txtFile As Object
-    Dim sFilePath As String
-    Dim sPrimaryKeyField As String
+    Dim strFilePath As String
+    Dim strPrimaryKeyField As String
     Dim fieldInfo As Variant
-    Dim bHasLongText As Boolean
-    Dim bHasAuditColumns As Boolean
-    Dim lAuditableCount As Long
-    Dim lMacroCount As Long
-    Dim sWhatWasBuilt As String
-    Dim bHadExistingMacros As Boolean
-    Dim sBackupFolder As String
-    Dim sBackupTemp As String
-    Dim sBackupFinal As String
-    Dim sBackupNote As String
+    Dim booHasLongText As Boolean
+    Dim booHasAuditColumns As Boolean
+    Dim lngAuditableCount As Long
+    Dim lngMacroCount As Long
+    Dim strWhatWasBuilt As String
+    Dim booHadExistingMacros As Boolean
+    Dim strBackupFolder As String
+    Dim strBackupTemp As String
+    Dim strBackupFinal As String
+    Dim strBackupNote As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
     ' Find the PK field, count auditable fields, and detect auditable Long Text
     ' (schema Business Rules 2, 4, 5)
-    bHasLongText = False
-    bHasAuditColumns = False
-    lAuditableCount = 0
+    booHasLongText = False
+    booHasAuditColumns = False
+    lngAuditableCount = 0
     For Each fieldInfo In fieldList
-        If fieldInfo(2) = True Then sPrimaryKeyField = fieldInfo(0)
+        If fieldInfo(2) = True Then strPrimaryKeyField = fieldInfo(0)
         If fieldInfo(3) = True Then
-            lAuditableCount = lAuditableCount + 1
-            If fieldInfo(1) = dbMemo Then bHasLongText = True
+            lngAuditableCount = lngAuditableCount + 1
+            If fieldInfo(1) = dbMemo Then booHasLongText = True
         End If
         ' [SCAFFOLD] Whether this table is stamped, for the report only — the same test
         '            BuildBeforeChangeMacro makes when it decides whether to emit stamping:
         '            listed in AUDIT_STAMP_LIST and carrying the tracking columns.
         '            Outside the IsAuditable test above, because tracking columns are always
         '            seeded off and would never be seen there.
-        If IsNamedInList(AUDIT_STAMP_LIST, sTableName) Then
+        If IsNamedInList(AUDIT_STAMP_LIST, strTableName) Then
             If StrComp(fieldInfo(0), AUDIT_CREATED_DATE, vbTextCompare) = 0 _
                 Or StrComp(fieldInfo(0), AUDIT_CREATED_BY, vbTextCompare) = 0 _
                 Or StrComp(fieldInfo(0), AUDIT_MODIFIED_DATE, vbTextCompare) = 0 _
-                Or StrComp(fieldInfo(0), AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasAuditColumns = True
+                Or StrComp(fieldInfo(0), AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then booHasAuditColumns = True
         End If
     Next fieldInfo
 
     ' BeforeChange carries the audit-column stamping as well as Long Text staging, so it is
     ' built for every table; it comes back "" only when neither job applies to this one.
-    sBeforeChange = BuildBeforeChangeMacro(sTableName, fieldList, sPrimaryKeyField)
+    strBeforeChange = BuildBeforeChangeMacro(strTableName, fieldList, strPrimaryKeyField)
 
     ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. Every table in AUDIT_STAMP_LIST gets the
     '            audit-column stamping macro, including one with nothing auditable: records
@@ -139,12 +139,12 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     '            while reporting SKIPPED — which reads as "no change" when the true state is
     '            "still logging." So: before reporting SKIPPED, check whether this table
     '            already carries OUR OWN macros, and if it does, remove them and say so.
-    If lAuditableCount = 0 And Len(sBeforeChange) = 0 Then
-        Dim sRemovalResult As String
-        sRemovalResult = RemoveDataMacrosForTable(sTableName)
-        If Left$(sRemovalResult, 2) = "OK" Then
+    If lngAuditableCount = 0 And Len(strBeforeChange) = 0 Then
+        Dim strRemovalResult As String
+        strRemovalResult = RemoveDataMacrosForTable(strTableName)
+        If Left$(strRemovalResult, 2) = "OK" Then
             Debug.Print "  - Removed (nothing to audit or stamp; a prior run's macros were still attached)"
-            CreateAllDataMacros = "REMOVED (nothing to audit or stamp; previous macros removed) - " & sRemovalResult
+            CreateAllDataMacros = "REMOVED (nothing to audit or stamp; previous macros removed) - " & strRemovalResult
         Else
             Debug.Print "  - Skipped (nothing to audit, and no audit columns to stamp)"
             CreateAllDataMacros = "SKIPPED (nothing to audit, no audit columns to stamp)"
@@ -155,75 +155,75 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     ' [SCAFFOLD] Safety net for Path B: LoadFromText replaces a table's WHOLE macro set. If
     '            this table already has one (e.g. the house audit-column stamping macro),
     '            back it up before it's overwritten — see the note above this code block.
-    bHadExistingMacros = False
-    Set rsCheck = db.OpenRecordset( _
-        "SELECT Name FROM MSysObjects WHERE Name='" & sTableName & "' AND Type=1 AND Not IsNull(LvExtra)", _
+    booHadExistingMacros = False
+    Set rstCheck = db.OpenRecordset( _
+        "SELECT Name FROM MSysObjects WHERE Name='" & strTableName & "' AND Type=1 AND Not IsNull(LvExtra)", _
         dbOpenSnapshot)
-    bHadExistingMacros = Not rsCheck.EOF
-    rsCheck.Close
-    Set rsCheck = Nothing
+    booHadExistingMacros = Not rstCheck.EOF
+    rstCheck.Close
+    Set rstCheck = Nothing
 
-    sBackupNote = ""
-    sBackupTemp = ""
-    sBackupFinal = ""
-    If bHadExistingMacros Then
-        sBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
-        If Dir(sBackupFolder, vbDirectory) = "" Then MkDir sBackupFolder
+    strBackupNote = ""
+    strBackupTemp = ""
+    strBackupFinal = ""
+    If booHadExistingMacros Then
+        strBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
+        If Dir(strBackupFolder, vbDirectory) = "" Then MkDir strBackupFolder
         ' [SCAFFOLD] Export under a working name. Taking the copy first is not optional —
         '            after LoadFromText there is nothing left to copy — but the file is only
         '            renamed to its real name once the new macros have actually loaded, and
         '            deleted if they have not. That is what makes a file in DataMacroBackups\
         '            mean a replacement really happened. Before this, a run stopped by an
         '            open object left behind a backup for a table it never touched.
-        sBackupTemp = sBackupFolder & sTableName & "_backup-in-progress_" & _
+        strBackupTemp = strBackupFolder & strTableName & "_backup-in-progress_" & _
             Format(Now(), "yyyymmdd_hhnnss") & ".xml"
-        Application.SaveAsText acTableDataMacro, sTableName, sBackupTemp
+        Application.SaveAsText acTableDataMacro, strTableName, strBackupTemp
         ' [SCAFFOLD] Whose macros are these? A set naming tblAuditLog is one this generator
         '            wrote on an earlier run, and calling that file a PRE-AUDIT backup would
         '            be false: restore it and you get this system back, not what the table
         '            had before any of it. Regenerating is ordinary, so this case is common.
-        If MacroBackupIsOurs(sBackupTemp) Then
-            sBackupFinal = sBackupFolder & sTableName & "_PreRegenBackup_" & _
+        If MacroBackupIsOurs(strBackupTemp) Then
+            strBackupFinal = strBackupFolder & strTableName & "_PreRegenBackup_" & _
                 Format(Now(), "yyyymmdd_hhnnss") & ".xml"
         Else
-            sBackupFinal = sBackupFolder & sTableName & "_PreAuditBackup_" & _
+            strBackupFinal = strBackupFolder & strTableName & "_PreAuditBackup_" & _
                 Format(Now(), "yyyymmdd_hhnnss") & ".xml"
         End If
     End If
 
     ' One XML document carrying all of this table's macros
-    sXmlContent = "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>"
-    sXmlContent = sXmlContent & "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application"">"
+    strXmlContent = "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>"
+    strXmlContent = strXmlContent & "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application"">"
 
     ' The three After macros are the audit trail itself — no auditable fields, none needed.
-    lMacroCount = 0
-    If lAuditableCount > 0 Then
-        sXmlContent = sXmlContent & BuildAfterInsertMacro(sTableName, fieldList, sPrimaryKeyField)
-        sXmlContent = sXmlContent & BuildAfterUpdateMacro(sTableName, fieldList, sPrimaryKeyField)
-        sXmlContent = sXmlContent & BuildAfterDeleteMacro(sTableName, fieldList, sPrimaryKeyField)
-        lMacroCount = 3
+    lngMacroCount = 0
+    If lngAuditableCount > 0 Then
+        strXmlContent = strXmlContent & BuildAfterInsertMacro(strTableName, fieldList, strPrimaryKeyField)
+        strXmlContent = strXmlContent & BuildAfterUpdateMacro(strTableName, fieldList, strPrimaryKeyField)
+        strXmlContent = strXmlContent & BuildAfterDeleteMacro(strTableName, fieldList, strPrimaryKeyField)
+        lngMacroCount = 3
     End If
 
-    If Len(sBeforeChange) > 0 Then
-        sXmlContent = sXmlContent & sBeforeChange
-        lMacroCount = lMacroCount + 1
+    If Len(strBeforeChange) > 0 Then
+        strXmlContent = strXmlContent & strBeforeChange
+        lngMacroCount = lngMacroCount + 1
     End If
 
     ' BeforeDelete stages Long Text values for the AfterDelete log row, so it is only
     ' wanted when that log row is actually going to be written.
-    If bHasLongText Then
-        sXmlContent = sXmlContent & BuildBeforeDeleteMacro(sTableName, fieldList, sPrimaryKeyField)
-        lMacroCount = lMacroCount + 1
+    If booHasLongText Then
+        strXmlContent = strXmlContent & BuildBeforeDeleteMacro(strTableName, fieldList, strPrimaryKeyField)
+        lngMacroCount = lngMacroCount + 1
     End If
 
-    sXmlContent = sXmlContent & "</DataMacros>"
+    strXmlContent = strXmlContent & "</DataMacros>"
 
     ' [SCAFFOLD] Write UTF-16 (CreateTextFile third argument True) — LoadFromText requires it —
     '            then load with the table held open in design view so the save sticks.
-    sFilePath = sTempPath & sTableName & "_DataMacros.xml"
+    strFilePath = strTempPath & strTableName & "_DataMacros.xml"
     Set fso = CreateObject("Scripting.FileSystemObject")
-    Set txtFile = fso.CreateTextFile(sFilePath, True, True)
-    txtFile.Write sXmlContent
+    Set txtFile = fso.CreateTextFile(strFilePath, True, True)
+    txtFile.Write strXmlContent
     txtFile.Close
     Set txtFile = Nothing
 
@@ -231,52 +231,52 @@ Private Function CreateAllDataMacros(sTableName As String, fieldList As Collecti
     '            Access cannot take a design lock on a table another object is using. The
     '            error is caught below, the table keeps the macros it already had, and the
     '            caller counts it as failed rather than built.
-    DoCmd.OpenTable sTableName, acViewDesign, acHidden
-    Application.LoadFromText acTableDataMacro, sTableName, sFilePath
+    DoCmd.OpenTable strTableName, acViewDesign, acHidden
+    Application.LoadFromText acTableDataMacro, strTableName, strFilePath
 
     ' [SCAFFOLD] The load has happened, so the copy taken earlier is now a true record of what
     '            was replaced and earns its real name — promoted HERE, on the line after the
     '            load, and not further down. Everything below this point runs with the table
     '            already replaced, so a backup still carrying its working name past this line
     '            would be thrown away by Cleanup while the macros it recorded were already
-    '            gone. Clearing sBackupTemp is also what tells Cleanup there is nothing left
+    '            gone. Clearing strBackupTemp is also what tells Cleanup there is nothing left
     '            to throw away.
-    If Len(sBackupTemp) > 0 Then
-        Name sBackupTemp As sBackupFinal
-        sBackupTemp = ""
-        sBackupNote = " (existing macros backed up to " & sBackupFinal & " before replacing)"
-        Debug.Print "  - " & sTableName & " already had Data Macros — backed up to " & sBackupFinal
+    If Len(strBackupTemp) > 0 Then
+        Name strBackupTemp As strBackupFinal
+        strBackupTemp = ""
+        strBackupNote = " (existing macros backed up to " & strBackupFinal & " before replacing)"
+        Debug.Print "  - " & strTableName & " already had Data Macros — backed up to " & strBackupFinal
     End If
 
-    DoCmd.Close acTable, sTableName, acSaveYes
+    DoCmd.Close acTable, strTableName, acSaveYes
 
-    fso.DeleteFile sFilePath
+    fso.DeleteFile strFilePath
 
     ' [SCAFFOLD] Report what was actually built rather than a fixed count — the count varies
     '            by table now, and a reader comparing tables needs to see why.
-    If lAuditableCount = 0 Then
-        sWhatWasBuilt = "BeforeChange only — audit-column stamping, no audit trail " & _
+    If lngAuditableCount = 0 Then
+        strWhatWasBuilt = "BeforeChange only — audit-column stamping, no audit trail " & _
             "(this table has no auditable fields; inserts still work)"
     Else
-        sWhatWasBuilt = "3 After"
-        If Len(sBeforeChange) > 0 Then
-            If bHasAuditColumns And bHasLongText Then
-                sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (stamping and Long Text staging)"
-            ElseIf bHasAuditColumns Then
-                sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (stamping)"
+        strWhatWasBuilt = "3 After"
+        If Len(strBeforeChange) > 0 Then
+            If booHasAuditColumns And booHasLongText Then
+                strWhatWasBuilt = strWhatWasBuilt & " + BeforeChange (stamping and Long Text staging)"
+            ElseIf booHasAuditColumns Then
+                strWhatWasBuilt = strWhatWasBuilt & " + BeforeChange (stamping)"
             Else
-                sWhatWasBuilt = sWhatWasBuilt & " + BeforeChange (Long Text staging only — " & _
+                strWhatWasBuilt = strWhatWasBuilt & " + BeforeChange (Long Text staging only — " & _
                     "this table's tracking columns are not stamped here: none, or filled elsewhere)"
             End If
         Else
-            sWhatWasBuilt = sWhatWasBuilt & " (this table's tracking columns are not stamped " & _
+            strWhatWasBuilt = strWhatWasBuilt & " (this table's tracking columns are not stamped " & _
                 "here: none, or filled elsewhere)"
         End If
-        If bHasLongText Then sWhatWasBuilt = sWhatWasBuilt & " + BeforeDelete"
+        If booHasLongText Then strWhatWasBuilt = strWhatWasBuilt & " + BeforeDelete"
     End If
 
-    Debug.Print "  - " & lMacroCount & " data macro(s) created: " & sWhatWasBuilt
-    CreateAllDataMacros = "OK — " & lMacroCount & " macro(s): " & sWhatWasBuilt & sBackupNote
+    Debug.Print "  - " & lngMacroCount & " data macro(s) created: " & strWhatWasBuilt
+    CreateAllDataMacros = "OK — " & lngMacroCount & " macro(s): " & strWhatWasBuilt & strBackupNote
 
 Cleanup:
     ' [SCAFFOLD] A working-name export still sitting here means the load never happened — the
@@ -284,12 +284,12 @@ Cleanup:
     '            past that point can leave one behind. Nothing was replaced, the file records
     '            nothing that was lost, and throwing it away is what keeps the rule that a file
     '            in DataMacroBackups\ means a replacement happened. On the success path
-    '            sBackupTemp was cleared above and there is nothing to do.
-    If Len(sBackupTemp) > 0 Then
+    '            strBackupTemp was cleared above and there is nothing to do.
+    If Len(strBackupTemp) > 0 Then
         On Error Resume Next
-        Kill sBackupTemp
+        Kill strBackupTemp
     End If
-    Set rsCheck = Nothing
+    Set rstCheck = Nothing
     Set txtFile = Nothing
     Set fso = Nothing
     Set db = Nothing
@@ -298,7 +298,7 @@ Cleanup:
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
     CreateAllDataMacros = "ERROR: " & Err.Number & " - " & Err.Description
-    If Not bSilent Then MsgBox "Error creating macros for " & sTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
+    If Not booSilent Then MsgBox "Error creating macros for " & strTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
     Resume
 End Function

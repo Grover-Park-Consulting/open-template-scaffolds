@@ -11,59 +11,59 @@ platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, dao-tab
 Step 6's answer, in one place. It is handed everything it might need to show and uses only what the
 chosen wording calls for.
 
-**It never claims a record was kept when the write failed.** `bRecorded` is what the write actually
+**It never claims a record was kept when the write failed.** `booRecorded` is what the write actually
 returned, and the wording follows it.
 
 ```vba
-Private Sub ShowErrorToUser(ByVal lErrNumber As Long, _
-                            ByVal sErrDescription As String, _
-                            ByVal sModule As String, _
-                            ByVal sProcedure As String, _
-                            ByVal lLine As Long, _
-                            ByVal lLogID As Long, _
-                            ByVal bRecorded As Boolean)
+Private Sub ShowErrorToUser(ByVal lngErrNumber As Long, _
+                            ByVal strErrDescription As String, _
+                            ByVal strModule As String, _
+                            ByVal strProcedure As String, _
+                            ByVal lngLine As Long, _
+                            ByVal lngLogID As Long, _
+                            ByVal booRecorded As Boolean)
     ' [SCAFFOLD] Guarded: a failure to show the message must not replace the failure we
     '            were called about.
-    Dim sMsg As String
+    Dim strMsg As String
 
     On Error Resume Next
 
     ' [WIZARD Step 6 - what the person at the keyboard sees] >>> keep ONE block <<<
 
     ' --- "A short message, with a reference number when there is one" (preferred) ---
-    If bRecorded And lLogID > 0 Then
-        sMsg = "Something went wrong. The problem has been recorded." & vbCrLf & vbCrLf & _
-               "Reference number: " & lLogID
-    ElseIf bRecorded Then
+    If booRecorded And lngLogID > 0 Then
+        strMsg = "Something went wrong. The problem has been recorded." & vbCrLf & vbCrLf & _
+               "Reference number: " & lngLogID
+    ElseIf booRecorded Then
         ' [SCAFFOLD] Recorded to the file, so there is no number to quote. Say the true
         '            thing rather than invent one.
-        sMsg = "Something went wrong. The problem has been recorded."
+        strMsg = "Something went wrong. The problem has been recorded."
     Else
-        sMsg = "Something went wrong, and it could not be recorded. " & _
+        strMsg = "Something went wrong, and it could not be recorded. " & _
                "Please make a note of what you were doing."
     End If
 
     ' --- "A short message that something went wrong" ---
-    ' If bRecorded Then
-    '     sMsg = "Something went wrong. The problem has been recorded."
+    ' If booRecorded Then
+    '     strMsg = "Something went wrong. The problem has been recorded."
     ' Else
-    '     sMsg = "Something went wrong, and it could not be recorded. " & _
+    '     strMsg = "Something went wrong, and it could not be recorded. " & _
     '            "Please make a note of what you were doing."
     ' End If
 
     ' --- "The full technical detail" ---
-    ' sMsg = "Error " & lErrNumber & ": " & sErrDescription & vbCrLf & _
-    '        "In: " & sModule & "." & sProcedure & vbCrLf & _
-    '        "Line: " & lLine
-    ' If Not bRecorded Then
-    '     sMsg = sMsg & vbCrLf & vbCrLf & _
+    ' strMsg = "Error " & lngErrNumber & ": " & strErrDescription & vbCrLf & _
+    '        "In: " & strModule & "." & strProcedure & vbCrLf & _
+    '        "Line: " & lngLine
+    ' If Not booRecorded Then
+    '     strMsg = strMsg & vbCrLf & vbCrLf & _
     '            "This could not be recorded. Please make a note of what you were doing."
     ' End If
 
     ' --- "Nothing" ---
     ' Exit Sub
 
-    MsgBox sMsg, vbExclamation, "Unexpected problem"
+    MsgBox strMsg, vbExclamation, "Unexpected problem"
 End Sub
 ```
 
@@ -93,27 +93,30 @@ an existing table is left alone, add the column by hand first (Text(255), Requir
 the missing column leaves an error that marks the write as failed.
 
 ```vba
-Public Function CreateErrorLogTable(Optional bSilent As Boolean = False) As String
+Public Function CreateErrorLogTable(Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Creates tblErrorLog (schema template entity). Idempotent: an existing
     '            table is reported and skipped, so this is safe to re-run.
-    '            bSilent:=True suppresses the message box and returns the same text.
+    '            booSilent:=True suppresses the message box and returns the same text.
     Dim db      As DAO.Database
     Dim tdf     As DAO.TableDef
     Dim fld     As DAO.Field
     Dim idx     As DAO.Index
-    Dim sReport As String
-    Dim bFailed As Boolean
+    Dim strReport As String
+    Dim booFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    sReport = ERROR_LOG_TABLE & " created."
+    strReport = ERROR_LOG_TABLE & " created."
 
-    On Error Resume Next
-    Set tdf = db.TableDefs(ERROR_LOG_TABLE)
-    On Error GoTo errHandler
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = ERROR_LOG_TABLE Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
-        sReport = ERROR_LOG_TABLE & " already exists and was left exactly as it is."
+        strReport = ERROR_LOG_TABLE & " already exists and was left exactly as it is."
         GoTo Cleanup
     End If
 
@@ -209,17 +212,17 @@ Cleanup:
     Set idx = Nothing
     Set tdf = Nothing
     Set db = Nothing
-    CreateErrorLogTable = sReport
+    CreateErrorLogTable = strReport
     ' [SCAFFOLD] One message, whatever happened - the success text or the error text,
     '            never both. Building the report first and showing it here prevents that.
-    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    If Not booSilent Then MsgBox strReport, IIf(booFailed, vbCritical, vbInformation)
     Exit Function
 
 errHandler:
     ' [STANDARDS - error-handling.md] This procedure runs at set-up time, before the
     '            logger it is building exists, so it reports rather than calls LogError.
-    bFailed = True
-    sReport = "ERROR creating " & ERROR_LOG_TABLE & ": " & Err.Number & " - " & Err.Description
+    booFailed = True
+    strReport = "ERROR creating " & ERROR_LOG_TABLE & ": " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
 End Function
@@ -233,19 +236,27 @@ view. The property does not exist until it is created, which is why this is `Cre
 
 ```vba
 Private Sub SetFieldDescription(db As DAO.Database, _
-                                ByVal sField As String, _
-                                ByVal sDescription As String)
+                                ByVal strField As String, _
+                                ByVal strDescription As String)
     ' [SCAFFOLD + _materialization.md rule 2] Called only after db.TableDefs.Append.
     '            A Description set during field-build raises runtime error 3219.
+    Dim fld As DAO.Field
     Dim prp As DAO.Property
 
-    On Error Resume Next
-    Set prp = db.TableDefs(ERROR_LOG_TABLE).Fields(sField) _
-                .CreateProperty("Description", dbText, sDescription)
-    db.TableDefs(ERROR_LOG_TABLE).Fields(sField).Properties.Append prp
+    ' [SCAFFOLD] Appending a property that already exists raises 3367, so look for it first
+    '            and set it where it is. Any other error is real and reaches the caller's
+    '            handler: a field that cannot be described is a build that went wrong.
+    Set fld = db.TableDefs(ERROR_LOG_TABLE).Fields(strField)
+    For Each prp In fld.Properties
+        If prp.Name = "Description" Then Exit For
+    Next prp
+    If prp Is Nothing Then
+        fld.Properties.Append fld.CreateProperty("Description", dbText, strDescription)
+    Else
+        prp.Value = strDescription
+    End If
 
-    ' [SCAFFOLD] Guarded because a documentation comment is never worth failing a build
-    '            for, and because appending a property that already exists raises 3367.
     Set prp = Nothing
+    Set fld = Nothing
 End Sub
 ```

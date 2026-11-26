@@ -21,34 +21,37 @@ version of this scaffold. If you have such a build, add the secondary and unique
 hand, or start fresh in a copy.
 
 ```vba
-Public Function Two_CreateAuditTables(Optional bSilent As Boolean = False) As String
+Public Function Two_CreateAuditTables(Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Creates tblAuditLog, tblLongTextBackup, tblAuditLogConfig (schema template
     '            entities). Idempotent: each block is skipped if its table already exists.
-    '            Passing bSilent:=True suppresses the message box and returns the same text,
+    '            Passing booSilent:=True suppresses the message box and returns the same text,
     '            so a caller with no one at the keyboard does not hang on a dialog.
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.Field
     Dim idx As DAO.Index
-    Dim sReport As String
-    Dim bFailed As Boolean
+    Dim strReport As String
+    Dim booFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
     ' [SCAFFOLD] The outcome text is set here, not at the end, because an "already exists"
     '            branch jumps straight to Cleanup. The errHandler replaces it on failure.
-    sReport = "Audit tables are in place. Any that already existed were left exactly as " & _
+    strReport = "Audit tables are in place. Any that already existed were left exactly as " & _
         "they are, indexes included."
 
     ' ========== tblAuditLog ==========
-    On Error Resume Next
-    Set tdf = db.TableDefs("tblAuditLog")
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = "tblAuditLog" Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
         Debug.Print "tblAuditLog already exists"
         GoTo CreateLongTextBackup
     End If
-    On Error GoTo errHandler
 
     Set tdf = db.CreateTableDef("tblAuditLog")
 
@@ -130,13 +133,16 @@ Public Function Two_CreateAuditTables(Optional bSilent As Boolean = False) As St
 CreateLongTextBackup:
     ' ========== tblLongTextBackup ==========
     Set tdf = Nothing
-    On Error Resume Next
-    Set tdf = db.TableDefs("tblLongTextBackup")
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = "tblLongTextBackup" Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
         Debug.Print "tblLongTextBackup already exists"
         GoTo CreateConfig
     End If
-    On Error GoTo errHandler
 
     Set tdf = db.CreateTableDef("tblLongTextBackup")
 
@@ -203,13 +209,16 @@ CreateLongTextBackup:
 CreateConfig:
     ' ========== tblAuditLogConfig ==========
     Set tdf = Nothing
-    On Error Resume Next
-    Set tdf = db.TableDefs("tblAuditLogConfig")
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = "tblAuditLogConfig" Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
         Debug.Print "tblAuditLogConfig already exists"
         GoTo Cleanup
     End If
-    On Error GoTo errHandler
 
     Set tdf = db.CreateTableDef("tblAuditLogConfig")
 
@@ -269,16 +278,16 @@ Cleanup:
     Set idx = Nothing
     Set tdf = Nothing
     Set db = Nothing
-    Two_CreateAuditTables = sReport
+    Two_CreateAuditTables = strReport
     ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
     '            both. Building the report first and showing it here is what prevents that.
-    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    If Not booSilent Then MsgBox strReport, IIf(booFailed, vbCritical, vbInformation)
     Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
-    bFailed = True
-    sReport = "ERROR creating tables: " & Err.Number & " - " & Err.Description
+    booFailed = True
+    strReport = "ERROR creating tables: " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
 End Function
@@ -321,13 +330,13 @@ Takes one optional Yes/No setting that decides the starting point for everything
   where "track everything" could sweep in more than you meant.
 
 ```vba
-Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean = True, _
-                                        Optional bSilent As Boolean = False) As String
+Public Function Three_PopulateConfigTable(Optional booDefaultAuditable As Boolean = True, _
+                                        Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Rebuild the audit configuration from the live schema. Scope decisions
     '            live in the IsAuditable flags afterward, not in this code.
-    '            Passing bSilent:=True suppresses the message box and returns the same text,
+    '            Passing booSilent:=True suppresses the message box and returns the same text,
     '            so a caller with no one at the keyboard does not hang on a dialog.
-    '            bDefaultAuditable sets the starting point for ordinary fields only:
+    '            booDefaultAuditable sets the starting point for ordinary fields only:
     '            True  (preferred; demo build) — everything starts switched ON, you switch OFF
     '                  what you don't want tracked.
     '            False (Path B — call as Three_PopulateConfigTable(False)) — everything
@@ -338,22 +347,22 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
     Dim tdef As DAO.TableDef
     Dim fld As DAO.Field
     Dim idx As DAO.Index
-    Dim pkField As DAO.Field
-    Dim sSql As String
-    Dim isPK As Boolean
-    Dim isAuditable As Boolean
-    Dim pkFieldName As String
-    Dim lRowCount As Long
-    Dim lTablesInScope As Long
-    Dim sLinkedNamed As String
-    Dim sReport As String
-    Dim bFailed As Boolean
+    Dim fldPrimaryKey As DAO.Field
+    Dim strSQL As String
+    Dim booPK As Boolean
+    Dim booAuditable As Boolean
+    Dim strPrimaryKeyName As String
+    Dim lngRowCount As Long
+    Dim lngTablesInScope As Long
+    Dim strLinkedNamed As String
+    Dim strReport As String
+    Dim booFailed As Boolean
 
     On Error GoTo errHandler
     Set db = CurrentDb
-    lRowCount = 0
-    lTablesInScope = 0
-    sLinkedNamed = ""
+    lngRowCount = 0
+    lngTablesInScope = 0
+    strLinkedNamed = ""
 
     ' Clear existing config
     db.Execute "DELETE * FROM tblAuditLogConfig", dbFailOnError
@@ -366,32 +375,32 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
         ' in the report below, so a table asked for by name is never dropped in silence.
         If (tdef.Attributes And (dbAttachedTable Or dbAttachedODBC)) <> 0 Then
             If IsNamedInScopeList(tdef.Name) Then
-                sLinkedNamed = sLinkedNamed & "  " & tdef.Name & vbCrLf
+                strLinkedNamed = strLinkedNamed & "  " & tdef.Name & vbCrLf
             End If
         End If
 
         If IsAuditCandidateTable(tdef) Then
-            lTablesInScope = lTablesInScope + 1
+            lngTablesInScope = lngTablesInScope + 1
 
             ' Get the primary key field name for this table
-            pkFieldName = ""
+            strPrimaryKeyName = ""
             For Each idx In tdef.Indexes
                 If idx.Primary Then
-                    For Each pkField In idx.Fields
-                        pkFieldName = pkField.Name
+                    For Each fldPrimaryKey In idx.Fields
+                        strPrimaryKeyName = fldPrimaryKey.Name
                         Exit For
-                    Next pkField
+                    Next fldPrimaryKey
                     Exit For
                 End If
             Next idx
 
             For Each fld In tdef.Fields
-                isPK = (fld.Name = pkFieldName)
+                booPK = (fld.Name = strPrimaryKeyName)
 
                 ' [SCAFFOLD] Seed IsAuditable: False for the system tables themselves
                 '            (schema Business Rule 5 — never audit the audit trail) and for
                 '            noisy always-changing fields; the starting point set by
-                '            bDefaultAuditable for everything else. Review and flip flags in
+                '            booDefaultAuditable for everything else. Review and flip flags in
                 '            tblAuditLogConfig after the scan.
                 ' [STANDARDS — audit-columns.md] The four house audit columns come from the
                 '            constants at the top of this module — one place to change if your
@@ -408,19 +417,19 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
                     Case tdef.Name = "tblAuditLog", _
                          tdef.Name = "tblLongTextBackup", _
                          tdef.Name = "tblAuditLogConfig"
-                        isAuditable = False
+                        booAuditable = False
                     Case fld.Name = AUDIT_CREATED_DATE, fld.Name = AUDIT_CREATED_BY, _
                          fld.Name = AUDIT_MODIFIED_DATE, fld.Name = AUDIT_MODIFIED_BY, _
                          fld.Name = "AccessTS", fld.Name = "SSMA_TimeStamp", _
                          fld.Name = "ValidFrom", fld.Name = "ValidTo"
-                        isAuditable = False
+                        booAuditable = False
                     ' [SCAFFOLD] The table's own primary key. Its value is already on every
                     '            log row in tblAuditLog.PrimaryKey, which is what identifies
                     '            the record; a field row here would store the same value a
                     '            second time (schema Business Rule 5). A developer can flip
                     '            it on afterward if they want that.
-                    Case isPK
-                        isAuditable = False
+                    Case booPK
+                        booAuditable = False
                     ' [BUSINESS LOGIC] Attachment and calculated fields, which are never
                     '            audited on any build — see IsUnauditableFieldType for why
                     '            each one is impossible or pointless rather than merely
@@ -430,18 +439,18 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
                     '            table is meant to be edited and a switch that can be turned
                     '            back on will be.
                     Case IsUnauditableFieldType(fld)
-                        isAuditable = False
+                        booAuditable = False
                     Case Else
-                        isAuditable = bDefaultAuditable
+                        booAuditable = booDefaultAuditable
                 End Select
 
                 ' [STANDARDS — query-style.md] inline INSERT kept from the working source
-                sSql = "INSERT INTO tblAuditLogConfig " & _
+                strSQL = "INSERT INTO tblAuditLogConfig " & _
                     "(TableName, FieldName, FieldPosition, DataType, IsPrimaryKey, IsAuditable) " & _
                     "VALUES ('" & tdef.Name & "', '" & fld.Name & "', " & fld.OrdinalPosition & _
-                    ", " & fld.Type & ", " & isPK & ", " & isAuditable & ")"
-                db.Execute sSql, dbFailOnError
-                lRowCount = lRowCount + 1
+                    ", " & fld.Type & ", " & booPK & ", " & booAuditable & ")"
+                db.Execute strSQL, dbFailOnError
+                lngRowCount = lngRowCount + 1
             Next fld
         End If
     Next tdef
@@ -450,9 +459,9 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
     '            either way; what differs is that "0 field row(s) written", phrased like a
     '            successful run and shown with the same icon, reads as success — and the two
     '            steps after this one then report success as well, on nothing at all.
-    If lTablesInScope = 0 Then
-        bFailed = True
-        sReport = "Stopped. No table in this file is in scope, so nothing was written to " & _
+    If lngTablesInScope = 0 Then
+        booFailed = True
+        strReport = "Stopped. No table in this file is in scope, so nothing was written to " & _
             "tblAuditLogConfig and nothing has been built." & vbCrLf & vbCrLf & _
             "The scope setting at the top of this module is """ & AUDIT_SCOPE_MODE & """:" & vbCrLf & _
             "  List - only the tables named in AUDIT_SCOPE_LIST." & vbCrLf & _
@@ -462,36 +471,36 @@ Public Function Three_PopulateConfigTable(Optional bDefaultAuditable As Boolean 
         GoTo Cleanup
     End If
 
-    sReport = "Table list built: " & lRowCount & " field row(s) written to tblAuditLogConfig." & _
+    strReport = "Table list built: " & lngRowCount & " field row(s) written to tblAuditLogConfig." & _
         vbCrLf & "Open tblAuditLogConfig and check the IsAuditable switches before you run " & _
         "the next step."
 
     ' [SCAFFOLD] A table the developer named by hand and did not get. Said here rather than
     '            left to be noticed, because the whole point of naming tables one at a time
     '            is that the developer decided which ones matter.
-    If Len(sLinkedNamed) > 0 Then
-        sReport = sReport & vbCrLf & vbCrLf & _
+    If Len(strLinkedNamed) > 0 Then
+        strReport = strReport & vbCrLf & vbCrLf & _
             "These tables are named in AUDIT_SCOPE_LIST but are linked to another file, so " & _
             "they were left out. Tracking attaches to the table itself and has to be built " & _
-            "in the file where the table really lives:" & vbCrLf & sLinkedNamed
+            "in the file where the table really lives:" & vbCrLf & strLinkedNamed
     End If
 
 Cleanup:
-    Set pkField = Nothing
+    Set fldPrimaryKey = Nothing
     Set idx = Nothing
     Set fld = Nothing
     Set tdef = Nothing
     Set db = Nothing
-    Three_PopulateConfigTable = sReport
+    Three_PopulateConfigTable = strReport
     ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
     '            both. Building the report first and showing it here is what prevents that.
-    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    If Not booSilent Then MsgBox strReport, IIf(booFailed, vbCritical, vbInformation)
     Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
-    bFailed = True
-    sReport = "ERROR populating config: " & Err.Number & " - " & Err.Description
+    booFailed = True
+    strReport = "ERROR populating config: " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
 End Function

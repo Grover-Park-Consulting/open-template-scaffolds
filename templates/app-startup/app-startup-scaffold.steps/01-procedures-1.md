@@ -97,34 +97,34 @@ Public Function EnsureBackEndLink() As Boolean
     '              b. the current links work   -> record where they point, carry on
     '              c. the remembered path works -> relink to it silently, carry on
     '              d. neither works            -> tell the user, let them find the file
-    Dim sCurrentPath As String
-    Dim sStoredPath  As String
-    Dim sNewPath     As String
+    Dim strCurrentPath As String
+    Dim strStoredPath  As String
+    Dim strNewPath     As String
 
     On Error GoTo errHandler
 
     ' (a) A single-file database has no file links. Not an error - there is nothing to check.
-    sCurrentPath = CurrentBackEndPath()
-    If Len(sCurrentPath) = 0 Then
+    strCurrentPath = CurrentBackEndPath()
+    If Len(strCurrentPath) = 0 Then
         EnsureBackEndLink = True
         GoTo Cleanup
     End If
 
     ' (b) The links already work. Record where they point, so a later move has something
     '     to fall back on. This is what seeds the setting on a brand-new front end.
-    If BackEndIsReachable(sCurrentPath) Then
-        If LocalSettingValue(mstrBackEndPathSetting) <> sCurrentPath Then
-            SaveLocalSetting mstrBackEndPathSetting, sCurrentPath
+    If BackEndIsReachable(strCurrentPath) Then
+        If LocalSettingValue(mstrBackEndPathSetting) <> strCurrentPath Then
+            SaveLocalSetting mstrBackEndPathSetting, strCurrentPath
         End If
         EnsureBackEndLink = True
         GoTo Cleanup
     End If
 
     ' (c) The links are stale. Try the path we remember from last time.
-    sStoredPath = LocalSettingValue(mstrBackEndPathSetting)
-    If Len(sStoredPath) > 0 And sStoredPath <> sCurrentPath Then
-        If BackEndIsReachable(sStoredPath) Then
-            If RelinkAllTables(sStoredPath, sCurrentPath) Then
+    strStoredPath = LocalSettingValue(mstrBackEndPathSetting)
+    If Len(strStoredPath) > 0 And strStoredPath <> strCurrentPath Then
+        If BackEndIsReachable(strStoredPath) Then
+            If RelinkAllTables(strStoredPath, strCurrentPath) Then
                 EnsureBackEndLink = True
                 GoTo Cleanup
             End If
@@ -135,12 +135,12 @@ Public Function EnsureBackEndLink() As Boolean
     '     whoever has to sort this out, and it costs nothing to include.
     ' [BUSINESS LOGIC] substitute your application's name for "This application".
     MsgBox "This application cannot find its data file." & vbCrLf & vbCrLf & _
-           "It looked here:" & vbCrLf & sCurrentPath & vbCrLf & vbCrLf & _
+           "It looked here:" & vbCrLf & strCurrentPath & vbCrLf & vbCrLf & _
            "Click OK and choose the data file to continue.", _
            vbExclamation, "Data file not found"
 
-    sNewPath = AskUserForBackEnd()
-    If Len(sNewPath) = 0 Then
+    strNewPath = AskUserForBackEnd()
+    If Len(strNewPath) = 0 Then
         MsgBox "No data file was chosen, so the application cannot continue." & vbCrLf & _
                "Ask whoever looks after this application where the data file has moved to.", _
                vbExclamation, "Data file not found"
@@ -150,21 +150,21 @@ Public Function EnsureBackEndLink() As Boolean
     ' The guard that matters. A file picker will happily hand back last year's backup, or
     ' a copy sitting on this one machine - and everything would then work, quietly, against
     ' the wrong data. Check it is the right file before connecting anything to it.
-    If Not BackEndIsReachable(sNewPath) Then
-        MsgBox "That file is not this application's data file:" & vbCrLf & sNewPath & vbCrLf & vbCrLf & _
+    If Not BackEndIsReachable(strNewPath) Then
+        MsgBox "That file is not this application's data file:" & vbCrLf & strNewPath & vbCrLf & vbCrLf & _
                "Nothing has been changed.", vbExclamation, "Wrong file"
         GoTo Cleanup
     End If
 
-    If Not RelinkAllTables(sNewPath, sCurrentPath) Then
-        MsgBox "The tables could not be reconnected to:" & vbCrLf & sNewPath, _
+    If Not RelinkAllTables(strNewPath, strCurrentPath) Then
+        MsgBox "The tables could not be reconnected to:" & vbCrLf & strNewPath, _
                vbExclamation, "Could not reconnect"
         GoTo Cleanup
     End If
 
     ' Remember it only now - after a relink that actually worked. A remembered bad path is
     ' worse than no remembered path, because it gets tried first on every future open.
-    SaveLocalSetting mstrBackEndPathSetting, sNewPath
+    SaveLocalSetting mstrBackEndPathSetting, strNewPath
     EnsureBackEndLink = True
 
 Cleanup:
@@ -187,8 +187,8 @@ Public Function EnsureAppFolders() As Boolean
     '            folder on the first run and verifies it on every open after that.
     ' [STANDARDS - startup-conventions.md] the two kinds of folder are ensured DIFFERENTLY,
     '            and getting this backwards fails silently. See the two blocks below.
-    Dim sSharedFolder As String
-    Dim sLocalFolder  As String
+    Dim strSharedFolder As String
+    Dim strLocalFolder  As String
 
     On Error GoTo errHandler
 
@@ -200,13 +200,13 @@ Public Function EnsureAppFolders() As Boolean
     ' an error.
     ' [BUSINESS LOGIC] read each shared folder's absolute path from the settings table in
     '            the back end - e.g. tblAppSetting.OfficialPhotoFolder.
-    ' >>> sSharedFolder = <the shared folder setting> per query-style.md <<<
-    sSharedFolder = vbNullString
+    ' >>> strSharedFolder = <the shared folder setting> per query-style.md <<<
+    strSharedFolder = vbNullString
 
-    If Len(sSharedFolder) > 0 Then
-        If Len(Dir$(sSharedFolder, vbDirectory)) = 0 Then
+    If Len(strSharedFolder) > 0 Then
+        If Len(Dir$(strSharedFolder, vbDirectory)) = 0 Then
             MsgBox "The shared folder this application needs cannot be reached:" & vbCrLf & _
-                   sSharedFolder & vbCrLf & vbCrLf & _
+                   strSharedFolder & vbCrLf & vbCrLf & _
                    "Files stored there will not open until it is available.", _
                    vbExclamation, "Shared folder not reachable"
             GoTo Cleanup
@@ -218,9 +218,9 @@ Public Function EnsureAppFolders() As Boolean
     ' a local log. One per front end is correct, so a relative path is right for them.
     ' MkDir creates ONE level only: a folder two levels deep needs one MkDir per level.
     ' [BUSINESS LOGIC] one block per per-user folder the application uses.
-    sLocalFolder = CurrentProject.Path & "\Exports"
-    If Len(Dir$(sLocalFolder, vbDirectory)) = 0 Then
-        MkDir sLocalFolder
+    strLocalFolder = CurrentProject.Path & "\Exports"
+    If Len(Dir$(strLocalFolder, vbDirectory)) = 0 Then
+        MkDir strLocalFolder
     End If
 
     EnsureAppFolders = True

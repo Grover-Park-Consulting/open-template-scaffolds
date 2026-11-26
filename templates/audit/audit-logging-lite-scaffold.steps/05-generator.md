@@ -17,7 +17,7 @@ Re-runnable: reloading a table's macro XML replaces what was there (schema Busin
 (`OK`, `SKIPPED`, or `ERROR: ...`), the same detail `CreateAllDataMacros` sends to `Debug.Print`.
 Call it as `sResult = Four_GenerateAllAuditDataMacros(True)` to read that report directly with no
 dialog, so a script or an AI assistant facilitating the build can see which tables actually
-succeeded without adding a diagnostic wrapper of its own. `bSilent` is passed down into
+succeeded without adding a diagnostic wrapper of its own. `booSilent` is passed down into
 `CreateAllDataMacros`, so a per-table error can't strand an automated caller either.
 
 **The summary counts outcomes, not attempts.** A table that fails is caught inside
@@ -39,80 +39,81 @@ were seeded in step 3, and between step 3 and step 4 the developer is expected t
 a macro set that does not work.
 
 ```vba
-Public Function Four_GenerateAllAuditDataMacros(Optional bSilent As Boolean = False) As String
+Public Function Four_GenerateAllAuditDataMacros(Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Generate and attach audit Data Macros for every configured table.
     '            Returns a per-table report so a caller — human or automated — can see exactly
-    '            what happened to each table. Pass bSilent:=True to suppress every MsgBox,
+    '            what happened to each table. Pass booSilent:=True to suppress every MsgBox,
     '            including the per-table ones raised inside CreateAllDataMacros.
     Dim db As DAO.Database
-    Dim rs As DAO.Recordset
+    Dim rst As DAO.Recordset
     Dim dictTables As Object          ' Scripting.Dictionary, late-bound
-    Dim sTableName As String
-    Dim sFieldName As String
-    Dim lFieldDataType As Long
-    Dim bFieldIsPK As Boolean
-    Dim bFieldIsAuditable As Boolean
+    Dim strTableName As String
+    Dim strFieldName As String
+    Dim lngFieldDataType As Long
+    Dim booFieldIsPK As Boolean
+    Dim booFieldIsAuditable As Boolean
     Dim fieldList As Collection
     Dim fieldInfo As Variant
     Dim fldLive As DAO.Field
-    Dim sTempPath As String
-    Dim lTableCount As Long
-    Dim lBuiltCount As Long
-    Dim lSkipCount As Long
-    Dim lFailCount As Long
+    Dim tdfLive As DAO.TableDef
+    Dim strTempPath As String
+    Dim lngTableCount As Long
+    Dim lngBuiltCount As Long
+    Dim lngSkipCount As Long
+    Dim lngFailCount As Long
     Dim vCurrentTable As Variant
-    Dim sTableResult As String
-    Dim sSummary As String
-    Dim sReport As String
-    Dim sOpen As String
+    Dim strTableResult As String
+    Dim strSummary As String
+    Dim strReport As String
+    Dim strOpen As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
     Set dictTables = CreateObject("Scripting.Dictionary")
-    sReport = ""
+    strReport = ""
 
     ' [SCAFFOLD] This is the step that actually fails on an open object, because it opens each
     '            table in design view to attach the macros. Stopping here costs one message;
     '            carrying on costs a partial run that has to be diagnosed from Access's own
     '            lock error. Asked again rather than relying on One_CheckAuditReadiness, which
     '            may have run some time ago and is optional on Path A.
-    sOpen = ListOpenObjects()
-    If Len(sOpen) > 0 Then
-        sReport = "Stopped before anything was changed. Something in this database is " & _
-            "still open:" & vbCrLf & vbCrLf & sOpen & vbCrLf & _
+    strOpen = ListOpenObjects()
+    If Len(strOpen) > 0 Then
+        strReport = "Stopped before anything was changed. Something in this database is " & _
+            "still open:" & vbCrLf & vbCrLf & strOpen & vbCrLf & _
             "Close it and run this again. Everything has to stay closed until the whole " & _
             "run is finished, not just when it starts."
-        If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
-        Four_GenerateAllAuditDataMacros = sReport
+        If Not booSilent Then MsgBox strReport, vbExclamation, "Close everything first"
+        Four_GenerateAllAuditDataMacros = strReport
         GoTo Cleanup
     End If
 
     ' Read configuration and group fields by table, in field order. All rows come along —
     ' the PK row is needed for plumbing even if its IsAuditable flag was flipped; the
     ' builders skip non-auditable fields when emitting audit actions.
-    Set rs = db.OpenRecordset( _
+    Set rst = db.OpenRecordset( _
         "SELECT TableName, FieldName, DataType, IsPrimaryKey, IsAuditable " & _
         "FROM tblAuditLogConfig ORDER BY TableName, FieldPosition", dbOpenSnapshot)
 
-    Do While Not rs.EOF
-        sTableName = Nz(rs!TableName, "")
-        sFieldName = Nz(rs!FieldName, "")
-        lFieldDataType = Nz(rs!DataType, 0)
-        bFieldIsPK = Nz(rs!IsPrimaryKey, False)
-        bFieldIsAuditable = Nz(rs!IsAuditable, False)
+    Do While Not rst.EOF
+        strTableName = Nz(rst!TableName, "")
+        strFieldName = Nz(rst!FieldName, "")
+        lngFieldDataType = Nz(rst!DataType, 0)
+        booFieldIsPK = Nz(rst!IsPrimaryKey, False)
+        booFieldIsAuditable = Nz(rst!IsAuditable, False)
 
         ' [SCAFFOLD] Hard guard above the flags: the system tables never get macros
         '            (schema Business Rule 5), whatever their config rows say.
-        If sTableName <> "tblAuditLog" _
-            And sTableName <> "tblLongTextBackup" _
-            And sTableName <> "tblAuditLogConfig" _
-            And sTableName <> "" And sFieldName <> "" Then
+        If strTableName <> "tblAuditLog" _
+            And strTableName <> "tblLongTextBackup" _
+            And strTableName <> "tblAuditLogConfig" _
+            And strTableName <> "" And strFieldName <> "" Then
 
-            If Not dictTables.Exists(sTableName) Then
+            If Not dictTables.Exists(strTableName) Then
                 Set fieldList = New Collection
-                dictTables.Add sTableName, fieldList
+                dictTables.Add strTableName, fieldList
             Else
-                Set fieldList = dictTables(sTableName)
+                Set fieldList = dictTables(strTableName)
             End If
             ' [SCAFFOLD] Hard guard above the flags, on the field this time. tblAuditLogConfig
             '            exists to be edited, so a switch seeded off in step 3 may well be on
@@ -121,51 +122,57 @@ Public Function Four_GenerateAllAuditDataMacros(Optional bSilent As Boolean = Fa
             '            function step 3 asked rather than trusting the row. A field that has
             '            since been deleted leaves fldLive Nothing and is simply not enforced;
             '            the builders skip a field they cannot resolve anyway.
-            If bFieldIsAuditable Then
+            If booFieldIsAuditable Then
+                ' Walk to the field: a table or field that is gone leaves fldLive Nothing.
                 Set fldLive = Nothing
-                On Error Resume Next
-                Set fldLive = db.TableDefs(sTableName).Fields(sFieldName)
-                On Error GoTo errHandler
+                For Each tdfLive In db.TableDefs
+                    If tdfLive.Name = strTableName Then
+                        For Each fldLive In tdfLive.Fields
+                            If fldLive.Name = strFieldName Then Exit For
+                        Next fldLive
+                        Exit For
+                    End If
+                Next tdfLive
                 If Not fldLive Is Nothing Then
-                    If IsUnauditableFieldType(fldLive) Then bFieldIsAuditable = False
+                    If IsUnauditableFieldType(fldLive) Then booFieldIsAuditable = False
                 End If
             End If
 
             ' Field info as array: (FieldName, DataType, IsPrimaryKey, IsAuditable)
-            fieldInfo = Array(sFieldName, lFieldDataType, bFieldIsPK, bFieldIsAuditable)
+            fieldInfo = Array(strFieldName, lngFieldDataType, booFieldIsPK, booFieldIsAuditable)
             fieldList.Add fieldInfo
         End If
-        rs.MoveNext
+        rst.MoveNext
     Loop
-    rs.Close
+    rst.Close
 
     ' [SCAFFOLD] An empty config table is a stop. "0 table(s) processed: 0 built" is accurate
     '            and still reads as a run that finished, which is the reading that lets a
     '            build with nothing in it look like a build.
     If dictTables.Count = 0 Then
-        sReport = "Stopped. There is nothing to build - no table in tblAuditLogConfig has " & _
+        strReport = "Stopped. There is nothing to build - no table in tblAuditLogConfig has " & _
             "any field switched on." & vbCrLf & vbCrLf & _
             "Run Three_PopulateConfigTable, then open tblAuditLogConfig and switch on the " & _
             "fields you want a history of. If that table is empty rather than switched " & _
             "off, no table in this file was in scope: check the scope setting at the top " & _
             "of this module. Nothing has been changed."
-        If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing to build"
-        Four_GenerateAllAuditDataMacros = sReport
+        If Not booSilent Then MsgBox strReport, vbExclamation, "Nothing to build"
+        Four_GenerateAllAuditDataMacros = strReport
         GoTo Cleanup
     End If
 
-    sTempPath = Environ("TEMP") & "\"
+    strTempPath = Environ("TEMP") & "\"
 
-    lTableCount = 0
-    lBuiltCount = 0
-    lSkipCount = 0
-    lFailCount = 0
+    lngTableCount = 0
+    lngBuiltCount = 0
+    lngSkipCount = 0
+    lngFailCount = 0
     For Each vCurrentTable In dictTables.Keys
-        sTableName = CStr(vCurrentTable)
-        Set fieldList = dictTables(sTableName)
-        sTableResult = CreateAllDataMacros(sTableName, fieldList, sTempPath, bSilent)
-        sReport = sReport & sTableName & ": " & sTableResult & vbCrLf
-        lTableCount = lTableCount + 1
+        strTableName = CStr(vCurrentTable)
+        Set fieldList = dictTables(strTableName)
+        strTableResult = CreateAllDataMacros(strTableName, fieldList, strTempPath, booSilent)
+        strReport = strReport & strTableName & ": " & strTableResult & vbCrLf
+        lngTableCount = lngTableCount + 1
         ' [SCAFFOLD] Count what actually happened, not how many tables were attempted. A
         '            per-table error is caught inside CreateAllDataMacros and the loop
         '            carries on, which is right — one blocked table should not cost the
@@ -173,44 +180,44 @@ Public Function Four_GenerateAllAuditDataMacros(Optional bSilent As Boolean = Fa
         '            about how many were built, and a summary reporting the first as though
         '            it were the second tells the developer a partial run succeeded.
         Select Case True
-            Case Left$(sTableResult, 5) = "ERROR"
-                lFailCount = lFailCount + 1
-            Case Left$(sTableResult, 7) = "SKIPPED"
-                lSkipCount = lSkipCount + 1
+            Case Left$(strTableResult, 5) = "ERROR"
+                lngFailCount = lngFailCount + 1
+            Case Left$(strTableResult, 7) = "SKIPPED"
+                lngSkipCount = lngSkipCount + 1
             Case Else
-                lBuiltCount = lBuiltCount + 1
+                lngBuiltCount = lngBuiltCount + 1
         End Select
     Next vCurrentTable
 
-    sSummary = lTableCount & " table(s) processed: " & lBuiltCount & " built"
-    If lSkipCount > 0 Then sSummary = sSummary & ", " & lSkipCount & " skipped"
-    sSummary = sSummary & ", " & lFailCount & " failed."
+    strSummary = lngTableCount & " table(s) processed: " & lngBuiltCount & " built"
+    If lngSkipCount > 0 Then strSummary = strSummary & ", " & lngSkipCount & " skipped"
+    strSummary = strSummary & ", " & lngFailCount & " failed."
     ' [SCAFFOLD] On a failure, say what state the failed tables are in and what to do — the
     '            developer is reading this in a dialog, not in the report, and the commonest
     '            cause by a distance is an object left open in the database.
-    If lFailCount > 0 Then
-        sSummary = sSummary & vbCrLf & vbCrLf & _
+    If lngFailCount > 0 Then
+        strSummary = strSummary & vbCrLf & vbCrLf & _
             "A table that failed almost always still has the Data Macros it had before, and " & _
             "where it had any, that set is saved in the DataMacroBackups folder beside this " & _
             "database. The usual cause is something left open: close every table, form, " & _
             "report and query in this database, then run this again. It is safe to run again."
     End If
-    sReport = sSummary & vbCrLf & vbCrLf & sReport
+    strReport = strSummary & vbCrLf & vbCrLf & strReport
 
-    If Not bSilent Then MsgBox sSummary, IIf(lFailCount > 0, vbExclamation, vbInformation)
-    Four_GenerateAllAuditDataMacros = sReport
+    If Not booSilent Then MsgBox strSummary, IIf(lngFailCount > 0, vbExclamation, vbInformation)
+    Four_GenerateAllAuditDataMacros = strReport
 
 Cleanup:
     Set fldLive = Nothing
-    Set rs = Nothing
+    Set rst = Nothing
     Set db = Nothing
     Set dictTables = Nothing
     Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
-    Four_GenerateAllAuditDataMacros = sReport & "ERROR: " & Err.Number & " - " & Err.Description
-    If Not bSilent Then MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
+    Four_GenerateAllAuditDataMacros = strReport & "ERROR: " & Err.Number & " - " & Err.Description
+    If Not booSilent Then MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
     Resume
 End Function
@@ -239,7 +246,7 @@ produces the pre-audit name, which never claims a file holds less than it does, 
 macro set in place rather than stripping it.
 
 ```vba
-Public Function MacroBackupIsOurs(sBackupPath As String) As Boolean
+Public Function MacroBackupIsOurs(strBackupPath As String) As Boolean
     ' [SCAFFOLD] Recognition only. This never backs anything up. It answers whether a macro
     '            set is one this generator wrote; the callers decide what to do about it.
     '            The test is the mark every generated macro carries in a <Comment>, never a
@@ -253,21 +260,21 @@ Public Function MacroBackupIsOurs(sBackupPath As String) As Boolean
     '            answer, not a failure, and the caller has a backup to name either way.
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
     Dim tsBackup As Object
-    Dim sContent As String
+    Dim strContent As String
 
-    sContent = ""
+    strContent = ""
     On Error Resume Next
     Set fso = CreateObject("Scripting.FileSystemObject")
     ' 1 = ForReading, -1 = TristateTrue (Unicode) — SaveAsText writes UTF-16.
-    Set tsBackup = fso.OpenTextFile(sBackupPath, 1, False, -1)
-    sContent = tsBackup.ReadAll
+    Set tsBackup = fso.OpenTextFile(strBackupPath, 1, False, -1)
+    strContent = tsBackup.ReadAll
     tsBackup.Close
     On Error GoTo 0
 
     Set tsBackup = Nothing
     Set fso = Nothing
 
-    MacroBackupIsOurs = (InStr(1, sContent, AUDIT_MACRO_MARKER, vbBinaryCompare) > 0)
+    MacroBackupIsOurs = (InStr(1, strContent, AUDIT_MACRO_MARKER, vbBinaryCompare) > 0)
 End Function
 ```
 
@@ -286,67 +293,67 @@ for a developer who wants to strip one table's audit macros by hand without touc
 table — the way `BackupAndRemoveAllDataMacros` is the tool for stripping all of them.
 
 ```vba
-Public Function RemoveDataMacrosForTable(ByVal sTableName As String) As String
+Public Function RemoveDataMacrosForTable(ByVal strTableName As String) As String
     ' [SCAFFOLD] Strip one table's Data Macros, but only if they are this generator's own —
     '            same recognition and backup technique as BackupAndRemoveAllDataMacros, scoped
     '            to a single table. Returns "OK ...", "SKIPPED ...", or "ERROR: ...".
     Dim db As DAO.Database
-    Dim rsCheck As DAO.Recordset
-    Dim bHasMacros As Boolean
-    Dim sBackupFolder As String
-    Dim sBackupPath As String
-    Dim sEmptyPath As String
+    Dim rstCheck As DAO.Recordset
+    Dim booHasMacros As Boolean
+    Dim strBackupFolder As String
+    Dim strBackupPath As String
+    Dim strEmptyPath As String
     Dim fso As Object
     Dim txtFile As Object
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    Set rsCheck = db.OpenRecordset( _
-        "SELECT Name FROM MSysObjects WHERE Name='" & sTableName & "' AND Type=1 AND Not IsNull(LvExtra)", _
+    Set rstCheck = db.OpenRecordset( _
+        "SELECT Name FROM MSysObjects WHERE Name='" & strTableName & "' AND Type=1 AND Not IsNull(LvExtra)", _
         dbOpenSnapshot)
-    bHasMacros = Not rsCheck.EOF
-    rsCheck.Close
-    Set rsCheck = Nothing
+    booHasMacros = Not rstCheck.EOF
+    rstCheck.Close
+    Set rstCheck = Nothing
 
-    If Not bHasMacros Then
-        RemoveDataMacrosForTable = "SKIPPED - " & sTableName & " carries no Data Macros"
+    If Not booHasMacros Then
+        RemoveDataMacrosForTable = "SKIPPED - " & strTableName & " carries no Data Macros"
         GoTo Cleanup
     End If
 
-    sBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
-    If Dir(sBackupFolder, vbDirectory) = "" Then MkDir sBackupFolder
-    sBackupPath = sBackupFolder & sTableName & "_PreRemoval_" & Format(Now(), "yyyymmdd_hhnnss") & ".xml"
-    Application.SaveAsText acTableDataMacro, sTableName, sBackupPath
+    strBackupFolder = CurrentProject.Path & "\DataMacroBackups\"
+    If Dir(strBackupFolder, vbDirectory) = "" Then MkDir strBackupFolder
+    strBackupPath = strBackupFolder & strTableName & "_PreRemoval_" & Format(Now(), "yyyymmdd_hhnnss") & ".xml"
+    Application.SaveAsText acTableDataMacro, strTableName, strBackupPath
 
     ' [SCAFFOLD] Same guard as BackupAndRemoveAllDataMacros: a macro set that is not this
     '            generator's own is backed up (so the developer has a record) and left in
     '            place. Business logic of the developer's own is not this tool's to throw away.
-    If Not MacroBackupIsOurs(sBackupPath) Then
-        RemoveDataMacrosForTable = "SKIPPED - " & sTableName & _
-            "'s Data Macros are not this generator's own work (backed up to " & sBackupPath & _
+    If Not MacroBackupIsOurs(strBackupPath) Then
+        RemoveDataMacrosForTable = "SKIPPED - " & strTableName & _
+            "'s Data Macros are not this generator's own work (backed up to " & strBackupPath & _
             " and left in place)"
         GoTo Cleanup
     End If
 
-    sEmptyPath = Environ("TEMP") & "\" & sTableName & "_EmptyDataMacros.xml"
+    strEmptyPath = Environ("TEMP") & "\" & strTableName & "_EmptyDataMacros.xml"
     Set fso = CreateObject("Scripting.FileSystemObject")
-    Set txtFile = fso.CreateTextFile(sEmptyPath, True, True)
+    Set txtFile = fso.CreateTextFile(strEmptyPath, True, True)
     txtFile.Write "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>" & _
         "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application""></DataMacros>"
     txtFile.Close
     Set txtFile = Nothing
 
-    DoCmd.OpenTable sTableName, acViewDesign, acHidden
-    Application.LoadFromText acTableDataMacro, sTableName, sEmptyPath
-    DoCmd.Close acTable, sTableName, acSaveYes
-    fso.DeleteFile sEmptyPath
+    DoCmd.OpenTable strTableName, acViewDesign, acHidden
+    Application.LoadFromText acTableDataMacro, strTableName, strEmptyPath
+    DoCmd.Close acTable, strTableName, acSaveYes
+    fso.DeleteFile strEmptyPath
 
-    RemoveDataMacrosForTable = "OK - Data Macros removed from " & sTableName & " (backed up to " & sBackupPath & ")"
+    RemoveDataMacrosForTable = "OK - Data Macros removed from " & strTableName & " (backed up to " & strBackupPath & ")"
 
 Cleanup:
     On Error Resume Next
-    Set rsCheck = Nothing
+    Set rstCheck = Nothing
     Set txtFile = Nothing
     Set fso = Nothing
     Set db = Nothing

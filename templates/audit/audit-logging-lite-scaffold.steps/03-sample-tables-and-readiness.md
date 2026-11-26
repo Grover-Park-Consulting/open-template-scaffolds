@@ -32,34 +32,40 @@ It returns the same wording it shows on screen. Run it from the Immediate window
 which is what an automated caller needs, because nothing is there to click a dialog away.
 
 ```vba
-Public Function Zero_CreateSampleTables(Optional bSilent As Boolean = False) As String
+Public Function Zero_CreateSampleTables(Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Creates tblClient, tlkpTicketPriority, tblSupportTicket (schema template
     '            entities) and seeds tlkpTicketPriority. Path A (try-it-out build) only —
     '            skip this procedure for Path B (an existing accdb's own tables). Idempotent:
     '            each block is skipped if its table already exists.
-    '            Passing bSilent:=True suppresses the message box and returns the same text,
+    '            Passing booSilent:=True suppresses the message box and returns the same text,
     '            so a caller with no one at the keyboard does not hang on a dialog.
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.Field
     Dim idx As DAO.Index
     Dim rel As DAO.Relation
-    Dim sReport As String
-    Dim bFailed As Boolean
-    Dim sAuditUser As String
-    Dim sAuditNow As String
+    Dim lngRel As Long
+    Dim strReport As String
+    Dim booFailed As Boolean
+    Dim strAuditUser As String
+    Dim qdf As DAO.QueryDef
+    Dim varPriority As Variant
+    Dim lngSort As Long
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
     ' ========== tblClient ==========
-    On Error Resume Next
-    Set tdf = db.TableDefs("tblClient")
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = "tblClient" Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
         Debug.Print "tblClient already exists"
         GoTo CreateTicketPriority
     End If
-    On Error GoTo errHandler
 
     Set tdf = db.CreateTableDef("tblClient")
 
@@ -99,13 +105,16 @@ Public Function Zero_CreateSampleTables(Optional bSilent As Boolean = False) As 
 CreateTicketPriority:
     ' ========== tlkpTicketPriority ==========
     Set tdf = Nothing
-    On Error Resume Next
-    Set tdf = db.TableDefs("tlkpTicketPriority")
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = "tlkpTicketPriority" Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
         Debug.Print "tlkpTicketPriority already exists"
         GoTo CreateSupportTicket
     End If
-    On Error GoTo errHandler
 
     Set tdf = db.CreateTableDef("tlkpTicketPriority")
 
@@ -146,36 +155,43 @@ CreateTicketPriority:
     '            values have to be supplied here. They cannot be supplied as functions:
     '            the ACE engine, not VBA, evaluates the text of a db.Execute INSERT, and
     '            Environ() and AuditUser() are unknown to it ("Undefined function").
-    '            Resolve each value in VBA first, then concatenate it in as a literal.
-    sAuditUser = Environ$("USERNAME")
-    If Len(sAuditUser) = 0 Then sAuditUser = "Unknown"
-    sAuditNow = "#" & Format(Now(), "yyyy-mm-dd hh:nn:ss") & "#"
+    '            Resolve each value in VBA first and pass it as a parameter
+    '            (query-style.md): a user name with an apostrophe in it cannot break
+    '            the statement, and the date reads the same under any regional settings.
+    strAuditUser = Environ$("USERNAME")
+    If Len(strAuditUser) = 0 Then strAuditUser = "Unknown"
 
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
-        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('Low', 10, " & _
-        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
-        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('Normal', 20, " & _
-        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
-        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('High', 30, " & _
-        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
-    db.Execute "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
-        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") VALUES ('Urgent', 40, " & _
-        sAuditNow & ", '" & sAuditUser & "')", dbFailOnError
+    Set qdf = db.CreateQueryDef(vbNullString, _
+        "PARAMETERS [pName] Text(255), [pSort] Long, [pNow] DateTime, [pUser] Text(255); " & _
+        "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
+        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") " & _
+        "VALUES ([pName], [pSort], [pNow], [pUser])")
+    qdf.Parameters("pNow").Value = Now()
+    qdf.Parameters("pUser").Value = strAuditUser
+    lngSort = 0
+    For Each varPriority In Array("Low", "Normal", "High", "Urgent")
+        lngSort = lngSort + 10
+        qdf.Parameters("pName").Value = varPriority
+        qdf.Parameters("pSort").Value = lngSort
+        qdf.Execute dbFailOnError
+    Next varPriority
+    Set qdf = Nothing
 
     Debug.Print "tlkpTicketPriority created and seeded"
 
 CreateSupportTicket:
     ' ========== tblSupportTicket ==========
     Set tdf = Nothing
-    On Error Resume Next
-    Set tdf = db.TableDefs("tblSupportTicket")
+    ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
+    ' not an error, so nothing here needs trapping.
+    Set tdf = Nothing
+    For Each tdf In db.TableDefs
+        If tdf.Name = "tblSupportTicket" Then Exit For
+    Next tdf
     If Not tdf Is Nothing Then
         Debug.Print "tblSupportTicket already exists"
         GoTo CreateRelationships
     End If
-    On Error GoTo errHandler
 
     Set tdf = db.CreateTableDef("tblSupportTicket")
 
@@ -230,10 +246,13 @@ CreateSupportTicket:
 
 CreateRelationships:
     ' ========== Relationships (schema: enforced, no cascade) ==========
-    On Error Resume Next
-    db.Relations.Delete "tblClient_tblSupportTicket"
-    db.Relations.Delete "tlkpTicketPriority_tblSupportTicket"
-    On Error GoTo errHandler
+    ' Delete each only where it exists; walking backwards keeps the indexes valid.
+    For lngRel = db.Relations.Count - 1 To 0 Step -1
+        Select Case db.Relations(lngRel).Name
+            Case "tblClient_tblSupportTicket", "tlkpTicketPriority_tblSupportTicket"
+                db.Relations.Delete db.Relations(lngRel).Name
+        End Select
+    Next lngRel
 
     Set rel = db.CreateRelation("tblClient_tblSupportTicket", "tblClient", "tblSupportTicket", 0)
     Set fld = rel.CreateField("ClientID")
@@ -249,25 +268,26 @@ CreateRelationships:
 
     Debug.Print "Relationships created"
 
-    sReport = "Sample tables created. You're on Path A (try-it-out build) — nothing in your " & _
+    strReport = "Sample tables created. You're on Path A (try-it-out build) — nothing in your " & _
         "own database was touched."
 
 Cleanup:
+    Set qdf = Nothing
     Set fld = Nothing
     Set idx = Nothing
     Set rel = Nothing
     Set tdf = Nothing
     Set db = Nothing
-    Zero_CreateSampleTables = sReport
+    Zero_CreateSampleTables = strReport
     ' [SCAFFOLD] One message, whatever happened — the success text or the error text, never
     '            both. Building the report first and showing it here is what prevents that.
-    If Not bSilent Then MsgBox sReport, IIf(bFailed, vbCritical, vbInformation)
+    If Not booSilent Then MsgBox strReport, IIf(booFailed, vbCritical, vbInformation)
     Exit Function
 
 errHandler:
     ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
-    bFailed = True
-    sReport = "ERROR creating sample tables: " & Err.Number & " - " & Err.Description
+    booFailed = True
+    strReport = "ERROR creating sample tables: " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
 End Function
@@ -348,7 +368,7 @@ verdict. **The `True` is what suppresses the dialog**, not the assignment: VBA c
 a procedure was called as a function or as a statement.
 
 ```vba
-Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As String
+Public Function One_CheckAuditReadiness(Optional booSilent As Boolean = False) As String
     ' [SCAFFOLD] Read-only pre-flight check. Looks at the real table definitions (not the
     '            config table) so a multi-field primary key is never missed, and so this can
     '            run before anything at all is created. Run FIRST, before
@@ -356,40 +376,40 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
     '            around this system. On Path A run it after Zero_CreateSampleTables, which
     '            creates the tables it looks at; there it has nothing to find, because those
     '            tables were built to the shape this system needs.
-    '            Returns the report as a String. Pass bSilent:=True to suppress the MsgBox so
+    '            Returns the report as a String. Pass booSilent:=True to suppress the MsgBox so
     '            an automated caller is never left waiting on a dialog nobody can dismiss.
     Dim db As DAO.Database
     Dim tdef As DAO.TableDef
     Dim idx As DAO.Index
-    Dim lPkFieldCount As Long
-    Dim lPkFieldType As Long
-    Dim lProblemCount As Long
-    Dim lGuidKeyCount As Long
-    Dim lTablesInScope As Long
-    Dim sMsg As String
-    Dim sReport As String
-    Dim sOpen As String
+    Dim lngPkFieldCount As Long
+    Dim lngPkFieldType As Long
+    Dim lngProblemCount As Long
+    Dim lngGuidKeyCount As Long
+    Dim lngTablesInScope As Long
+    Dim strMsg As String
+    Dim strReport As String
+    Dim strOpen As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
-    lProblemCount = 0
-    lGuidKeyCount = 0
-    lTablesInScope = 0
-    sMsg = ""
+    lngProblemCount = 0
+    lngGuidKeyCount = 0
+    lngTablesInScope = 0
+    strMsg = ""
 
     ' [SCAFFOLD] The database has to be closed for the whole run, not only at the start, so
     '            every step that needs it asks again rather than trusting an earlier answer.
     '            Between the numbered steps the developer is expected to go and edit the
     '            config table, and opening something to look at it is the ordinary thing to
     '            do next.
-    sOpen = ListOpenObjects()
-    If Len(sOpen) > 0 Then
-        sReport = "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
-            sOpen & vbCrLf & _
+    strOpen = ListOpenObjects()
+    If Len(strOpen) > 0 Then
+        strReport = "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
+            strOpen & vbCrLf & _
             "Close it and run this again. Everything has to stay closed until the whole " & _
             "run is finished, not just when it starts."
-        If Not bSilent Then MsgBox sReport, vbExclamation, "Close everything first"
-        One_CheckAuditReadiness = sReport
+        If Not booSilent Then MsgBox strReport, vbExclamation, "Close everything first"
+        One_CheckAuditReadiness = strReport
         GoTo Cleanup
     End If
 
@@ -402,42 +422,42 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
             And tdef.Name <> "tblLongTextBackup" _
             And tdef.Name <> "tblAuditLogConfig" Then
 
-            lTablesInScope = lTablesInScope + 1
-            lPkFieldCount = 0
-            lPkFieldType = -1
+            lngTablesInScope = lngTablesInScope + 1
+            lngPkFieldCount = 0
+            lngPkFieldType = -1
             For Each idx In tdef.Indexes
                 If idx.Primary Then
-                    lPkFieldCount = idx.Fields.Count
-                    If lPkFieldCount = 1 Then
-                        lPkFieldType = tdef.Fields(idx.Fields(0).Name).Type
+                    lngPkFieldCount = idx.Fields.Count
+                    If lngPkFieldCount = 1 Then
+                        lngPkFieldType = tdef.Fields(idx.Fields(0).Name).Type
                     End If
                 End If
             Next idx
 
-            If lPkFieldCount = 0 Then
-                lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — no primary key is set" & vbCrLf
+            If lngPkFieldCount = 0 Then
+                lngProblemCount = lngProblemCount + 1
+                strMsg = strMsg & tdef.Name & " — no primary key is set" & vbCrLf
                 Debug.Print tdef.Name & ": NOT READY — no primary key"
-            ElseIf lPkFieldCount > 1 Then
-                lProblemCount = lProblemCount + 1
-                sMsg = sMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
-                Debug.Print tdef.Name & ": NOT READY — primary key has " & lPkFieldCount & " fields"
-            ElseIf Not IsAuditableKeyType(lPkFieldType) Then
-                lProblemCount = lProblemCount + 1
-                If lPkFieldType = dbGUID Then
+            ElseIf lngPkFieldCount > 1 Then
+                lngProblemCount = lngProblemCount + 1
+                strMsg = strMsg & tdef.Name & " — primary key uses more than one field" & vbCrLf
+                Debug.Print tdef.Name & ": NOT READY — primary key has " & lngPkFieldCount & " fields"
+            ElseIf Not IsAuditableKeyType(lngPkFieldType) Then
+                lngProblemCount = lngProblemCount + 1
+                If lngPkFieldType = dbGUID Then
                     ' [BUSINESS LOGIC — schema Business Rule 4] Not a flat exclusion: this one is
                     ' the developer's to decide, and they can only decide it if they are told the
                     ' table exists. Counted separately so the report can raise the question.
-                    lGuidKeyCount = lGuidKeyCount + 1
-                    sMsg = sMsg & tdef.Name & " — primary key is a Replication ID, and this build " & _
+                    lngGuidKeyCount = lngGuidKeyCount + 1
+                    strMsg = strMsg & tdef.Name & " — primary key is a Replication ID, and this build " & _
                         "was not set up to audit those" & vbCrLf
                 Else
-                    sMsg = sMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, " & _
+                    strMsg = strMsg & tdef.Name & " — primary key is not an AutoNumber, Long Integer, " & _
                         "Integer or Byte field" & vbCrLf
                 End If
-                Debug.Print tdef.Name & ": NOT READY — primary key type is " & lPkFieldType
+                Debug.Print tdef.Name & ": NOT READY — primary key type is " & lngPkFieldType
             Else
-                If lPkFieldType = dbGUID Then lGuidKeyCount = lGuidKeyCount + 1
+                If lngPkFieldType = dbGUID Then lngGuidKeyCount = lngGuidKeyCount + 1
                 Debug.Print tdef.Name & ": ready"
             End If
         End If
@@ -447,22 +467,22 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
     '            ready" is true of an empty set and useless to the developer. This is the
     '            worse of the two places to report success on nothing, because it is the
     '            last thing asked before the tables are changed.
-    If lTablesInScope = 0 Then
-        sReport = "Stopped. No table in this file is in scope, so there was nothing to " & _
+    If lngTablesInScope = 0 Then
+        strReport = "Stopped. No table in this file is in scope, so there was nothing to " & _
             "check and there is nothing to build." & vbCrLf & vbCrLf & _
             "The scope setting at the top of modAddDataMacros does not match the tables in " & _
             "this file - it is set to """ & AUDIT_SCOPE_MODE & """. On the try-it-out path, " & _
             "run Zero_CreateSampleTables first: it creates the tables this looks at. " & _
             "Nothing has been changed."
-        If Not bSilent Then MsgBox sReport, vbExclamation, "Nothing is in scope"
-        One_CheckAuditReadiness = sReport
+        If Not booSilent Then MsgBox strReport, vbExclamation, "Nothing is in scope"
+        One_CheckAuditReadiness = strReport
         GoTo Cleanup
     End If
 
-    If lProblemCount = 0 Then
-        sReport = "Every table checked is ready. Safe to run Two_CreateAuditTables."
+    If lngProblemCount = 0 Then
+        strReport = "Every table checked is ready. Safe to run Two_CreateAuditTables."
     Else
-        sReport = lProblemCount & " table(s) are NOT ready yet:" & vbCrLf & vbCrLf & sMsg & vbCrLf & _
+        strReport = lngProblemCount & " table(s) are NOT ready yet:" & vbCrLf & vbCrLf & strMsg & vbCrLf & _
             "A table can be audited when it has one primary key field that is an AutoNumber, " & _
             "Long Integer, Integer or Byte — or a Replication ID, where this build was set up " & _
             "to audit those. Either change that table's primary key, or leave it out — set " & _
@@ -474,9 +494,9 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
     ' was actually found, and it has to be raised before Two_CreateAuditTables runs, because
     ' that is what builds the log's key column. Reported whether or not the setting is on:
     ' when it is off, a found key is exactly what the developer needs to be asked about.
-    If lGuidKeyCount > 0 Then
-        sReport = sReport & vbCrLf & vbCrLf & _
-            lGuidKeyCount & " table(s) have a Replication ID as their primary key. " & _
+    If lngGuidKeyCount > 0 Then
+        strReport = strReport & vbCrLf & vbCrLf & _
+            lngGuidKeyCount & " table(s) have a Replication ID as their primary key. " & _
             IIf(AUDIT_GUID_KEYS_AUDITED, _
                 "This build is set up to audit them, so the log's key column holds text. " & _
                 "Every key in the log is then text, the ordinary numbers included, so " & _
@@ -488,8 +508,8 @@ Public Function One_CheckAuditReadiness(Optional bSilent As Boolean = False) As 
                 "as text rather than by number.")
     End If
 
-    If Not bSilent Then MsgBox sReport, IIf(lProblemCount = 0, vbInformation, vbExclamation)
-    One_CheckAuditReadiness = sReport
+    If Not booSilent Then MsgBox strReport, IIf(lngProblemCount = 0, vbInformation, vbExclamation)
+    One_CheckAuditReadiness = strReport
 
 Cleanup:
     Set idx = Nothing
@@ -500,7 +520,7 @@ Cleanup:
 errHandler:
     ' [STANDARDS — error-handling.md] standard errHandler block
     One_CheckAuditReadiness = "Error checking audit readiness: " & Err.Number & " - " & Err.Description
-    If Not bSilent Then MsgBox One_CheckAuditReadiness, vbCritical
+    If Not booSilent Then MsgBox One_CheckAuditReadiness, vbCritical
     Resume Cleanup
     Resume
 End Function
@@ -532,9 +552,9 @@ Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
     '            declarations from Step 4's answer. The three exclusions below hold under
     '            every mode and are tested first, so no setting and no table list can let
     '            one of them in.
-    Dim sName As String
+    Dim strName As String
 
-    sName = tdef.Name
+    strName = tdef.Name
     IsAuditCandidateTable = False
 
     ' A linked table lives in another file. Access cannot attach a Data Macro to one, so it
@@ -542,18 +562,18 @@ Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
     If (tdef.Attributes And (dbAttachedTable Or dbAttachedODBC)) <> 0 Then Exit Function
 
     ' Access's own system tables are never touched.
-    If Left$(sName, 4) = "MSys" Then Exit Function
+    If Left$(strName, 4) = "MSys" Then Exit Function
 
     ' A USys table is the DEVELOPER's own hidden table, theirs to manage. In scope only where
     ' they opted it in themselves by naming it.
-    If Left$(sName, 4) = "USys" Then
-        IsAuditCandidateTable = IsNamedInScopeList(sName)
+    If Left$(strName, 4) = "USys" Then
+        IsAuditCandidateTable = IsNamedInScopeList(strName)
         Exit Function
     End If
 
     Select Case AUDIT_SCOPE_MODE
         Case "List"
-            IsAuditCandidateTable = IsNamedInScopeList(sName)
+            IsAuditCandidateTable = IsNamedInScopeList(strName)
         Case "All"
             IsAuditCandidateTable = True
         Case Else
@@ -579,8 +599,8 @@ names. Each name is trimmed, so a list typed with spaces after the semicolons st
 table name that itself contains spaces is unaffected.
 
 ```vba
-Private Function IsNamedInScopeList(sTableName As String) As Boolean
-    IsNamedInScopeList = IsNamedInList(AUDIT_SCOPE_LIST, sTableName)
+Private Function IsNamedInScopeList(strTableName As String) As Boolean
+    IsNamedInScopeList = IsNamedInList(AUDIT_SCOPE_LIST, strTableName)
 End Function
 ```
 
@@ -590,18 +610,18 @@ End Function
 `BuildBeforeChangeMacro`'s reading of `AUDIT_STAMP_LIST`.
 
 ```vba
-Private Function IsNamedInList(ByVal sList As String, ByVal sTableName As String) As Boolean
+Private Function IsNamedInList(ByVal strList As String, ByVal strTableName As String) As Boolean
     ' [SCAFFOLD] Exact match against one entry, never a partial one: "tblOrder" must not
     '            match "tblOrderLine".
     Dim vNames As Variant
     Dim i As Long
 
     IsNamedInList = False
-    If Len(sList) = 0 Then Exit Function
+    If Len(strList) = 0 Then Exit Function
 
-    vNames = Split(sList, ";")
+    vNames = Split(strList, ";")
     For i = LBound(vNames) To UBound(vNames)
-        If StrComp(Trim$(vNames(i)), sTableName, vbTextCompare) = 0 Then
+        If StrComp(Trim$(vNames(i)), strTableName, vbTextCompare) = 0 Then
             IsNamedInList = True
             Exit Function
         End If
@@ -623,10 +643,10 @@ built to hold text in the first place, so the two cannot disagree. Everything el
 keys made of more than one field, and numbers too large for a Long Integer — is out.
 
 ```vba
-Private Function IsAuditableKeyType(ByVal lFieldType As Long) As Boolean
+Private Function IsAuditableKeyType(ByVal lngFieldType As Long) As Boolean
     ' [BUSINESS LOGIC — schema Business Rule 4] The key types the log's key column can hold.
     '                 dbGUID is the only one the developer decides; the rest are fixed.
-    Select Case lFieldType
+    Select Case lngFieldType
         Case dbLong, dbInteger, dbByte
             IsAuditableKeyType = True
         Case dbGUID
@@ -667,21 +687,22 @@ Private Function IsUnauditableFieldType(fld As DAO.Field) As Boolean
     '                         record a change nobody made.
     '            No errHandler and therefore no line numbers: any error propagates to the
     '            caller, which is what should happen to a schema read this small.
-    Dim sExpression As String
+    Dim strExpression As String
+    Dim prp As DAO.Property
 
     If fld.Type = dbAttachment Then
         IsUnauditableFieldType = True
         Exit Function
     End If
 
-    ' A calculated field carries a non-empty Expression property. Reading a property that is
-    ' not there raises, so the probe is guarded and an unreadable field counts as ordinary.
-    sExpression = ""
-    On Error Resume Next
-    sExpression = fld.Properties("Expression").Value & ""
-    On Error GoTo 0
+    ' A calculated field carries a non-empty Expression property. Reading one that is not
+    ' there would raise, so the properties are walked instead; a field without one is ordinary.
+    strExpression = ""
+    For Each prp In fld.Properties
+        If prp.Name = "Expression" Then strExpression = prp.Value & "": Exit For
+    Next prp
 
-    IsUnauditableFieldType = (Len(sExpression) > 0)
+    IsUnauditableFieldType = (Len(strExpression) > 0)
 End Function
 ```
 
@@ -709,36 +730,36 @@ Public Function ListOpenObjects() As String
     '            No errHandler and therefore no line numbers: an object that cannot be asked
     '            is reported as not open, and the caller stops on whatever else it finds.
     Dim obj As Object
-    Dim sList As String
+    Dim strList As String
 
-    sList = ""
+    strList = ""
 
     On Error Resume Next
 
     For Each obj In CurrentProject.AllForms
-        If obj.IsLoaded Then sList = sList & "  Form: " & obj.Name & vbCrLf
+        If obj.IsLoaded Then strList = strList & "  Form: " & obj.Name & vbCrLf
     Next obj
 
     For Each obj In CurrentProject.AllReports
-        If obj.IsLoaded Then sList = sList & "  Report: " & obj.Name & vbCrLf
+        If obj.IsLoaded Then strList = strList & "  Report: " & obj.Name & vbCrLf
     Next obj
 
     For Each obj In CurrentData.AllTables
         If Left$(obj.Name, 4) <> "MSys" Then
             If SysCmd(acSysCmdGetObjectState, acTable, obj.Name) <> 0 Then
-                sList = sList & "  Table: " & obj.Name & vbCrLf
+                strList = strList & "  Table: " & obj.Name & vbCrLf
             End If
         End If
     Next obj
 
     For Each obj In CurrentData.AllQueries
         If SysCmd(acSysCmdGetObjectState, acQuery, obj.Name) <> 0 Then
-            sList = sList & "  Query: " & obj.Name & vbCrLf
+            strList = strList & "  Query: " & obj.Name & vbCrLf
         End If
     Next obj
 
     On Error GoTo 0
 
-    ListOpenObjects = sList
+    ListOpenObjects = strList
 End Function
 ```

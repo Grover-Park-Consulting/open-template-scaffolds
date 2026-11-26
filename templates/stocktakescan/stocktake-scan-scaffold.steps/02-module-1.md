@@ -23,15 +23,15 @@ thing a stocktake can find — leaves no row anywhere to report it.
 
 ```vba
 Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, _
-                                     Optional ByVal lConductedByEmployeeID As Long = 0) As Long
+                                     Optional ByVal lngConductedByEmployeeID As Long = 0) As Long
     ' [SCAFFOLD] Create a stocktake session and take its baseline; return StockTakeSessionID.
     '            ONE, TWO and THREE below run inside a single transaction — a session that failed
     '            partway through its baseline is a session with an incomplete baseline, which no
     '            later scan repairs, so all three either land together or not at all.
     Dim ws       As DAO.Workspace
     Dim db       As DAO.Database
-    Dim rs       As DAO.Recordset
-    Dim sSql     As String
+    Dim rst       As DAO.Recordset
+    Dim strSQL     As String
     Dim booInTrans As Boolean
 
     On Error GoTo errHandler
@@ -81,8 +81,8 @@ Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, 
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing: Set ws = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing: Set db = Nothing: Set ws = Nothing
     Exit Function
 
 errHandler:
@@ -97,17 +97,17 @@ End Function
 ### ProcessScan — `Public Sub` (entry point)
 
 ```vba
-Public Sub ProcessScan(ByVal lSessionID As Long, _
-                       ByVal sScanCode As String, _
-                       ByVal lScanQuantity As Long)
+Public Sub ProcessScan(ByVal lngSessionID As Long, _
+                       ByVal strScanCode As String, _
+                       ByVal lngScanQuantity As Long)
     ' [SCAFFOLD] Process one scan end to end for a session, inside one transaction: the scan row,
     '            the rollup, and the variance evaluation either all land or none do. See "Point of
     '            the transaction, and where it stops" below the code for what this buys and what it
     '            deliberately does not cover.
     Dim ws         As DAO.Workspace
     Dim db         As DAO.Database
-    Dim lProductID As Long
-    Dim lCountID   As Long
+    Dim lngProductID As Long
+    Dim lngCountID   As Long
     Dim booInTrans   As Boolean
 
     On Error GoTo errHandler
@@ -120,24 +120,24 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
     ws.BeginTrans
     booInTrans = True
 
-    lProductID = ResolveScanCode(sScanCode)
-    If lProductID = 0 Then
+    lngProductID = ResolveScanCode(strScanCode)
+    If lngProductID = 0 Then
         ' [BUSINESS LOGIC #2] unmatched code: record for review, no count line
-        RecordScan lSessionID, 0, sScanCode, lScanQuantity, db
+        RecordScan lngSessionID, 0, strScanCode, lngScanQuantity, db
         GoTo Commit
     End If
 
-    lCountID = EnsureCountLine(lSessionID, lProductID, db)
+    lngCountID = EnsureCountLine(lngSessionID, lngProductID, db)
     ' [BUSINESS LOGIC #2] RecordScan resolves Valid vs. Duplicate itself, via DetectDuplicateScan
-    RecordScan lSessionID, lCountID, sScanCode, lScanQuantity, db
+    RecordScan lngSessionID, lngCountID, strScanCode, lngScanQuantity, db
     ' [SCAFFOLD] RefreshCountRollup and EvaluateVariance both take db, not CurrentDb, and neither
     '            reads its numbers with a domain function (DSum/DLookup/DMax). A domain function
     '            runs on Access's own separate connection, outside the transaction this procedure
     '            just began, so it cannot see the StockTakeScan row RecordScan inserted moments ago
     '            — see each procedure's own note, and _materialization.md, "A domain function
     '            cannot see the work of the transaction it is called inside."
-    RefreshCountRollup lCountID, db
-    EvaluateVariance lCountID, db
+    RefreshCountRollup lngCountID, db
+    EvaluateVariance lngCountID, db
 
 Commit:
     ws.CommitTrans
@@ -177,11 +177,11 @@ template stops at one scan.
 ### ResolveScanCode — `Private Function` → `Long`
 
 ```vba
-Private Function ResolveScanCode(ByVal sScanCode As String) As Long
+Private Function ResolveScanCode(ByVal strScanCode As String) As Long
     ' [SCAFFOLD] Resolve a raw scan code to a ProductID; 0 = unmatched.
     Dim db   As DAO.Database
-    Dim rs   As DAO.Recordset
-    Dim sSql As String
+    Dim rst   As DAO.Recordset
+    Dim strSQL As String
 
     On Error GoTo errHandler
     ' [STANDARDS — error-handling.md, "Transaction guard"] CurrentDb is fine here: ProcessScan's
@@ -190,17 +190,17 @@ Private Function ResolveScanCode(ByVal sScanCode As String) As Long
     '            inside the same transaction, so every read and write in it uses one Database.
     Set db = CurrentDb
 
-    ' [BUSINESS LOGIC #2] match sScanCode against Products.SKUBarCode
+    ' [BUSINESS LOGIC #2] match strScanCode against Products.SKUBarCode
     ' >>> resolution query, written per query-style.md <<<
-    sSql = vbNullString
+    strSQL = vbNullString
 
-    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
-    If Not rs.EOF Then ResolveScanCode = rs!ProductID
+    Set rst = db.OpenRecordset(strSQL, dbOpenSnapshot)
+    If Not rst.EOF Then ResolveScanCode = rst!ProductID
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing: Set db = Nothing
     Exit Function
 
 errHandler:
@@ -212,8 +212,8 @@ End Function
 ### EnsureCountLine — `Private Function` → `Long`
 
 ```vba
-Private Function EnsureCountLine(ByVal lSessionID As Long, _
-                                 ByVal lProductID As Long, _
+Private Function EnsureCountLine(ByVal lngSessionID As Long, _
+                                 ByVal lngProductID As Long, _
                                  ByVal db As DAO.Database) As Long
     ' [SCAFFOLD] Find the count line for (session, product) or create it; return StockTakeCountID.
     ' [SCAFFOLD] db is passed in from ProcessScan's own transaction — do not Set db = CurrentDb
@@ -221,8 +221,8 @@ Private Function EnsureCountLine(ByVal lSessionID As Long, _
     '            visible to RecordScan/RefreshCountRollup/EvaluateVariance later in the same call,
     '            which only holds if every one of them is reading and writing through the one
     '            Database object the transaction was begun on.
-    Dim rs   As DAO.Recordset
-    Dim sSql As String
+    Dim rst   As DAO.Recordset
+    Dim strSQL As String
 
     On Error GoTo errHandler
 
@@ -233,19 +233,19 @@ Private Function EnsureCountLine(ByVal lSessionID As Long, _
     '            collide. It is NOT the place the baseline gets taken; a build that leans on it for
     '            that has no line for any product nobody scanned. See Business Rule 5.
     ' >>> lookup query for an existing line, per query-style.md <<<
-    sSql = vbNullString
-    Set rs = db.OpenRecordset(sSql, dbOpenDynaset)
+    strSQL = vbNullString
+    Set rst = db.OpenRecordset(strSQL, dbOpenDynaset)
 
-    If rs.EOF Then
+    If rst.EOF Then
         ' [BUSINESS LOGIC] create the line (count method = Scan); set EnsureCountLine = new StockTakeCountID
     Else
-        EnsureCountLine = rs!StockTakeCountID
+        EnsureCountLine = rst!StockTakeCountID
     End If
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing
     Exit Function
 
 errHandler:

@@ -296,9 +296,11 @@ database:
    engine doesn't recognize — `Environ()`, and most VBA-runtime functions — fails with
    **"Undefined function '…' in expression"** the moment it's embedded in an `INSERT` passed
    to `db.Execute` or set as a field's `DefaultValue`; the engine's expression service, not
-   VBA, evaluates those. Resolve the value in VBA first and concatenate the literal. To stamp
-   `CreatedBy` on a seed row, for example: `Dim sUser As String: sUser = Environ$("USERNAME")`
-   then `db.Execute "INSERT INTO … (…, CreatedBy) VALUES (…, '" & sUser & "')", dbFailOnError`.
+   VBA, evaluates those. Resolve the value in VBA first and pass it as a parameter
+   (`query-style.md`). To stamp `CreatedBy` on a seed row, for example: resolve
+   `strUser = Environ$("USERNAME")`, declare `PARAMETERS [pUser] Text(255)` on a temporary
+   QueryDef whose `INSERT` writes `[pUser]` to `CreatedBy`, and set `pUser` to `strUser`.
+   Concatenating it between quotes breaks on a name with an apostrophe.
    (`CurrentUser()` *is* engine-known, but returns `"Admin"` without workgroup security — the
    resolved Windows user name is preferred.)
 
@@ -1049,7 +1051,7 @@ the Access MCP server's **expression-evaluation** tool and write the call as ord
 Four_GenerateAllAuditDataMacros(True)    ' works — evaluated as an expression
 ```
 
-This matters more than it looks. Staged procedures take an optional `bSilent` argument precisely so
+This matters more than it looks. Staged procedures take an optional `booSilent` argument precisely so
 an automated caller can suppress the message box and read the returned text instead; a caller that
 cannot pass `True` gets the dialog, and with nobody at the keyboard it waits forever. **A scaffold
 whose procedures accept arguments says which tool to call them with**, or the first automated

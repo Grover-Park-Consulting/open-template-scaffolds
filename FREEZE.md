@@ -281,6 +281,9 @@ so an assistant doesn't mistake old grounds for new permission:
 - 2026-11-26, approved by George: `templates/_template-schema.md` §9, one sentence on form text,
   "headed `PROPOSED CODE`" becomes "marked as proposed code (method `handover-code`)". Grounds: the
   method no longer heads form text with that line, which its format cannot carry.
+- 2026-11-26, approved by George (scaffold code to the standards): `templates/errors/error-logging-scaffold.md`,
+  only the version, date and fingerprint lines `template_status.py` writes; its step files carry the
+  code changes.
 
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.

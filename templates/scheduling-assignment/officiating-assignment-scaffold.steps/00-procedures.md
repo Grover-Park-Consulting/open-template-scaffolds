@@ -16,9 +16,9 @@ your own. A change to either is the developer's decision: ask it before you pres
 ### AssignOfficial
 
 ```vba
-Public Function AssignOfficial(ByVal lGameID As Long, _
-                               ByVal lOfficialID As Long, _
-                               ByVal lOfficialPositionID As Long) As Long
+Public Function AssignOfficial(ByVal lngGameID As Long, _
+                               ByVal lngOfficialID As Long, _
+                               ByVal lngOfficialPositionID As Long) As Long
 ```
 
 Assign one official to one position on one game. Returns the new GameOfficialID, or 0 when the assignment is refused.
@@ -26,19 +26,19 @@ Assign one official to one position on one game. Returns the new GameOfficialID,
 ### ValidateAssignment
 
 ```vba
-Public Function ValidateAssignment(ByVal lGameID As Long, _
-                                    ByVal lOfficialID As Long, _
-                                    ByVal lOfficialPositionID As Long, _
-                                    ByRef sRefusalReason As String) As Boolean
+Public Function ValidateAssignment(ByVal lngGameID As Long, _
+                                    ByVal lngOfficialID As Long, _
+                                    ByVal lngOfficialPositionID As Long, _
+                                    ByRef strRefusalReason As String) As Boolean
 ```
 
-All-or-nothing pre-checks for one assignment; on the first failure, set sRefusalReason and exit False. True = safe to insert.
+All-or-nothing pre-checks for one assignment; on the first failure, set strRefusalReason and exit False. True = safe to insert.
 
 ### GetApplicablePayRate
 
 ```vba
-Public Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
-                                     ByVal lOfficialPositionID As Long, _
+Public Function GetApplicablePayRate(ByVal lngPlayLevelID As Long, _
+                                     ByVal lngOfficialPositionID As Long, _
                                      ByVal dtGameDate As Date) As Variant
 ```
 
@@ -47,7 +47,7 @@ Resolve the effective-dated rate for (level, position) as of a game date. Return
 ### GetAppSetting
 
 ```vba
-Public Function GetAppSetting(ByVal sSettingName As String) As String
+Public Function GetAppSetting(ByVal strSettingName As String) As String
 ```
 
 Read one named setting from tblAppSetting; empty string when absent. Single purpose: settings live in data, never hardcoded (Business Rule 9's photo folder is the first consumer; every later setting reuses this).
@@ -63,7 +63,7 @@ Attach the row-level Validation Rule enforcing Business Rules 4 and 7 to tblGame
 ### GameLevelID
 
 ```vba
-Public Function GameLevelID(ByVal lGameID As Long) As Long
+Public Function GameLevelID(ByVal lngGameID As Long) As Long
 ```
 
 A game's play level, read through its home team - never stored on the game itself (schema Business Rule 5). Returns 0 when the game or its home team can't be found.
@@ -71,7 +71,7 @@ A game's play level, read through its home team - never stored on the game itsel
 ### OfficialAge
 
 ```vba
-Public Function OfficialAge(ByVal lOfficialID As Long) As Variant
+Public Function OfficialAge(ByVal lngOfficialID As Long) As Variant
 ```
 
 An official's age, computed from BirthDate as of today - never stored anywhere (schema Business Rule 8). Returns Null when BirthDate is unknown, which is why this is a Variant rather than an Integer.
@@ -87,7 +87,7 @@ Confirm the shared folder named in tblAppSetting.OfficialPhotoFolder exists - ne
 ### SetOfficialPhoto
 
 ```vba
-Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As String) As Boolean
+Public Function SetOfficialPhoto(ByVal lngOfficialID As Long, ByVal strSourcePath As String) As Boolean
 ```
 
 Copy a picked photo into the shared folder under a controlled name, and record that name on the official - never the source path, never the file itself (schema Business Rule 9). The controlled name carries the picked file's own extension, which can change between picks for the same official (a .jpg replaced by a .png) - so the new name is not always the old name. The record change is held in a transaction until the new file is in place: the file is copied beside the old one under a temporary name, swapped in, and only then is the record committed. A failure before the commit rolls the record back and leaves the old photo. After the commit, the official's previous file is deleted by its recorded full name, when that name differs from the new one; guessing the old extension would miss an extension change.

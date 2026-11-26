@@ -16,9 +16,9 @@ your own. A change to either is the developer's decision: ask it before you pres
 ### LogError
 
 ```vba
-Public Sub LogError(ByVal sModule As String, _
-                    ByVal sProcedure As String, _
-                    ByVal lLine As Long)
+Public Sub LogError(ByVal strModule As String, _
+                    ByVal strProcedure As String, _
+                    ByVal lngLine As Long)
 ```
 
 Called from an errHandler block that is already dealing with a failure. Nothing in here may raise an error of its own.
@@ -26,13 +26,13 @@ Called from an errHandler block that is already dealing with a failure. Nothing 
 ### WriteErrorToTable
 
 ```vba
-Private Function WriteErrorToTable(ByVal lErrNumber As Long, _
-                                   ByVal sErrDescription As String, _
-                                   ByVal sErrSource As String, _
-                                   ByVal sModule As String, _
-                                   ByVal sProcedure As String, _
-                                   ByVal lLine As Long, _
-                                   ByRef lLogID As Long) As Boolean
+Private Function WriteErrorToTable(ByVal lngErrNumber As Long, _
+                                   ByVal strErrDescription As String, _
+                                   ByVal strErrSource As String, _
+                                   ByVal strModule As String, _
+                                   ByVal strProcedure As String, _
+                                   ByVal lngLine As Long, _
+                                   ByRef lngLogID As Long) As Boolean
 ```
 
 Guarded throughout; reports success as a Boolean instead of raising.
@@ -40,12 +40,12 @@ Guarded throughout; reports success as a Boolean instead of raising.
 ### WriteErrorToFile
 
 ```vba
-Private Function WriteErrorToFile(ByVal lErrNumber As Long, _
-                                  ByVal sErrDescription As String, _
-                                  ByVal sErrSource As String, _
-                                  ByVal sModule As String, _
-                                  ByVal sProcedure As String, _
-                                  ByVal lLine As Long) As Boolean
+Private Function WriteErrorToFile(ByVal lngErrNumber As Long, _
+                                  ByVal strErrDescription As String, _
+                                  ByVal strErrSource As String, _
+                                  ByVal strModule As String, _
+                                  ByVal strProcedure As String, _
+                                  ByVal lngLine As Long) As Boolean
 ```
 
 Guarded throughout; reports success as a Boolean instead of raising.
@@ -61,13 +61,13 @@ Guarded: a bad path returns the fallback, never an error.
 ### ShowErrorToUser
 
 ```vba
-Private Sub ShowErrorToUser(ByVal lErrNumber As Long, _
-                            ByVal sErrDescription As String, _
-                            ByVal sModule As String, _
-                            ByVal sProcedure As String, _
-                            ByVal lLine As Long, _
-                            ByVal lLogID As Long, _
-                            ByVal bRecorded As Boolean)
+Private Sub ShowErrorToUser(ByVal lngErrNumber As Long, _
+                            ByVal strErrDescription As String, _
+                            ByVal strModule As String, _
+                            ByVal strProcedure As String, _
+                            ByVal lngLine As Long, _
+                            ByVal lngLogID As Long, _
+                            ByVal booRecorded As Boolean)
 ```
 
 Guarded: a failure to show the message must not replace the failure we were called about.
@@ -75,26 +75,26 @@ Guarded: a failure to show the message must not replace the failure we were call
 ### CreateErrorLogTable
 
 ```vba
-Public Function CreateErrorLogTable(Optional bSilent As Boolean = False) As String
+Public Function CreateErrorLogTable(Optional booSilent As Boolean = False) As String
 ```
 
-Creates tblErrorLog (schema template entity). Idempotent: an existing table is reported and skipped, so this is safe to re-run. bSilent:=True suppresses the message box and returns the same text.
+Creates tblErrorLog (schema template entity). Idempotent: an existing table is reported and skipped, so this is safe to re-run. booSilent:=True suppresses the message box and returns the same text.
 
 ### SetFieldDescription
 
 ```vba
 Private Sub SetFieldDescription(db As DAO.Database, _
-                                ByVal sField As String, _
-                                ByVal sDescription As String)
+                                ByVal strField As String, _
+                                ByVal strDescription As String)
 ```
 
-Guarded because a documentation comment is never worth failing a build for, and because appending a property that already exists raises 3367.
+Appending a property that already exists raises 3367, so look for it first and set it where it is. Any other error is real and reaches the caller's handler: a field that cannot be described is a build that went wrong.
 
 ### LinkErrorLogTable
 
 ```vba
-Public Function LinkErrorLogTable(Optional ByVal sBackEndPath As String = "", _
-                                  Optional bSilent As Boolean = False) As String
+Public Function LinkErrorLogTable(Optional ByVal strBackEndPath As String = "", _
+                                  Optional booSilent As Boolean = False) As String
 ```
 
-Links tblErrorLog from the back end into this front end. Needed only where Step 4 put the log table in the back end. Idempotent: a table that is already here is reported and left alone, so this is safe to re-run. bSilent:=True suppresses the message box, returning the text.
+Links tblErrorLog from the back end into this front end. Needed only where Step 4 put the log table in the back end. Idempotent: a table that is already here is reported and left alone, so this is safe to re-run. booSilent:=True suppresses the message box, returning the text.

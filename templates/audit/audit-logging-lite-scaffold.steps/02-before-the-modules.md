@@ -15,7 +15,7 @@ are reported, and to ask it even when the answer looks settled. **That question 
 template's nine wizard steps and is not meant to be** — the standards file owns it. Ask it through
 the selection control before you write any of the four modules, and name it as a question this build
 added rather than folding it into the template's count. The answer changes the handler in every
-procedure you emit, so asking afterwards means writing them twice. The blocks below ship option 3
+procedure you emit, so asking afterwards means writing them twice. The blocks below ship option 2
 inline; anything else means replacing the handler in all four modules, not some of them.
 
 **Look before you ask.** The question is the same on every build; the answers are not, and two of

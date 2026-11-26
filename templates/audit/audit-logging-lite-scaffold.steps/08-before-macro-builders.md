@@ -37,7 +37,7 @@ left out, and if only the update branch has work the condition is inverted (`Not
 ordinary If-without-Else is emitted instead.
 
 ```vba
-Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Collection, sPrimaryKeyField As String) As String
+Private Function BuildBeforeChangeMacro(strTableName As String, fieldList As Collection, strPrimaryKeyField As String) As String
     ' [SCAFFOLD + STANDARDS — audit-columns.md] BeforeChange carries TWO jobs, because
     '            LoadFromText replaces a table's whole macro set and they cannot be
     '            loaded separately without one destroying the other:
@@ -45,83 +45,83 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     '              2. Stage Long Text old values ahead of an update (Long Text tables).
     '            Both key on the same discriminator, IsNull([Old].[PK]).
     '            Returns "" when the table needs neither — no BeforeChange macro at all.
-    Dim sXml As String
-    Dim sInsertActions As String
-    Dim sUpdateActions As String
+    Dim strXml As String
+    Dim strInsertActions As String
+    Dim strUpdateActions As String
     Dim fieldInfo As Variant
-    Dim sFieldName As String
-    Dim bHasLongText As Boolean
-    Dim bHasCreatedDate As Boolean
-    Dim bHasCreatedBy As Boolean
-    Dim bHasModifiedDate As Boolean
-    Dim bHasModifiedBy As Boolean
-    Dim bStamp As Boolean
+    Dim strFieldName As String
+    Dim booHasLongText As Boolean
+    Dim booHasCreatedDate As Boolean
+    Dim booHasCreatedBy As Boolean
+    Dim booHasModifiedDate As Boolean
+    Dim booHasModifiedBy As Boolean
+    Dim booStamp As Boolean
 
     ' [STANDARDS — audit-columns.md] Stamp only where AUDIT_STAMP_LIST says the generator
     '            fills the columns. Matching column names alone would take over columns a
     '            default or the database's own code already fills, and overwrite them.
     '            Within a listed table, presence decides which of the four are stamped;
     '            they arrive with IsAuditable False (always seeded off), so not the flag.
-    bStamp = IsNamedInList(AUDIT_STAMP_LIST, sTableName)
-    bHasLongText = False
+    booStamp = IsNamedInList(AUDIT_STAMP_LIST, strTableName)
+    booHasLongText = False
     For Each fieldInfo In fieldList
-        sFieldName = fieldInfo(0)
-        If bStamp Then
-            If StrComp(sFieldName, AUDIT_CREATED_DATE, vbTextCompare) = 0 Then bHasCreatedDate = True
-            If StrComp(sFieldName, AUDIT_CREATED_BY, vbTextCompare) = 0 Then bHasCreatedBy = True
-            If StrComp(sFieldName, AUDIT_MODIFIED_DATE, vbTextCompare) = 0 Then bHasModifiedDate = True
-            If StrComp(sFieldName, AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then bHasModifiedBy = True
+        strFieldName = fieldInfo(0)
+        If booStamp Then
+            If StrComp(strFieldName, AUDIT_CREATED_DATE, vbTextCompare) = 0 Then booHasCreatedDate = True
+            If StrComp(strFieldName, AUDIT_CREATED_BY, vbTextCompare) = 0 Then booHasCreatedBy = True
+            If StrComp(strFieldName, AUDIT_MODIFIED_DATE, vbTextCompare) = 0 Then booHasModifiedDate = True
+            If StrComp(strFieldName, AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then booHasModifiedBy = True
         End If
-        If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then bHasLongText = True
+        If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then booHasLongText = True
     Next fieldInfo
 
     ' ---- INSERT branch: stamp Created*, never touch Modified* ----
-    If bHasCreatedDate Then sInsertActions = sInsertActions & AuditSetField(AUDIT_CREATED_DATE, "Now()")
-    If bHasCreatedBy Then sInsertActions = sInsertActions & AuditSetField(AUDIT_CREATED_BY, "AuditUser()")
+    If booHasCreatedDate Then strInsertActions = strInsertActions & AuditSetField(AUDIT_CREATED_DATE, "Now()")
+    If booHasCreatedBy Then strInsertActions = strInsertActions & AuditSetField(AUDIT_CREATED_BY, "AuditUser()")
 
-    If bHasLongText Then
+    If booHasLongText Then
         ' [BUSINESS LOGIC - schema Business Rule 4] Nothing to back up on an insert - there
         ' is no prior value. Null is the marker BackupLongTextFieldsDM tests for, and it is
         ' the only value that cannot be a real key: a primary key is Required by definition.
         ' The 0 this replaced was a legal Long Integer, Integer or Byte key value, so a row
         ' keyed 0 had its Long Text backup silently skipped. Measured: a Data Macro can set a
         ' local variable to Null, and VBA receives a genuine Null.
-        sInsertActions = sInsertActions & "<Action Name=""SetLocalVar"">"
-        sInsertActions = sInsertActions & "<Argument Name=""Name"">lngPKValue</Argument>"
-        sInsertActions = sInsertActions & "<Argument Name=""Value"">Null</Argument>"
-        sInsertActions = sInsertActions & "</Action>"
+        strInsertActions = strInsertActions & "<Action Name=""SetLocalVar"">"
+        strInsertActions = strInsertActions & "<Argument Name=""Name"">lngPKValue</Argument>"
+        strInsertActions = strInsertActions & "<Argument Name=""Value"">Null</Argument>"
+        strInsertActions = strInsertActions & "</Action>"
     End If
 
     ' ---- UPDATE branch: stamp Modified*, leave Created* frozen ----
-    If bHasModifiedDate Then sUpdateActions = sUpdateActions & AuditSetField(AUDIT_MODIFIED_DATE, "Now()")
-    If bHasModifiedBy Then sUpdateActions = sUpdateActions & AuditSetField(AUDIT_MODIFIED_BY, "AuditUser()")
+    If booHasModifiedDate Then strUpdateActions = strUpdateActions & AuditSetField(AUDIT_MODIFIED_DATE, "Now()")
+    If booHasModifiedBy Then strUpdateActions = strUpdateActions & AuditSetField(AUDIT_MODIFIED_BY, "AuditUser()")
 
-    If bHasLongText Then
-        sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
-        sUpdateActions = sUpdateActions & "<Argument Name=""Name"">lngPKValue</Argument>"
-        sUpdateActions = sUpdateActions & "<Argument Name=""Value"">=" & AuditKeyExpression("[" & sPrimaryKeyField & "]") & "</Argument>"
-        sUpdateActions = sUpdateActions & "</Action>"
+    If booHasLongText Then
+        strUpdateActions = strUpdateActions & "<Action Name=""SetLocalVar"">"
+        strUpdateActions = strUpdateActions & "<Argument Name=""Name"">lngPKValue</Argument>"
+        strUpdateActions = strUpdateActions & "<Argument Name=""Value"">=" & AuditKeyExpression("[" & strPrimaryKeyField & "]") & "</Argument>"
+        strUpdateActions = strUpdateActions & "</Action>"
 
-        sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
-        sUpdateActions = sUpdateActions & "<Argument Name=""Name"">strTableName</Argument>"
-        sUpdateActions = sUpdateActions & "<Argument Name=""Value"">""" & sTableName & """</Argument>"
-        sUpdateActions = sUpdateActions & "</Action>"
+        strUpdateActions = strUpdateActions & "<Action Name=""SetLocalVar"">"
+        strUpdateActions = strUpdateActions & "<Argument Name=""Name"">strTableName</Argument>"
+        strUpdateActions = strUpdateActions & "<Argument Name=""Value"">""" & strTableName & """</Argument>"
+        strUpdateActions = strUpdateActions & "</Action>"
 
         ' One backup call per Long Text field — a data macro CAN call a public VBA
         ' function in the same accdb; that is the hinge of the whole hybrid method.
         For Each fieldInfo In fieldList
-            sFieldName = fieldInfo(0)
+            strFieldName = fieldInfo(0)
             If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then
-                sUpdateActions = sUpdateActions & "<Action Name=""SetLocalVar"">"
-                sUpdateActions = sUpdateActions & "<Argument Name=""Name"">varLongTextBackup</Argument>"
-                sUpdateActions = sUpdateActions & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & sFieldName & """)</Argument>"
-                sUpdateActions = sUpdateActions & "</Action>"
+                strUpdateActions = strUpdateActions & "<Action Name=""SetLocalVar"">"
+                strUpdateActions = strUpdateActions & "<Argument Name=""Name"">varLongTextBackup</Argument>"
+                strUpdateActions = strUpdateActions & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & strFieldName & """)</Argument>"
+                strUpdateActions = strUpdateActions & "</Action>"
             End If
         Next fieldInfo
     End If
 
     ' Neither job applies to this table
-    If Len(sInsertActions) = 0 And Len(sUpdateActions) = 0 Then
+    If Len(strInsertActions) = 0 And Len(strUpdateActions) = 0 Then
         BuildBeforeChangeMacro = ""
         Exit Function
     End If
@@ -130,24 +130,24 @@ Private Function BuildBeforeChangeMacro(sTableName As String, fieldList As Colle
     '            is untested against Access, and a live table is the wrong place to find
     '            out — so when only the update branch has work, invert the condition and
     '            emit a plain If with no Else.
-    sXml = "<DataMacro Event=""BeforeChange""><Statements>"
-    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
-    sXml = sXml & "<ConditionalBlock>"
+    strXml = "<DataMacro Event=""BeforeChange""><Statements>"
+    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = strXml & "<ConditionalBlock>"
 
-    If Len(sInsertActions) > 0 Then
-        sXml = sXml & "<If><Condition>IsNull([Old].[" & sPrimaryKeyField & "])</Condition>"
-        sXml = sXml & "<Statements>" & sInsertActions & "</Statements></If>"
-        If Len(sUpdateActions) > 0 Then
-            sXml = sXml & "<Else><Statements>" & sUpdateActions & "</Statements></Else>"
+    If Len(strInsertActions) > 0 Then
+        strXml = strXml & "<If><Condition>IsNull([Old].[" & strPrimaryKeyField & "])</Condition>"
+        strXml = strXml & "<Statements>" & strInsertActions & "</Statements></If>"
+        If Len(strUpdateActions) > 0 Then
+            strXml = strXml & "<Else><Statements>" & strUpdateActions & "</Statements></Else>"
         End If
     Else
-        sXml = sXml & "<If><Condition>Not IsNull([Old].[" & sPrimaryKeyField & "])</Condition>"
-        sXml = sXml & "<Statements>" & sUpdateActions & "</Statements></If>"
+        strXml = strXml & "<If><Condition>Not IsNull([Old].[" & strPrimaryKeyField & "])</Condition>"
+        strXml = strXml & "<Statements>" & strUpdateActions & "</Statements></If>"
     End If
 
-    sXml = sXml & "</ConditionalBlock></Statements></DataMacro>"
+    strXml = strXml & "</ConditionalBlock></Statements></DataMacro>"
 
-    BuildBeforeChangeMacro = sXml
+    BuildBeforeChangeMacro = strXml
 End Function
 ```
 
@@ -158,52 +158,52 @@ Text value through `BackupLongTextFieldsDM` so the AfterDelete macro can log it.
 string when the table has no Long Text fields.
 
 ```vba
-Private Function BuildBeforeDeleteMacro(sTableName As String, fieldList As Collection, sPrimaryKeyField As String) As String
+Private Function BuildBeforeDeleteMacro(strTableName As String, fieldList As Collection, strPrimaryKeyField As String) As String
     ' [SCAFFOLD] BeforeDelete: stage Long Text values ahead of a delete
     '            (schema Business Rules 2-3).
-    Dim sXml As String
+    Dim strXml As String
     Dim fieldInfo As Variant
-    Dim sFieldName As String
-    Dim bHasLongText As Boolean
+    Dim strFieldName As String
+    Dim booHasLongText As Boolean
 
-    bHasLongText = False
+    booHasLongText = False
     For Each fieldInfo In fieldList
         If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then
-            bHasLongText = True
+            booHasLongText = True
             Exit For
         End If
     Next fieldInfo
-    If Not bHasLongText Then
+    If Not booHasLongText Then
         BuildBeforeDeleteMacro = ""
         Exit Function
     End If
 
-    sXml = "<DataMacro Event=""BeforeDelete""><Statements>"
-    sXml = sXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = "<DataMacro Event=""BeforeDelete""><Statements>"
+    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
 
-    sXml = sXml & "<Action Name=""SetLocalVar"">"
-    sXml = sXml & "<Argument Name=""Name"">lngPKValue</Argument>"
-    sXml = sXml & "<Argument Name=""Value"">=" & AuditKeyExpression("[" & sPrimaryKeyField & "]") & "</Argument>"
-    sXml = sXml & "</Action>"
+    strXml = strXml & "<Action Name=""SetLocalVar"">"
+    strXml = strXml & "<Argument Name=""Name"">lngPKValue</Argument>"
+    strXml = strXml & "<Argument Name=""Value"">=" & AuditKeyExpression("[" & strPrimaryKeyField & "]") & "</Argument>"
+    strXml = strXml & "</Action>"
 
-    sXml = sXml & "<Action Name=""SetLocalVar"">"
-    sXml = sXml & "<Argument Name=""Name"">strTableName</Argument>"
-    sXml = sXml & "<Argument Name=""Value"">""" & sTableName & """</Argument>"
-    sXml = sXml & "</Action>"
+    strXml = strXml & "<Action Name=""SetLocalVar"">"
+    strXml = strXml & "<Argument Name=""Name"">strTableName</Argument>"
+    strXml = strXml & "<Argument Name=""Value"">""" & strTableName & """</Argument>"
+    strXml = strXml & "</Action>"
 
     For Each fieldInfo In fieldList
-        sFieldName = fieldInfo(0)
+        strFieldName = fieldInfo(0)
         If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then
-            sXml = sXml & "<Action Name=""SetLocalVar"">"
-            sXml = sXml & "<Argument Name=""Name"">varLongTextBackup</Argument>"
-            sXml = sXml & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & sFieldName & """)</Argument>"
-            sXml = sXml & "</Action>"
+            strXml = strXml & "<Action Name=""SetLocalVar"">"
+            strXml = strXml & "<Argument Name=""Name"">varLongTextBackup</Argument>"
+            strXml = strXml & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & strFieldName & """)</Argument>"
+            strXml = strXml & "</Action>"
         End If
     Next fieldInfo
 
-    sXml = sXml & "</Statements></DataMacro>"
+    strXml = strXml & "</Statements></DataMacro>"
 
-    BuildBeforeDeleteMacro = sXml
+    BuildBeforeDeleteMacro = strXml
 End Function
 ```
 
@@ -215,10 +215,10 @@ XML for a stamp appears once rather than four times, which is what makes the sta
 against `standards/audit-columns.md`.
 
 ```vba
-Private Function AuditSetField(ByVal sField As String, ByVal sValue As String) As String
+Private Function AuditSetField(ByVal strField As String, ByVal strValue As String) As String
     ' [STANDARDS — audit-columns.md] One SetField action for a stamped audit column.
-    AuditSetField = "<Action Name=""SetField""><Argument Name=""Field"">" & sField & _
-        "</Argument><Argument Name=""Value"">" & sValue & "</Argument></Action>"
+    AuditSetField = "<Action Name=""SetField""><Argument Name=""Field"">" & strField & _
+        "</Argument><Argument Name=""Value"">" & strValue & "</Argument></Action>"
 End Function
 ```
 
@@ -252,16 +252,16 @@ characters in VBA source is a mistake waiting to happen.
 silently — it is your job, and the developer has no part in it.
 
 ```vba
-Private Function AuditKeyExpression(ByVal sKeyRef As String) As String
+Private Function AuditKeyExpression(ByVal strKeyRef As String) As String
     ' [BUSINESS LOGIC — schema Business Rule 4] Assigning a Replication ID bare into a text
     '                 column copies its sixteen bytes in as eight characters of unreadable
     '                 text: no error raised, the log row still written, and every check still
     '                 passing. Where the log's key column holds whole numbers the reference is
     '                 used as it stands, so the value keeps its type.
     If AUDIT_GUID_KEYS_AUDITED Then
-        AuditKeyExpression = sKeyRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
+        AuditKeyExpression = strKeyRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
     Else
-        AuditKeyExpression = sKeyRef
+        AuditKeyExpression = strKeyRef
     End If
 End Function
 ```
@@ -284,7 +284,7 @@ not a primary key is audited in every build, including one where `AUDIT_GUID_KEY
 `AuditKeyExpression`, and the same check after import.
 
 ```vba
-Private Function AuditValueExpression(ByVal sFieldRef As String, ByVal lFldType As Long) As String
+Private Function AuditValueExpression(ByVal strFieldRef As String, ByVal lngFldType As Long) As String
     ' [BUSINESS LOGIC — schema Business Rule 4] A field's value as it has to be written into
     '                 OldValue or NewValue. A Replication ID assigned bare into a text column
     '                 copies its sixteen bytes in as eight characters of unreadable text:
@@ -292,10 +292,10 @@ Private Function AuditValueExpression(ByVal sFieldRef As String, ByVal lFldType 
     '                 catches it. Every other type renders correctly on its own, so only this
     '                 one is converted — asked per field, because a Replication ID that is not
     '                 a primary key is audited whatever AUDIT_GUID_KEYS_AUDITED says.
-    If lFldType = dbGUID Then
-        AuditValueExpression = sFieldRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
+    If lngFldType = dbGUID Then
+        AuditValueExpression = strFieldRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
     Else
-        AuditValueExpression = sFieldRef
+        AuditValueExpression = strFieldRef
     End If
 End Function
 ```
@@ -312,12 +312,12 @@ re-set per field.
 anyway: one macro shape across all three events is worth more than the action it saves.
 
 ```vba
-Private Function AuditKeyLocalVar(ByVal sKeyRef As String) As String
+Private Function AuditKeyLocalVar(ByVal strKeyRef As String) As String
     ' [SCAFFOLD] The SetLocalVar action every After macro emits before anything reads the key.
     '            It must come before the LookUpRecord that uses it.
     AuditKeyLocalVar = "<Action Name=""SetLocalVar""><Argument Name=""Name"">" & _
         AUDIT_KEY_LOCAL_VAR & "</Argument><Argument Name=""Value"">=" & _
-        AuditKeyExpression(sKeyRef) & "</Argument></Action>"
+        AuditKeyExpression(strKeyRef) & "</Argument></Action>"
 End Function
 ```
 
@@ -336,20 +336,20 @@ Assembling the entity from character codes at runtime means no literal `&`-entit
 the source for an importer to touch — the string is only ever `&lt;&gt;` in memory, never in text
 anyone's tool re-reads. See `templates/_materialization.md` for the general rule this follows.
 
-**After importing this module, check that `sNotEqual` still reads
+**After importing this module, check that `strNotEqual` still reads
 `Chr(38) & "lt;" & Chr(38) & "gt;"`, and repair it if the import changed it.** Do that silently —
 it is your job, and the developer has no part to play in it. Say nothing to them about entity
 escaping unless a build actually stops with error 3870; then explain what happened and that you
 are fixing it.
 
 ```vba
-Private Function GetComparisonExpression(sTableName As String, sFieldName As String, lFldType As Long) As String
+Private Function GetComparisonExpression(strTableName As String, strFieldName As String, lngFldType As Long) As String
     ' [SCAFFOLD] Per-type change test for the AfterUpdate conditional block.
-    Dim sNotEqual As String
+    Dim strNotEqual As String
     ' Built from Chr(38), not typed as a literal &lt;&gt; — see the note above this block.
     ' This is XML for "<>"; the expression lives inside <Condition>...</Condition>.
-    sNotEqual = Chr(38) & "lt;" & Chr(38) & "gt;"
-    Select Case lFldType
+    strNotEqual = Chr(38) & "lt;" & Chr(38) & "gt;"
+    Select Case lngFldType
         Case dbMemo
             ' [BUSINESS LOGIC — schema Business Rule 6] Long Text: the old value cannot be
             '                 read from [Old], so it is compared against the row staged in
@@ -358,9 +358,9 @@ Private Function GetComparisonExpression(sTableName As String, sFieldName As Str
             '                 NZ on both sides, exactly as below: a staged Null against a new
             '                 empty string would otherwise make the whole expression Null, the
             '                 condition would not pass, and a real edit would go unlogged.
-            GetComparisonExpression = "StrComp(NZ([" & sTableName & "].[" & sFieldName & "],""""),NZ([BackupRec].[OldValue],""""),0)" & sNotEqual & "0"
+            GetComparisonExpression = "StrComp(NZ([" & strTableName & "].[" & strFieldName & "],""""),NZ([BackupRec].[OldValue],""""),0)" & strNotEqual & "0"
         Case Else
-            GetComparisonExpression = "StrComp(NZ([" & sTableName & "].[" & sFieldName & "],""""),NZ([Old].[" & sFieldName & "],""""),0)" & sNotEqual & "0"
+            GetComparisonExpression = "StrComp(NZ([" & strTableName & "].[" & strFieldName & "],""""),NZ([Old].[" & strFieldName & "],""""),0)" & strNotEqual & "0"
     End Select
 End Function
 ```

@@ -3,9 +3,9 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.12.0
+version: 0.13.0
 status: review
-status_fingerprint: 5a15dc301180
+status_fingerprint: "214f6f2539f5"
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog

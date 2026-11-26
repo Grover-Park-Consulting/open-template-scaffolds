@@ -48,7 +48,7 @@ Where do this front end's links currently point? Returns the path held by the fi
 ### PathFromConnect
 
 ```vba
-Private Function PathFromConnect(ByVal sConnect As String) As String
+Private Function PathFromConnect(ByVal strConnect As String) As String
 ```
 
 Given what one link records, return the Access file it points at, or an empty string if it doesn't point at one. This is the single place that decides what counts as a link to this application's data file. Exactly TWO shapes name an Access file, and both are ten characters long: ";DATABASE=" - an ordinary link, path immediately after "MS Access;" - a link to a file that HAS A DATABASE PASSWORD, which records the password first: MS Access;PWD=x;DATABASE=y Testing the START of the string, rather than searching anywhere in it, is what keeps a spreadsheet or text-file link out - those carry ";DATABASE=" too, further along ("Excel 12.0 Xml;HDR=YES;...;DATABASE=..."), and repointing one at an .accdb would break it.
@@ -64,8 +64,8 @@ Everything OpenDatabase needs about the back end BESIDES its path. Today that me
 ### ConnectWithNewPath
 
 ```vba
-Private Function ConnectWithNewPath(ByVal sConnect As String, _
-                                    ByVal sNewPath As String) As String
+Private Function ConnectWithNewPath(ByVal strConnect As String, _
+                                    ByVal strNewPath As String) As String
 ```
 
 Swap the file path inside a link's Connect string and change nothing else. Building a fresh ";DATABASE=" & path string instead would be shorter and would silently throw away a database password, after which RefreshLink fails and the relink reports failure for a reason nobody can see.
@@ -73,7 +73,7 @@ Swap the file path inside a link's Connect string and change nothing else. Build
 ### BackEndIsReachable
 
 ```vba
-Private Function BackEndIsReachable(ByVal sPath As String) As Boolean
+Private Function BackEndIsReachable(ByVal strPath As String) As Boolean
 ```
 
 Two questions in one: can this file be opened at all, and is it THIS application's back end? The second question is the guard against a picked file that opens perfectly and holds the wrong data. Returns False by default. Any error - missing file, unreachable server, a file that isn't a database, a table that isn't there - lands in the handler, resumes to Cleanup, and leaves that False in place. That is the whole mechanism; there is no On Error Resume Next in the main logic.
@@ -81,11 +81,11 @@ Two questions in one: can this file be opened at all, and is it THIS application
 ### RelinkAllTables
 
 ```vba
-Private Function RelinkAllTables(ByVal sNewPath As String, _
-                                 ByVal sOldPath As String) As Boolean
+Private Function RelinkAllTables(ByVal strNewPath As String, _
+                                 ByVal strOldPath As String) As Boolean
 ```
 
-Point every link that used to reach sOldPath at sNewPath instead. Two deliberate exclusions: - local tables (no Connect string) are not links and are left alone; - ODBC links (Connect starts "ODBC;") reach a different server entirely and must NOT be rewritten with a file path. Passing an empty sOldPath repoints every Access file link - the right behaviour on a front end with one back end, and the wrong one on a front end linked to two (see Parked). Returns False if nothing was relinked: an application whose links all failed, yet where no link matched, has a problem worth stopping for.
+Point every link that used to reach strOldPath at strNewPath instead. Two deliberate exclusions: - local tables (no Connect string) are not links and are left alone; - ODBC links (Connect starts "ODBC;") reach a different server entirely and must NOT be rewritten with a file path. Passing an empty strOldPath repoints every Access file link - the right behaviour on a front end with one back end, and the wrong one on a front end linked to two (see Parked). Returns False if nothing was relinked: an application whose links all failed, yet where no link matched, has a problem worth stopping for.
 
 ### AskUserForBackEnd
 
@@ -98,7 +98,7 @@ Show a file picker and return the chosen path, or an empty string if the person 
 ### LocalSettingValue
 
 ```vba
-Public Function LocalSettingValue(ByVal sSettingName As String) As String
+Public Function LocalSettingValue(ByVal strSettingName As String) As String
 ```
 
 Read one setting from the front end's own USysLocalSetting table. Returns an empty string when the setting has never been saved - which is the normal state of a newly built front end, not an error. This procedure and SaveLocalSetting are the only two that know WHERE the setting is kept; swap them both to move it to a text file or a constant.
@@ -106,7 +106,7 @@ Read one setting from the front end's own USysLocalSetting table. Returns an emp
 ### SaveLocalSetting
 
 ```vba
-Public Sub SaveLocalSetting(ByVal sSettingName As String, ByVal sSettingValue As String)
+Public Sub SaveLocalSetting(ByVal strSettingName As String, ByVal strSettingValue As String)
 ```
 
 Write one setting to USysLocalSetting, adding the row if it isn't there yet. Editable recordset rather than an UPDATE followed by an INSERT: one trip, and no window in which the row exists twice.

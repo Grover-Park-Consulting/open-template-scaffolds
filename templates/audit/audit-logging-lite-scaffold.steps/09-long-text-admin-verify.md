@@ -59,8 +59,8 @@ Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Var
     '            legitimately 0 — reachable on any Long Integer, Integer or Byte key that is
     '            not an AutoNumber.
     Dim db As DAO.Database
-    Dim rs As DAO.Recordset
-    Dim rsOldValue As DAO.Recordset
+    Dim rst As DAO.Recordset
+    Dim rstOldValue As DAO.Recordset
     Dim strPKField As String
     Dim strOldValue As Variant
 
@@ -79,7 +79,7 @@ Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Var
     strPKField = DLookup("FieldName", "tblAuditLogConfig", _
         "TableName='" & strTableName & "' AND IsPrimaryKey=" & True)
 
-    Set rsOldValue = db.OpenRecordset("SELECT " & strFieldName & " FROM " & strTableName & _
+    Set rstOldValue = db.OpenRecordset("SELECT " & strFieldName & " FROM " & strTableName & _
         " WHERE " & strPKField & "=" & SourceKeyLiteral(strTableName, strPKField, varPKValue))
 
     ' [SCAFFOLD] A key was supplied, so the row it names has to exist — it is the row being
@@ -90,35 +90,35 @@ Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Var
     '            logged at all, rather than logged wrongly. Raise it so the failure is not
     '            merely silent: the handler below stays quiet for the person editing, and a
     '            house logger sees it where the standards layer provides one.
-    If rsOldValue.EOF Then
-        rsOldValue.Close
+    If rstOldValue.EOF Then
+        rstOldValue.Close
         Err.Raise vbObjectError + 514, "BackupLongTextFieldsDM", _
             "No row found in " & strTableName & " for key " & CStr(varPKValue) & _
             ". The key could not be matched, so no Long Text backup was staged."
     End If
 
-    strOldValue = rsOldValue.Fields(strFieldName).Value
-    rsOldValue.Close
+    strOldValue = rstOldValue.Fields(strFieldName).Value
+    rstOldValue.Close
 
-    Set rs = db.OpenRecordset("tblLongTextBackup", dbOpenDynaset)
-    rs.AddNew
-    rs!TableName = strTableName
-    rs!PrimaryKey = varPKValue
-    rs!FieldName = strFieldName
-    rs!OldValue = strOldValue
-    rs!DateChanged = Now()
+    Set rst = db.OpenRecordset("tblLongTextBackup", dbOpenDynaset)
+    rst.AddNew
+    rst!TableName = strTableName
+    rst!PrimaryKey = varPKValue
+    rst!FieldName = strFieldName
+    rst!OldValue = strOldValue
+    rst!DateChanged = Now()
     ' [STANDARDS / schema Business Rule 9] AuditUser() preferred choice, same as the macros. This
     '            row is the one the After macro reads back, so it is the easiest of the
     '            four sites to miss when applying the CurrentUser() Extra Option — and
     '            missing it puts two names on one edit.
-    rs!ChangedBy = AuditUser()
-    rs.Update
-    rs.Close
+    rst!ChangedBy = AuditUser()
+    rst.Update
+    rst.Close
 
 Cleanup:
     On Error Resume Next
-    Set rsOldValue = Nothing
-    Set rs = Nothing
+    Set rstOldValue = Nothing
+    Set rst = Nothing
     Set db = Nothing
     Exit Function
 
@@ -152,7 +152,7 @@ Private Function SourceKeyLiteral(ByVal strTableName As String, ByVal strPKField
     '                 The audited table's own key field keeps its real type whatever the log's
     '                 key column holds, and Jet matches a Replication ID with the {guid {…}}
     '                 form and nothing else — ordinary quotes do not work.
-    Dim sKey As String
+    Dim strKey As String
 
     If CurrentDb.TableDefs(strTableName).Fields(strPKField).Type <> dbGUID Then
         SourceKeyLiteral = CStr(varPKValue)
@@ -162,11 +162,11 @@ Private Function SourceKeyLiteral(ByVal strTableName As String, ByVal strPKField
     ' A Data Macro hands the key over already printed, as "{C6C0FB4C-…}". DAO prints the same
     ' key as "{guid {C6C0FB4C-…}}" — the form Jet needs — so add the wrapper only when it is
     ' not already there, and this works whichever way the value arrived.
-    sKey = CStr(varPKValue)
-    If Left$(sKey, 5) = "{guid" Then
-        SourceKeyLiteral = sKey
+    strKey = CStr(varPKValue)
+    If Left$(strKey, 5) = "{guid" Then
+        SourceKeyLiteral = strKey
     Else
-        SourceKeyLiteral = "{guid " & sKey & "}"
+        SourceKeyLiteral = "{guid " & strKey & "}"
     End If
 End Function
 ```
@@ -200,9 +200,9 @@ declines to strip rather than stripping something it should not have.
 
 ```vba
 Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = "", _
-                                             Optional bSilent As Boolean = False) As Boolean
+                                             Optional booSilent As Boolean = False) As Boolean
     ' [SCAFFOLD] Back up every table's data macros, then remove the ones this generator wrote.
-    '            Passing bSilent:=True suppresses both message boxes, so a caller with no one
+    '            Passing booSilent:=True suppresses both message boxes, so a caller with no one
     '            at the keyboard does not hang on a dialog. The Boolean return is the result.
     Dim db As DAO.Database
     Dim rst As DAO.Recordset
@@ -294,11 +294,19 @@ Public Function BackupAndRemoveAllDataMacros(Optional strBackupPath As String = 
     End If
     strSummary = strSummary & vbCrLf & vbCrLf & "Backups saved to: " & strBackupPath
 
-    If Not bSilent Then MsgBox strSummary, vbInformation, "Data Macros Removed"
+    If Not booSilent Then MsgBox strSummary, vbInformation, "Data Macros Removed"
 
     BackupAndRemoveAllDataMacros = True
 
 Cleanup:
+    On Error Resume Next
+    ' After a failure the recordset may be open and the temporary file left; after a success
+    ' both are already gone.
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing
+    If Len(strTempFile) > 0 Then
+        If Len(Dir(strTempFile)) > 0 Then Kill strTempFile
+    End If
     Exit Function
 
 errHandler:
@@ -307,10 +315,7 @@ errHandler:
     '            carrying on to the next table, because a failure part-way through means the
     '            database is in a half-reset state and the developer needs to know that now.
     '            The two skips inside the loop are decisions, not errors, and never come here.
-    If Not bSilent Then MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
-    On Error Resume Next
-    If Not rst Is Nothing Then rst.Close
-    If Dir(strTempFile) <> "" Then Kill strTempFile
+    If Not booSilent Then MsgBox Err.Number & " Error: " & Err.Description, vbExclamation
     BackupAndRemoveAllDataMacros = False
     Resume Cleanup
     Resume
@@ -336,28 +341,28 @@ Nothing is changed. `SaveAsText` writes UTF-16, which is why the file is opened 
 Option Compare Database
 Option Explicit
 
-Public Function DumpTableMacros(ByVal sTable As String) As String
+Public Function DumpTableMacros(ByVal strTable As String) As String
     ' [SCAFFOLD] Read a table's attached Data Macro set back out, so a build can be
     '            verified against the table itself rather than the generator's own report.
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
     Dim txt As Object
-    Dim sPath As String
-    Dim sOut As String
+    Dim strPath As String
+    Dim strOut As String
 
     On Error GoTo errHandler
 
-    sPath = Environ$("TEMP") & "\" & sTable & "_verify.xml"
-    If Dir(sPath) <> "" Then Kill sPath
+    strPath = Environ$("TEMP") & "\" & strTable & "_verify.xml"
+    If Dir(strPath) <> "" Then Kill strPath
 
-    Application.SaveAsText acTableDataMacro, sTable, sPath
+    Application.SaveAsText acTableDataMacro, strTable, strPath
 
     Set fso = CreateObject("Scripting.FileSystemObject")
-    Set txt = fso.OpenTextFile(sPath, 1, False, -1)   ' -1 = TristateTrue, i.e. UTF-16
-    sOut = txt.ReadAll
+    Set txt = fso.OpenTextFile(strPath, 1, False, -1)   ' -1 = TristateTrue, i.e. UTF-16
+    strOut = txt.ReadAll
     txt.Close
 
-    fso.DeleteFile sPath
-    DumpTableMacros = sOut
+    fso.DeleteFile strPath
+    DumpTableMacros = strOut
 
 Cleanup:
     On Error Resume Next
@@ -389,30 +394,30 @@ what its status line said it did**, and that is exactly the discrepancy worth ca
 trusts the audit trail.
 
 ```vba
-Public Function ListMacroEvents(ByVal sTable As String) As String
+Public Function ListMacroEvents(ByVal strTable As String) As String
     ' [SCAFFOLD] Just the Event= names, in order — a one-line structural check that a table
     '            carries the macros the generator said it created.
-    Dim sXml As String
-    Dim lPos As Long
-    Dim lEnd As Long
-    Dim sOut As String
+    Dim strXml As String
+    Dim lngPos As Long
+    Dim lngEnd As Long
+    Dim strOut As String
 
     On Error GoTo errHandler
 
-    sXml = DumpTableMacros(sTable)
-    If Left(sXml, 6) = "ERROR:" Then
-        ListMacroEvents = sXml
+    strXml = DumpTableMacros(strTable)
+    If Left(strXml, 6) = "ERROR:" Then
+        ListMacroEvents = strXml
         Exit Function
     End If
 
-    lPos = InStr(1, sXml, "Event=", vbTextCompare)
-    Do While lPos > 0
-        lEnd = InStr(lPos + 7, sXml, Chr(34))
-        sOut = sOut & Mid(sXml, lPos + 7, lEnd - lPos - 7) & " | "
-        lPos = InStr(lEnd, sXml, "Event=", vbTextCompare)
+    lngPos = InStr(1, strXml, "Event=", vbTextCompare)
+    Do While lngPos > 0
+        lngEnd = InStr(lngPos + 7, strXml, Chr(34))
+        strOut = strOut & Mid(strXml, lngPos + 7, lngEnd - lngPos - 7) & " | "
+        lngPos = InStr(lngEnd, strXml, "Event=", vbTextCompare)
     Loop
 
-    ListMacroEvents = sTable & ": " & sOut & "(" & Len(sXml) & " chars)"
+    ListMacroEvents = strTable & ": " & strOut & "(" & Len(strXml) & " chars)"
 
 Cleanup:
     Exit Function

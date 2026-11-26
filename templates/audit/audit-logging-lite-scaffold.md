@@ -3,9 +3,9 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.22.0
+version: 0.23.0
 status: review
-status_fingerprint: 3dd3fbcf86e9
+status_fingerprint: "5b6292d101f1"
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -217,7 +217,7 @@ Four_GenerateAllAuditDataMacros ' 4. turn on tracking for everything switched ON
 
 `One_CheckAuditReadiness` and `Four_GenerateAllAuditDataMacros` are called above as bare statements
 (the ordinary, interactive way — each pops its own `MsgBox`). Both also take an optional
-`bSilent` argument: call them as `sResult = One_CheckAuditReadiness(True)` /
+`booSilent` argument: call them as `sResult = One_CheckAuditReadiness(True)` /
 `sResult = Four_GenerateAllAuditDataMacros(True)` to read the same report back as a `String`
 with no dialog at all — the way a script, test harness, or an AI assistant facilitating the build
 should read the result, rather than adding a throwaway diagnostic just to see what happened.
@@ -359,7 +359,7 @@ and no other template runs it.
   | `modAddDataMacros` | `BuildAfterInsertMacro` | the `NewAudit.ChangedBy` value |
   | `modAddDataMacros` | `BuildAfterUpdateMacro` | the `ChangedBy` value (both branches) |
   | `modAddDataMacros` | `BuildAfterDeleteMacro` | the `ChangedBy` value (both branches) |
-  | `modAuditLongText` | `BackupLongTextFieldsDM` | `rs!ChangedBy` |
+  | `modAuditLongText` | `BackupLongTextFieldsDM` | `rst!ChangedBy` |
 
   **Change all four or none.** Each writes to the same `tblAuditLog.ChangedBy`, and the Long Text
   path writes a row the After macro later reads back — so a partial change puts two different names

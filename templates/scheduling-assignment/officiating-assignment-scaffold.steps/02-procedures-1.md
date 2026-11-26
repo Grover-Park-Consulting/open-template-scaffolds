@@ -17,18 +17,18 @@ procedure by design. Line numbers are deliberately absent (house-specific; see
 ### AssignOfficial — `Public Function` → `Long` (entry point)
 
 ```vba
-Public Function AssignOfficial(ByVal lGameID As Long, _
-                               ByVal lOfficialID As Long, _
-                               ByVal lOfficialPositionID As Long) As Long
+Public Function AssignOfficial(ByVal lngGameID As Long, _
+                               ByVal lngOfficialID As Long, _
+                               ByVal lngOfficialPositionID As Long) As Long
     ' [SCAFFOLD] Assign one official to one position on one game.
     '            Returns the new GameOfficialID, or 0 when the assignment is refused.
-    Dim sRefusalReason As String
+    Dim strRefusalReason As String
 
     On Error GoTo errHandler
 
-    If Not ValidateAssignment(lGameID, lOfficialID, lOfficialPositionID, sRefusalReason) Then
+    If Not ValidateAssignment(lngGameID, lngOfficialID, lngOfficialPositionID, strRefusalReason) Then
         ' [SCAFFOLD] friendly refusal before the junction's unique indexes can bark
-        MsgBox sRefusalReason, vbExclamation
+        MsgBox strRefusalReason, vbExclamation
         GoTo Cleanup
     End If
 
@@ -49,36 +49,36 @@ End Function
 ### ValidateAssignment — `Public Function` → `Boolean`
 
 ```vba
-Public Function ValidateAssignment(ByVal lGameID As Long, _
-                                    ByVal lOfficialID As Long, _
-                                    ByVal lOfficialPositionID As Long, _
-                                    ByRef sRefusalReason As String) As Boolean
+Public Function ValidateAssignment(ByVal lngGameID As Long, _
+                                    ByVal lngOfficialID As Long, _
+                                    ByVal lngOfficialPositionID As Long, _
+                                    ByRef strRefusalReason As String) As Boolean
     ' [SCAFFOLD] All-or-nothing pre-checks for one assignment; on the first failure,
-    '            set sRefusalReason and exit False. True = safe to insert.
+    '            set strRefusalReason and exit False. True = safe to insert.
     Dim db   As DAO.Database
-    Dim rs   As DAO.Recordset
-    Dim sSql As String
+    Dim rst   As DAO.Recordset
+    Dim strSQL As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
     ' [BUSINESS LOGIC #2] the position is not already filled for this game
     '                     (unique on GameID + OfficialPositionID, checked kindly here first)
-    ' >>> existence query per query-style.md; on hit: sRefusalReason, GoTo Cleanup <<<
+    ' >>> existence query per query-style.md; on hit: strRefusalReason, GoTo Cleanup <<<
 
     ' [BUSINESS LOGIC #2] the official is not already working this game in another position
     '                     (unique on GameID + OfficialID)
-    ' >>> existence query per query-style.md; on hit: sRefusalReason, GoTo Cleanup <<<
+    ' >>> existence query per query-style.md; on hit: strRefusalReason, GoTo Cleanup <<<
 
     ' [BUSINESS LOGIC #3] the official is active (tblOfficial.OfficialIsActive = True)
-    ' >>> lookup per query-style.md; on inactive: sRefusalReason, GoTo Cleanup <<<
+    ' >>> lookup per query-style.md; on inactive: strRefusalReason, GoTo Cleanup <<<
 
     ValidateAssignment = True
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing: Set db = Nothing
     Exit Function
 
 errHandler:
@@ -90,8 +90,8 @@ End Function
 ### GetApplicablePayRate — `Public Function` → `Variant`
 
 ```vba
-Public Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
-                                     ByVal lOfficialPositionID As Long, _
+Public Function GetApplicablePayRate(ByVal lngPlayLevelID As Long, _
+                                     ByVal lngOfficialPositionID As Long, _
                                      ByVal dtGameDate As Date) As Variant
     ' [SCAFFOLD] Resolve the effective-dated rate for (level, position) as of a game date.
     '            Returns Null when no rate row applies — caller surfaces a warning, never
@@ -102,28 +102,28 @@ Public Function GetApplicablePayRate(ByVal lPlayLevelID As Long, _
     '            distinguishable, matching what the paired outcome-first template's query
     '            returns for the same case (Business Rule 6, "never silently a $0 rate").
     Dim db   As DAO.Database
-    Dim rs   As DAO.Recordset
-    Dim sSql As String
+    Dim rst   As DAO.Recordset
+    Dim strSQL As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    ' [BUSINESS LOGIC #6] the tblPositionRate row for (lPlayLevelID, lOfficialPositionID) with the
+    ' [BUSINESS LOGIC #6] the tblPositionRate row for (lngPlayLevelID, lngOfficialPositionID) with the
     '                     latest EffectiveDate on or before dtGameDate
     ' >>> TOP 1 ... ORDER BY EffectiveDate DESC query per query-style.md <<<
-    sSql = vbNullString
+    strSQL = vbNullString
 
-    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
-    If rs.EOF Then
+    Set rst = db.OpenRecordset(strSQL, dbOpenSnapshot)
+    If rst.EOF Then
         GetApplicablePayRate = Null
     Else
-        GetApplicablePayRate = rs!PayRate
+        GetApplicablePayRate = rst!PayRate
     End If
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing: Set db = Nothing
     Exit Function
 
 errHandler:
@@ -143,34 +143,34 @@ is exactly the silent-$0 conflation Business Rule 6 exists to prevent. This is t
 this guard.
 
 *(The game's play level is derived through its home team — schema Business Rule 5 —
-so `GetApplicablePayRate`'s `lPlayLevelID` argument is resolved by calling `GameLevelID`,
+so `GetApplicablePayRate`'s `lngPlayLevelID` argument is resolved by calling `GameLevelID`,
 below, rather than read from anywhere stored.)*
 
 ### GetAppSetting — `Public Function` → `String`
 
 ```vba
-Public Function GetAppSetting(ByVal sSettingName As String) As String
+Public Function GetAppSetting(ByVal strSettingName As String) As String
     ' [SCAFFOLD] Read one named setting from tblAppSetting; empty string when absent.
     '            Single purpose: settings live in data, never hardcoded (Business Rule 9's
     '            photo folder is the first consumer; every later setting reuses this).
     Dim db   As DAO.Database
-    Dim rs   As DAO.Recordset
-    Dim sSql As String
+    Dim rst   As DAO.Recordset
+    Dim strSQL As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
     ' [SCAFFOLD] look up SettingValue by SettingName (unique)
     ' >>> lookup query per query-style.md <<<
-    sSql = vbNullString
+    strSQL = vbNullString
 
-    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
-    If Not rs.EOF Then GetAppSetting = Nz(rs!SettingValue, vbNullString)
+    Set rst = db.OpenRecordset(strSQL, dbOpenSnapshot)
+    If Not rst.EOF Then GetAppSetting = Nz(rst!SettingValue, vbNullString)
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing: Set db = Nothing
     Exit Function
 
 errHandler:
@@ -192,14 +192,14 @@ Public Sub EnsureGameValidationRule()
     '            Check first and name it, rather than let the engine's own uninformative
     '            error be the first thing the developer sees.
     Dim tdf   As DAO.TableDef
-    Dim sOpen As String
+    Dim strOpen As String
 
     On Error GoTo errHandler
 
-    sOpen = ListOpenObjects()
-    If Len(sOpen) > 0 Then
+    strOpen = ListOpenObjects()
+    If Len(strOpen) > 0 Then
         MsgBox "Stopped. Something in this database is still open:" & vbCrLf & vbCrLf & _
-               sOpen & vbCrLf & "Close it and run this again.", vbExclamation
+               strOpen & vbCrLf & "Close it and run this again.", vbExclamation
         Exit Sub
     End If
 
@@ -243,36 +243,36 @@ Public Function ListOpenObjects() As String
     '            No errHandler and therefore no line numbers: an object that cannot be asked
     '            is reported as not open, and the caller stops on whatever else it finds.
     Dim obj   As Object
-    Dim sList As String
+    Dim strList As String
 
-    sList = ""
+    strList = ""
 
     On Error Resume Next
 
     For Each obj In CurrentProject.AllForms
-        If obj.IsLoaded Then sList = sList & "  Form: " & obj.Name & vbCrLf
+        If obj.IsLoaded Then strList = strList & "  Form: " & obj.Name & vbCrLf
     Next obj
 
     For Each obj In CurrentProject.AllReports
-        If obj.IsLoaded Then sList = sList & "  Report: " & obj.Name & vbCrLf
+        If obj.IsLoaded Then strList = strList & "  Report: " & obj.Name & vbCrLf
     Next obj
 
     For Each obj In CurrentData.AllTables
         If Left$(obj.Name, 4) <> "MSys" Then
             If SysCmd(acSysCmdGetObjectState, acTable, obj.Name) <> 0 Then
-                sList = sList & "  Table: " & obj.Name & vbCrLf
+                strList = strList & "  Table: " & obj.Name & vbCrLf
             End If
         End If
     Next obj
 
     For Each obj In CurrentData.AllQueries
         If SysCmd(acSysCmdGetObjectState, acQuery, obj.Name) <> 0 Then
-            sList = sList & "  Query: " & obj.Name & vbCrLf
+            strList = strList & "  Query: " & obj.Name & vbCrLf
         End If
     Next obj
 
     On Error GoTo 0
 
-    ListOpenObjects = sList
+    ListOpenObjects = strList
 End Function
 ```

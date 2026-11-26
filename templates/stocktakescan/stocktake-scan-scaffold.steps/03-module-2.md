@@ -14,36 +14,36 @@ full in `ProcessScan`. When they are written, import the whole module.
 ### DetectDuplicateScan — `Private Function` → `Boolean`
 
 ```vba
-Private Function DetectDuplicateScan(ByVal lCountID As Long, _
-                                     ByVal lScanQuantity As Long, _
+Private Function DetectDuplicateScan(ByVal lngCountID As Long, _
+                                     ByVal lngScanQuantity As Long, _
                                      ByVal db As DAO.Database) As Boolean
-    ' [SCAFFOLD] True if an existing scan on lCountID matches this one closely enough to be
-    '            the same physical item scanned twice. Called only when lCountID <> 0 — the
+    ' [SCAFFOLD] True if an existing scan on lngCountID matches this one closely enough to be
+    '            the same physical item scanned twice. Called only when lngCountID <> 0 — the
     '            duplicate check does not apply to unmatched scans (Business Rule 2).
     ' [SCAFFOLD] db is the same Database object ProcessScan opened its transaction on — see
     '            EnsureCountLine's note above; the reason is the same one here.
-    Dim rs     As DAO.Recordset
-    Dim sSql   As String
-    Dim lWindow As Long
+    Dim rst     As DAO.Recordset
+    Dim strSQL   As String
+    Dim lngWindow As Long
 
     On Error GoTo errHandler
 
-    ' [BUSINESS LOGIC #2] lWindow = SystemSettings.DuplicateScanWindowSeconds (plain integer
+    ' [BUSINESS LOGIC #2] lngWindow = SystemSettings.DuplicateScanWindowSeconds (plain integer
     '            seconds — not the [percent*1000] convention used elsewhere in SystemSettings).
     ' >>> read the setting, per query-style.md <<<
-    lWindow = 0
+    lngWindow = 0
 
-    ' [BUSINESS LOGIC #2] an existing StockTakeScan on lCountID with the same ScanQuantity and a
-    '            ScannedOn within lWindow seconds of Now() makes this scan a duplicate.
+    ' [BUSINESS LOGIC #2] an existing StockTakeScan on lngCountID with the same ScanQuantity and a
+    '            ScannedOn within lngWindow seconds of Now() makes this scan a duplicate.
     ' >>> lookup query, per query-style.md <<<
-    sSql = vbNullString
-    Set rs = db.OpenRecordset(sSql, dbOpenSnapshot)
-    DetectDuplicateScan = Not rs.EOF
+    strSQL = vbNullString
+    Set rst = db.OpenRecordset(strSQL, dbOpenSnapshot)
+    DetectDuplicateScan = Not rst.EOF
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing
     Exit Function
 
 errHandler:
@@ -55,39 +55,39 @@ End Function
 ### RecordScan — `Private Function` → `Long`
 
 ```vba
-Private Function RecordScan(ByVal lSessionID As Long, _
-                            ByVal lCountID As Long, _
-                            ByVal sScanCode As String, _
-                            ByVal lScanQuantity As Long, _
+Private Function RecordScan(ByVal lngSessionID As Long, _
+                            ByVal lngCountID As Long, _
+                            ByVal strScanCode As String, _
+                            ByVal lngScanQuantity As Long, _
                             ByVal db As DAO.Database) As Long
     ' [SCAFFOLD] Insert one StockTakeScan row; return the new StockTakeScanID.
-    '            lCountID = 0 for an unmatched scan (no count line). lSessionID is stored on
+    '            lngCountID = 0 for an unmatched scan (no count line). lngSessionID is stored on
     '            every scan, so an unmatched scan still belongs to its session.
     ' [SCAFFOLD] db is the same Database object ProcessScan opened its transaction on — passed on
     '            to DetectDuplicateScan below rather than let it open its own CurrentDb.
-    Dim lScanStatusID As Long
+    Dim lngScanStatusID As Long
 
     On Error GoTo errHandler
 
     ' [BUSINESS LOGIC #2] resolve the status: Unmatched when there is no count line, else
     '            Duplicate when DetectDuplicateScan says so, else Valid. A duplicate is still
     '            inserted here — RefreshCountRollup (Business Rule 3) is what excludes it.
-    If lCountID = 0 Then
-        lScanStatusID = scanStatusUnmatched
-    ElseIf DetectDuplicateScan(lCountID, lScanQuantity, db) Then
-        lScanStatusID = scanStatusDuplicate
+    If lngCountID = 0 Then
+        lngScanStatusID = scanStatusUnmatched
+    ElseIf DetectDuplicateScan(lngCountID, lngScanQuantity, db) Then
+        lngScanStatusID = scanStatusDuplicate
     Else
-        lScanStatusID = scanStatusValid
+        lngScanStatusID = scanStatusValid
     End If
 
     ' [BUSINESS LOGIC #4] Business Rule 4: a package scan adds Products.QuantityInPackage; a unit
     '            scan adds 1. This signature has no parameter telling RecordScan which case applies
-    '            — lScanQuantity is the caller-supplied scan quantity, not a package/unit flag — so
+    '            — lngScanQuantity is the caller-supplied scan quantity, not a package/unit flag — so
     '            the rule as stated cannot be delivered from this code alone. How a scan is known to
     '            be a package vs. a unit is parked (see "Validating the build," check 5, and
     '            "Package-vs-unit disambiguation" below); settle it with the developer and extend
     '            this signature (or resolve it inside the function) before writing the insert.
-    '            StockTakeSessionID = lSessionID; ScannedOn = Now(); ScanStatusID = lScanStatusID.
+    '            StockTakeSessionID = lngSessionID; ScannedOn = Now(); ScanStatusID = lngScanStatusID.
     ' >>> insert the scan row, per query-style.md; set RecordScan = new StockTakeScanID <<<
 
 Cleanup:
@@ -103,14 +103,14 @@ End Function
 ### RefreshCountRollup — `Private Sub`
 
 ```vba
-Private Sub RefreshCountRollup(ByVal lCountID As Long, ByVal db As DAO.Database)
+Private Sub RefreshCountRollup(ByVal lngCountID As Long, ByVal db As DAO.Database)
     ' [SCAFFOLD] Recompute the stored rollup for one count line.
-    Dim rs As DAO.Recordset
+    Dim rst As DAO.Recordset
 
     On Error GoTo errHandler
 
     ' [BUSINESS LOGIC #3] StockTakeCount.CountedQuantity = SUM(StockTakeScan.ScanQuantity) for
-    '            lCountID, counting only scans where ScanStatusID = scanStatusValid — a scan
+    '            lngCountID, counting only scans where ScanStatusID = scanStatusValid — a scan
     '            marked Duplicate is excluded, never counted twice (stored, not derived — see the
     '            table template's house_assumptions).
     ' [BUSINESS LOGIC #5] The same UPDATE also sets StockTakeCountMethodID = Scan. A scan reaching
@@ -137,8 +137,8 @@ Private Sub RefreshCountRollup(ByVal lCountID As Long, ByVal db As DAO.Database)
 
 Cleanup:
     On Error Resume Next
-    If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing
+    If Not rst Is Nothing Then rst.Close
+    Set rst = Nothing
     Exit Sub
 
 errHandler:
@@ -150,7 +150,7 @@ End Sub
 ### EvaluateVariance — `Private Sub`
 
 ```vba
-Private Sub EvaluateVariance(ByVal lCountID As Long, ByVal db As DAO.Database)
+Private Sub EvaluateVariance(ByVal lngCountID As Long, ByVal db As DAO.Database)
     ' [SCAFFOLD] Set the remediation flag for one count line after its rollup.
     ' [SCAFFOLD] db is the same Database object the caller's transaction is open on — read the
     '            row's current CountedQuantity/ExpectedQuantity with a recordset on db, never with

@@ -3,9 +3,9 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.7.0
+version: 0.8.0
 status: review
-status_fingerprint: 578f56d14c05
+status_fingerprint: "c7d18b5f0662"
 requires_tables:
   - USysLocalSetting
 platform_facts: [target-file, app-startup-autoexec]
@@ -240,8 +240,8 @@ by drive letter, one by network path — and each front end keeps the route that
   applications differently swaps that file and rewrites `Startup()` accordingly; the other eight
   procedures are unaffected.
 - **Error handling** — the `errHandler`/`Cleanup` structure, the error-reporting call, and the
-  line-number policy come from `error-handling.md`, which ranks three options and says when each
-  fits. The `MsgBox` block shown is option 3, which needs nothing installed; a practice with its own
+  line-number policy come from `error-handling.md`, which offers two options and says when each
+  fits. The `MsgBox` block shown is option 2, which needs nothing installed; a practice with its own
   logger substitutes it at the call site, and may number lines or not.
 
   **One requirement this scaffold adds, and it is not optional: the logger used here must not write

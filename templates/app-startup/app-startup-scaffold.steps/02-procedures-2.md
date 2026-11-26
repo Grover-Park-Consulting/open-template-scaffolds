@@ -42,7 +42,7 @@ End Function
 ### PathFromConnect — `Private Function` → `String`
 
 ```vba
-Private Function PathFromConnect(ByVal sConnect As String) As String
+Private Function PathFromConnect(ByVal strConnect As String) As String
     ' [SCAFFOLD] Given what one link records, return the Access file it points at, or an
     '            empty string if it doesn't point at one. This is the single place that
     '            decides what counts as a link to this application's data file.
@@ -54,29 +54,29 @@ Private Function PathFromConnect(ByVal sConnect As String) As String
     '            what keeps a spreadsheet or text-file link out - those carry ";DATABASE="
     '            too, further along ("Excel 12.0 Xml;HDR=YES;...;DATABASE=..."), and
     '            repointing one at an .accdb would break it.
-    Dim lStart As Long
-    Dim lEnd   As Long
-    Dim sTail  As String
+    Dim lngStart As Long
+    Dim lngEnd   As Long
+    Dim strTail  As String
 
     On Error GoTo errHandler
 
-    Select Case Left$(sConnect, 10)
+    Select Case Left$(strConnect, 10)
         Case ";DATABASE=", "MS Access;"
             ' one of ours - carry on
         Case Else
             GoTo Cleanup
     End Select
 
-    lStart = InStr(1, sConnect, ";DATABASE=", vbTextCompare)
-    If lStart = 0 Then GoTo Cleanup
+    lngStart = InStr(1, strConnect, ";DATABASE=", vbTextCompare)
+    If lngStart = 0 Then GoTo Cleanup
 
-    sTail = Mid$(sConnect, lStart + 10)
+    strTail = Mid$(strConnect, lngStart + 10)
 
     ' Whatever follows the path is separated from it by a semicolon.
-    lEnd = InStr(sTail, ";")
-    If lEnd > 0 Then sTail = Left$(sTail, lEnd - 1)
+    lngEnd = InStr(strTail, ";")
+    If lngEnd > 0 Then strTail = Left$(strTail, lngEnd - 1)
 
-    PathFromConnect = sTail
+    PathFromConnect = strTail
 
 Cleanup:
     Exit Function
@@ -103,9 +103,9 @@ Private Function BackEndExtras() As String
     '            scaffold's, but it is worth knowing before choosing to use one.
     Dim db     As DAO.Database
     Dim tdf    As DAO.TableDef
-    Dim lStart As Long
-    Dim lEnd   As Long
-    Dim sTail  As String
+    Dim lngStart As Long
+    Dim lngEnd   As Long
+    Dim strTail  As String
 
     On Error GoTo errHandler
 
@@ -113,12 +113,12 @@ Private Function BackEndExtras() As String
 
     For Each tdf In db.TableDefs
         If Left$(tdf.Connect, 10) = "MS Access;" Then
-            lStart = InStr(1, tdf.Connect, ";PWD=", vbTextCompare)
-            If lStart > 0 Then
-                sTail = Mid$(tdf.Connect, lStart + 5)
-                lEnd = InStr(sTail, ";")
-                If lEnd > 0 Then sTail = Left$(sTail, lEnd - 1)
-                BackEndExtras = ";PWD=" & sTail
+            lngStart = InStr(1, tdf.Connect, ";PWD=", vbTextCompare)
+            If lngStart > 0 Then
+                strTail = Mid$(tdf.Connect, lngStart + 5)
+                lngEnd = InStr(strTail, ";")
+                If lngEnd > 0 Then strTail = Left$(strTail, lngEnd - 1)
+                BackEndExtras = ";PWD=" & strTail
                 Exit For
             End If
         End If
@@ -140,29 +140,29 @@ End Function
 ### ConnectWithNewPath — `Private Function` → `String`
 
 ```vba
-Private Function ConnectWithNewPath(ByVal sConnect As String, _
-                                    ByVal sNewPath As String) As String
+Private Function ConnectWithNewPath(ByVal strConnect As String, _
+                                    ByVal strNewPath As String) As String
     ' [SCAFFOLD] Swap the file path inside a link's Connect string and change nothing else.
     '            Building a fresh ";DATABASE=" & path string instead would be shorter and
     '            would silently throw away a database password, after which RefreshLink
     '            fails and the relink reports failure for a reason nobody can see.
-    Dim lStart As Long
-    Dim lEnd   As Long
-    Dim sTail  As String
+    Dim lngStart As Long
+    Dim lngEnd   As Long
+    Dim strTail  As String
 
     On Error GoTo errHandler
 
-    lStart = InStr(1, sConnect, ";DATABASE=", vbTextCompare)
-    If lStart = 0 Then GoTo Cleanup
+    lngStart = InStr(1, strConnect, ";DATABASE=", vbTextCompare)
+    If lngStart = 0 Then GoTo Cleanup
 
-    sTail = Mid$(sConnect, lStart + 10)
-    lEnd = InStr(sTail, ";")
+    strTail = Mid$(strConnect, lngStart + 10)
+    lngEnd = InStr(strTail, ";")
 
-    If lEnd > 0 Then
+    If lngEnd > 0 Then
         ' Something follows the path - keep it, starting at its semicolon.
-        ConnectWithNewPath = Left$(sConnect, lStart + 9) & sNewPath & Mid$(sTail, lEnd)
+        ConnectWithNewPath = Left$(strConnect, lngStart + 9) & strNewPath & Mid$(strTail, lngEnd)
     Else
-        ConnectWithNewPath = Left$(sConnect, lStart + 9) & sNewPath
+        ConnectWithNewPath = Left$(strConnect, lngStart + 9) & strNewPath
     End If
 
 Cleanup:
@@ -178,7 +178,7 @@ End Function
 ### BackEndIsReachable — `Private Function` → `Boolean`
 
 ```vba
-Private Function BackEndIsReachable(ByVal sPath As String) As Boolean
+Private Function BackEndIsReachable(ByVal strPath As String) As Boolean
     ' [SCAFFOLD] Two questions in one: can this file be opened at all, and is it THIS
     '            application's back end? The second question is the guard against a picked
     '            file that opens perfectly and holds the wrong data.
@@ -191,13 +191,13 @@ Private Function BackEndIsReachable(ByVal sPath As String) As Boolean
 
     On Error GoTo errHandler
 
-    If Len(Dir$(sPath)) = 0 Then GoTo Cleanup
+    If Len(Dir$(strPath)) = 0 Then GoTo Cleanup
 
     ' Opened read-only and non-exclusively, so this check never blocks anyone else, and
     ' closed again in Cleanup a few lines later. BackEndExtras supplies the database
     ' password where the back end has one - without it this open fails on a file that is
     ' perfectly reachable, and the person is told their own data file is the wrong file.
-    Set dbBackEnd = DBEngine.OpenDatabase(sPath, False, True, BackEndExtras())
+    Set dbBackEnd = DBEngine.OpenDatabase(strPath, False, True, BackEndExtras())
 
     ' [BUSINESS LOGIC] name a table this application's back end must contain. Asking for a
     '            table that isn't there raises an error, which is exactly the answer wanted.

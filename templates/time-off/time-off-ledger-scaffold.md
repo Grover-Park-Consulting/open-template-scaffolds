@@ -3,9 +3,9 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.6.0
+version: 0.6.1
 status: draft
-status_fingerprint: d64e7093cc76
+status_fingerprint: "1d654675ec67"
 implements: time-off-ledger-schema
 requires_tables:
   - tlkpTimeOffCategory
