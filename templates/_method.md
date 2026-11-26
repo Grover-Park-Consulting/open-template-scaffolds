@@ -811,8 +811,11 @@ sentence: the backup stop is in the code, and importing it is their permission.
 1. Write the code as files the developer can import: Access objects as text files in the format
    `LoadFromText` reads, code modules as importable files, SQL as script files. Take each format from
    the platform facts you were given; invent none.
-2. Put `PROPOSED CODE: not tested or run in a live database.` at the head of every file you hand
-   over, and say it once, plainly, in your message. Do not dramatise it.
+2. **Mark every file you hand over as proposed code.** Put `PROPOSED CODE: not tested or run in a
+   live database.` as a comment on the first line its format allows one without changing what
+   imports: in a module, the line after its `Attribute` lines. A Data Macro document and a macro's
+   or form's text carry none. `00-READ-FIRST.txt` opens with that line and names every file you
+   hand over. Say it once, plainly, in your message. Do not dramatise it.
 3. **Reading the developer's database is allowed; changing it is not.** List the `MSACCESS.EXE`
    process IDs, copy the supplied file to a name unique to this run, and read the copy with the Access
    server's read tools for its names, structure and code. The new process ID that names your copy is

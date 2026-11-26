@@ -368,7 +368,7 @@ Public Sub BuildAuditStampMacro(ByVal sTable As String, ByVal sPK As String)
     Dim xml As String, fso As Object, txt As Object, sPath As String
     On Error GoTo errHandler
     xml = "<?xml version=""1.0"" encoding=""UTF-16"" standalone=""no""?>"
-    xml = xml & "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2009/11/application"">"
+    xml = xml & "<DataMacros xmlns=""http://schemas.microsoft.com/office/accessservices/2010/12/application"">"
     xml = xml & "<DataMacro Event=""BeforeChange""><Statements><ConditionalBlock>"
     xml = xml & "<If><Condition>IsNull([Old].[" & sPK & "])</Condition><Statements>"
     xml = xml & SetFieldXml("CreatedDate", "Now()") & SetFieldXml("CreatedBy", "AuditUser()")
@@ -432,7 +432,8 @@ End Function
    declaration to `2009/11` on the way out either way, so an exported document never matches its
    input. **The namespace is not a cause of a failed load** — an earlier form of this rule named
    `2010/12` as the form to generate, on the evidence of one run, and a later run lost time changing
-   the namespace to chase a failure that was in the document's shape (rule 6).
+   the namespace to chase a failure that was in the document's shape (rule 6). Generate `2010/12`; a
+   document exported back reads `2009/11`, so never compare the namespace.
 4. **The Long Text limit is on reading `[Old]`, not on writing.** A data macro cannot read the
    previous contents of a Long Text (Memo) field: `[Old].[<field>]` fails and the macro **silently
    abandons every action after it**, which is why an old value has to be staged before the change and
@@ -850,7 +851,7 @@ not an Access MCP server** — it reads this library's files and cannot build an
 **Where none is connected, do not build, and ask nothing about building.** The run is on the handover
 route: tell the developer so before the first question, and follow the method `run-ending` and
 `handover-code`. Everything below this line describes how a build is carried out through an Access
-MCP server. Code handed to a developer is proposed code, headed `PROPOSED CODE`.
+MCP server. Code handed to a developer is proposed code, marked as the method `handover-code` says.
 
 *This passage avoids the word "default" on purpose. It means both the route we would point at first
 and what happens when nobody chooses, and only the first is true here (`_template-schema.md` §10.7).*
@@ -1376,7 +1377,7 @@ truth.
 design consists of. Where no Access MCP server is connected, the developer chooses at the end of the
 run between the specification alone and proposed code. Importable text is never handed over as
 though it were a finished form, because nothing will have opened it to check that it loads: it goes
-to them headed `PROPOSED CODE`.
+to them marked as proposed code (method `handover-code`).
 
 **Create the label controls explicitly.** A control-creation tool makes only the control you name — it does
 **not** auto-create an attached label — so each data control needs a second call for

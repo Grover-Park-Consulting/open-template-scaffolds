@@ -567,7 +567,7 @@ The same design also expresses as **importable Access form text** (`SaveAsText`/
 the markdown → Access-text mapping is proven by hand before a generator is built. **That text is not
 a second build route.** Where no Access MCP server is connected the run is on the handover route;
 importable text is not handed over as though it were a finished form, because nothing will have
-opened it to confirm it loads. It goes to the developer headed `PROPOSED CODE`. See `_materialization.md` for the full mapping rules and a hand-validated
+opened it to confirm it loads. It goes to the developer marked as proposed code (method `handover-code`). See `_materialization.md` for the full mapping rules and a hand-validated
 fragment.
 
 ### 9.5 `validate` rules for `form-spec`
