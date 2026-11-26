@@ -215,6 +215,7 @@ Cleanup:
     Exit Sub
 
 errHandler:
+    ' [STANDARDS - error-handling.md] reporting shape: entry point (option 2 shown).
     MsgBox "Build failed: " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
 End Sub
@@ -266,11 +267,14 @@ Private Sub AddIndex(tdf As DAO.TableDef, ByVal sField As String, ByVal booUniqu
     tdf.Indexes.Append idx
 End Sub
 
-Private Function TableExists(db As DAO.Database, ByVal sName As String) As Boolean
+Private Function TableExists(db As DAO.Database, ByVal strName As String) As Boolean
+    ' [STANDARDS - error-handling.md] a step with nothing to clean up, so no handler: walking
+    '            the collection answers without raising, where looking a missing table up by
+    '            name would raise and need trapping.
     Dim tdf As DAO.TableDef
-    On Error Resume Next
-    Set tdf = db.TableDefs(sName)
-    TableExists = (Not tdf Is Nothing)
+    For Each tdf In db.TableDefs
+        If tdf.Name = strName Then TableExists = True: Exit For
+    Next tdf
 End Function
 ```
 
@@ -387,6 +391,7 @@ Cleanup:
     On Error Resume Next
     Set txt = Nothing: Set fso = Nothing: Exit Sub
 errHandler:
+    ' [STANDARDS - error-handling.md] reporting shape: entry point (option 2 shown).
     MsgBox "BuildAuditStampMacro failed on " & sTable & ": " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
 End Sub
@@ -1203,18 +1208,19 @@ name, and getting either wrong either throws an avoidable error or silently does
    first place.
 
 ```vba
-Public Function SetAllowBypassKey(ByVal fAllow As Boolean) As Boolean
-    ' fAllow:=True restores the bypass (Access's default on every database).
-    ' fAllow:=False closes it: holding Shift while opening this file no longer
+Public Function SetAllowBypassKey(ByVal booAllow As Boolean) As Boolean
+    Const ProcName As String = "SetAllowBypassKey"
+    ' booAllow:=True restores the bypass (Access's default on every database).
+    ' booAllow:=False closes it: holding Shift while opening this file no longer
     ' skips AutoExec or the startup settings.
     Dim db As DAO.Database
     On Error GoTo errHandler
     Set db = CurrentDb
 
     If AllowBypassKeyExists(db) Then
-        db.Properties("AllowBypassKey") = fAllow
+        db.Properties("AllowBypassKey") = booAllow
     Else
-        db.Properties.Append db.CreateProperty("AllowBypassKey", dbBoolean, fAllow, True)
+        db.Properties.Append db.CreateProperty("AllowBypassKey", dbBoolean, booAllow, True)
     End If
     SetAllowBypassKey = True
 
@@ -1223,26 +1229,23 @@ Cleanup:
     Set db = Nothing
     Exit Function
 errHandler:
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that hands its outcome back
+    '            (False). A deployment step a person runs, so a failure is reported, not hidden.
+    LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
     Resume Cleanup
     Resume
 End Function
 
 Private Function AllowBypassKeyExists(ByVal db As DAO.Database) As Boolean
+    ' [STANDARDS - error-handling.md] a step with nothing to clean up, so no handler: walking
+    '            the properties answers without raising.
     Dim prp As DAO.Property
-    On Error GoTo errHandler
     For Each prp In db.Properties
         If prp.Name = "AllowBypassKey" Then
             AllowBypassKeyExists = True
             Exit For
         End If
     Next prp
-Cleanup:
-    On Error Resume Next
-    Set prp = Nothing
-    Exit Function
-errHandler:
-    Resume Cleanup
-    Resume
 End Function
 ```
 
@@ -1354,6 +1357,7 @@ Private Sub cboSelectPublication_AfterUpdate()
 Cleanup:
 140   Exit Sub
 errHandler:
+      ' [STANDARDS - error-handling.md] reporting shape: entry point (option 2 shown).
 150   MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
 160   Resume Cleanup
 170   Resume

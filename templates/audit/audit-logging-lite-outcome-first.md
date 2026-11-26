@@ -3,9 +3,9 @@ template: audit-logging-lite-outcome-first
 title: Access Audit Logging (Lite) — outcome-first method
 domain: audit
 type: outcome-first
-version: 0.12.0
+version: 0.13.0
 status: review
-status_fingerprint: 2eb8496f8278
+status_fingerprint: "7bb774f6af7b"
 implements: audit-logging-lite-schema
 platform_facts: [target-file, data-macro-rules.rules]
 steps: [01-checks, 02-limits, 03-tables, 04-data-macros, 05-code, 06-run-the-checks]
@@ -29,7 +29,7 @@ warnings:
 
 # Access Audit Logging (Lite) — outcome-first method
 
-**Status last determined:** 2026-11-23.
+**Status last determined:** 2026-11-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -205,9 +205,12 @@ You can confirm these behaviors with the validation checks listed above.
   developer are left alone unless the developer opted those tables into auditing.
 - The whole run only happens when every object in the database is closed. Each step that needs exclusive control
   confirms it and stops rather than half-finishing.
-- **[your standards]** Nothing in the audit logging path interrupts a person while editing data. Audit logging is
-  bookkeeping that runs when somebody saves a change. A message box there would stop a person who was only
-  changing a record because of something they did not ask for and cannot act on.
+- **[your standards]** Nothing in the audit logging path interrupts a person while editing data, with one
+  exception. Audit logging is bookkeeping that runs when somebody saves a change, and a message box there
+  would stop them for something they did not ask for and cannot act on. The exception: when the change
+  cannot be recorded, the save is refused, with one sentence in Access's own dialog carrying a reference
+  to quote. The record stays on screen, unsaved, and they can try again or undo. A change the audit
+  cannot record is never let through.
 - Before running a build against a database in real use, best practice is to make a backup copy of the file.
   The template asks for one before changing anything.
 - Every audited table has a single-field primary key of a kind whose values fit in a Long Integer:
@@ -331,8 +334,8 @@ gets written.
   which means free within whatever this layer already requires.
 - **`error-handling`** — how a generated procedure reports a failure. One constraint on the answer is
   not a preference and is stated as a promise above: nothing in the recording path interrupts the
-  person editing. A message box raised while somebody saves a record stops them for something they
-  did not ask for and cannot act on.
+  person editing except to refuse a save it could not record. Code a Data Macro calls takes the
+  standard's refusing shape: it records quietly and returns a sentence, which the macro raises.
 - **`query-style`** — how the generated code writes and holds its SQL.
 - **`design-principles`** — how the work divides into procedures. *Free to choose alternatives*
   leaves that division open on purpose, and this layer is what it is open to.
@@ -440,15 +443,11 @@ named above.
   tables.
 - **Surface both house assumptions and the warning in the front matter** and get the developer's
   answer before building.
-- **The error-handling report comes from `standards/error-handling.md`.** One constraint on the answer
-  is not a preference and is stated as an invariant above: nothing in the recording path interrupts
-  the person editing. **A second constraint applies wherever that layer's logger re-raises** — which is
-  normal, and is what a logger does unless it is told the caller is top level. A procedure whose purpose
-  is to return a report to the developer has to declare itself top level to it. Otherwise the error leaves
-  the procedure at the handler, the return value is never assigned, `Resume` is never reached, and the
-  caller gets a raised error instead of the report the procedure exists to produce. Every entry point a
-  person runs directly is such a procedure. The helpers beneath them should re-raise, which is what the
-  layer is for.
+- **Choose every handler from `standards/error-handling.md`'s table.** Code a Data Macro calls takes the
+  refusing shape (the invariant above). A procedure a person runs directly to get a report back is an
+  entry point that returns its report: it puts a failure in that report and returns, so the caller
+  always gets the report the procedure exists to produce. The helpers beneath it are steps and pass
+  their errors up to it.
 
 ## Extra options
 

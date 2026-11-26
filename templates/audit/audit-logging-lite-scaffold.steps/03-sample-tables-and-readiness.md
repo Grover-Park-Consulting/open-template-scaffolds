@@ -164,7 +164,7 @@ CreateTicketPriority:
     Set qdf = db.CreateQueryDef(vbNullString, _
         "PARAMETERS [pName] Text(255), [pSort] Long, [pNow] DateTime, [pUser] Text(255); " & _
         "INSERT INTO tlkpTicketPriority (TicketPriorityName, SortOrder, " & _
-        AUDIT_CREATED_DATE & ", " & AUDIT_CREATED_BY & ") " & _
+        AuditCreatedDate & ", " & AuditCreatedBy & ") " & _
         "VALUES ([pName], [pSort], [pNow], [pUser])")
     qdf.Parameters("pNow").Value = Now()
     qdf.Parameters("pUser").Value = strAuditUser
@@ -285,7 +285,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     booFailed = True
     strReport = "ERROR creating sample tables: " & Err.Number & " - " & Err.Description
     Resume Cleanup
@@ -316,18 +318,18 @@ Private Sub AddAuditColumns(tdf As DAO.TableDef)
     '            them there, not here, if your house uses different names.
     Dim fld As DAO.Field
 
-    Set fld = tdf.CreateField(AUDIT_CREATED_DATE, dbDate)
+    Set fld = tdf.CreateField(AuditCreatedDate, dbDate)
     fld.Required = True
     tdf.Fields.Append fld
 
-    Set fld = tdf.CreateField(AUDIT_CREATED_BY, dbText, 100)
+    Set fld = tdf.CreateField(AuditCreatedBy, dbText, 100)
     fld.Required = True
     tdf.Fields.Append fld
 
-    Set fld = tdf.CreateField(AUDIT_MODIFIED_DATE, dbDate)
+    Set fld = tdf.CreateField(AuditModifiedDate, dbDate)
     tdf.Fields.Append fld
 
-    Set fld = tdf.CreateField(AUDIT_MODIFIED_BY, dbText, 100)
+    Set fld = tdf.CreateField(AuditModifiedBy, dbText, 100)
     tdf.Fields.Append fld
 
     Set fld = Nothing
@@ -346,7 +348,7 @@ or one that uses a text code instead of a number, will not work with this system
 **One kind of key is the developer's choice rather than a flat exclusion: a Replication ID.**
 Where this check finds one, it says so and describes what auditing those tables would cost, so
 the answer can be given before anything is built. Where it finds none, the question never
-arises. `AUDIT_GUID_KEYS_AUDITED` carries that answer.
+arises. `AuditGuidKeysAudited` carries that answer.
 
 Run this **first**, before `Two_CreateAuditTables`. It reads table definitions and changes
 nothing, so the developer learns which tables cannot be audited while there is still nothing to
@@ -471,7 +473,7 @@ Public Function One_CheckAuditReadiness(Optional booSilent As Boolean = False) A
         strReport = "Stopped. No table in this file is in scope, so there was nothing to " & _
             "check and there is nothing to build." & vbCrLf & vbCrLf & _
             "The scope setting at the top of modAddDataMacros does not match the tables in " & _
-            "this file - it is set to """ & AUDIT_SCOPE_MODE & """. On the try-it-out path, " & _
+            "this file - it is set to """ & AuditScopeMode & """. On the try-it-out path, " & _
             "run Zero_CreateSampleTables first: it creates the tables this looks at. " & _
             "Nothing has been changed."
         If Not booSilent Then MsgBox strReport, vbExclamation, "Nothing is in scope"
@@ -497,7 +499,7 @@ Public Function One_CheckAuditReadiness(Optional booSilent As Boolean = False) A
     If lngGuidKeyCount > 0 Then
         strReport = strReport & vbCrLf & vbCrLf & _
             lngGuidKeyCount & " table(s) have a Replication ID as their primary key. " & _
-            IIf(AUDIT_GUID_KEYS_AUDITED, _
+            IIf(AuditGuidKeysAudited, _
                 "This build is set up to audit them, so the log's key column holds text. " & _
                 "Every key in the log is then text, the ordinary numbers included, so " & _
                 "sorting the log by key sorts as text rather than by number.", _
@@ -518,7 +520,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     One_CheckAuditReadiness = "Error checking audit readiness: " & Err.Number & " - " & Err.Description
     If Not booSilent Then MsgBox One_CheckAuditReadiness, vbCritical
     Resume Cleanup
@@ -533,7 +537,7 @@ End Function
 tables they are talking about — a disagreement that shows up as a table reported ready and then never
 scanned, or the reverse.
 
-**It carries out Step 4's answer; it does not make it.** `AUDIT_SCOPE_MODE` holds that answer, and
+**It carries out Step 4's answer; it does not make it.** `AuditScopeMode` holds that answer, and
 this function reads it. Everything finer-grained is a flag in the config table rather than code.
 
 **Three exclusions are tested before the mode is read, so no answer can let one through.** Access's
@@ -548,7 +552,7 @@ a function that receives the whole thing cannot be called in a way that skips th
 
 ```vba
 Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
-    ' [BUSINESS LOGIC — scan boundary] Reads AUDIT_SCOPE_MODE, set in the module-level
+    ' [BUSINESS LOGIC — scan boundary] Reads AuditScopeMode, set in the module-level
     '            declarations from Step 4's answer. The three exclusions below hold under
     '            every mode and are tested first, so no setting and no table list can let
     '            one of them in.
@@ -571,7 +575,7 @@ Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
         Exit Function
     End If
 
-    Select Case AUDIT_SCOPE_MODE
+    Select Case AuditScopeMode
         Case "List"
             IsAuditCandidateTable = IsNamedInScopeList(strName)
         Case "All"
@@ -581,8 +585,9 @@ Private Function IsAuditCandidateTable(tdef As DAO.TableDef) As Boolean
             '            reading of a typo is not "audit nothing" — that is the failure
             '            this whole setting exists to prevent. Stop on the first table
             '            instead, where both callers' error blocks will report it.
-            Err.Raise vbObjectError + 513, "IsAuditCandidateTable", _
-                "AUDIT_SCOPE_MODE is set to """ & AUDIT_SCOPE_MODE & """. It has to be " & _
+            ' [STANDARDS - error-handling.md] a deliberate stop, from the stop range.
+            Err.Raise ErrScopeModeUnknown, ModuleName & ".IsAuditCandidateTable", _
+                "AuditScopeMode is set to """ & AuditScopeMode & """. It has to be " & _
                 """List"" or ""All""."
     End Select
 End Function
@@ -590,7 +595,7 @@ End Function
 
 ### IsNamedInScopeList — `Private Function` → `Boolean`
 
-**Is this table one the developer named?** Reads `AUDIT_SCOPE_LIST`, which is empty unless Step 4
+**Is this table one the developer named?** Reads `AuditScopeList`, which is empty unless Step 4
 was answered with a list of table names. Two callers, both in `IsAuditCandidateTable`: the `List`
 mode itself, and the `USys` opt-in, which works the same way under every mode.
 
@@ -600,14 +605,14 @@ table name that itself contains spaces is unaffected.
 
 ```vba
 Private Function IsNamedInScopeList(strTableName As String) As Boolean
-    IsNamedInScopeList = IsNamedInList(AUDIT_SCOPE_LIST, strTableName)
+    IsNamedInScopeList = IsNamedInList(AuditScopeList, strTableName)
 End Function
 ```
 
 ### IsNamedInList — `Private Function` → `Boolean`
 
 **Is this table named in this list?** The test behind `IsNamedInScopeList`, and behind
-`BuildBeforeChangeMacro`'s reading of `AUDIT_STAMP_LIST`.
+`BuildBeforeChangeMacro`'s reading of `AuditStampList`.
 
 ```vba
 Private Function IsNamedInList(ByVal strList As String, ByVal strTableName As String) As Boolean
@@ -638,7 +643,7 @@ Rule 4).
 **Three types are always accepted and one is the developer's choice.** AutoNumber, Long Integer,
 Integer and Byte all fit the whole-number key column and are never in question. A **Replication
 ID** fits only where the developer chose to audit such tables, which is what
-`AUDIT_GUID_KEYS_AUDITED` records — that answer is also what decides whether the key column was
+`AuditGuidKeysAudited` records — that answer is also what decides whether the key column was
 built to hold text in the first place, so the two cannot disagree. Everything else — text keys,
 keys made of more than one field, and numbers too large for a Long Integer — is out.
 
@@ -650,7 +655,7 @@ Private Function IsAuditableKeyType(ByVal lngFieldType As Long) As Boolean
         Case dbLong, dbInteger, dbByte
             IsAuditableKeyType = True
         Case dbGUID
-            IsAuditableKeyType = AUDIT_GUID_KEYS_AUDITED
+            IsAuditableKeyType = AuditGuidKeysAudited
         Case Else
             IsAuditableKeyType = False
     End Select
@@ -727,14 +732,13 @@ Public Function ListOpenObjects() As String
     '            Access's own tables are skipped: AllTables lists them (11 in an empty
     '            database), they are never this system's business, and an open one is not
     '            something a developer would be asked to close.
-    '            No errHandler and therefore no line numbers: an object that cannot be asked
-    '            is reported as not open, and the caller stops on whatever else it finds.
+    ' [STANDARDS - error-handling.md] a step with nothing to clean up, so no handler: nothing
+    '            here is expected to fail, and an error that does occur is a fault that
+    '            reaches the caller's handler.
     Dim obj As Object
     Dim strList As String
 
     strList = ""
-
-    On Error Resume Next
 
     For Each obj In CurrentProject.AllForms
         If obj.IsLoaded Then strList = strList & "  Form: " & obj.Name & vbCrLf
@@ -757,8 +761,6 @@ Public Function ListOpenObjects() As String
             strList = strList & "  Query: " & obj.Name & vbCrLf
         End If
     Next obj
-
-    On Error GoTo 0
 
     ListOpenObjects = strList
 End Function

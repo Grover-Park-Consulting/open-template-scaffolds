@@ -48,7 +48,7 @@ to print what it returns: `?Two_CreateAuditTables()`.
 
 | # | What they do | Path |
 |---|---|---|
-| 1 | Set `AUDIT_SCOPE_MODE` (and `AUDIT_SCOPE_LIST`, where the answer was a list of names) at the top of `modAddDataMacros` to Step 4's answer, import the four modules, put each in the right file (see the split-database table above), and compile. | Both |
+| 1 | Set `AuditScopeMode` (and `AuditScopeList`, where the answer was a list of names) at the top of `modAddDataMacros` to Step 4's answer, import the four modules, put each in the right file (see the split-database table above), and compile. | Both |
 | 2 | `?Zero_CreateSampleTables()` — builds three made-up tables to try the system on. | A only |
 | 3 | `?One_CheckAuditReadiness()` — reports which tables cannot be audited as they stand, before anything at all is created. | Both; required on B |
 | 4 | `?Two_CreateAuditTables()` — creates `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig`. | Both |

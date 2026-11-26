@@ -3,9 +3,9 @@ template: catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
-version: 0.2.0
+version: 0.3.0
 status: stable
-status_fingerprint: 7648e1c681de
+status_fingerprint: "dcb0706e436e"
 implements: catalog-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
@@ -32,7 +32,7 @@ related:
 
 # Library Publication Catalog — outcome-first method
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -127,10 +127,11 @@ database that behaves the same way. The following must be true of every build:
   function, which reopens exactly the gap the Data Macro route exists to close.
 - The volume/set check never writes a value — it only accepts or refuses a save, on every route into
   the table.
-- **[your standards]** The error-handling pattern applies to the build-time procedures that attach the
-  Data Macro or Validation Rule, not to the refusal itself. When a Validation Rule or a Data Macro's
-  `RaiseError` action refuses a save, Access shows its own dialog naming the problem — no VBA runs, no
-  `On Error` handler fires, and nothing is logged unless something else is separately watching.
+- **[your standards]** The error-handling pattern applies to every procedure the build writes; a
+  refusal is not a fault. When a Validation Rule or a Data Macro's `RaiseError` action refuses a save
+  made through a form, Access shows its own dialog naming the problem, and no code of the build runs.
+  When the build's own code makes the save, the refusal reaches it as an error, and the code tells
+  the person that sentence rather than recording it (`error-handling.md`, *Refusals*).
 - Running the build again replaces what a previous build attached; it never adds a second copy
   alongside it.
 
@@ -208,9 +209,9 @@ file.
   per the schema's own standards layer; this template adds nothing new to that set.
 - **`naming-conventions`** — what any settings object or new module is called, within whatever this
   layer already requires.
-- **`error-handling`** — applies to the build-time procedures, not to a Validation Rule refusal or a
-  Data Macro's own `RaiseError` action. See *The same behavior every time* above for what a developer
-  actually sees instead.
+- **`error-handling`** — applies to every procedure the build writes, and decides what the person
+  is told when the build's own code makes a save the table refuses. A refusal on a save made through
+  a form is Access's own dialog; see *The same behavior every time* above.
 - **`query-style`** — how any generated code writes and holds its SQL.
 - **`design-principles`** — how the work divides into procedures. *Free to choose alternatives* leaves
   that division open on purpose, and this layer is what it is open to.

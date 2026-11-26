@@ -9,6 +9,7 @@ platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation]
 
 ```vba
 Private Function CurrentBackEndPath() As String
+    Const ProcName As String = "CurrentBackEndPath"
     ' [SCAFFOLD] Where do this front end's links currently point? Returns the path held by
     '            the first file link found, or an empty string when there are none - which
     '            is how a single-file database identifies itself, without asking anyone.
@@ -16,6 +17,10 @@ Private Function CurrentBackEndPath() As String
     '            job - there is more than one shape and getting it wrong fails silently.
     Dim db  As DAO.Database
     Dim tdf As DAO.TableDef
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -33,9 +38,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its "" already means "a single-
+    '            file database", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set tdf = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -43,6 +52,7 @@ End Function
 
 ```vba
 Private Function PathFromConnect(ByVal strConnect As String) As String
+    Const ProcName As String = "PathFromConnect"
     ' [SCAFFOLD] Given what one link records, return the Access file it points at, or an
     '            empty string if it doesn't point at one. This is the single place that
     '            decides what counts as a link to this application's data file.
@@ -57,6 +67,10 @@ Private Function PathFromConnect(ByVal strConnect As String) As String
     Dim lngStart As Long
     Dim lngEnd   As Long
     Dim strTail  As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -82,9 +96,12 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its "" already means "not a link
+    '            to an Access file", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -92,6 +109,7 @@ End Function
 
 ```vba
 Private Function BackEndExtras() As String
+    Const ProcName As String = "BackEndExtras"
     ' [SCAFFOLD] Everything OpenDatabase needs about the back end BESIDES its path. Today
     '            that means one thing: the database password, where the back end has one.
     '            Returned in the form OpenDatabase wants - ";PWD=<password>" - or an empty
@@ -106,6 +124,10 @@ Private Function BackEndExtras() As String
     Dim lngStart As Long
     Dim lngEnd   As Long
     Dim strTail  As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -131,9 +153,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its "" already means "no
+    '            password", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set tdf = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -142,6 +168,7 @@ End Function
 ```vba
 Private Function ConnectWithNewPath(ByVal strConnect As String, _
                                     ByVal strNewPath As String) As String
+    Const ProcName As String = "ConnectWithNewPath"
     ' [SCAFFOLD] Swap the file path inside a link's Connect string and change nothing else.
     '            Building a fresh ";DATABASE=" & path string instead would be shorter and
     '            would silently throw away a database password, after which RefreshLink
@@ -149,6 +176,10 @@ Private Function ConnectWithNewPath(ByVal strConnect As String, _
     Dim lngStart As Long
     Dim lngEnd   As Long
     Dim strTail  As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -169,9 +200,12 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. RelinkAllTables writes what it
+    '            returns into a link, so a failure must not return a value.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -179,6 +213,7 @@ End Function
 
 ```vba
 Private Function BackEndIsReachable(ByVal strPath As String) As Boolean
+    Const ProcName As String = "BackEndIsReachable"
     ' [SCAFFOLD] Two questions in one: can this file be opened at all, and is it THIS
     '            application's back end? The second question is the guard against a picked
     '            file that opens perfectly and holds the wrong data.
@@ -213,9 +248,11 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup).
-    '            Note this handler logs a failed probe. That is deliberate: an application
-    '            that cannot reach its data is worth a log entry.
+    ' [STANDARDS - error-handling.md] answering shape: a missing file, a dead server or a file
+    '            that is not this application's back end each means "no". Nothing is reported here;
+    '            EnsureBackEndLink, which concludes there is no back end anywhere, tells the
+    '            person.
+    BackEndIsReachable = False
     Resume Cleanup
     Resume
 End Function

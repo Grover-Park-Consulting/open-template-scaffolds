@@ -22,7 +22,7 @@ Private Function BuildAfterInsertMacro(strTableName As String, fieldList As Coll
     Dim lngFldType As Long
 
     strXml = "<DataMacro Event=""AfterInsert""><Statements>"
-    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = strXml & "<Comment>" & AuditMacroMarkerFull & " - regenerate rather than edit by hand.</Comment>"
 
     ' [BUSINESS LOGIC - schema Business Rule 4] The key goes into one local variable and
     '                 everything below reads that, never the key field. See
@@ -48,7 +48,7 @@ Private Function BuildAfterInsertMacro(strTableName As String, fieldList As Coll
         If strPrimaryKeyField <> "" Then
             strXml = strXml & "<Action Name=""SetField"">"
             strXml = strXml & "<Argument Name=""Field"">NewAudit.PrimaryKey</Argument>"
-            strXml = strXml & "<Argument Name=""Value"">[" & AUDIT_KEY_LOCAL_VAR & "]</Argument>"
+            strXml = strXml & "<Argument Name=""Value"">[" & AuditKeyVarName & "]</Argument>"
             strXml = strXml & "</Action>"
         End If
 
@@ -116,7 +116,7 @@ Private Function BuildAfterUpdateMacro(strTableName As String, fieldList As Coll
     Dim booIsLongText As Boolean
 
     strXml = "<DataMacro Event=""AfterUpdate""><Statements>"
-    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = strXml & "<Comment>" & AuditMacroMarkerFull & " - regenerate rather than edit by hand.</Comment>"
 
     ' [BUSINESS LOGIC - schema Business Rule 4] Emitted once, above the per-field loop, so
     '                 every LookUpRecord below can read it. See AuditKeyLocalVar.
@@ -140,7 +140,7 @@ Private Function BuildAfterUpdateMacro(strTableName As String, fieldList As Coll
                 strXml = strXml & "<Reference>tblLongTextBackup</Reference>"
                 strXml = strXml & "<WhereCondition>"
                 strXml = strXml & "[tblLongTextBackup].[TableName]=""" & strTableName & """ And "
-                strXml = strXml & "[tblLongTextBackup].[PrimaryKey]=[" & AUDIT_KEY_LOCAL_VAR & "] And "
+                strXml = strXml & "[tblLongTextBackup].[PrimaryKey]=[" & AuditKeyVarName & "] And "
                 strXml = strXml & "[tblLongTextBackup].[FieldName]=""" & strFieldName & """"
                 strXml = strXml & "</WhereCondition>"
                 strXml = strXml & "</Data>"
@@ -175,7 +175,7 @@ Private Function BuildAfterUpdateMacro(strTableName As String, fieldList As Coll
                 Else
                     strXml = strXml & "<Argument Name=""Field"">NewAudit.PrimaryKey</Argument>"
                 End If
-                strXml = strXml & "<Argument Name=""Value"">[" & AUDIT_KEY_LOCAL_VAR & "]</Argument>"
+                strXml = strXml & "<Argument Name=""Value"">[" & AuditKeyVarName & "]</Argument>"
                 strXml = strXml & "</Action>"
             End If
 
@@ -275,7 +275,7 @@ Private Function BuildAfterDeleteMacro(strTableName As String, fieldList As Coll
     Dim booIsLongText As Boolean
 
     strXml = "<DataMacro Event=""AfterDelete""><Statements>"
-    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = strXml & "<Comment>" & AuditMacroMarkerFull & " - regenerate rather than edit by hand.</Comment>"
 
     ' [BUSINESS LOGIC - schema Business Rule 4] The departed row is [Old] here. Measured on
     '                 AfterDelete as well as AfterUpdate. See AuditKeyLocalVar.
@@ -295,7 +295,7 @@ Private Function BuildAfterDeleteMacro(strTableName As String, fieldList As Coll
             strXml = strXml & "<Reference>tblLongTextBackup</Reference>"
             strXml = strXml & "<WhereCondition>"
             strXml = strXml & "[tblLongTextBackup].[TableName]=""" & strTableName & """ And "
-            strXml = strXml & "[tblLongTextBackup].[PrimaryKey]=[" & AUDIT_KEY_LOCAL_VAR & "] And "
+            strXml = strXml & "[tblLongTextBackup].[PrimaryKey]=[" & AuditKeyVarName & "] And "
             strXml = strXml & "[tblLongTextBackup].[FieldName]=""" & strFieldName & """"
             strXml = strXml & "</WhereCondition>"
             strXml = strXml & "</Data>"
@@ -326,7 +326,7 @@ Private Function BuildAfterDeleteMacro(strTableName As String, fieldList As Coll
             Else
                 strXml = strXml & "<Argument Name=""Field"">NewAudit.PrimaryKey</Argument>"
             End If
-            strXml = strXml & "<Argument Name=""Value"">[" & AUDIT_KEY_LOCAL_VAR & "]</Argument>"
+            strXml = strXml & "<Argument Name=""Value"">[" & AuditKeyVarName & "]</Argument>"
             strXml = strXml & "</Action>"
         End If
 

@@ -38,12 +38,60 @@ of it.
 
 Do not assemble a handler at the point of use from whichever parts seem convenient, and do not
 introduce an exit the pattern doesn't have — `Resume Next`, a bare `Exit Function`, or simply
-falling off the end — into a handler built on the Resume chain. "Continue past this one item" is a
-different idiom with its own rules (see *On Error Resume Next* below), and it belongs in the code
-that raised the error, never in the handler.
+falling off the end — into a handler built on the Resume chain. Absorbing one expected error is the
+recovery idiom below, with its own rules.
 
 The failure this prevents is a quiet one: a handler that looks like it follows the standard while
 behaving in a way the standard never describes, so nobody reading it thinks to check.
+
+## Choose every handler from one table
+
+Before you write a procedure, answer two questions about it. Together they give its handler. Put
+the answer in the design spec, and name the shape in the handler's first comment:
+`' [STANDARDS - error-handling.md] propagating shape`.
+
+**1. Its role: who depends on how it ends?**
+
+Ask in this order; the first yes is its role.
+
+| Ask | If yes, its role is | For example |
+|---|---|---|
+| Is it what handlers call? | **The logger** | `LogError` |
+| Does a Data Macro call it while a row is being saved? | **Called by a Data Macro** | `TimeOffEntryCheck`, `AuditUser` |
+| Can its question be answered only by trying, under the three conditions in *When a failure is the answer*? | **Answer** | `BackEndIsReachable` |
+| Does anything act on its having worked, or on the value it returns (a procedure, a query, a control's source), when its return value cannot say that it failed? | **Step** | `RecordScan` inside `ProcessScan`; `GetApplicablePayRate` in a query, whose Null already means "no rate" |
+| Otherwise: nothing acts on its outcome, or its return value says whether it worked (`False`, a report the caller reads) | **Entry point** | an event procedure, `Startup`, `ProcessScan`, a setup procedure that returns its report |
+
+**An entry point may also be called by code**, when it hands its outcome back as a value: it reports
+the fault itself, returns failure, and the calling code acts on the value without logging it again.
+That is how a setup procedure serves both a person at the keyboard and a caller with nobody there.
+A procedure whose value cannot carry failure is never that: a Null or 0 that already means "none"
+would turn an error into a believable answer.
+
+A step called from a query or a control's source passes its error to Access, which shows `#Error` in
+that row or control: visible, and not mistaken for a value.
+
+**2. The kind of error: how was it raised?**
+
+| Kind | Raised by | Recognised by |
+|---|---|---|
+| **Refusal** | The engine refusing a write the code made (a Data Macro's `RaiseError`, a validation rule, a required or empty field, a duplicate key, a missing or remaining related record, a value too large, a row locked by someone else), or our own code refusing, from the refusal range | `IsRefusal(Err.Number)` |
+| **Expected** | One error this procedure means to treat as a normal outcome, named in its own code | that number, in that procedure only |
+| **Fault** | Everything else, including a deliberate stop our own code raises from the stop range | neither of the above |
+
+**3. The handler.** Find the row, then the column.
+
+| Role | Fault | Refusal | Expected |
+|---|---|---|---|
+| **Entry point** | Reporting shape: roll back if it began a transaction, then report | Reporting shape's refusal branch: roll back, tell the person the sentence, do not log | Recovery idiom |
+| **Step** | Propagating shape; no handler at all if there is nothing to clean up | Propagating shape, unchanged | Recovery idiom |
+| **Answer** | Answering shape | Answering shape | — |
+| **Called by a Data Macro** | Refusing shape: log quietly, return a sentence that refuses the save | Its own refusal: return the sentence | Recovery idiom |
+| **The logger** | Guarded | — | — |
+
+**Only an entry point sorts refusals from faults.** A step passes every error on as it came, so the
+procedure that knows what the person was doing decides what they are told. Every shape is described
+below, with its code.
 
 ## Labels
 
@@ -59,6 +107,18 @@ logger is built**, rather than written into each handler: a short message with a
 they can quote back, the full technical detail, or — if that is deliberately chosen — nothing at
 all. Deciding it in one place is why no option below puts a `MsgBox` in the handler itself.
 
+**On a path where nobody may be interrupted, pass `booShow:=False`:** the error is recorded and
+nothing is shown. Such a path is named by its template (scanning, a save a Data Macro is handling).
+`LogError` returns the record's reference number, 0 when none was kept, so a quiet path can hand the
+reference on in a sentence instead.
+
+```vba
+lngRef = LogError(ModuleName, ProcName, Erl, booShow:=False)
+```
+
+Option 2 has nowhere to put an error on a quiet path. A template with a quiet path either requires
+option 1 or passes the error on to an entry point that may speak.
+
 > **`LogError` is built by `templates/errors/error-logging-scaffold.md`**, along with the table it
 > writes to. That template asks which of these two options you want — and where the record goes,
 > what the user sees, and the rest — one question at a time. Choosing between
@@ -68,10 +128,10 @@ all. Deciding it in one place is why no option below puts a `MsgBox` in the hand
 
 ```vba
 ' at the top of the module
-Private Const MODULE_NAME As String = "modInventory"
+Private Const ModuleName As String = "modInventory"
 
 Public Sub RecountShelf(ByVal lShelfID As Long)
-      Const PROC_NAME As String = "RecountShelf"
+      Const ProcName As String = "RecountShelf"
 100       On Error GoTo errHandler
           ' ... main logic ...
 
@@ -79,7 +139,7 @@ Cleanup:
 210       Exit Sub
 
 errHandler:
-240       LogError MODULE_NAME, PROC_NAME, Erl
+240       LogError ModuleName, ProcName, Erl
 250       Resume Cleanup
 260       Resume
 End Sub
@@ -91,11 +151,11 @@ them wrong. It needs nothing installed, nothing enabled, and nothing configured 
 runs on, so it behaves the same way for every adopter. The constants are useful outside the handler
 too: any `Debug.Print` or status message can reference them.
 
-If someone later renames a procedure, `PROC_NAME` is one line directly above the thing they renamed.
+If someone later renames a procedure, `ProcName` is one line directly above the thing they renamed.
 
 ### Never identify the module or procedure by reading the VBA editor at run time
 
-**Named constants (`MODULE_NAME`/`PROC_NAME`, above) are the only way this standard identifies where
+**Named constants (`ModuleName`/`ProcName`, above) are the only way this standard identifies where
 an error happened.** A second technique exists in the wild — reading `Application.VBE.ActiveCodePane`
 while the code runs, to work out which module and procedure raised the error, instead of writing
 their names as constants. **It does not do what its name suggests, and generated code must never use
@@ -134,7 +194,7 @@ clutter. Not reasonable for anything someone else will rely on.
 
 This handler does not report where the error happened, so its procedures carry **neither line
 numbers nor `Erl`**. If a procedure
-declares `MODULE_NAME` and `PROC_NAME` (option 1) but this handler never uses them, leave them in
+declares `ModuleName` and `ProcName` (option 1) but this handler never uses them, leave them in
 and comment them: they are part of the fuller method above, kept as a forward-looking pre-set-up so
 that adding a logger later does not mean editing every procedure.
 
@@ -189,6 +249,9 @@ and a handler that re-raises never returns, so the lines after it never run.
    - Generated code calls only a handler that is installed and compiles.
    - Anything that must happen on failure (a rollback, releasing a file or lock) comes before the
      handler call whenever that handler re-raises, because it never returns.
+   - The roles in *Choose every handler from one table* still hold: the host's call replaces only
+     the report in an entry point's fault branch. Refusals are still sorted with `IsRefusal` and
+     told, steps still propagate, and code a Data Macro calls still returns a sentence.
 5. **Prove it.** Force one failure inside a transaction, in a procedure called from another, and
    check the five conditions. Count the log entries and compare them with what the handler's
    behavior predicts: one per procedure the error passes through for a handler that records and
@@ -229,10 +292,10 @@ Two rules come with that exception, and both are easy to get wrong:
 
 ```vba
 ' at the top of the module
-Private Const MODULE_NAME As String = "modExample"
+Private Const ModuleName As String = "modExample"
 
 Public Sub ProcedureName(ByVal param1 As Type)
-      Const PROC_NAME As String = "ProcedureName"
+      Const ProcName As String = "ProcedureName"
 100       On Error GoTo errHandler
 
       Dim db     As DAO.Database
@@ -248,14 +311,15 @@ Cleanup:
 230       Exit Sub
 
 errHandler:
-240       LogError MODULE_NAME, PROC_NAME, Erl
+240       LogError ModuleName, ProcName, Erl
 250       Resume Cleanup
 260       Resume
 End Sub
 ```
 
-**Trivial one-liners** (a procedure that just calls another procedure, or a one-line helper that
-cannot realistically fail) take **no** `errHandler` and **no** line numbers:
+**Trivial one-liners** (an event procedure that only calls an entry point, which reports for itself,
+or a one-line helper that cannot realistically fail) take **no** `errHandler` and **no** line
+numbers. An event procedure that calls a step is the entry point, and needs the reporting shape:
 
 ```vba
 Private Sub cmdEdit_Click()
@@ -287,9 +351,27 @@ End Sub
 
 ## Resume chain
 
-This is the **reporting shape** — capture `Erl`, report, `Resume Cleanup`, `Resume` — used by a
-procedure that is itself the end of the line (see "What a conforming build looks like" for the
-other named shape, the propagating one).
+This is the **reporting shape** — capture `Erl`, report, `Resume Cleanup`, `Resume` — used by an
+entry point. Where the entry point makes writes the engine may refuse, its handler sorts first:
+
+```vba
+errHandler:
+240       lngLine = Erl                                      ' first: a numbered line below would change it
+250       If booInTrans Then ws.Rollback: booInTrans = False
+260       If IsRefusal(Err.Number) Then
+270           MsgBox Err.Description, vbInformation          ' or wherever the template sends results
+280       Else
+290           LogError ModuleName, ProcName, lngLine
+300       End If
+310       Resume Cleanup
+320       Resume
+```
+
+A refusal is told, never logged: nothing broke, the data was turned down. The sentence is the
+refusal's own (a Data Macro's `RaiseError` description arrives unchanged in `Err.Description`) unless
+the template words it. Where the template says results reach the person as returned text, the
+sentence goes there instead of a message. `ws.Rollback` does not clear `Err` (observed 2026-11-18), so
+`Err` is still the error when it is read after the rollback.
 
 After the handler call: always `Resume Cleanup`, then `Resume`. The trailing `Resume` lets the
 debugger step back to the error line during diagnosis.
@@ -322,7 +404,7 @@ booInTrans = False
 ...
 errHandler:
       If booInTrans Then ws.Rollback
-      LogError MODULE_NAME, PROC_NAME, Erl
+      LogError ModuleName, ProcName, Erl
       Resume Cleanup
       Resume
 ```
@@ -367,7 +449,7 @@ produce, a row B was supposed to insert — whether or not a transaction is invo
 as a dependent step still cleans up its own local resources (close a recordset, release an object)
 in its errHandler, but instead of swallowing the error, it hands it back. This is the
 **propagating shape** — local cleanup only, then `Err.Raise`, no `Erl` capture and no report — the
-second of the two shapes named in "What a conforming build looks like":
+shape the table gives a step:
 
 ```vba
 errHandler:
@@ -376,7 +458,7 @@ errHandler:
 250       strErrSource = Err.Source
 260       strErrDescription = Err.Description
 270       Set rs = Nothing                                    ' local cleanup only
-280       Err.Raise lngErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & strErrSource, strErrDescription
+280       Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 ```
 
 **Copy `Err` before the cleanup.** Cleanup can run code you cannot see: setting a class instance to
@@ -386,7 +468,7 @@ error 5, "Invalid procedure call or argument", and the real error is lost. Obser
 test database: a `Class_Terminate` with `On Error Resume Next`, and one calling a procedure with its
 own handler, both cleared `Err`; `rs.Close` and `ws.Rollback` did not.
 
-**Name this procedure in the source.** Each propagating procedure puts `MODULE_NAME.PROC_NAME->` in
+**Name this procedure in the source.** Each propagating procedure puts `ModuleName.ProcName->` in
 front of `Err.Source`, so the error reaches the procedure that logs carrying the path it took
 (`modOrder.PostOrder->modOrder.WriteLines->MyDatabase`). This tells the reader where the error began,
 which `Erl` in the logging procedure cannot, since it reports only the line of the call. The logger
@@ -421,11 +503,188 @@ errHandler:
 290       strErrSource = Err.Source
 300       strErrDescription = Err.Description
 310       Set rs = Nothing
-320       Err.Raise lngErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & strErrSource, strErrDescription
+320       Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 ```
 
 Only the error number named as expected is ever recovered from inline; every other error takes the
 propagate path above, unlogged, for the dependent caller to log and act on.
+
+## Refusals: `IsRefusal`
+
+When code writes a row and the engine turns it down, the refusal arrives as an ordinary error, by the
+same route as a fault. One function tells them apart. Copy it, unchanged and `Private`, into each
+module whose entry points write: the copy in this file is the only source, and a private copy cannot
+collide with another module's.
+
+```vba
+' error-handling.md: the one list of refusals. Copy unchanged; change it here, not in a module.
+Private Function IsRefusal(ByVal lngErr As Long) As Boolean
+    Select Case lngErr
+        Case 3939                     ' a Data Macro's RaiseError, whatever Number it gave
+        Case 3022                     ' duplicate key
+        Case 3200, 3201               ' related records remain; no related record
+        Case 3314, 3315               ' required value missing; empty string not allowed
+        Case 3316, 3317               ' table or field validation rule
+        Case 3163                     ' value too large for the field
+        Case 3188, 3218, 3260         ' row locked by someone else
+        Case vbObjectError + 1000 To vbObjectError + 1999   ' refused by our own code
+        Case Else: Exit Function
+    End Select
+    IsRefusal = True
+End Function
+```
+
+A row locked by someone else is listed because the person can act on it (wait, then try again); it
+is not a fault in the code. A Data Macro that fails rather than refuses raises nothing at all (see
+*What never reaches a VBA handler*).
+
+## Raising an error on purpose
+
+Our own code raises an error for one of two reasons, and the number says which, so `IsRefusal` needs
+no list per template:
+
+- **A stop**: the code found something it cannot go on from, such as a setting with a value nobody
+  defined. A fault. Number from `vbObjectError + 513` to `vbObjectError + 999`.
+- **A refusal**: the code turns down what the person asked for, as a validation rule would. Number
+  from `vbObjectError + 1000` to `vbObjectError + 1999`.
+
+Declare each number once, at the top of the module, and raise it with the module and procedure as
+the source and a sentence the person can act on as the description:
+
+```vba
+Private Const ErrScopeModeUnknown As Long = vbObjectError + 513   ' a stop
+Private Const ErrEntryAfterInactive As Long = vbObjectError + 1000 ' a refusal
+...
+Err.Raise ErrScopeModeUnknown, ModuleName & "." & ProcName, _
+          "AuditScopeMode is """ & AuditScopeMode & """. It has to be ""List"" or ""All""."
+```
+
+A number is unique within its module; the source says which module it came from, so two modules may
+use the same number. Code that only needs to say no to its own caller returns the answer instead of
+raising (a validation function returning its reason): raise only where the refusal has to cross a
+procedure that would otherwise carry on.
+
+## When a failure is the answer: the answering shape
+
+Some questions can be answered only by trying: "can this file be opened as our back end?" A missing
+file, a dead server and a file that is not a database all raise errors, and each means "no". A
+procedure asking such a question sets the answer in its handler and reports nothing:
+
+```vba
+Private Function BackEndIsReachable(ByVal strPath As String) As Boolean
+    Dim dbBackEnd As DAO.Database
+
+    On Error GoTo errHandler
+    If Len(Dir$(strPath)) = 0 Then GoTo Cleanup          ' tested first: no error needed
+    Set dbBackEnd = DBEngine.OpenDatabase(strPath, False, True)   ' the one attempt
+    BackEndIsReachable = True
+
+Cleanup:
+    On Error Resume Next
+    If Not dbBackEnd Is Nothing Then dbBackEnd.Close
+    Set dbBackEnd = Nothing
+    Exit Function
+
+errHandler:
+    ' [STANDARDS - error-handling.md] answering shape
+    BackEndIsReachable = False                            ' the answer, not a fault
+    Resume Cleanup
+    Resume
+End Function
+```
+
+All three conditions hold, or the procedure is a step and propagates:
+
+1. **Test first what can be tested without an error** (a file exists: `Dir`; a table, field or
+   property exists: walk the collection) and try only what cannot. A question a test answers needs
+   no handler.
+2. **The procedure holds the attempt and nothing else**, so every error it can raise means "no".
+3. **"No" is the safe answer for every caller.** A wrong "no" may cost a retry or a skipped step,
+   never data. Where acting on a wrong "no" would delete, overwrite or lose something, or would show
+   the person a false answer ("no pay rate", "not found"), the procedure is a step.
+
+The caller decides what the person sees: it is the one that knows whether "no" means something is
+wrong.
+
+## Code a Data Macro calls: the refusing shape
+
+A function a Data Macro calls runs inside someone's save. It never raises and never shows anything.
+It returns `""` to let the save go on, or a sentence to refuse it, and the macro raises that sentence
+with `RaiseError`. A fault inside it refuses the save too: it is logged quietly, and the sentence
+carries the reference.
+
+```vba
+Public Function CheckEntry(ByVal lngEntryID As Long) As String
+      Const ProcName As String = "CheckEntry"
+      Dim lngRef As Long
+100       On Error GoTo errHandler
+          ' ... the check; a rule it enforces returns its own sentence:
+          ' CheckEntry = "Not posted: the employee was inactive on that date."
+
+Cleanup:
+          On Error Resume Next
+          ' release anything opened above
+          Exit Function
+
+errHandler:
+    ' [STANDARDS - error-handling.md] refusing shape
+    lngRef = LogError(ModuleName, ProcName, Erl, booShow:=False)
+    CheckEntry = "This change was not saved, because a check could not finish. " & _
+                 "Quote reference " & lngRef & " if it keeps happening."
+    Resume Cleanup
+    Resume
+End Function
+```
+
+```xml
+<Action Name="SetLocalVar"><Argument Name="Name">strRefusal</Argument>
+  <Argument Name="Value">CheckEntry([EntryID])</Argument></Action>
+<ConditionalBlock><If><Condition>[strRefusal]&lt;&gt;""</Condition><Statements>
+  <Action Name="RaiseError"><Argument Name="Number">1</Argument>
+    <Argument Name="Description">=[strRefusal]</Argument></Action>
+</Statements></If></ConditionalBlock>
+```
+
+**What the person sees.** On a form, Access shows the sentence in its own dialog; the record stays
+on screen, unsaved, and they can try again or press Esc to undo. Through code, the writing procedure
+receives error 3939 with the sentence as its description; `IsRefusal` sorts it as a refusal, so it is
+told and not logged a second time. One event, one log entry, one sentence, whichever route made the
+save.
+
+**What it costs.** It fails closed. If the thing the function depends on breaks (an audit table, a
+lookup), every save that runs it is refused until it is fixed. That is the point: a save the check
+could not judge, or an edit the audit could not record, is never let through silently. A template
+whose promise is "nothing changes unrecorded" depends on it.
+
+Under option 2 the sentence carries `Err.Description` instead of a reference, since nothing is
+recorded.
+
+## What never reaches a VBA handler
+
+- **A refused save made through a bound form.** Access shows its own dialog with the refusal's
+  sentence, and no handler in our code runs. That is the default. A form that wants its own wording
+  handles its `Error` event with `IsRefusal` and sets `Response = acDataErrContinue`.
+- **A Data Macro that fails rather than refuses** (a bad expression, a missing table). It raises
+  nothing; Access writes a row to `USysApplicationLog`, a table it creates on the first such failure.
+  Every build that attaches a Data Macro checks, after its checks have run, that the table is absent
+  or has no new rows.
+
+## Proving the shapes
+
+Every template's checklist carries these proofs, for the shapes its build uses, each run through a
+removable seam: a hook the build adds so a check can make a step fail, and removes afterwards.
+
+1. **A fault in a step**: make the deepest step of the longest chain fail. One log entry (one message
+   under option 2), with the path in its source; a transaction rolled back, leaving no partial rows;
+   the entry point reported it.
+2. **A refusal**: make a write the template's tables refuse. The person is told the sentence; nothing
+   is logged.
+3. **An answer**, where there is one: give it the "no" case. No message, nothing logged, and the
+   caller does what its "no" branch says.
+4. **Code a Data Macro calls**, where there is some: make it fail. The save is refused with a
+   sentence carrying the reference; one log entry.
+5. **By reading**: every handler's first comment names its shape, and the shape matches the table;
+   `On Error Resume Next` appears only in `Cleanup:` blocks and the logger.
 
 ## What a conforming build looks like
 
@@ -437,13 +696,11 @@ error handler"; conditions 7 and 8 still apply.
 1. Labels are spelled exactly `errHandler:` and `Cleanup:`.
 2. Every procedure with an `errHandler:` block reaches it from `On Error GoTo errHandler` as its
    first executable line.
-3. Every `errHandler:` block follows one of two named shapes, never a mix of the two: the
-   **reporting shape** — capture `Erl`, report, `Resume Cleanup`, then `Resume` — for a procedure
-   that is itself the end of the line; or the **propagating shape** — copy `Err` into local
-   variables, local cleanup only, then `Err.Raise` from those variables with
-   `MODULE_NAME.PROC_NAME->` in front of the source, no `Erl` capture and no report — for a
-   procedure whose caller depends on the outcome (see "Errors from a called procedure must reach
-   whoever depends on the outcome").
+3. Every procedure's handler is the one *Choose every handler from one table* gives for its role,
+   never a mix, and its first comment names the shape: **reporting** (entry point, with the refusal
+   branch where it writes), **propagating** (step), **answering**, **refusing** (called by a Data
+   Macro), or **guarded** (the logger). The recovery idiom may sit inside any of them, for one named
+   error.
 4. No procedure with an `errHandler:` block exits by a route that skips `Cleanup:`.
 5. `On Error Resume Next` appears only inside a `Cleanup:` block and inside the logger.
 6. A procedure whose error handler reports where the error happened carries line numbers and reads
@@ -455,3 +712,10 @@ error handler"; conditions 7 and 8 still apply.
 9. A procedure whose caller depends on its outcome propagates its errors to that caller, rather than
    logging and returning normally — only a procedure with no caller depending on the outcome, or the
    caller itself once it has the error, logs the failure (and rolls back, if it began a transaction).
+10. Refusals are sorted only at entry points, with `IsRefusal` copied unchanged, and are told, never
+    logged.
+11. Code a Data Macro calls never raises and never shows anything; it returns `""` or a sentence.
+12. Every error raised on purpose uses a declared constant from the stop range or the refusal range,
+    with `ModuleName.ProcName` as its source.
+13. Every quiet path the template names calls `LogError` with `booShow:=False`.
+14. The checklist carries the proofs in *Proving the shapes* for the shapes the build uses.

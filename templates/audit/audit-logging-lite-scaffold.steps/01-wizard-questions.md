@@ -174,9 +174,9 @@ only hints at.
 **Skip when:** Step 1 chose the try-it-out demo. The demo's scope is fixed to the three tables it
 creates — asking here would offer `Every table in this file` or another list, either of which could
 reach real tables sharing the file the demo was built into, and Step 3's backup gate was skipped on
-the promise that a demo run touches nothing you already have. Set `AUDIT_SCOPE_MODE = "List"` and
-`AUDIT_SCOPE_LIST = "tblClient;tlkpTicketPriority;tblSupportTicket"` for the demo without asking,
-and `AUDIT_STAMP_LIST` to the same three: step 0 gives them their who-and-when columns, and nothing
+the promise that a demo run touches nothing you already have. Set `AuditScopeMode = "List"` and
+`AuditScopeList = "tblClient;tlkpTicketPriority;tblSupportTicket"` for the demo without asking,
+and `AuditStampList` to the same three: step 0 gives them their who-and-when columns, and nothing
 else fills them.
 
 **To the AI assistant: three answers plus `Tell me more` fills the control, so there is no room on
@@ -206,9 +206,9 @@ Clues, none decisive:
 Ask through the selection control: `Use this list`, or `Change it` (they say what to add or remove).
 Ask again after every change until they choose `Use this list`.
 
-Whichever answer comes back, set `AUDIT_SCOPE_MODE` in the module-level declarations before the
+Whichever answer comes back, set `AuditScopeMode` in the module-level declarations before the
 module is imported — `"List"` for the first and third answers, `"All"` for the second — and set
-`AUDIT_SCOPE_LIST` to the confirmed or given names. Nothing at run time changes either value.
+`AuditScopeList` to the confirmed or given names. Nothing at run time changes either value.
 
 <details>
 <summary>Tell me more about which tables get audited</summary>

@@ -8,8 +8,9 @@ platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation, dom
 
 ## Procedures, continued
 
-These complete `modStockTakeScan` from step 2. Each ends with the same `errHandler` block shown in
-full in `ProcessScan`. When they are written, import the whole module.
+These complete `modStockTakeScan` from step 2. Each is a step inside `ProcessScan`'s transaction, so
+each hands its errors back to `ProcessScan` (the propagating shape) and reports nothing itself. When
+they are written, import the whole module.
 
 ### DetectDuplicateScan — `Private Function` → `Boolean`
 
@@ -17,6 +18,7 @@ full in `ProcessScan`. When they are written, import the whole module.
 Private Function DetectDuplicateScan(ByVal lngCountID As Long, _
                                      ByVal lngScanQuantity As Long, _
                                      ByVal db As DAO.Database) As Boolean
+    Const ProcName As String = "DetectDuplicateScan"
     ' [SCAFFOLD] True if an existing scan on lngCountID matches this one closely enough to be
     '            the same physical item scanned twice. Called only when lngCountID <> 0 — the
     '            duplicate check does not apply to unmatched scans (Business Rule 2).
@@ -25,6 +27,10 @@ Private Function DetectDuplicateScan(ByVal lngCountID As Long, _
     Dim rst     As DAO.Recordset
     Dim strSQL   As String
     Dim lngWindow As Long
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -47,8 +53,14 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step inside ProcessScan's
+    '            transaction. Copy Err first, release only what this procedure opened, and
+    '            hand the error back, so ProcessScan rolls back instead of committing.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -60,12 +72,17 @@ Private Function RecordScan(ByVal lngSessionID As Long, _
                             ByVal strScanCode As String, _
                             ByVal lngScanQuantity As Long, _
                             ByVal db As DAO.Database) As Long
+    Const ProcName As String = "RecordScan"
     ' [SCAFFOLD] Insert one StockTakeScan row; return the new StockTakeScanID.
     '            lngCountID = 0 for an unmatched scan (no count line). lngSessionID is stored on
     '            every scan, so an unmatched scan still belongs to its session.
     ' [SCAFFOLD] db is the same Database object ProcessScan opened its transaction on — passed on
     '            to DetectDuplicateScan below rather than let it open its own CurrentDb.
     Dim lngScanStatusID As Long
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -95,8 +112,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step inside ProcessScan's
+    '            transaction. Copy Err first, release only what this procedure opened, and
+    '            hand the error back, so ProcessScan rolls back instead of committing.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -104,8 +126,13 @@ End Function
 
 ```vba
 Private Sub RefreshCountRollup(ByVal lngCountID As Long, ByVal db As DAO.Database)
+    Const ProcName As String = "RefreshCountRollup"
     ' [SCAFFOLD] Recompute the stored rollup for one count line.
     Dim rst As DAO.Recordset
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -142,8 +169,14 @@ Cleanup:
     Exit Sub
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step inside ProcessScan's
+    '            transaction. Copy Err first, release only what this procedure opened, and
+    '            hand the error back, so ProcessScan rolls back instead of committing.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Sub
 ```
 
@@ -151,6 +184,7 @@ End Sub
 
 ```vba
 Private Sub EvaluateVariance(ByVal lngCountID As Long, ByVal db As DAO.Database)
+    Const ProcName As String = "EvaluateVariance"
     ' [SCAFFOLD] Set the remediation flag for one count line after its rollup.
     ' [SCAFFOLD] db is the same Database object the caller's transaction is open on — read the
     '            row's current CountedQuantity/ExpectedQuantity with a recordset on db, never with
@@ -158,6 +192,10 @@ Private Sub EvaluateVariance(ByVal lngCountID As Long, ByVal db As DAO.Database)
     '            the caller's own still-open transaction (ProcessScan for an ordinary scan,
     '            OpenStockTakeSession for a freshly created baseline line), and a domain function
     '            would read the last committed value instead of what that transaction just wrote.
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -201,7 +239,12 @@ Cleanup:
     Exit Sub
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step inside ProcessScan's
+    '            transaction. Copy Err first, release only what this procedure opened, and
+    '            hand the error back, so ProcessScan rolls back instead of committing.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Sub
 ```

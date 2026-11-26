@@ -3,9 +3,9 @@ template: capital-asset-tracking-outcome-first
 title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.3.0
+version: 0.4.0
 status: stable
-status_fingerprint: 1e7061b6275b
+status_fingerprint: "57633630128b"
 implements: capital-asset-tracking-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
@@ -44,7 +44,7 @@ related:
 
 # Capital Asset Tracking — outcome-first method
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -313,16 +313,16 @@ file.
   not audit columns and are not covered by this file.
 - **`naming-conventions`** — what any settings table, its columns, and any new module are called,
   within whatever this layer already requires.
-- **`error-handling`** — applies to the build-time procedures (whatever attaches the Data Macros and
-  Validation Rules, and any VBA behind Rules 4 and 6), not to the Data Macro and Validation Rule
-  refusals themselves. **What those look like instead:** when a Validation Rule or a Data Macro's
+- **`error-handling`** — applies to every procedure the build writes (whatever attaches the Data
+  Macros and Validation Rules, and any VBA behind Rules 4 and 6). **What a refusal looks like:** when a
+  Validation Rule or a Data Macro's
   `RaiseError` action refuses a save, Access shows its own dialog box on screen, naming the problem,
   and will not let the record be saved or the cursor move off it until the person fixes the offending
   field or undoes the change — the same dialog Access has always shown for a required field left
-  blank; this template just adds a couple more conditions that trigger it. No VBA runs to produce
-  that: no procedure is called, no `On Error` handler fires, and nothing is logged anywhere unless
-  something else is separately watching. The house error-handling pattern only applies where VBA code
-  is actually running, and none is, in that moment.
+  blank; this template just adds a couple more conditions that trigger it. That is a save made
+  through a form, and no code of the build runs. Where the build's own code makes the save, the
+  refusal reaches it as an error, and the code tells the person that sentence rather than recording
+  it (`error-handling.md`, *Refusals*).
 - **`query-style`** — how the generated code writes and holds its SQL.
 - **`design-principles`** — how the work divides into procedures. *Free to choose alternatives* leaves
   that division open on purpose, and this layer is what it is open to.

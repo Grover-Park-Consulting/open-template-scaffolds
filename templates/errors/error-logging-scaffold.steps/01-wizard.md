@@ -78,11 +78,11 @@ These are the two options `standards/error-handling.md` ranks, where they are ca
 constants** and the plain **message box**. The first calls `LogError`. The second does not record
 anything at all.
 
-**Writing the names into the code.** A generator writes `MODULE_NAME` and `PROC_NAME` at the same
+**Writing the names into the code.** A generator writes `ModuleName` and `ProcName` at the same
 moment it writes the procedure, so they cannot be out of step with it — there is no point at which
 the wrong name could be produced. It needs nothing installed, nothing enabled, and nothing
 configured on the machine it runs on, so it behaves identically for everyone. If somebody renames a
-procedure later, `PROC_NAME` is one line above the thing they renamed.
+procedure later, `ProcName` is one line above the thing they renamed.
 
 **The message box.** Once the person closes the box there is no trace the error happened — no
 record to search, nothing to count, no way to find out afterward how often it occurs. Reasonable

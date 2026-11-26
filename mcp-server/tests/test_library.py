@@ -129,6 +129,21 @@ class TestDesignDeclarations(unittest.TestCase):
         self.assertTrue(any("declared differently" in e for e in errors))
 
 
+class TestHandlerShapes(unittest.TestCase):
+    """VS7: every scaffold handler names its shape from error-handling.md's table."""
+    def code(self, comment):
+        return ("```vba\nPrivate Function Probe() As Boolean\n    On Error GoTo errHandler\n"
+                f"Cleanup:\n    Exit Function\nerrHandler:\n    {comment}\n    Resume Cleanup\nEnd Function\n```\n")
+
+    def test_named_shape_passes(self):
+        text = self.code("' [STANDARDS - error-handling.md] answering shape")
+        self.assertEqual(library._handler_shape_errors(text), [])
+
+    def test_unnamed_handler_fails(self):
+        errors = library._handler_shape_errors(self.code("' [STANDARDS - error-handling.md] standard errHandler block"))
+        self.assertEqual(errors, ["VS7: 'Probe' handler does not name its shape from error-handling.md's table in its first comment"])
+
+
 class TestValidateLibrary(unittest.TestCase):
     def test_live_corpus_all_pass(self):
         result = validate_library()

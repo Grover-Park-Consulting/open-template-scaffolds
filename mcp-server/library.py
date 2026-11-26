@@ -1123,6 +1123,30 @@ def _declarations(text: str) -> dict[str, str]:
     return out
 
 
+_SHAPES = ("reporting", "propagating", "answering", "refusing", "guarded")
+
+
+def _handler_shape_errors(text: str) -> list[str]:
+    """VS7: every errHandler in a scaffold's code names its shape from error-handling.md's table
+    in its first comment, so 'standard errHandler block' cannot stand for two different shapes."""
+    errors = []
+    for blk in re.findall(r"```vba\n(.*?)```", text, re.S):
+        proc = "?"
+        lines = blk.splitlines()
+        for i, ln in enumerate(lines):
+            m = _DECL_RE.match(ln)
+            if m:
+                proc = m.group(1)
+            if ln.strip() == "errHandler:":
+                nxt = next((l.strip() for l in lines[i + 1:] if l.strip()), "")
+                nxt = re.sub(r"^\d+\s+", "", nxt)
+                if not (nxt.startswith("'") and "error-handling.md" in nxt
+                        and any(f"{s} shape" in nxt for s in _SHAPES)):
+                    errors.append(f"VS7: '{proc}' handler does not name its shape from "
+                                  "error-handling.md's table in its first comment")
+    return errors
+
+
 def _design_declaration_errors(front: dict, steps: list[dict]) -> list[str]:
     """VS6: a divided vba-scaffold's design step declares every procedure exactly as its
     code steps' skeletons do, so the design is drafted from the template's signatures."""
@@ -1179,6 +1203,7 @@ def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> lis
             errors.append(f"ST1: {folder.name}/{f.name} is not listed under steps")
     if str(front.get("type", "")) == "vba-scaffold":
         errors += _design_declaration_errors(front, steps)
+        errors += _handler_shape_errors("\n".join(s["body"] for s in steps if s["path"]))
     facts, _ = read_platform_facts()
     for fid in front.get("platform_facts") or []:
         if facts.get(str(fid), {}).get("route") == "build":

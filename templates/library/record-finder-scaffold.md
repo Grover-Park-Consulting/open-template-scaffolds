@@ -3,9 +3,9 @@ template: record-finder-scaffold
 title: Record Finder for an Entry Form — VBA Scaffold
 domain: library
 type: vba-scaffold
-version: 0.6.1
+version: 0.7.0
 status: review
-status_fingerprint: "5b11c2acc181"
+status_fingerprint: "6b8567a23699"
 implements: catalog-schema
 requires_tables:
   - tblPublication

@@ -10,12 +10,17 @@ platform_facts: [mcp-module-import, mcp-line-numbers, recordset-append-crash, vb
 
 ```vba
 Public Function GameLevelID(ByVal lngGameID As Long) As Long
+    Const ProcName As String = "GameLevelID"
     ' [SCAFFOLD] A game's play level, read through its home team - never stored on the game
     '            itself (schema Business Rule 5). Returns 0 when the game or its home team
     '            can't be found.
     Dim db   As DAO.Database
     Dim rst   As DAO.Recordset
     Dim strSQL As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -34,10 +39,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its 0 already means "not found",
+    '            so a failure must not return one. In a query or a control it shows #Error instead.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -45,6 +53,7 @@ End Function
 
 ```vba
 Public Function OfficialAge(ByVal lngOfficialID As Long) As Variant
+    Const ProcName As String = "OfficialAge"
     ' [SCAFFOLD] An official's age, computed from BirthDate as of today - never stored
     '            anywhere (schema Business Rule 8). Returns Null when BirthDate is unknown,
     '            which is why this is a Variant rather than an Integer.
@@ -52,6 +61,10 @@ Public Function OfficialAge(ByVal lngOfficialID As Long) As Variant
     Dim rst      As DAO.Recordset
     Dim strSQL    As String
     Dim dtBirth As Variant
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -77,10 +90,14 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its Null already means "birth
+    '            date unknown", so a failure must not return one. In a query or a control it shows
+    '            #Error instead.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -88,6 +105,7 @@ End Function
 
 ```vba
 Public Function EnsurePhotoFolder() As Boolean
+    Const ProcName As String = "EnsurePhotoFolder"
     ' [SCAFFOLD] Confirm the shared folder named in tblAppSetting.OfficialPhotoFolder exists -
     '            never create one locally in its place (schema Business Rule 9; see
     '            templates/_materialization.md -> External file assets, "shared content
@@ -115,8 +133,10 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that hands its outcome back. It
+    '            tells the person itself, returns False, and SetOfficialPhoto acts on the False
+    '            without reporting again.
+    LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
     Resume Cleanup
     Resume
 End Function
@@ -126,6 +146,7 @@ End Function
 
 ```vba
 Public Function SetOfficialPhoto(ByVal lngOfficialID As Long, ByVal strSourcePath As String) As Boolean
+    Const ProcName As String = "SetOfficialPhoto"
     ' [SCAFFOLD] Copy a picked photo into the shared folder under a controlled name, and
     '            record that name on the official - never the source path, never the file
     '            itself (schema Business Rule 9). The controlled name carries the picked
@@ -204,11 +225,15 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial), plus the
-    '            transaction guard's rollback: a failure before the commit leaves the record and
-    '            the old photo as they were.
+    ' [STANDARDS - error-handling.md] reporting shape: entry point; returns False when refused or
+    '            failed. The transaction guard's rollback comes first: a failure before the commit
+    '            leaves the record and the old photo as they were.
     If booInTrans Then ws.Rollback: booInTrans = False
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    If IsRefusal(Err.Number) Then
+        MsgBox Err.Description, vbInformation
+    Else
+        LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
+    End If
     Resume Cleanup
     Resume
 End Function

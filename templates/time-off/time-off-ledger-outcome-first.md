@@ -3,9 +3,9 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.4.6
+version: 0.5.0
 status: stable
-status_fingerprint: bf1deaefe665
+status_fingerprint: "59c5b3fcf755"
 implements: time-off-ledger-schema
 standards_layer:
   - audit-columns
@@ -32,7 +32,7 @@ related:
 
 # Time Off Ledger — outcome-first method
 
-**Status last determined:** 2026-10-30.
+**Status last determined:** 2026-11-26.
 
 **Who reads this.** *Intent* down to *Standards Layer* is for the developer whose database this is;
 the last section is addressed to the AI assistant building it.
@@ -269,14 +269,14 @@ database that behaves the same way. The following must be true of every build:
   reaches the person unchanged through whatever code posted the entry, not a generic
   message. **A refused cancel says "not cancelled" and a refused replace "not replaced", never "not
   posted".**
-- **A failure nobody planned for is never mistaken for a refusal.** An unexpected error inside a
-  function a Data Macro calls refuses the save. Access shows its own message for it, and it is not
-  recorded unless the build makes it so; the build record says which. The posting procedures
-  record their own unexpected errors with the shared logger where one exists.
-- **[your standards]** The error-handling pattern applies to the build-time procedures and to any
-  VBA function, not to a Data Macro's own `RaiseError` action. When a Data Macro refuses a save,
-  Access shows its own dialog naming the problem; no `On Error` handler fires and nothing is logged
-  unless something else is separately watching.
+- **A failure nobody planned for is never mistaken for a refusal, and is recorded once.** An
+  unexpected error inside a function a Data Macro calls refuses the save with a sentence carrying
+  the record's reference, recorded quietly by the shared logger where one exists. The posting
+  procedures record their own unexpected errors the same way. A refusal is told, never recorded.
+- **[your standards]** When a Data Macro refuses a save made through a form, Access shows its own
+  dialog with the refusal's sentence, and no code of the build runs. When the posting code makes
+  the save, the refusal reaches it as an error (3939, whatever number the macro gave), and the code
+  tells the person that sentence.
 - Running the build again replaces what a previous build attached. It never adds a second copy
   alongside it.
 

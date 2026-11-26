@@ -23,6 +23,8 @@ Public Function FinderRowSource(ByVal lngCategoryID As Long, _
 
 Build the finder dropdown's row source: the entries matching the active filter, plus an "<All ...>" row that always sorts first. Keyword text, when present, wins; otherwise filter by category + first letter.
 
+Error handling (`error-handling.md`): reporting shape.
+
 ### WithAllRow
 
 ```vba
@@ -31,6 +33,8 @@ Private Function WithAllRow(ByVal strCoreSelect As String) As String
 
 Append the "<All ...>" sentinel row and the pick-list ordering to a core SELECT of (RecordID, DisplayText, 1 AS SortIndex) - the one home for the tail both filter paths share. Pure string builder: no errHandler.
 
+Error handling (`error-handling.md`): no handler: nothing in it needs releasing, so an error reaches whatever called it.
+
 ### JumpFormToRecord
 
 ```vba
@@ -38,6 +42,8 @@ Public Sub JumpFormToRecord(ByVal frm As Access.Form, ByVal lngRecordID As Long)
 ```
 
 Narrow the form to the picked record - or show all when lngRecordID = 0 - by rewriting the form's record-source WHERE server-side (only the wanted row is fetched). Uses RewriteWhere so a base query with no WHERE, or a multi-line one, is handled safely.
+
+Error handling (`error-handling.md`): reporting shape.
 
 ### RewriteWhere
 
@@ -48,3 +54,5 @@ Private Function RewriteWhere(ByVal strBaseSQL As String, _
 ```
 
 Return the SELECT...FROM... head of strBaseSQL (everything before its first WHERE / GROUP BY / ORDER BY) with a fresh WHERE and ORDER BY appended. Pure string builder: no errHandler. This is the robust replacement for Left$(sql, InStr(sql, "WHERE") - 1), which crashes on a query with no WHERE and misreads a multi-line one.
+
+Error handling (`error-handling.md`): no handler: nothing in it needs releasing, so an error reaches whatever called it.

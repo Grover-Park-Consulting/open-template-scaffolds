@@ -52,16 +52,16 @@ Public Function LinkErrorLogTable(Optional ByVal strBackEndPath As String = "", 
     ' not an error, so nothing here needs trapping.
     Set tdf = Nothing
     For Each tdf In db.TableDefs
-        If tdf.Name = ERROR_LOG_TABLE Then Exit For
+        If tdf.Name = ErrorLogTable Then Exit For
     Next tdf
     If Not tdf Is Nothing Then
         If Len(tdf.Connect) = 0 Then
-            strReport = ERROR_LOG_TABLE & " is a local table in this file and was left alone."
+            strReport = ErrorLogTable & " is a local table in this file and was left alone."
         ElseIf Left$(tdf.Connect, 10) = ";DATABASE=" Then
-            strReport = ERROR_LOG_TABLE & " is already linked to " & _
+            strReport = ErrorLogTable & " is already linked to " & _
                       Mid$(tdf.Connect, 11) & " and was left alone."
         Else
-            strReport = ERROR_LOG_TABLE & " is already linked (" & tdf.Connect & _
+            strReport = ErrorLogTable & " is already linked (" & tdf.Connect & _
                       ") and was left alone."
         End If
         GoTo Cleanup
@@ -87,23 +87,23 @@ Public Function LinkErrorLogTable(Optional ByVal strBackEndPath As String = "", 
         GoTo Cleanup
     End If
 
-    Set tdf = db.CreateTableDef(ERROR_LOG_TABLE)
+    Set tdf = db.CreateTableDef(ErrorLogTable)
     tdf.Connect = ";DATABASE=" & strBackEndPath
-    tdf.SourceTableName = ERROR_LOG_TABLE
+    tdf.SourceTableName = ErrorLogTable
     db.TableDefs.Append tdf
     db.TableDefs.Refresh
 
     ' [SCAFFOLD] Prove the link reads before calling it done. Reading a field count
     '            forces the link to resolve; a back end that has moved since fails here,
     '            with its own message, rather than at the first error nobody records.
-    If db.TableDefs(ERROR_LOG_TABLE).Fields.Count = 0 Then
+    If db.TableDefs(ErrorLogTable).Fields.Count = 0 Then
         booFailed = True
-        strReport = ERROR_LOG_TABLE & " was linked to " & strBackEndPath & _
+        strReport = ErrorLogTable & " was linked to " & strBackEndPath & _
                   ", but the link does not read. Check the back end."
         GoTo Cleanup
     End If
 
-    strReport = ERROR_LOG_TABLE & " linked to " & strBackEndPath
+    strReport = ErrorLogTable & " linked to " & strBackEndPath
 
 Cleanup:
     Set tdfOther = Nothing
@@ -116,11 +116,11 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] This procedure runs at set-up time, before the
-    '            link the logger writes through exists, so it reports rather than calls
-    '            LogError.
+    ' [STANDARDS - error-handling.md] reporting shape (entry point, returns its report). It
+    '            runs at set-up time, before the link the logger writes through exists, so it
+    '            reports in its report rather than calling LogError.
     booFailed = True
-    strReport = "ERROR linking " & ERROR_LOG_TABLE & ": " & Err.Number & " - " & Err.Description
+    strReport = "ERROR linking " & ErrorLogTable & ": " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
 End Function

@@ -22,7 +22,8 @@ Private Sub ShowErrorToUser(ByVal lngErrNumber As Long, _
                             ByVal lngLine As Long, _
                             ByVal lngLogID As Long, _
                             ByVal booRecorded As Boolean)
-    ' [SCAFFOLD] Guarded: a failure to show the message must not replace the failure we
+    ' [STANDARDS - error-handling.md] guarded shape: part of the logger. A failure to show
+    '            the message must not replace the failure we
     '            were called about.
     Dim strMsg As String
 
@@ -107,20 +108,20 @@ Public Function CreateErrorLogTable(Optional booSilent As Boolean = False) As St
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    strReport = ERROR_LOG_TABLE & " created."
+    strReport = ErrorLogTable & " created."
 
     ' A For Each that runs to the end leaves tdf Nothing: a missing table is an answer,
     ' not an error, so nothing here needs trapping.
     Set tdf = Nothing
     For Each tdf In db.TableDefs
-        If tdf.Name = ERROR_LOG_TABLE Then Exit For
+        If tdf.Name = ErrorLogTable Then Exit For
     Next tdf
     If Not tdf Is Nothing Then
-        strReport = ERROR_LOG_TABLE & " already exists and was left exactly as it is."
+        strReport = ErrorLogTable & " already exists and was left exactly as it is."
         GoTo Cleanup
     End If
 
-    Set tdf = db.CreateTableDef(ERROR_LOG_TABLE)
+    Set tdf = db.CreateTableDef(ErrorLogTable)
 
     ' [SCAFFOLD + _materialization.md rule 3] AutoNumber is dbLong + dbAutoIncrField.
     Set fld = tdf.CreateField("ErrorLogID", dbLong)
@@ -134,12 +135,12 @@ Public Function CreateErrorLogTable(Optional booSilent As Boolean = False) As St
     ' [SCHEMA Business Rule 2] AllowZeroLength on every text column: Err.Description is
     '            sometimes empty, and a Required text field that refuses "" would refuse
     '            the row.
-    Set fld = tdf.CreateField("ErrorDescription", dbText, ERROR_DESCRIPTION_MAX)
+    Set fld = tdf.CreateField("ErrorDescription", dbText, ErrorDescriptionMax)
     fld.Required = True
     fld.AllowZeroLength = True
     tdf.Fields.Append fld
 
-    Set fld = tdf.CreateField("ErrorSource", dbText, ERROR_SOURCE_MAX)
+    Set fld = tdf.CreateField("ErrorSource", dbText, ErrorSourceMax)
     fld.Required = True
     fld.AllowZeroLength = True
     tdf.Fields.Append fld
@@ -219,10 +220,11 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] This procedure runs at set-up time, before the
-    '            logger it is building exists, so it reports rather than calls LogError.
+    ' [STANDARDS - error-handling.md] reporting shape (entry point, returns its report). It
+    '            runs at set-up time, before the logger it is building exists, so it reports
+    '            in its report rather than calling LogError.
     booFailed = True
-    strReport = "ERROR creating " & ERROR_LOG_TABLE & ": " & Err.Number & " - " & Err.Description
+    strReport = "ERROR creating " & ErrorLogTable & ": " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
 End Function
@@ -246,7 +248,7 @@ Private Sub SetFieldDescription(db As DAO.Database, _
     ' [SCAFFOLD] Appending a property that already exists raises 3367, so look for it first
     '            and set it where it is. Any other error is real and reaches the caller's
     '            handler: a field that cannot be described is a build that went wrong.
-    Set fld = db.TableDefs(ERROR_LOG_TABLE).Fields(strField)
+    Set fld = db.TableDefs(ErrorLogTable).Fields(strField)
     For Each prp In fld.Properties
         If prp.Name = "Description" Then Exit For
     Next prp

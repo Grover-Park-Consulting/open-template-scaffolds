@@ -3,9 +3,9 @@ template: stocktake-scan-scaffold
 title: Scanned Stocktake — Scan-Processing VBA Scaffold
 domain: stocktakescan
 type: vba-scaffold
-version: 0.13.1
+version: 0.14.0
 status: review
-status_fingerprint: "33c7f00c1888"
+status_fingerprint: "c275f8310719"
 extends: Northwind (Access Developer Edition)
 implements: stocktake-schema
 requires_tables:

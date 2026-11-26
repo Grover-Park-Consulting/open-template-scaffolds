@@ -1,7 +1,7 @@
 ---
 step: 03-code
 title: "Write and import the code"
-platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse]
+platform_facts: [mcp-module-import, mcp-line-numbers, host-helper-reuse, sql-insert-truncation, recordset-append-crash]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

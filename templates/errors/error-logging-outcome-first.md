@@ -3,11 +3,11 @@ template: error-logging-outcome-first
 title: Error Logging — outcome-first method
 domain: errors
 type: outcome-first
-version: 0.3.0
+version: 0.4.0
 status: stable
-status_fingerprint: dbef837995f0
+status_fingerprint: "3934f28685f1"
 implements: error-logging-schema
-platform_facts: [target-file, sql-insert-truncation, host-helper-reuse]
+platform_facts: [target-file, sql-insert-truncation, host-helper-reuse, recordset-append-crash]
 steps: [01-checks, 02-tables, 03-code, 04-run-the-checks]
 standards_layer:
   - error-handling
@@ -40,7 +40,7 @@ related:
 
 # Error Logging — outcome-first method
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The section after that is addressed to the AI assistant building it, and
@@ -135,6 +135,12 @@ database that behaves the same way. The following must be true of every build:
   exists to prevent — that deviation is confined to the recording logic itself. Every other procedure
   in the build still follows the standards layer's own pattern and calls into the shared logger at the
   point that pattern names.
+- **[your standards]** A caller on a path where nobody may be interrupted records an error without
+  anything being shown, and gets back the reference number (0 where nothing was recorded) to pass on
+  in its own words. Every other caller gets what you chose to show.
+- Recording works from inside a save that a Data Macro is handling, because code a Data Macro calls
+  records its failures from there. The write is a parameterised statement, never a recordset append,
+  which has crashed Access in that position (fact `recordset-append-crash`).
 - Whatever creates the log table and the logging code is safe to run more than once. A second run
   reports what already exists rather than duplicating it.
 - Nothing here interrupts the person using the application beyond what they chose under *Information

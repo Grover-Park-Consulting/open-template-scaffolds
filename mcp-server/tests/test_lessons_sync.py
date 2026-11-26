@@ -50,9 +50,11 @@ class Lookups(unittest.TestCase):
 
     def test_an_inactive_lesson_is_left_out_of_the_index(self):
         _, lessons, h = ls.read_text_lessons(ls.DEFAULT_LESSONS)
-        lessons[0]["status"] = "inactive"
+        active = sum(1 for l in lessons if l["status"] != "inactive")
+        first = next(l for l in lessons if l["status"] != "inactive")
+        first["status"] = "inactive"
         index = ls._index([], lessons, h, "text", None)
-        self.assertEqual(len(index["lessons"]), 28)
+        self.assertEqual(len(index["lessons"]), active - 1)
 
 
 class EnsureIndexWithoutDatabase(unittest.TestCase):
@@ -61,7 +63,7 @@ class EnsureIndexWithoutDatabase(unittest.TestCase):
             result = ls.ensure_index(ls.DEFAULT_LESSONS, Path(tmp) / "store")  # isolate_lessons: no PowerShell
         self.assertEqual(result["status"], "from-text")
         self.assertIn("PowerShell was not found", result["message"])
-        self.assertEqual(len(result["index"]["lessons"]), 29)
+        self.assertEqual(len(result["index"]["lessons"]), 28)   # 29 lessons, one inactive
 
     def test_no_engine_falls_back_to_text(self):
         shells = isolate_lessons.REAL_POWERSHELLS()
@@ -78,7 +80,7 @@ class EnsureIndexWithoutDatabase(unittest.TestCase):
                 ls.SCRIPT, ls._powershells = original
         self.assertEqual(result["status"], "from-text")
         self.assertIn("not available", result["message"])
-        self.assertEqual(len(result["index"]["lessons"]), 29)
+        self.assertEqual(len(result["index"]["lessons"]), 28)   # 29 lessons, one inactive
 
     def test_missing_lessons_folder_is_reported_not_raised(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -115,10 +117,11 @@ class Delivery(unittest.TestCase):
         self.assertNotIn("mechanisms_available", self.deliver(["ace-sql"]))
 
     def test_action_follows_kind_and_confidence(self):
-        lessons = {l["id"]: l for l in self.deliver(["field-properties", "error-handling"])["lessons"]}
+        lessons = {l["id"]: l for l in self.deliver(["field-properties", "error-handling", "host-adoption"])["lessons"]}
         self.assertEqual(lessons["designer-gives-number-fields-a-default-of-zero"]["action"], "ask")
         self.assertEqual(lessons["failure-value-must-not-be-a-meaningful-value"]["action"], "apply")
-        self.assertEqual(lessons["probe-returns-false-without-reporting"]["action"], "state")
+        self.assertEqual(lessons["existing-columns-do-not-say-what-fills-them"]["action"], "state")
+        self.assertNotIn("probe-returns-false-without-reporting", lessons)   # inactive: the standard states it
 
     def test_record_line_names_every_delivered_lesson(self):
         got = self.deliver(["ace-sql"])

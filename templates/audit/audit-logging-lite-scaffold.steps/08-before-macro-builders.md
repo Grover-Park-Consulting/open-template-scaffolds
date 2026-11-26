@@ -17,7 +17,7 @@ be loaded as separate macros. The second load would silently delete the first. T
 together instead:
 
 1. **Stamp the house audit columns** (`standards/audit-columns.md`), on the tables in
-   `AUDIT_STAMP_LIST` that carry them. On those tables nothing else fills them, so without this a
+   `AuditStampList` that carry them. On those tables nothing else fills them, so without this a
    `Required` `CreatedBy` **rejects every insert**. A table whose columns a default or the
    database's own code fills is not listed, and its columns are left to that.
 2. **Stage Long Text old values** ahead of an update, by calling `BackupLongTextFieldsDM` for each
@@ -41,7 +41,7 @@ Private Function BuildBeforeChangeMacro(strTableName As String, fieldList As Col
     ' [SCAFFOLD + STANDARDS — audit-columns.md] BeforeChange carries TWO jobs, because
     '            LoadFromText replaces a table's whole macro set and they cannot be
     '            loaded separately without one destroying the other:
-    '              1. Stamp the house audit columns (tables in AUDIT_STAMP_LIST).
+    '              1. Stamp the house audit columns (tables in AuditStampList).
     '              2. Stage Long Text old values ahead of an update (Long Text tables).
     '            Both key on the same discriminator, IsNull([Old].[PK]).
     '            Returns "" when the table needs neither — no BeforeChange macro at all.
@@ -57,27 +57,27 @@ Private Function BuildBeforeChangeMacro(strTableName As String, fieldList As Col
     Dim booHasModifiedBy As Boolean
     Dim booStamp As Boolean
 
-    ' [STANDARDS — audit-columns.md] Stamp only where AUDIT_STAMP_LIST says the generator
+    ' [STANDARDS — audit-columns.md] Stamp only where AuditStampList says the generator
     '            fills the columns. Matching column names alone would take over columns a
     '            default or the database's own code already fills, and overwrite them.
     '            Within a listed table, presence decides which of the four are stamped;
     '            they arrive with IsAuditable False (always seeded off), so not the flag.
-    booStamp = IsNamedInList(AUDIT_STAMP_LIST, strTableName)
+    booStamp = IsNamedInList(AuditStampList, strTableName)
     booHasLongText = False
     For Each fieldInfo In fieldList
         strFieldName = fieldInfo(0)
         If booStamp Then
-            If StrComp(strFieldName, AUDIT_CREATED_DATE, vbTextCompare) = 0 Then booHasCreatedDate = True
-            If StrComp(strFieldName, AUDIT_CREATED_BY, vbTextCompare) = 0 Then booHasCreatedBy = True
-            If StrComp(strFieldName, AUDIT_MODIFIED_DATE, vbTextCompare) = 0 Then booHasModifiedDate = True
-            If StrComp(strFieldName, AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then booHasModifiedBy = True
+            If StrComp(strFieldName, AuditCreatedDate, vbTextCompare) = 0 Then booHasCreatedDate = True
+            If StrComp(strFieldName, AuditCreatedBy, vbTextCompare) = 0 Then booHasCreatedBy = True
+            If StrComp(strFieldName, AuditModifiedDate, vbTextCompare) = 0 Then booHasModifiedDate = True
+            If StrComp(strFieldName, AuditModifiedBy, vbTextCompare) = 0 Then booHasModifiedBy = True
         End If
         If fieldInfo(1) = dbMemo And fieldInfo(3) = True Then booHasLongText = True
     Next fieldInfo
 
     ' ---- INSERT branch: stamp Created*, never touch Modified* ----
-    If booHasCreatedDate Then strInsertActions = strInsertActions & AuditSetField(AUDIT_CREATED_DATE, "Now()")
-    If booHasCreatedBy Then strInsertActions = strInsertActions & AuditSetField(AUDIT_CREATED_BY, "AuditUser()")
+    If booHasCreatedDate Then strInsertActions = strInsertActions & AuditSetField(AuditCreatedDate, "Now()")
+    If booHasCreatedBy Then strInsertActions = strInsertActions & AuditSetField(AuditCreatedBy, "AuditUser()")
 
     If booHasLongText Then
         ' [BUSINESS LOGIC - schema Business Rule 4] Nothing to back up on an insert - there
@@ -93,8 +93,8 @@ Private Function BuildBeforeChangeMacro(strTableName As String, fieldList As Col
     End If
 
     ' ---- UPDATE branch: stamp Modified*, leave Created* frozen ----
-    If booHasModifiedDate Then strUpdateActions = strUpdateActions & AuditSetField(AUDIT_MODIFIED_DATE, "Now()")
-    If booHasModifiedBy Then strUpdateActions = strUpdateActions & AuditSetField(AUDIT_MODIFIED_BY, "AuditUser()")
+    If booHasModifiedDate Then strUpdateActions = strUpdateActions & AuditSetField(AuditModifiedDate, "Now()")
+    If booHasModifiedBy Then strUpdateActions = strUpdateActions & AuditSetField(AuditModifiedBy, "AuditUser()")
 
     If booHasLongText Then
         strUpdateActions = strUpdateActions & "<Action Name=""SetLocalVar"">"
@@ -116,6 +116,7 @@ Private Function BuildBeforeChangeMacro(strTableName As String, fieldList As Col
                 strUpdateActions = strUpdateActions & "<Argument Name=""Name"">varLongTextBackup</Argument>"
                 strUpdateActions = strUpdateActions & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & strFieldName & """)</Argument>"
                 strUpdateActions = strUpdateActions & "</Action>"
+                strUpdateActions = strUpdateActions & AuditRefusalBlock("varLongTextBackup")
             End If
         Next fieldInfo
     End If
@@ -131,7 +132,7 @@ Private Function BuildBeforeChangeMacro(strTableName As String, fieldList As Col
     '            out — so when only the update branch has work, invert the condition and
     '            emit a plain If with no Else.
     strXml = "<DataMacro Event=""BeforeChange""><Statements>"
-    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = strXml & "<Comment>" & AuditMacroMarkerFull & " - regenerate rather than edit by hand.</Comment>"
     strXml = strXml & "<ConditionalBlock>"
 
     If Len(strInsertActions) > 0 Then
@@ -179,7 +180,7 @@ Private Function BuildBeforeDeleteMacro(strTableName As String, fieldList As Col
     End If
 
     strXml = "<DataMacro Event=""BeforeDelete""><Statements>"
-    strXml = strXml & "<Comment>" & AUDIT_MACRO_MARKER_FULL & " - regenerate rather than edit by hand.</Comment>"
+    strXml = strXml & "<Comment>" & AuditMacroMarkerFull & " - regenerate rather than edit by hand.</Comment>"
 
     strXml = strXml & "<Action Name=""SetLocalVar"">"
     strXml = strXml & "<Argument Name=""Name"">lngPKValue</Argument>"
@@ -198,6 +199,7 @@ Private Function BuildBeforeDeleteMacro(strTableName As String, fieldList As Col
             strXml = strXml & "<Argument Name=""Name"">varLongTextBackup</Argument>"
             strXml = strXml & "<Argument Name=""Value"">BackupLongTextFieldsDM([strTableName],[lngPKValue],""" & strFieldName & """)</Argument>"
             strXml = strXml & "</Action>"
+            strXml = strXml & AuditRefusalBlock("varLongTextBackup")
         End If
     Next fieldInfo
 
@@ -258,7 +260,7 @@ Private Function AuditKeyExpression(ByVal strKeyRef As String) As String
     '                 text: no error raised, the log row still written, and every check still
     '                 passing. Where the log's key column holds whole numbers the reference is
     '                 used as it stands, so the value keeps its type.
-    If AUDIT_GUID_KEYS_AUDITED Then
+    If AuditGuidKeysAudited Then
         AuditKeyExpression = strKeyRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
     Else
         AuditKeyExpression = strKeyRef
@@ -275,9 +277,9 @@ are Long Text, and every audited field's value passes through them.
 
 **This one asks the field's own type, where `AuditKeyExpression` asks the build setting.** The
 two questions are different. Whether the key column holds text is a build-wide answer, which is
-what `AUDIT_GUID_KEYS_AUDITED` records. Whether *this* field is a Replication ID is a per-field
+what `AuditGuidKeysAudited` records. Whether *this* field is a Replication ID is a per-field
 answer, and `IsUnauditableFieldType` does not exclude the type — so **a Replication ID that is
-not a primary key is audited in every build, including one where `AUDIT_GUID_KEYS_AUDITED` is
+not a primary key is audited in every build, including one where `AuditGuidKeysAudited` is
 `False`**. Gating this function on the build setting would leave that field wrong.
 
 **The `&` is built from `Chr(38)`, not typed** — same rule and same reason as
@@ -291,7 +293,7 @@ Private Function AuditValueExpression(ByVal strFieldRef As String, ByVal lngFldT
     '                 nothing raises an error and the log row is still written, so no check
     '                 catches it. Every other type renders correctly on its own, so only this
     '                 one is converted — asked per field, because a Replication ID that is not
-    '                 a primary key is audited whatever AUDIT_GUID_KEYS_AUDITED says.
+    '                 a primary key is audited whatever AuditGuidKeysAudited says.
     If lngFldType = dbGUID Then
         AuditValueExpression = strFieldRef & " " & Chr(38) & "amp; " & Chr(34) & Chr(34)
     Else
@@ -303,7 +305,7 @@ End Function
 ### AuditKeyLocalVar — `Private Function` → `String`
 
 **The one `SetLocalVar` action each After macro emits, and it has to come first.** It wraps
-`AuditKeyExpression` in the action that puts the key into `AUDIT_KEY_LOCAL_VAR`, so the three
+`AuditKeyExpression` in the action that puts the key into `AuditKeyVarName`, so the three
 After builders each emit it once — above the per-field loop in the two that have one, because a
 `LookUpRecord` inside that loop reads the variable and a variable set inside the loop would be
 re-set per field.
@@ -316,8 +318,28 @@ Private Function AuditKeyLocalVar(ByVal strKeyRef As String) As String
     ' [SCAFFOLD] The SetLocalVar action every After macro emits before anything reads the key.
     '            It must come before the LookUpRecord that uses it.
     AuditKeyLocalVar = "<Action Name=""SetLocalVar""><Argument Name=""Name"">" & _
-        AUDIT_KEY_LOCAL_VAR & "</Argument><Argument Name=""Value"">=" & _
+        AuditKeyVarName & "</Argument><Argument Name=""Value"">=" & _
         AuditKeyExpression(strKeyRef) & "</Argument></Action>"
+End Function
+```
+
+### AuditRefusalBlock — `Private Function` → `String`
+
+**Refuses the save with the sentence `BackupLongTextFieldsDM` returned, when there is one**
+(`error-handling.md`, the refusing shape). `BackupLongTextFieldsDM` returns `""` when the old value was
+staged, so the condition passes only for a sentence. The `<>` is built from `Chr(38)`, for the same
+reason as in `GetComparisonExpression`.
+
+```vba
+Private Function AuditRefusalBlock(ByVal strVarName As String) As String
+    ' [SCAFFOLD] A ConditionalBlock that raises the local variable's sentence, if it holds one.
+    Dim strNotEqual As String
+    strNotEqual = Chr(38) & "lt;" & Chr(38) & "gt;"
+    AuditRefusalBlock = "<ConditionalBlock><If><Condition>[" & strVarName & "]" & strNotEqual & _
+        """""</Condition><Statements><Action Name=""RaiseError"">" & _
+        "<Argument Name=""Number"">1</Argument>" & _
+        "<Argument Name=""Description"">=[" & strVarName & "]</Argument>" & _
+        "</Action></Statements></If></ConditionalBlock>"
 End Function
 ```
 

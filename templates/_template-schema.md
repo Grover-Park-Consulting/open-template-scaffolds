@@ -440,9 +440,11 @@ annotation:
 
 - **No line numbers.** Scaffolds never hard-code line numbers; numbering is house-specific and
   deferred to `error-handling.md` (which may number via `Erl`, or not at all).
-- **The `errHandler` block is shown once and referenced.** Because the errHandler block's form in
-  `error-handling.md` is identical in every procedure, show it in full in the first procedure and
-  reference it (`standard errHandler block`) thereafter.
+- **Every `errHandler` block is written in full and names its shape.** `error-handling.md` chooses
+  each procedure's handler from its role (entry point, step, answer, called by a Data Macro, the
+  logger), so handlers differ, and none stands in for another as a "standard errHandler block". Its
+  first comment names the shape (§8.5 rule 7). A step with nothing to clean up has no handler. Each
+  module declares `ModuleName`, and each procedure with a handler declares `ProcName`.
 - **Scope is explicit.** Each procedure is `Public` or `Private` as its usage requires; a sub
   performs an action, a function returns a value.
 
@@ -463,6 +465,9 @@ Moved to `templates/_method.md`, method `staged-procedures`.
 6. A divided scaffold declares every procedure in a `route: both` step exactly as its skeleton does
    (whitespace and line continuations aside), so the design is drafted from the template's own
    signatures (§13).
+7. Every `errHandler:` in a scaffold's code opens with a comment naming its shape from
+   `error-handling.md`'s table (reporting, propagating, answering, refusing or guarded), so a
+   handler cannot stand for two shapes (VS7). A procedure with no handler names none.
 
 ### 8.6 Code that finds its own targets
 
@@ -909,7 +914,7 @@ platform_facts: [vba-import-xml-entities, mcp-module-import, mcp-line-numbers]
 - `route: both` marks a step the design is drafted against (a checklist the design must pass, the
   wizard's design-time questions). It arrives with the design parts, on both routes. Such steps are
   listed before every build step. A divided `vba-scaffold` has one, `00-procedures`: each procedure's
-  declaration exactly as its skeleton has it, and what it does.
+  declaration exactly as its skeleton has it, what it does, and its error-handling shape.
 - `when:` overrides the default timing text for the step's part.
 - A step opens with an `##` heading or a reader line; one that opens on a `###` heading would be read
   as part of the previous step's section. Procedures in a step sit under a `## Procedures` heading
@@ -924,5 +929,5 @@ platform_facts: [vba-import-xml-entities, mcp-module-import, mcp-line-numbers]
 with a `title` and a reader line (ST1, ST4), and no step file is unlisted (ST1); every step's facts
 resolve (ST2); no fact marked `route: build` sits in a divided template's master (ST3); `route: both`
 steps come first (ST5); a divided `vba-scaffold`'s design step declares every procedure as its
-skeleton does (VS6); and every part the run can fetch is within `RESPONSE_LIMIT`, measured as the
+skeleton does (VS6), and every handler names its shape (VS7); and every part the run can fetch is within `RESPONSE_LIMIT`, measured as the
 server sends it (SZ1). While the library is being divided, `steps` is optional (ST0 off).

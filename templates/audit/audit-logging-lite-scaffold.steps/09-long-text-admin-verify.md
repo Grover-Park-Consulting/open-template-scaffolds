@@ -48,9 +48,15 @@ resolves the function in the front end's VBA project). Missing it in either plac
 data-macro execution error at save time.
 
 ```vba
-Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Variant, strFieldName As String)
+Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Variant, _
+                                       strFieldName As String) As String
+    Const ProcName As String = "BackupLongTextFieldsDM"
     ' [SCAFFOLD] Stage one Long Text field's current value before an update or delete.
-    '            Called by the generated BeforeChange / BeforeDelete Data Macros.
+    '            Called by the generated BeforeChange / BeforeDelete Data Macros, which raise
+    '            whatever sentence this returns: "" lets the save go on.
+    ' [STANDARDS - error-handling.md] refusing shape: code a Data Macro calls never raises and
+    '            never shows anything. A backup that cannot be staged refuses the save, because a
+    '            change the audit cannot record is never let through.
     ' [BUSINESS LOGIC — schema Business Rule 4] The key is a Variant, not a Long, for one
     '            reason: Null is the marker for "there is no prior row to copy". It is the only
     '            value that cannot be a primary key of any type, because a primary key is
@@ -58,74 +64,85 @@ Public Function BackupLongTextFieldsDM(strTableName As String, varPKValue As Var
     '            (If lngPKValue > 0), which silently skipped the backup for a row whose key is
     '            legitimately 0 — reachable on any Long Integer, Integer or Byte key that is
     '            not an AutoNumber.
-    Dim db As DAO.Database
-    Dim rst As DAO.Recordset
+    Dim db          As DAO.Database
+    Dim qdf         As DAO.QueryDef
     Dim rstOldValue As DAO.Recordset
-    Dim strPKField As String
-    Dim strOldValue As Variant
+    Dim strPKField  As String
+    Dim varOldValue As Variant
+    Dim lngRef      As Long
 
     On Error GoTo errHandler
     Set db = CurrentDb
 
-    If strTableName = "" Then Exit Function
-    If IsNull(varPKValue) Then Exit Function   ' an insert — there is no prior value to stage
+    If strTableName = "" Then GoTo Cleanup
+    If IsNull(varPKValue) Then GoTo Cleanup   ' an insert: there is no prior value to stage
 
-    ' Replace any earlier backup for this table/field/record
-    db.Execute "DELETE FROM tblLongTextBackup WHERE TableName='" & strTableName & _
-        "' AND FieldName='" & strFieldName & "' AND PrimaryKey=" & _
-        BackupKeyLiteral(varPKValue), dbFailOnError
+    ' Replace any earlier backup for this table/field/record. [STANDARDS - query-style.md]
+    '            values as parameters; the key literal comes from BackupKeyLiteral, which
+    '            writes it in the form the PrimaryKey column holds.
+    Set qdf = db.CreateQueryDef(vbNullString, _
+        "PARAMETERS [pTable] Text(255), [pField] Text(255); " & _
+        "DELETE FROM tblLongTextBackup WHERE TableName = [pTable] AND FieldName = [pField] " & _
+        "AND PrimaryKey = " & BackupKeyLiteral(varPKValue))
+    qdf.Parameters("pTable").Value = strTableName
+    qdf.Parameters("pField").Value = strFieldName
+    qdf.Execute dbFailOnError
 
     ' The audited table's PK field name comes from the config
     strPKField = DLookup("FieldName", "tblAuditLogConfig", _
-        "TableName='" & strTableName & "' AND IsPrimaryKey=" & True)
+        "TableName='" & Replace(strTableName, "'", "''") & "' AND IsPrimaryKey=" & True)
 
-    Set rstOldValue = db.OpenRecordset("SELECT " & strFieldName & " FROM " & strTableName & _
-        " WHERE " & strPKField & "=" & SourceKeyLiteral(strTableName, strPKField, varPKValue))
+    Set rstOldValue = db.OpenRecordset("SELECT [" & strFieldName & "] FROM [" & strTableName & _
+        "] WHERE [" & strPKField & "]=" & SourceKeyLiteral(strTableName, strPKField, varPKValue))
 
     ' [SCAFFOLD] A key was supplied, so the row it names has to exist — it is the row being
     '            changed or deleted, and it is locked inside this transaction. Finding nothing
-    '            means the literal above did not match, so no backup is staged. The delete
-    '            above has already removed any earlier one, and the After macro creates its
-    '            log row inside the LookUpRecord that reads this table — so the field is not
-    '            logged at all, rather than logged wrongly. Raise it so the failure is not
-    '            merely silent: the handler below stays quiet for the person editing, and a
-    '            house logger sees it where the standards layer provides one.
+    '            means the literal above did not match, so no backup can be staged, and the
+    '            After macro would log nothing for the field. That is a fault: raise it here,
+    '            where this procedure's own handler turns it into a refused save.
     If rstOldValue.EOF Then
-        rstOldValue.Close
-        Err.Raise vbObjectError + 514, "BackupLongTextFieldsDM", _
-            "No row found in " & strTableName & " for key " & CStr(varPKValue) & _
-            ". The key could not be matched, so no Long Text backup was staged."
+        Err.Raise ErrBackupRowNotFound, ModuleName & "." & ProcName, _
+            "No row found in " & strTableName & " for key " & CStr(varPKValue) & "."
     End If
-
-    strOldValue = rstOldValue.Fields(strFieldName).Value
+    varOldValue = rstOldValue.Fields(strFieldName).Value
     rstOldValue.Close
+    Set rstOldValue = Nothing
 
-    Set rst = db.OpenRecordset("tblLongTextBackup", dbOpenDynaset)
-    rst.AddNew
-    rst!TableName = strTableName
-    rst!PrimaryKey = varPKValue
-    rst!FieldName = strFieldName
-    rst!OldValue = strOldValue
-    rst!DateChanged = Now()
     ' [STANDARDS / schema Business Rule 9] AuditUser() preferred choice, same as the macros. This
     '            row is the one the After macro reads back, so it is the easiest of the
     '            four sites to miss when applying the CurrentUser() Extra Option — and
     '            missing it puts two names on one edit.
-    rst!ChangedBy = AuditUser()
-    rst.Update
-    rst.Close
+    ' [STANDARDS - query-style.md] a parameterised INSERT, never a recordset append: this runs
+    '            inside a Data Macro's save, where a recordset append has crashed Access (fact
+    '            recordset-append-crash). The old value is Long Text, so its parameter is
+    '            LongText; it is the only one.
+    Set qdf = db.CreateQueryDef(vbNullString, _
+        "PARAMETERS [pTable] Text(255), [pKey] Text(255), [pField] Text(255), " & _
+        "[pOld] LongText, [pOn] DateTime, [pBy] Text(255); " & _
+        "INSERT INTO tblLongTextBackup (TableName, PrimaryKey, FieldName, OldValue, " & _
+        "DateChanged, ChangedBy) VALUES ([pTable], [pKey], [pField], [pOld], [pOn], [pBy])")
+    qdf.Parameters("pTable").Value = strTableName
+    qdf.Parameters("pKey").Value = CStr(varPKValue)
+    qdf.Parameters("pField").Value = strFieldName
+    qdf.Parameters("pOld").Value = varOldValue
+    qdf.Parameters("pOn").Value = Now()
+    qdf.Parameters("pBy").Value = AuditUser()
+    qdf.Execute dbFailOnError
 
 Cleanup:
     On Error Resume Next
+    If Not rstOldValue Is Nothing Then rstOldValue.Close
     Set rstOldValue = Nothing
-    Set rst = Nothing
+    Set qdf = Nothing
     Set db = Nothing
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] deliberately quiet: this runs inside a data-macro save;
-    '            a MsgBox here would interrupt every user's save. Log if your house pattern
-    '            has a silent logger; never block.
+    ' [STANDARDS - error-handling.md] refusing shape: log quietly, return the sentence the
+    '            macro raises. Option 2 has no log: the sentence carries Err.Description instead.
+    lngRef = LogError(ModuleName, ProcName, Erl, booShow:=False)
+    BackupLongTextFieldsDM = "This change was not saved, because its audit record could not " & _
+        "be written. If it keeps happening, quote reference " & lngRef & "."
     Resume Cleanup
     Resume
 End Function
@@ -310,7 +327,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     '            One exit for every error: an error here stops the whole run rather than
     '            carrying on to the next table, because a failure part-way through means the
     '            database is in a half-reset state and the developer needs to know that now.
@@ -371,7 +390,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     DumpTableMacros = "ERROR: " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume
@@ -423,7 +444,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     ListMacroEvents = "ERROR: " & Err.Number & " - " & Err.Description
     Resume Cleanup
     Resume

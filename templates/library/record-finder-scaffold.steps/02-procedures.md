@@ -8,12 +8,19 @@ platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation, for
 
 ## Procedures
 
-Each procedure shows its scope, signature, and an annotated skeleton. The **`errHandler` block is
-shown in full in `FinderRowSource` and referenced thereafter** — the errHandler block's form
-(`error-handling.md`) is identical in every procedure by design. The two pure string helpers
-(`WithAllRow`, `RewriteWhere`) have **no** `errHandler` — nothing in them can raise a trappable data
-error — and so, per `error-handling.md`, no line numbers. Line numbers are otherwise deliberately
-absent (house-specific; see `error-handling.md`).
+Each procedure shows its scope, signature, and an annotated skeleton. **Each handler is the one
+`error-handling.md`'s table gives for the procedure's role**, and its first comment names it:
+`FinderRowSource` and `JumpFormToRecord` are entry points. The two pure string helpers
+(`WithAllRow`, `RewriteWhere`) are steps with nothing to clean up, so they have **no** `errHandler`
+and, per `error-handling.md`, no line numbers; an error in one reaches `FinderRowSource`, which
+reports it. Line numbers are otherwise deliberately absent (house-specific; see `error-handling.md`).
+
+Put this at the top of `modRecordFinder`, below `Option Explicit`:
+
+```vba
+' [STANDARDS - error-handling.md] This module's own name, for its handlers.
+Private Const ModuleName As String = "modRecordFinder"
+```
 
 ### FinderRowSource — `Public Function` → `String`
 
@@ -21,6 +28,7 @@ absent (house-specific; see `error-handling.md`).
 Public Function FinderRowSource(ByVal lngCategoryID As Long, _
                                 ByVal strInitialLetter As String, _
                                 ByVal strKeywords As String) As String
+    Const ProcName As String = "FinderRowSource"
     ' [SCAFFOLD] Build the finder dropdown's row source: the entries matching the active
     '            filter, plus an "<All ...>" row that always sorts first. Keyword text,
     '            when present, wins; otherwise filter by category + first letter.
@@ -52,8 +60,11 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer.
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that hands its outcome back: a
+    '            working row source always holds the "<All ...>" row, so its "" can only mean it
+    '            failed. The form puts the "" in place (an empty list) without reporting again.
+    FinderRowSource = vbNullString
+    LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
     Resume Cleanup
     Resume
 End Function
@@ -77,6 +88,7 @@ End Function
 
 ```vba
 Public Sub JumpFormToRecord(ByVal frm As Access.Form, ByVal lngRecordID As Long)
+    Const ProcName As String = "JumpFormToRecord"
     ' [SCAFFOLD] Narrow the form to the picked record - or show all when lngRecordID = 0 -
     '            by rewriting the form's record-source WHERE server-side (only the wanted
     '            row is fetched). Uses RewriteWhere so a base query with no WHERE, or a
@@ -102,8 +114,11 @@ Cleanup:
     Exit Sub
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see FinderRowSource)
+    ' [STANDARDS - error-handling.md] reporting shape: entry point; nothing acts on whether the
+    '            jump worked.
+    LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
     Resume Cleanup
+    Resume
 End Sub
 ```
 
@@ -152,8 +167,8 @@ outside what `RewriteWhere` safely handles as written.
 ## Form wiring
 
 The engine is only useful wired to the form's events, and that is the point of the pattern: each
-handler becomes a **thin delegate** — no domain logic, so (per `error-handling.md`) **no `errHandler`
-and no line numbers**. Control names follow `form-conventions.md`; these are *not* part of
+handler becomes a **thin delegate** that only calls an entry point, which reports for itself, so (per
+`error-handling.md`) **no `errHandler` and no line numbers**. Control names follow `form-conventions.md`; these are *not* part of
 `new_procedures` (they live on the form, not in `modRecordFinder`).
 
 **Six entry points touch the finder's state, not four.** The four below rebuild or act on the

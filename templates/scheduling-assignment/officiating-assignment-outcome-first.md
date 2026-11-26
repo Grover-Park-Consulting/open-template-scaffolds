@@ -3,9 +3,9 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.2.1
+version: 0.3.0
 status: stable
-status_fingerprint: "9da388789c4c"
+status_fingerprint: "0b20011651aa"
 implements: officiating-assignment-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash, app-startup-autoexec.file-assets]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
@@ -180,10 +180,11 @@ database that behaves the same way. The following must be true of every build:
 - The photo-folder check (Rule 9) verifies a shared folder; it never creates one silently in its
   place. Where the folder can't be reached, the person is told, not shown a locally-created
   substitute.
-- **[your standards]** The error-handling pattern applies to the build-time procedures, not to a
-  Validation Rule refusal or a Data Macro's own `RaiseError` action. When either refuses a save,
-  Access shows its own dialog naming the problem — no VBA runs, no `On Error` handler fires, and
-  nothing is logged unless something else is separately watching.
+- **[your standards]** The error-handling pattern applies to every procedure the build writes; a
+  refusal is not a fault. When a Validation Rule or a Data Macro's `RaiseError` action refuses a save
+  made through a form, Access shows its own dialog naming the problem, and no code of the build runs.
+  When the build's own code makes the save, the refusal reaches it as an error, and the code tells
+  the person that sentence rather than recording it (`error-handling.md`, *Refusals*).
 - Running the build again replaces what a previous build attached; it never adds a second copy
   alongside it.
 
@@ -268,9 +269,9 @@ file.
   per the schema's own standards layer; this template adds nothing new to that set.
 - **`naming-conventions`** — what any settings object or new module is called, within whatever this
   layer already requires.
-- **`error-handling`** — applies to the build-time procedures, not to a Validation Rule refusal or a
-  Data Macro's own `RaiseError` action. See *The same behavior every time* above for what a developer
-  actually sees instead.
+- **`error-handling`** — applies to every procedure the build writes, and decides what the person
+  is told when the build's own code makes a save the table refuses. A refusal on a save made through
+  a form is Access's own dialog; see *The same behavior every time* above.
 - **`query-style`** — how any generated code writes and holds its SQL, notably the pay-rate lookup and
   the derived play-level/age queries.
 - **`design-principles`** — how the work divides into procedures. *Free to choose alternatives* leaves

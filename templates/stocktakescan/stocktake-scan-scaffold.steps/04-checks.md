@@ -82,15 +82,15 @@ Seven things follow from this being procedure skeletons rather than an open rout
   engagement decides there are no package barcodes at all, check 5 has no input to run against, and
   its entry records that decision and names whose it was.
 
-- **Check 14 ("a scan that fails partway through leaves nothing behind") also confirms a raised
-  error reaches the logger at every frame it passes through.** The `errHandler` block sits in every
-  procedure by design, so an error raised deep in the call chain should be logged by the procedure
-  that raised it *and* by every procedure it passes through on the way out, and leave no scan row
-  behind. **Raise one deliberately rather than waiting for one:** calling `ProcessScan` with a
-  `StockTakeSessionID` that does not exist makes the count-line insert violate referential
-  integrity, which raises from inside `EnsureCountLine` — one log entry per frame the error passes
-  through (three in the standard shape; a different number where the host's own error handler is
-  in use, and that number is a result to record, not a target), and a scan count unchanged before
-  and after. The multi-frame logging is this route's own
-  behaviour rather than anything the outcome-first list promises, so record it as part of running
-  check 14, not as a separate entry — the list itself stays the fourteen it already is.
+- **Check 14 ("a scan that fails partway through leaves nothing behind") is also where the
+  error-handling proofs run** (`error-handling.md`, *Proving the shapes*). Run both halves and
+  record them under check 14; the list itself stays the fourteen it already is.
+  - **A refusal.** Call `ProcessScan` with a `StockTakeSessionID` that does not exist. The scan
+    insert is refused (a missing related record), so `ProcessScan` returns "Not recorded: " and the
+    engine's sentence, nothing is logged, and the scan count is unchanged before and after.
+  - **A fault in a step.** Add one line at the top of `RefreshCountRollup`,
+    `Err.Raise vbObjectError + 513, "check 14", "Forced failure"`, run one ordinary scan, then remove
+    the line. Expect exactly one log entry, whose source reads
+    `modStockTakeScan.RefreshCountRollup->check 14`; a returned sentence carrying that entry's
+    reference; no message box; and the scan count, rollup and flag unchanged. Where the host's own
+    error handler is in use, record the number of entries it made: a result, not a target.

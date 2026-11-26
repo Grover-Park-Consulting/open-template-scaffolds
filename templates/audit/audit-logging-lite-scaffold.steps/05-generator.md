@@ -215,7 +215,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     Four_GenerateAllAuditDataMacros = strReport & "ERROR: " & Err.Number & " - " & Err.Description
     If Not booSilent Then MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup
@@ -253,28 +255,36 @@ Public Function MacroBackupIsOurs(strBackupPath As String) As Boolean
     '            table name: a host database may have its own audit table under any name,
     '            and stripping someone else's macros because they mention one is exactly
     '            the failure this guards against.
-    '            Matched on AUDIT_MACRO_MARKER, the part before the version, so a set
+    '            Matched on AuditMacroMarker, the part before the version, so a set
     '            written by an earlier release is still recognised as ours. Matched
     '            case-sensitively, because a mark is exact and a near miss is not our work.
-    '            No errHandler and therefore no line numbers: an unreadable file is an
-    '            answer, not a failure, and the caller has a backup to name either way.
+    ' [STANDARDS - error-handling.md] answering shape: a backup that is missing or cannot be
+    '            read is "not ours", and every caller then keeps the macros, which is the safe way
+    '            to be wrong. No line numbers: nothing here reports where it failed.
     Dim fso As Object                 ' Scripting.FileSystemObject, late-bound
     Dim tsBackup As Object
     Dim strContent As String
 
-    strContent = ""
-    On Error Resume Next
+    On Error GoTo errHandler
+    If Len(Dir$(strBackupPath)) = 0 Then GoTo Cleanup     ' tested first: no error needed
     Set fso = CreateObject("Scripting.FileSystemObject")
     ' 1 = ForReading, -1 = TristateTrue (Unicode) — SaveAsText writes UTF-16.
     Set tsBackup = fso.OpenTextFile(strBackupPath, 1, False, -1)
     strContent = tsBackup.ReadAll
-    tsBackup.Close
-    On Error GoTo 0
+    MacroBackupIsOurs = (InStr(1, strContent, AuditMacroMarker, vbBinaryCompare) > 0)
 
+Cleanup:
+    On Error Resume Next
+    If Not tsBackup Is Nothing Then tsBackup.Close
     Set tsBackup = Nothing
     Set fso = Nothing
+    Exit Function
 
-    MacroBackupIsOurs = (InStr(1, strContent, AUDIT_MACRO_MARKER, vbBinaryCompare) > 0)
+errHandler:
+    ' [STANDARDS - error-handling.md] answering shape
+    MacroBackupIsOurs = False
+    Resume Cleanup
+    Resume
 End Function
 ```
 
@@ -360,7 +370,11 @@ Cleanup:
     Exit Function
 
 errHandler:
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     RemoveDataMacrosForTable = "ERROR: " & Err.Number & " - " & Err.Description
     Resume Cleanup
+    Resume
 End Function
 ```

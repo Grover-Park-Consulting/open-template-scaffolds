@@ -1,7 +1,7 @@
 ---
 step: 03-procedures-3
 title: "The procedures, part 3 of 3 (from RelinkAllTables)"
-platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation]
+platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation, sql-insert-truncation]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.
@@ -11,6 +11,7 @@ platform_facts: [mcp-module-import, mcp-line-numbers, vbe-line-continuation]
 ```vba
 Private Function RelinkAllTables(ByVal strNewPath As String, _
                                  ByVal strOldPath As String) As Boolean
+    Const ProcName As String = "RelinkAllTables"
     ' [SCAFFOLD] Point every link that used to reach strOldPath at strNewPath instead.
     '            Two deliberate exclusions:
     '              - local tables (no Connect string) are not links and are left alone;
@@ -24,6 +25,10 @@ Private Function RelinkAllTables(ByVal strNewPath As String, _
     Dim db        As DAO.Database
     Dim tdf       As DAO.TableDef
     Dim lngRelinked As Long
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -54,9 +59,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its False already means "no link
+    '            matched", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set tdf = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -64,15 +73,20 @@ End Function
 
 ```vba
 Private Function AskUserForBackEnd() As String
+    Const ProcName As String = "AskUserForBackEnd"
     ' [SCAFFOLD] Show a file picker and return the chosen path, or an empty string if the
     '            person cancels. Declared As Object (late binding) and using the numeric
     '            dialog constant so this module compiles without a reference to the Office
     '            object library - which is not present in every Access application.
     Dim objDialog As Object
 
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
+
     On Error GoTo errHandler
 
-    Set objDialog = Application.FileDialog(mlngFilePicker)
+    Set objDialog = Application.FileDialog(FilePickerDialog)
 
     With objDialog
         ' [BUSINESS LOGIC] substitute your application's name.
@@ -90,9 +104,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its "" already means "the person
+    '            cancelled", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set objDialog = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -100,6 +118,7 @@ End Function
 
 ```vba
 Public Function LocalSettingValue(ByVal strSettingName As String) As String
+    Const ProcName As String = "LocalSettingValue"
     ' [SCAFFOLD] Read one setting from the front end's own USysLocalSetting table. Returns
     '            an empty string when the setting has never been saved - which is the normal
     '            state of a newly built front end, not an error.
@@ -108,6 +127,10 @@ Public Function LocalSettingValue(ByVal strSettingName As String) As String
     Dim db   As DAO.Database
     Dim qdf  As DAO.QueryDef
     Dim rst  As DAO.Recordset
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -132,9 +155,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
-    Resume Cleanup
-    Resume
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its "" already means "never
+    '            saved", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing: Set qdf = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -142,46 +169,59 @@ End Function
 
 ```vba
 Public Sub SaveLocalSetting(ByVal strSettingName As String, ByVal strSettingValue As String)
-    ' [SCAFFOLD] Write one setting to USysLocalSetting, adding the row if it isn't there
-    '            yet. Editable recordset rather than an UPDATE followed by an INSERT: one
-    '            trip, and no window in which the row exists twice.
+    Const ProcName As String = "SaveLocalSetting"
+    ' [SCAFFOLD] Write one setting to USysLocalSetting: UPDATE the row, and INSERT it only
+    '            when the UPDATE changed nothing. Parameterised statements, never a recordset
+    '            write. The table sits in this person's own front end, so no one else can add
+    '            the same row between the two statements.
     Dim db   As DAO.Database
     Dim qdf  As DAO.QueryDef
-    Dim rst  As DAO.Recordset
 
     On Error GoTo errHandler
 
     Set db = CurrentDb
 
-    ' [STANDARDS - query-style.md] the name is a parameter, as in LocalSettingValue.
-    Set qdf = db.CreateQueryDef(vbNullString, _
-          "PARAMETERS [pSettingName] Text(255); " & _
-          "SELECT SettingName, SettingValue FROM USysLocalSetting " & _
-          "WHERE SettingName = [pSettingName];")
-    qdf.Parameters("pSettingName").Value = strSettingName
-
-    Set rst = qdf.OpenRecordset(dbOpenDynaset)
-
-    If rst.EOF Then
-        rst.AddNew
-        rst!SettingName = strSettingName
-    Else
-        rst.Edit
+    ' [FACT sql-insert-truncation] A SQL statement cuts a value longer than the field without
+    '            an error, so refuse it first. SettingValue is Text(255).
+    If Len(strSettingValue) > 255 Then
+        Err.Raise ErrSettingTooLong, ModuleName & "." & ProcName, _
+                  "The setting " & strSettingName & " was not saved: its value is longer than " & _
+                  "255 characters."
     End If
 
-    rst!SettingValue = strSettingValue
-    rst.Update
+    ' [STANDARDS - query-style.md] the values are parameters, as in LocalSettingValue.
+    Set qdf = db.CreateQueryDef(vbNullString, _
+          "PARAMETERS [pSettingName] Text(255), [pSettingValue] Text(255); " & _
+          "UPDATE USysLocalSetting SET SettingValue = [pSettingValue] " & _
+          "WHERE SettingName = [pSettingName];")
+    qdf.Parameters("pSettingName").Value = strSettingName
+    qdf.Parameters("pSettingValue").Value = strSettingValue
+    qdf.Execute dbFailOnError
+
+    If qdf.RecordsAffected = 0 Then
+        Set qdf = db.CreateQueryDef(vbNullString, _
+              "PARAMETERS [pSettingName] Text(255), [pSettingValue] Text(255); " & _
+              "INSERT INTO USysLocalSetting (SettingName, SettingValue) " & _
+              "VALUES ([pSettingName], [pSettingValue]);")
+        qdf.Parameters("pSettingName").Value = strSettingName
+        qdf.Parameters("pSettingValue").Value = strSettingValue
+        qdf.Execute dbFailOnError
+    End If
 
 Cleanup:
     On Error Resume Next
-    If Not rst Is Nothing Then rst.Close
-    Set rst = Nothing
     Set qdf = Nothing
     Set db = Nothing
     Exit Sub
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
+    ' [STANDARDS - error-handling.md] reporting shape: entry point. Nothing acts on whether the
+    '            setting was saved: the next start simply asks again.
+    If IsRefusal(Err.Number) Then
+        MsgBox Err.Description, vbInformation
+    Else
+        LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
+    End If
     Resume Cleanup
     Resume
 End Sub

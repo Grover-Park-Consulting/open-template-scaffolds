@@ -281,6 +281,17 @@ so an assistant doesn't mistake old grounds for new permission:
 - 2026-11-26, approved by George: `templates/_template-schema.md` §9, one sentence on form text,
   "headed `PROPOSED CODE`" becomes "marked as proposed code (method `handover-code`)". Grounds: the
   method no longer heads form text with that line, which its format cannot carry.
+- 2026-11-26, approved by George ("approve the text of the standard"): `standards/error-handling.md`
+  revised as a whole: one table choosing every handler from the procedure's role and the kind of
+  error; refusals (`IsRefusal`), the answering and refusing shapes, deliberate raises by number range,
+  `LogError` quiet option and reference, what never reaches a handler, the proofs, conditions 3 and
+  10–14; constants in PascalCase (`ModuleName`, `ProcName`) by George's one-convention ruling.
+  Grounds: the 2026-11-26 library-wide error review (`.claude/drafts/error-review-2026-11-26.md`).
+- 2026-11-26, the same approval, carried through: `templates/_template-schema.md` §8.3 (every
+  `errHandler` written in full and naming its shape, replacing "shown once and referenced"), §8.5
+  rule 7 (VS7), §13 (the design step names each procedure's error-handling shape);
+  `templates/errors/error-logging-scaffold.md` (its query-style line: the logger writes by a
+  parameterised `INSERT`, never a recordset append). Grounds: the revised standard.
 - 2026-11-26, approved by George (scaffold code to the standards): `templates/errors/error-logging-scaffold.md`,
   only the version, date and fingerprint lines `template_status.py` writes; its step files carry the
   code changes.

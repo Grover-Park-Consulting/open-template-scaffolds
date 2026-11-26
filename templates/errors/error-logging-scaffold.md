@@ -3,9 +3,9 @@ template: error-logging-scaffold
 title: Error Logging — VBA Scaffold
 domain: errors
 type: vba-scaffold
-version: 0.13.0
+version: 0.14.0
 status: review
-status_fingerprint: "214f6f2539f5"
+status_fingerprint: "a2513c5d5826"
 implements: error-logging-schema
 requires_tables:
   - tblErrorLog
@@ -149,8 +149,8 @@ person — there is one file and one copy, and this does not arise.
   documented exception to the pattern, for the reason given at that procedure.
 - **Naming conventions** — module, table, and field names follow OTS house style. A forked practice
   builds the same objects under its own.
-- **Query style** — the one data write here is a recordset append rather than a concatenated
-  `INSERT`, so the contents of an error description can never break it.
+- **Query style** — the one data write here is a parameterised `INSERT`, so the contents of an
+  error description can never break it.
 - **Design principles** — one job per procedure: read the error, write to a table, write to a file,
   work out a path, show a message, build a table. Each is separately replaceable, which is what
   makes the wizard's answers a matter of swapping one block rather than editing the logger.

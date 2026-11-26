@@ -394,6 +394,11 @@ writer that is held back and then finishes, because both share one thread. A sec
 started on a check copy and identified by its process ID as the method `access-gate` requires, gave controls that
 failed or were stopped by a named engine lock.
 
+**Every build that writes code also runs the error-handling proofs**, whatever its template's
+checklist lists: `error-handling.md`, *Proving the shapes*, for the shapes the build's procedures use.
+Record them as one more entry after the template's own checks, passed or not passed like any other.
+Where a template's checklist already runs them, name that check instead of running them twice.
+
 
 ## related-after-finish
 <!-- method: related-after-finish -->
@@ -870,8 +875,9 @@ sentence: the backup stop is in the code, and importing it is their permission.
       appear on the first line.
    3. Names don't collide: nothing here shares a name with an object already in the database, and
       the names match the database's naming convention.
-   4. The error handler fits: the code calls the handler the database has, and a forced error
-      reaches it.
+   4. The error handling fits: the code calls the handler the database has, every handler's first
+      comment names the shape `error-handling.md`'s table gives it, and the proofs in *Proving the
+      shapes* pass.
    5. What the code does on its own is stated, on open or on a schedule, with what it writes the
       first time.
    6. Fixed content matches the template: lookup values and sample data that are the same in every

@@ -9,16 +9,18 @@ platform_facts: [vba-import-xml-entities, mcp-module-import, mcp-line-numbers, d
 ## Procedures
 
 Each procedure shows its scope, signature and an annotated skeleton. Line numbers are deliberately
-absent (house-specific; see `error-handling.md`). Two error shapes appear, and each procedure uses
-exactly one:
+absent (house-specific; see `error-handling.md`). Each handler is the one `error-handling.md`'s
+table gives for the procedure's role, and its first comment names it. Three shapes appear:
 
-- **Reporting shape**, for a procedure that is the end of the line: it rolls back where it began a
-  transaction, logs, and returns a sentence. Shown in full in `PostOnePeriod` and referenced
-  thereafter as *the standard reporting handler*.
-- **Propagating shape**, for a procedure whose caller depends on the outcome: copy `Err` into
-  locals, local cleanup, then `Err.Raise` from the locals with `MODULE_NAME.PROC_NAME->` in front of
-  the source, no report. `AccrualHours` and
-  `TimeOffEntryCheck` take it, because the posting code and the Data Macro both act on their answer.
+- **Reporting shape**, for an entry point: it rolls back where it began a transaction, tells the
+  person a refusal's sentence or logs a fault, and returns a sentence. Shown in full in
+  `PostOnePeriod` and referenced thereafter as *the standard reporting handler*.
+- **Propagating shape**, for a step whose caller depends on the outcome: copy `Err` into locals,
+  local cleanup, then `Err.Raise` from the locals with `ModuleName.ProcName->` in front of the
+  source, no report. `AccrualHours` takes it, because the posting code acts on its answer.
+- **Refusing shape**, for `TimeOffEntryCheck`, which the Data Macro calls: it never raises and never
+  shows anything. It returns `""` or a sentence, and on an unexpected error it logs quietly and
+  returns a sentence carrying the reference, so the save is refused either way.
 
 **The module header, `modTimeOffRules`**
 
@@ -26,7 +28,7 @@ exactly one:
 Option Compare Database
 Option Explicit
 
-Private Const MODULE_NAME As String = "modTimeOffRules"
+Private Const ModuleName As String = "modTimeOffRules"
 
 ' [SCAFFOLD] While ReplaceTimeOffEntry writes its two entries these hold the transaction's Database
 '            and say so, so the checks the Data Macro runs can see the corrected entry that has not
@@ -134,7 +136,7 @@ Public Function AccrualHours(ByVal lngEmp As Long, ByVal lngCat As Long, ByVal d
                              ByRef strWhy As String) As Double
     ' [SCAFFOLD] Hours earned for one period; 0 with a reason in strWhy where none can be worked out.
     '            Nothing is ever posted as zero hours (Business Rule 3). Propagating shape.
-    Const PROC_NAME As String = "AccrualHours"
+    Const ProcName As String = "AccrualHours"
     Dim db     As DAO.Database
     Dim vHire  As Variant
     Dim vHours As Variant
@@ -170,7 +172,7 @@ errHandler:
     strErrSource = Err.Source
     strErrDescription = Err.Description
     Set db = Nothing
-    Err.Raise lngErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & strErrSource, strErrDescription
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -201,7 +203,7 @@ Public Function TimeOffEntryCheck(ByVal vEmp As Variant, ByVal vCat As Variant, 
     '            sees this wording whoever posted the entry.
     '            No message box: someone is saving a row.
     '            Parameters are Variants because the macro passes Null for a column that is empty.
-    Const PROC_NAME As String = "TimeOffEntryCheck"
+    Const ProcName As String = "TimeOffEntryCheck"
     Dim db     As DAO.Database
     Dim rst     As DAO.Recordset
     Dim strMsg   As String
@@ -212,6 +214,7 @@ Public Function TimeOffEntryCheck(ByVal vEmp As Variant, ByVal vCat As Variant, 
     Dim strErrSource      As String
     Dim strErrDescription As String
 
+    Dim lngRef As Long
     On Error GoTo errHandler
     If IsNull(vEmp) Or IsNull(vCat) Or IsNull(vReason) Or IsNull(vDate) Or IsNull(vHours) Then GoTo Cleanup
     Set db = ReadDb()
@@ -270,16 +273,15 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] propagating shape. An unexpected error here refuses the save:
-    '            the macro raises it and Access shows its own message. Nothing is logged unless the
-    '            build makes it so; the build record says which.
-    '            Adapted from AccessCodeLib (access-codelib.net), data/dao/DaoHandler.cls, BSD 3-Clause License.
-    lngErrNumber = Err.Number
-    strErrSource = Err.Source
-    strErrDescription = Err.Description
-    If Not rst Is Nothing Then rst.Close
-    Set rst = Nothing
-    Set db = Nothing
-    Err.Raise lngErrNumber, MODULE_NAME & "." & PROC_NAME & "->" & strErrSource, strErrDescription
+    ' [STANDARDS - error-handling.md] refusing shape: a Data Macro calls this, so it never
+    '            raises and never shows anything. An unexpected error refuses the save with a
+    '            sentence carrying the log reference; the macro raises it, so the person sees it in
+    '            Access's own dialog, or the posting procedure receives it as 3939 and tells it.
+    '            Option 2 has no log: the sentence carries Err.Description instead.
+    lngRef = LogError(ModuleName, ProcName, Erl, booShow:=False)
+    TimeOffEntryCheck = "Not saved: the entry could not be checked. If it keeps happening, " & _
+                        "quote reference " & lngRef & "."
+    Resume Cleanup
+    Resume
 End Function
 ```

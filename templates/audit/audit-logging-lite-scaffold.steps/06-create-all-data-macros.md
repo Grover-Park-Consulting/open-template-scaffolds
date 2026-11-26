@@ -13,10 +13,10 @@ platform_facts: [data-macro-rules, vba-import-xml-entities]
 Builds one table's macro XML into a single document, writes it UTF-16, and loads it with
 `LoadFromText acTableDataMacro`. **How many macros a table gets varies** (schema Business Rule 2) —
 the three After macros whenever anything is being audited, BeforeChange whenever the generator
-stamps the table's house audit columns (`AUDIT_STAMP_LIST`) or it has an auditable Long Text field,
+stamps the table's house audit columns (`AuditStampList`) or it has an auditable Long Text field,
 BeforeDelete only for Long Text.
 
-**The insert-blocking trap this guards against.** Every table in `AUDIT_STAMP_LIST` gets its
+**The insert-blocking trap this guards against.** Every table in `AuditStampList` gets its
 **audit-column stamping** macro, including a table with no auditable fields. A table with nothing
 worth auditing still has records created and changed on it, so it still needs the who-and-when stamp.
 On a listed table nothing else fills `CreatedDate` and `CreatedBy`, they are `Required`, and no column
@@ -107,14 +107,14 @@ Private Function CreateAllDataMacros(strTableName As String, fieldList As Collec
         End If
         ' [SCAFFOLD] Whether this table is stamped, for the report only — the same test
         '            BuildBeforeChangeMacro makes when it decides whether to emit stamping:
-        '            listed in AUDIT_STAMP_LIST and carrying the tracking columns.
+        '            listed in AuditStampList and carrying the tracking columns.
         '            Outside the IsAuditable test above, because tracking columns are always
         '            seeded off and would never be seen there.
-        If IsNamedInList(AUDIT_STAMP_LIST, strTableName) Then
-            If StrComp(fieldInfo(0), AUDIT_CREATED_DATE, vbTextCompare) = 0 _
-                Or StrComp(fieldInfo(0), AUDIT_CREATED_BY, vbTextCompare) = 0 _
-                Or StrComp(fieldInfo(0), AUDIT_MODIFIED_DATE, vbTextCompare) = 0 _
-                Or StrComp(fieldInfo(0), AUDIT_MODIFIED_BY, vbTextCompare) = 0 Then booHasAuditColumns = True
+        If IsNamedInList(AuditStampList, strTableName) Then
+            If StrComp(fieldInfo(0), AuditCreatedDate, vbTextCompare) = 0 _
+                Or StrComp(fieldInfo(0), AuditCreatedBy, vbTextCompare) = 0 _
+                Or StrComp(fieldInfo(0), AuditModifiedDate, vbTextCompare) = 0 _
+                Or StrComp(fieldInfo(0), AuditModifiedBy, vbTextCompare) = 0 Then booHasAuditColumns = True
         End If
     Next fieldInfo
 
@@ -122,7 +122,7 @@ Private Function CreateAllDataMacros(strTableName As String, fieldList As Collec
     ' built for every table; it comes back "" only when neither job applies to this one.
     strBeforeChange = BuildBeforeChangeMacro(strTableName, fieldList, strPrimaryKeyField)
 
-    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. Every table in AUDIT_STAMP_LIST gets the
+    ' [SCAFFOLD] THE TRAP THIS GUARDS AGAINST. Every table in AuditStampList gets the
     '            audit-column stamping macro, including one with nothing auditable: records
     '            are still created and changed on it, so it still needs the who-and-when
     '            stamp. On a listed table nothing else fills CreatedDate and CreatedBy, they
@@ -296,7 +296,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     CreateAllDataMacros = "ERROR: " & Err.Number & " - " & Err.Description
     If Not booSilent Then MsgBox "Error creating macros for " & strTableName & ": " & Err.Number & " - " & Err.Description, vbCritical
     Resume Cleanup

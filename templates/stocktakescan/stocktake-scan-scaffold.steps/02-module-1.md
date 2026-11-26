@@ -8,10 +8,20 @@ platform_facts: [vbe-line-continuation, domain-function-transaction, row-lock-er
 
 ## Procedures
 
-Each procedure shows its scope, signature, and an annotated skeleton. **Every procedure ends with
-the same `errHandler` block** — shown in full in `ProcessScan` and referenced thereafter, because
-the errHandler block's form (`error-handling.md`) is *identical* in every procedure by design. Line
-numbers are deliberately absent (house-specific; see `error-handling.md`).
+Each procedure shows its scope, signature, and an annotated skeleton. **Each handler is the one
+`error-handling.md`'s table gives for the procedure's role**, and its first comment names it:
+`OpenStockTakeSession` and `ProcessScan` are entry points (reporting shape, with the refusal branch);
+every other procedure is a step inside their transaction (propagating shape). Line numbers are
+deliberately absent (house-specific; see `error-handling.md`); where they are used, the reporting
+handlers read `Erl` first.
+
+Put this at the top of `modStockTakeScan`, below `Option Explicit`, then copy `IsRefusal` from
+`error-handling.md` (*Refusals: `IsRefusal`*) into the module, unchanged and `Private`:
+
+```vba
+' [STANDARDS - error-handling.md] This module's own name, for its handlers.
+Private Const ModuleName As String = "modStockTakeScan"
+```
 
 ### OpenStockTakeSession — `Public Function` → `Long`
 
@@ -24,7 +34,9 @@ thing a stocktake can find — leaves no row anywhere to report it.
 ```vba
 Public Function OpenStockTakeSession(Optional ByVal dtStockTakeDate As Variant, _
                                      Optional ByVal lngConductedByEmployeeID As Long = 0) As Long
-    ' [SCAFFOLD] Create a stocktake session and take its baseline; return StockTakeSessionID.
+    Const ProcName As String = "OpenStockTakeSession"
+    ' [SCAFFOLD] Create a stocktake session and take its baseline; return StockTakeSessionID,
+    '            or 0 when it could not be opened (the person has been told why).
     '            ONE, TWO and THREE below run inside a single transaction — a session that failed
     '            partway through its baseline is a session with an incomplete baseline, which no
     '            later scan repairs, so all three either land together or not at all.
@@ -86,24 +98,39 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see ProcessScan), plus the
-    '            transaction guard's own rollback: an error partway through ONE, TWO or THREE must
+    ' [STANDARDS - error-handling.md] reporting shape (entry point, returns 0 on failure), with
+    '            the transaction guard's rollback: an error partway through ONE, TWO or THREE must
     '            not leave a session row with some, but not all, of its baseline lines.
     If booInTrans Then ws.Rollback: booInTrans = False
+    OpenStockTakeSession = 0
+    If IsRefusal(Err.Number) Then
+        MsgBox "The stocktake was not opened. " & Err.Description, vbInformation
+    Else
+        LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
+    End If
     Resume Cleanup
+    Resume
 End Function
 ```
 
-### ProcessScan — `Public Sub` (entry point)
+### ProcessScan — `Public Function` → `String` (entry point)
+
+Returns `""` when the scan was recorded, otherwise one sentence for the counter. The scanning form
+shows that sentence where the counter is looking (a status line), never in a box they must close:
+nothing in the scanning path may interrupt a counter mid-scan. A refused scan returns the refusal's
+sentence and is not logged; a failed one is logged quietly and returns a sentence carrying the
+reference.
 
 ```vba
-Public Sub ProcessScan(ByVal lngSessionID As Long, _
-                       ByVal strScanCode As String, _
-                       ByVal lngScanQuantity As Long)
+Public Function ProcessScan(ByVal lngSessionID As Long, _
+                            ByVal strScanCode As String, _
+                            ByVal lngScanQuantity As Long) As String
+    Const ProcName As String = "ProcessScan"
     ' [SCAFFOLD] Process one scan end to end for a session, inside one transaction: the scan row,
     '            the rollup, and the variance evaluation either all land or none do. See "Point of
     '            the transaction, and where it stops" below the code for what this buys and what it
     '            deliberately does not cover.
+    Dim lngRef     As Long
     Dim ws         As DAO.Workspace
     Dim db         As DAO.Database
     Dim lngProductID As Long
@@ -144,23 +171,27 @@ Commit:
     booInTrans = False
 
 Cleanup:
+    On Error Resume Next
     Set db = Nothing: Set ws = Nothing
-    Exit Sub
+    Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer, plus the
-    '            transaction guard's own rollback: a scan that failed partway through must not leave
-    '            a scan row, a rollup, or a flag written without the other two.
-    ' [BUSINESS LOGIC — error-logging-outcome-first.md, "How this is built"] Option 2 (a message
-    '            box) is not available in this procedure: nothing in the scanning path may interrupt
-    '            a counter mid-scan with something they cannot act on. Option 1 (LogError) is the
-    '            only choice here — where it is not yet installed, build error-logging-scaffold.md
-    '            first rather than falling back to a message box in ProcessScan.
+    ' [STANDARDS - error-handling.md] reporting shape on a quiet path (entry point, returns its
+    '            sentence), with the transaction guard's rollback: a scan that failed partway through
+    '            must not leave a scan row, a rollup, or a flag written without the other two.
+    ' [BUSINESS LOGIC] Option 2 (a message box) is not available here: nothing in the scanning
+    '            path may interrupt a counter. Option 1 (LogError) is the only choice; where it is
+    '            not yet installed, build error-logging-scaffold.md first.
     If booInTrans Then ws.Rollback: booInTrans = False
-    LogError MODULE_NAME, PROC_NAME, Erl
+    If IsRefusal(Err.Number) Then
+        ProcessScan = "Not recorded: " & Err.Description
+    Else
+        lngRef = LogError(ModuleName, ProcName, Erl, booShow:=False)
+        ProcessScan = "Not recorded: scan again. If it keeps happening, quote reference " & lngRef & "."
+    End If
     Resume Cleanup
     Resume
-End Sub
+End Function
 ```
 
 **Point of the transaction, and where it stops.** Wrapping one scan's writes in a transaction makes
@@ -178,10 +209,14 @@ template stops at one scan.
 
 ```vba
 Private Function ResolveScanCode(ByVal strScanCode As String) As Long
+    Const ProcName As String = "ResolveScanCode"
     ' [SCAFFOLD] Resolve a raw scan code to a ProductID; 0 = unmatched.
     Dim db   As DAO.Database
     Dim rst   As DAO.Recordset
     Dim strSQL As String
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
     ' [STANDARDS — error-handling.md, "Transaction guard"] CurrentDb is fine here: ProcessScan's
@@ -204,8 +239,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see ProcessScan)
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step ProcessScan depends on. Its
+    '            0 already means "no product has this code", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -215,6 +255,7 @@ End Function
 Private Function EnsureCountLine(ByVal lngSessionID As Long, _
                                  ByVal lngProductID As Long, _
                                  ByVal db As DAO.Database) As Long
+    Const ProcName As String = "EnsureCountLine"
     ' [SCAFFOLD] Find the count line for (session, product) or create it; return StockTakeCountID.
     ' [SCAFFOLD] db is passed in from ProcessScan's own transaction — do not Set db = CurrentDb
     '            here. This runs inside that transaction, and a line created at THREE below must be
@@ -223,6 +264,9 @@ Private Function EnsureCountLine(ByVal lngSessionID As Long, _
     '            Database object the transaction was begun on.
     Dim rst   As DAO.Recordset
     Dim strSQL As String
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
 
@@ -237,7 +281,12 @@ Private Function EnsureCountLine(ByVal lngSessionID As Long, _
     Set rst = db.OpenRecordset(strSQL, dbOpenDynaset)
 
     If rst.EOF Then
-        ' [BUSINESS LOGIC] create the line (count method = Scan); set EnsureCountLine = new StockTakeCountID
+        ' [BUSINESS LOGIC] create the line (count method = Scan).
+        ' >>> insert the count line, per query-style.md <<<
+        ' [SCAFFOLD] Then read its StockTakeCountID back with the lookup above, whether this
+        '            insert made the line or another counter made it first (the handler's
+        '            recovery idiom resumes here after 3022, the duplicate key).
+        ' >>> re-run the lookup; EnsureCountLine = its StockTakeCountID <<<
     Else
         EnsureCountLine = rst!StockTakeCountID
     End If
@@ -249,8 +298,15 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape, with the recovery idiom for one
+    '            expected error: 3022 on the insert means another counter created the same
+    '            line a moment earlier (the stocktake-scan warning); carry on and read theirs.
+    If Err.Number = 3022 Then Resume Next
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 

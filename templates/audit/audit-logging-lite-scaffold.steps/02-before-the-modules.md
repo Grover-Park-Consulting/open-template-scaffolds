@@ -22,7 +22,7 @@ inline; anything else means replacing the handler in all four modules, not some 
 them exist only if you go and see. Open the file wizard Step 2 named and find out what is there
 before you compose the question — asking first offers three answers when there were four.
 
-**What the answers are here.** The three in `error-handling.md` — and on Path B usually a fourth:
+**What the answers are here.** The two in `error-handling.md` — and on Path B usually a third:
 **the error handler this database already has.** A database that has been in use generally has one,
 and it is usually the right answer, because the code you are adding should fail the way the rest of
 the database already fails. Offer it by name if you find one. If it records the failure without
@@ -33,11 +33,13 @@ are not available, because generated code has to compile on the machine it lands
 real choices: install a logger first, or use the message box now. Never quietly pick the message box
 and report it afterwards.
 
-**One procedure keeps its own handler whatever is chosen.** `BackupLongTextFieldsDM` runs inside
-every save, called by the data macro itself. A handler that shows a message there interrupts someone
-who was only editing a record, over a failure in bookkeeping they never asked for — and a handler
-that blocks costs them the edit outright. It stays quiet: log silently if the chosen pattern can, and
-never block. Anything else you add to that path follows the same rule.
+**One procedure has its own shape whatever is chosen.** `BackupLongTextFieldsDM` runs inside every
+save, called by the data macro itself, so it takes `error-handling.md`'s refusing shape: it never
+shows anything and never raises. When the old value cannot be staged it logs quietly and returns a
+sentence, which the generated macro raises, refusing the save. The person sees that sentence in
+Access's own dialog; the record stays on screen, unsaved, and they can try again or press Esc to
+undo. A change the audit cannot record is never let through. Under option 2 the sentence carries
+`Err.Description` instead of a reference. Anything else you add to that path follows the same rule.
 
 **Whose name is recorded — ask this the same way, and look first.** The template's answer is
 `AuditUser()`, which returns the Windows account name (schema Business Rule 9, and
@@ -81,15 +83,15 @@ Option Explicit
 ' the wizard, and the only audit-scope decision that is written into code rather than set as
 ' data afterward. Set it before the module is imported; nothing at run time changes it, so a
 ' re-run of the scan always draws the same boundary as the first run did.
-'   "List" — only the tables named in AUDIT_SCOPE_LIST, separated by semicolons: the list
+'   "List" — only the tables named in AuditScopeList, separated by semicolons: the list
 '            the developer confirmed or gave. Chosen by what each table holds, not its name.
 '   "All"  — every table in this file.
 ' Three kinds of table are out of scope under every mode, and IsAuditCandidateTable tests for
 ' them before it reads this setting: Access's own (MSys), the developer's own hidden tables
 ' (USys) unless named in the list, and linked tables, which cannot carry a Data Macro at all.
 ' >>> set these to the developer's answer before you import this module <<<
-Private Const AUDIT_SCOPE_MODE As String = "List"
-Private Const AUDIT_SCOPE_LIST As String = ""
+Private Const AuditScopeMode As String = "List"
+Private Const AuditScopeList As String = ""
 
 ' [BUSINESS LOGIC — schema Business Rule 4] Whether tables keyed by a Replication ID are
 ' audited. False is the normal case and what every build has produced until now: the log's
@@ -102,32 +104,32 @@ Private Const AUDIT_SCOPE_LIST As String = ""
 ' rather than by number. A build that produces text key columns without both conditions
 ' holding is wrong.
 ' >>> set this to the developer's answer before you import this module <<<
-Private Const AUDIT_GUID_KEYS_AUDITED As Boolean = False
+Private Const AuditGuidKeysAudited As Boolean = False
 
 ' [SCAFFOLD] Width of the log's key column when the setting above is True. The widest value
 ' that can land there is 45 characters — DAO renders a Replication ID as
 ' "{guid {C6C0FB4C-...}}" where a Data Macro renders the same key as the bare 38-character
 ' "{C6C0FB4C-...}". Measured: both composite indexes over this column build at every width up
 ' to 255 and accept full-width data, so this is headroom rather than a limit being avoided.
-Private Const AUDIT_KEY_TEXT_SIZE As Long = 64
+Private Const AuditKeyTextSize As Long = 64
 
 ' [SCAFFOLD] The local variable each generated After macro uses to carry the audited row's key.
 ' It exists because a Replication ID named directly inside a LookUpRecord WhereCondition stops
 ' that condition filtering at all — see the warning in the front matter. Every build emits it,
 ' whatever the key type, so there is one macro shape rather than two.
-Private Const AUDIT_KEY_LOCAL_VAR As String = "varKeyText"
+Private Const AuditKeyVarName As String = "varKeyText"
 
 ' [STANDARDS — audit-columns.md] The house audit column names, in ONE place.
 ' Three procedures below use them: Three_PopulateConfigTable (to seed them
 ' not-auditable), BuildBeforeChangeMacro (to stamp them, on the tables in
-' AUDIT_STAMP_LIST), and Zero_CreateSampleTables (to create them on the sample tables).
+' AuditStampList), and Zero_CreateSampleTables (to create them on the sample tables).
 ' A shop that forks this library and renames its audit columns changes these
 ' four lines and nothing else. AccessTS is deliberately absent — it is a SQL
 ' Server rowversion and does not apply to a local Access table.
-Private Const AUDIT_CREATED_DATE  As String = "CreatedDate"
-Private Const AUDIT_CREATED_BY    As String = "CreatedBy"
-Private Const AUDIT_MODIFIED_DATE As String = "ModifiedDate"
-Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
+Private Const AuditCreatedDate  As String = "CreatedDate"
+Private Const AuditCreatedBy    As String = "CreatedBy"
+Private Const AuditModifiedDate As String = "ModifiedDate"
+Private Const AuditModifiedBy   As String = "ModifiedBy"
 
 ' [STANDARDS — audit-columns.md] The tables whose four columns above this generator fills,
 ' separated by semicolons. The generator adds to what a table already does; it never takes
@@ -136,7 +138,7 @@ Private Const AUDIT_MODIFIED_BY   As String = "ModifiedBy"
 ' developer chose that the generator should, or where this build added them. A table whose
 ' columns a default or the database's own code fills is left out. Empty = stamp nothing.
 ' >>> set this from what you found, before you import this module <<<
-Private Const AUDIT_STAMP_LIST As String = ""
+Private Const AuditStampList As String = ""
 
 ' [SCAFFOLD] The mark that says this generator wrote a macro set. Every macro it emits
 ' carries the full form in a <Comment>, and MacroBackupIsOurs looks for the stable form
@@ -146,12 +148,34 @@ Private Const AUDIT_STAMP_LIST As String = ""
 ' match on the part before it, so releasing a new version never stops this system
 ' recognising work it did itself. Never edit either string and never reuse them
 ' elsewhere: the way back out depends on this mark being unique to macros we wrote.
-Public Const AUDIT_MACRO_MARKER      As String = "OTS-AUDIT-DATAMACRO-GENERATED"
-Public Const AUDIT_MACRO_MARKER_FULL As String = "OTS-AUDIT-DATAMACRO-GENERATED v0.9.3"
+Public Const AuditMacroMarker      As String = "OTS-AUDIT-DATAMACRO-GENERATED"
+Public Const AuditMacroMarkerFull As String = "OTS-AUDIT-DATAMACRO-GENERATED v0.9.3"
+
+' [STANDARDS - error-handling.md] This module's own name, for its handlers, and the one stop
+' it raises on purpose (stop range).
+Private Const ModuleName As String = "modAddDataMacros"
+Private Const ErrScopeModeUnknown As Long = vbObjectError + 513
 ```
 
-**To the AI assistant — before you import the module.** `AUDIT_SCOPE_MODE` carries Step 4's answer
-and `AUDIT_SCOPE_LIST` carries the table names where that answer was a list. Set them here, in the
+**Every module names itself, and each copies `IsRefusal`.** Put the matching lines at the top of the
+other three modules, below `Option Explicit`, and copy `IsRefusal` from `error-handling.md`
+(*Refusals: `IsRefusal`*), unchanged and `Private`, into `modAddDataMacros`, whose entry points write
+the audit tables:
+
+```vba
+' modAuditLongText
+Private Const ModuleName As String = "modAuditLongText"
+Private Const ErrBackupRowNotFound As Long = vbObjectError + 513   ' a stop
+
+' modAuditAdmin
+Private Const ModuleName As String = "modAuditAdmin"
+
+' modAuditVerify
+Private Const ModuleName As String = "modAuditVerify"
+```
+
+**To the AI assistant — before you import the module.** `AuditScopeMode` carries Step 4's answer
+and `AuditScopeList` carries the table names where that answer was a list. Set them here, in the
 module text, before the import. There is no run-time argument for either and no dialog that asks
 later: a module imported with the shipped values has an empty list, and the scan stops, saying no
 table is in scope.
@@ -166,7 +190,7 @@ then reports fewer tables than the developer expects — read the names back to 
 this.
 
 **To the AI assistant — Path B, before you import the module.** These four values name the
-who-and-when columns, and `AUDIT_STAMP_LIST` names the tables where the generator fills them. A host
+who-and-when columns, and `AuditStampList` names the tables where the generator fills them. A host
 database that already carries tracking columns may name them something else —
 `AddedOn`/`AddedBy`/`ModifiedOn`/`ModifiedBy` is one form you will meet, and there are others.
 
@@ -175,7 +199,7 @@ columns.** So first find out, table by table, how the host fills them today. The
 and you cannot tell them apart without looking:
 
 - **A data macro on the table.** The generator replaces a table's entire macro set, so the host's
-  stamping would be lost. List the table in `AUDIT_STAMP_LIST`: the generated macro carries the
+  stamping would be lost. List the table in `AuditStampList`: the generated macro carries the
   stamping on, and the original is written to `DataMacroBackups\` first. Read the old macro before
   you replace it and tell the developer if it did anything the generated one will not.
 - **A column default, or VBA** — a form's Before Update, a save routine, an import. Search the
@@ -194,7 +218,7 @@ folding it into the template's own count. The two answers, and both belong in th
 
 - **Use the names this database already has.** No columns are added. Set the four values above to
   the host's names. `Three_PopulateConfigTable` then seeds those columns not-auditable, and
-  `BuildBeforeChangeMacro` stamps them on the tables in `AUDIT_STAMP_LIST`.
+  `BuildBeforeChangeMacro` stamps them on the tables in `AuditStampList`.
 - **Use the library's names.** The host's four columns are replaced by the library's four. Leave the
   values above as shipped; they seed and stamp the library's columns. **Say what this costs before
   they choose it, because nothing here does it for them:** the four columns have to be added, the
@@ -211,10 +235,10 @@ tables. Two things belong in it: `CreatedDate` and `CreatedBy` are required, so 
 holds rows needs the column added, filled, and only then marked required; and every row already there
 will carry the date the columns were added rather than the date the record was really created,
 because that history was never kept. Without them a table still gets its audit trail and simply has
-nothing to stamp. A table that gets them goes in `AUDIT_STAMP_LIST`, since nothing else fills them.
+nothing to stamp. A table that gets them goes in `AuditStampList`, since nothing else fills them.
 
 Left as shipped on a host that names them differently, with nobody asked, they match no column: the
 host's tracking columns get seeded as ordinary tracked fields, `BuildBeforeChangeMacro` emits no
 stamping for any table, and because loading a macro set replaces the whole set, a table that arrived
-with stamping loses it. A table whose stamping macro is left out of `AUDIT_STAMP_LIST` loses it the
+with stamping loses it. A table whose stamping macro is left out of `AuditStampList` loses it the
 same way. Nothing errors.

@@ -16,13 +16,14 @@ shown in full in `Startup` and referenced thereafter** — the errHandler block'
 (`error-handling.md`) is identical in every procedure by design. Line numbers are deliberately
 absent (house-specific; see `error-handling.md`).
 
-**Every procedure here carries a handler**, including the two that expect to fail. `BackEndIsReachable`
-is asked a question whose answer is often "no," and a missing file, a dead server, or a file that
-isn't an Access database all raise errors. Rather than reach for `On Error Resume Next` — which
-`error-handling.md` permits only inside `Cleanup:` — the probe is **its own procedure that returns
-False by default**: any error jumps to the standard handler, which resumes to `Cleanup`, and the
-function returns the False it started with. The question is answered by the handler doing exactly
-what the standard says it does.
+**Each handler is the one `error-handling.md`'s table gives for the procedure's role**, and its first
+comment names it. `Startup` is the entry point; `EnsureBackEndLink` and `EnsureAppFolders` are entry
+points that hand their outcome back to it; `SaveLocalSetting` is an entry point nothing depends on;
+`BackEndIsReachable` is an answer; every other procedure is a step. `BackEndIsReachable` is asked a
+question whose answer is often "no", and a missing file, a dead server, or a file that isn't an
+Access database all raise errors. It uses the **answering shape**: its handler sets False and resumes
+to `Cleanup`, reporting nothing, and `EnsureBackEndLink`, which concludes there is no back end
+anywhere, is the one that tells the person.
 
 Module header:
 
@@ -30,18 +31,26 @@ Module header:
 Option Compare Database
 Option Explicit
 
+' [STANDARDS - error-handling.md] This module's own name, for its handlers. Copy IsRefusal
+'            from error-handling.md into this module too, unchanged and Private.
+Private Const ModuleName As String = "modAppStartup"
+
+' [STANDARDS - error-handling.md] A refusal this module raises itself (refusal range).
+Private Const ErrSettingTooLong As Long = vbObjectError + 1000
+
 ' msoFileDialogFilePicker, written as its number so this module needs no reference to
 ' the Office object library - one less thing to go wrong on someone else's machine.
-Private Const mlngFilePicker As Long = 3
+Private Const FilePickerDialog As Long = 3
 
 ' The one setting this module keeps in USysLocalSetting.
-Private Const mstrBackEndPathSetting As String = "BackEndPath"
+Private Const BackEndPathSetting As String = "BackEndPath"
 ```
 
 ### Startup — `Public Function` → `Boolean`
 
 ```vba
 Public Function Startup() As Boolean
+    Const ProcName As String = "Startup"
     ' [SCAFFOLD] The only thing AutoExec runs, and the one place open-time work happens -
     '            including, once you switch it on, what your existing AutoExec did (step 0).
     '            The order below is not stylistic - see the comment at step 2.
@@ -80,8 +89,14 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] error reporting comes from the standards layer.
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    ' [STANDARDS - error-handling.md] reporting shape: entry point; returns False when the
+    '            application must not carry on. The person has been told why.
+    ' Whatever reports here must not write to the back end, which may be what failed.
+    If IsRefusal(Err.Number) Then
+        MsgBox Err.Description, vbInformation
+    Else
+        LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
+    End If
     Resume Cleanup
     Resume
 End Function
@@ -91,6 +106,7 @@ End Function
 
 ```vba
 Public Function EnsureBackEndLink() As Boolean
+    Const ProcName As String = "EnsureBackEndLink"
     ' [SCAFFOLD] Make sure the linked tables reach a real back end, relinking if they don't.
     '            Four outcomes, in the order they are tried:
     '              a. no linked tables at all -> single-file database, nothing to do
@@ -113,15 +129,15 @@ Public Function EnsureBackEndLink() As Boolean
     ' (b) The links already work. Record where they point, so a later move has something
     '     to fall back on. This is what seeds the setting on a brand-new front end.
     If BackEndIsReachable(strCurrentPath) Then
-        If LocalSettingValue(mstrBackEndPathSetting) <> strCurrentPath Then
-            SaveLocalSetting mstrBackEndPathSetting, strCurrentPath
+        If LocalSettingValue(BackEndPathSetting) <> strCurrentPath Then
+            SaveLocalSetting BackEndPathSetting, strCurrentPath
         End If
         EnsureBackEndLink = True
         GoTo Cleanup
     End If
 
     ' (c) The links are stale. Try the path we remember from last time.
-    strStoredPath = LocalSettingValue(mstrBackEndPathSetting)
+    strStoredPath = LocalSettingValue(BackEndPathSetting)
     If Len(strStoredPath) > 0 And strStoredPath <> strCurrentPath Then
         If BackEndIsReachable(strStoredPath) Then
             If RelinkAllTables(strStoredPath, strCurrentPath) Then
@@ -164,14 +180,22 @@ Public Function EnsureBackEndLink() As Boolean
 
     ' Remember it only now - after a relink that actually worked. A remembered bad path is
     ' worse than no remembered path, because it gets tried first on every future open.
-    SaveLocalSetting mstrBackEndPathSetting, strNewPath
+    SaveLocalSetting BackEndPathSetting, strNewPath
     EnsureBackEndLink = True
 
 Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that hands its outcome back. It
+    '            tells the person itself and returns False; Startup acts on the False without
+    '            reporting again.
+    ' Whatever reports here must not write to the back end, which may be what failed.
+    If IsRefusal(Err.Number) Then
+        MsgBox Err.Description, vbInformation
+    Else
+        LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
+    End If
     Resume Cleanup
     Resume
 End Function
@@ -181,6 +205,7 @@ End Function
 
 ```vba
 Public Function EnsureAppFolders() As Boolean
+    Const ProcName As String = "EnsureAppFolders"
     ' [SCAFFOLD] The folder slot named in startup-conventions.md sections 2 and 4, and the
     '            extension point for open-time setup: add each new folder here as the
     '            application grows. Idempotent by design - the SAME routine creates a
@@ -229,7 +254,11 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS - error-handling.md] standard errHandler block (see Startup)
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that hands its outcome back. It
+    '            tells the person itself and returns False; Startup acts on the False without
+    '            reporting again.
+    ' Whatever reports here must not write to the back end, which may be what failed.
+    LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
     Resume Cleanup
     Resume
 End Function

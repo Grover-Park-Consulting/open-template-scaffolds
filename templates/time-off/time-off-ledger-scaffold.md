@@ -3,9 +3,9 @@ template: time-off-ledger-scaffold
 title: Time Off Ledger — VBA Scaffold
 domain: time-off
 type: vba-scaffold
-version: 0.6.1
+version: 0.7.0
 status: draft
-status_fingerprint: "1d654675ec67"
+status_fingerprint: "3b49e3f521d5"
 implements: time-off-ledger-schema
 requires_tables:
   - tlkpTimeOffCategory
@@ -31,7 +31,6 @@ new_procedures:
   - AccrualHours
   - CountEarnedForPeriod
   - TimeOffEntryCheck
-  - ExpectedRefusal
   - AppendEntry
   - PostOnePeriod
   - PostEarnedForPeriod

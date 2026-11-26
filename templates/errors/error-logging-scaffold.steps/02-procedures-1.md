@@ -1,7 +1,7 @@
 ---
 step: 02-procedures-1
 title: "The procedures, part 1 of 3"
-platform_facts: [open-existing-startup, mcp-module-import, mcp-line-numbers, host-helper-reuse, sql-insert-truncation, vbe-line-continuation]
+platform_facts: [open-existing-startup, mcp-module-import, mcp-line-numbers, host-helper-reuse, sql-insert-truncation, vbe-line-continuation, recordset-append-crash]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.
@@ -18,25 +18,28 @@ Option Compare Database
 Option Explicit
 
 ' [STANDARDS - error-handling.md] This module's own name, for handlers inside it.
-Private Const MODULE_NAME           As String = "modErrorLog"
+Private Const ModuleName           As String = "modErrorLog"
 
 ' [SCAFFOLD] The table and file the logger writes to, in ONE place each.
-Private Const ERROR_LOG_TABLE       As String = "tblErrorLog"
-Private Const ERROR_LOG_FILE        As String = "ErrorLog.txt"
+Private Const ErrorLogTable       As String = "tblErrorLog"
+Private Const ErrorLogFile        As String = "ErrorLog.txt"
 
 ' [SCHEMA] tblErrorLog.ErrorDescription is Text(255). A longer description is
 '          truncated to fit, never allowed to fail the write (schema Business Rule 4).
-Private Const ERROR_DESCRIPTION_MAX As Long = 255
+Private Const ErrorDescriptionMax As Long = 255
 
 ' [SCHEMA] tblErrorLog.ErrorSource is Text(255), truncated the same way.
-Private Const ERROR_SOURCE_MAX      As Long = 255
+Private Const ErrorSourceMax      As Long = 255
 ```
 
-### LogError — `Public Sub` (the logger every handler calls)
+### LogError — `Public Function` → `Long` (the logger every handler calls)
 
 The procedure `standards/error-handling.md` names at the end of every error handler. It takes the
 module, the procedure, and the line, reads the error itself, records it wherever Step 3 said, and
-tells the person whatever Step 6 said.
+tells the person whatever Step 6 said, unless the caller passes `booShow:=False` (a path where nobody
+may be interrupted). It returns the record's reference number, 0 when none was kept, so a quiet path
+can hand the reference on in a sentence. A handler that only reports calls it as a statement, as
+before.
 
 **This procedure deliberately does not follow the house handler pattern**, and it is the only place
 in the library that doesn't. `error-handling.md` allows `On Error Resume Next` inside `Cleanup:`
@@ -50,9 +53,11 @@ statement — including the guard on the fourth line. Read the error first, guar
 them logs error 0 with an empty description, on every call, silently.
 
 ```vba
-Public Sub LogError(ByVal strModule As String, _
-                    ByVal strProcedure As String, _
-                    ByVal lngLine As Long)
+Public Function LogError(ByVal strModule As String, _
+                         ByVal strProcedure As String, _
+                         ByVal lngLine As Long, _
+                         Optional ByVal booShow As Boolean = True) As Long
+    ' [STANDARDS - error-handling.md] guarded shape: the logger.
     ' [SCAFFOLD] Called from an errHandler block that is already dealing with a failure.
     '            Nothing in here may raise an error of its own.
     Dim lngErrNumber      As Long
@@ -76,11 +81,11 @@ Public Sub LogError(ByVal strModule As String, _
     On Error Resume Next
 
     ' [SCHEMA Business Rule 4] Truncate to fit rather than fail on length.
-    If Len(strErrDescription) > ERROR_DESCRIPTION_MAX Then
-        strErrDescription = Left$(strErrDescription, ERROR_DESCRIPTION_MAX)
+    If Len(strErrDescription) > ErrorDescriptionMax Then
+        strErrDescription = Left$(strErrDescription, ErrorDescriptionMax)
     End If
-    If Len(strErrSource) > ERROR_SOURCE_MAX Then
-        strErrSource = Left$(strErrSource, ERROR_SOURCE_MAX)
+    If Len(strErrSource) > ErrorSourceMax Then
+        strErrSource = Left$(strErrSource, ErrorSourceMax)
     End If
 
     ' [WIZARD Step 3 - where errors are recorded] >>> keep ONE of the three blocks <<<
@@ -101,8 +106,13 @@ Public Sub LogError(ByVal strModule As String, _
                                      strProcedure, lngLine)
     End If
 
-    ShowErrorToUser lngErrNumber, strErrDescription, strModule, strProcedure, lngLine, lngLogID, booRecorded
-End Sub
+    ' [STANDARDS - error-handling.md] On a quiet path (booShow:=False) the error is recorded
+    '            and nothing is shown.
+    If booShow Then
+        ShowErrorToUser lngErrNumber, strErrDescription, strModule, strProcedure, lngLine, lngLogID, booRecorded
+    End If
+    LogError = lngLogID
+End Function
 ```
 
 ### WriteErrorToTable — `Private Function` → `Boolean`
@@ -111,9 +121,10 @@ Appends one row to `tblErrorLog` and hands back the new `ErrorLogID` so Step 6 c
 reference number. **Returns `False` rather than raising** when the table cannot be reached — which
 is what lets the fallback option in `LogError` step down to the file.
 
-It appends through a recordset rather than an `INSERT` statement on purpose. An error description
-containing an apostrophe would break a concatenated `INSERT`, and this is the one procedure in the
-application that must not fail on the contents of its own input.
+It writes with a parameterised `INSERT`. The values never enter the SQL text, so an error description
+containing an apostrophe cannot break it, and this is the one procedure in the application that must
+not fail on the contents of its own input. It is not a recordset append, which has crashed Access
+inside a Data Macro's save, where the refusing shape logs from.
 
 ```vba
 Private Function WriteErrorToTable(ByVal lngErrNumber As Long, _
@@ -123,10 +134,14 @@ Private Function WriteErrorToTable(ByVal lngErrNumber As Long, _
                                    ByVal strProcedure As String, _
                                    ByVal lngLine As Long, _
                                    ByRef lngLogID As Long) As Boolean
-    ' [SCAFFOLD] Guarded throughout; reports success as a Boolean instead of raising.
-    Dim db    As DAO.Database
-    Dim rst    As DAO.Recordset
-    Dim strUser As String
+    ' [STANDARDS - error-handling.md] guarded shape: part of the logger. Reports success as a
+    '            Boolean instead of raising.
+    Dim db             As DAO.Database
+    Dim qdf            As DAO.QueryDef
+    Dim strUser        As String
+    Dim strParameters  As String
+    Dim strDescription As String
+    Dim strSource      As String
 
     On Error Resume Next
     lngLogID = 0
@@ -136,39 +151,56 @@ Private Function WriteErrorToTable(ByVal lngErrNumber As Long, _
     strUser = Environ$("USERNAME")
     If Len(strUser) = 0 Then strUser = "Unknown"
 
-    Set db = CurrentDb
-    Set rst = db.OpenRecordset(ERROR_LOG_TABLE, dbOpenDynaset, dbAppendOnly)
+    ' [STANDARDS - query-style.md] A parameterised INSERT, never a recordset append: the values
+    '            never enter the SQL text, so an apostrophe cannot break the write, and a recordset
+    '            append inside a Data Macro's save has crashed Access (fact recordset-append-crash),
+    '            which is where the refusing shape logs from.
+    ' [FACT sql-insert-truncation] An empty string passed as a parameter arrives as Null, and
+    '            ErrorDescription and ErrorSource are Required. An empty one is written as the
+    '            literal '' instead, and only a non-empty one is passed as a parameter.
+    strParameters = "PARAMETERS [pNumber] Long, [pModule] Text(255), [pProcedure] Text(255), " & _
+                    "[pLine] Long, [pOn] DateTime, [pUser] Text(255)"
+    If Len(strErrDescription) > 0 Then
+        strParameters = strParameters & ", [pDescription] Text(255)"
+        strDescription = "[pDescription]"
+    Else
+        strDescription = "''"
+    End If
+    If Len(strErrSource) > 0 Then
+        strParameters = strParameters & ", [pSource] Text(255)"
+        strSource = "[pSource]"
+    Else
+        strSource = "''"
+    End If
 
+    Set db = CurrentDb
+    Set qdf = db.CreateQueryDef(vbNullString, strParameters & "; " & _
+        "INSERT INTO " & ErrorLogTable & " (ErrorNumber, ErrorDescription, ErrorSource, " & _
+        "ModuleName, ProcedureName, ErrorLineNumber, ErrorOccurredOn, ErrorUser) " & _
+        "VALUES ([pNumber], " & strDescription & ", " & strSource & ", [pModule], " & _
+        "[pProcedure], [pLine], [pOn], [pUser])")
     ' [SCAFFOLD] The table may be missing, or the back end unreachable. Either way this
     '            is a False, not an error - the caller has somewhere else to try.
     If Err.Number <> 0 Then GoTo Cleanup
-    If rst Is Nothing Then GoTo Cleanup
-    Err.Clear
 
-    ' [STANDARDS - query-style.md] A recordset append, not a concatenated INSERT: an
-    '            apostrophe in Err.Description must not be able to break the write.
-    rst.AddNew
-    rst!ErrorNumber = lngErrNumber
-    rst!ErrorDescription = strErrDescription
-    rst!ErrorSource = strErrSource
-    rst!ModuleName = strModule
-    rst!ProcedureName = strProcedure
-    rst!ErrorLineNumber = lngLine
-    rst!ErrorOccurredOn = Now()
-    rst!ErrorUser = strUser
-    rst.Update
+    qdf.Parameters("pNumber").Value = lngErrNumber
+    qdf.Parameters("pModule").Value = strModule
+    qdf.Parameters("pProcedure").Value = strProcedure
+    qdf.Parameters("pLine").Value = lngLine
+    qdf.Parameters("pOn").Value = Now()
+    qdf.Parameters("pUser").Value = strUser
+    If Len(strErrDescription) > 0 Then qdf.Parameters("pDescription").Value = strErrDescription
+    If Len(strErrSource) > 0 Then qdf.Parameters("pSource").Value = strErrSource
+    qdf.Execute dbFailOnError
+    If Err.Number <> 0 Then GoTo Cleanup
 
-    If Err.Number = 0 Then
-        ' [SCAFFOLD] The row is in. Read the reference number afterwards - if that part
-        '            fails, the record still stands and only the number is missing.
-        WriteErrorToTable = True
-        rst.Bookmark = rst.LastModified
-        lngLogID = Nz(rst!ErrorLogID, 0)
-    End If
+    ' [SCAFFOLD] The row is in. Read the reference number on the same Database object - if
+    '            that part fails, the record still stands and only the number is missing.
+    WriteErrorToTable = True
+    lngLogID = Nz(db.OpenRecordset("SELECT @@IDENTITY")(0), 0)
 
 Cleanup:
-    If Not rst Is Nothing Then rst.Close
-    Set rst = Nothing
+    Set qdf = Nothing
     Set db = Nothing
 End Function
 ```
@@ -186,7 +218,8 @@ Private Function WriteErrorToFile(ByVal lngErrNumber As Long, _
                                   ByVal strModule As String, _
                                   ByVal strProcedure As String, _
                                   ByVal lngLine As Long) As Boolean
-    ' [SCAFFOLD] Guarded throughout; reports success as a Boolean instead of raising.
+    ' [STANDARDS - error-handling.md] guarded shape: part of the logger. Reports success as a
+    '            Boolean instead of raising.
     Dim intFile    As Integer
     Dim strPath    As String
     Dim strUser    As String
@@ -232,7 +265,8 @@ the record.
 
 ```vba
 Private Function GetErrorLogFilePath() As String
-    ' [SCAFFOLD] Guarded: a bad path returns the fallback, never an error.
+    ' [STANDARDS - error-handling.md] guarded shape: part of the logger. A bad path returns
+    '            the fallback, never an error.
     Dim strFolder As String
 
     On Error Resume Next
@@ -249,9 +283,9 @@ Private Function GetErrorLogFilePath() As String
     ' strFolder = Environ$("USERPROFILE") & "\Documents"
 
     ' --- "The back end's folder", read off the link the front end already has. Works
-    '     only where ERROR_LOG_TABLE is a LINKED table - a local one has no Connect. ---
+    '     only where ErrorLogTable is a LINKED table - a local one has no Connect. ---
     ' Dim sConnect As String
-    ' sConnect = CurrentDb.TableDefs(ERROR_LOG_TABLE).Connect
+    ' sConnect = CurrentDb.TableDefs(ErrorLogTable).Connect
     ' strFolder = Mid$(sConnect, InStr(sConnect, "DATABASE=") + 9)
     ' strFolder = Left$(strFolder, InStrRev(strFolder, "\") - 1)
 
@@ -261,6 +295,6 @@ Private Function GetErrorLogFilePath() As String
     If Len(Dir$(strFolder, vbDirectory)) = 0 Then strFolder = Environ$("TEMP")
 
     If Right$(strFolder, 1) <> "\" Then strFolder = strFolder & "\"
-    GetErrorLogFilePath = strFolder & ERROR_LOG_FILE
+    GetErrorLogFilePath = strFolder & ErrorLogFile
 End Function
 ```

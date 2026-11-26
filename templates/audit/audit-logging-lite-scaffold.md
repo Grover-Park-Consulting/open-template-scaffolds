@@ -3,9 +3,9 @@ template: audit-logging-lite-scaffold
 title: Access Audit Logging (Lite) — VBA Scaffold
 domain: audit
 type: vba-scaffold
-version: 0.23.0
+version: 0.24.0
 status: review
-status_fingerprint: "5b6292d101f1"
+status_fingerprint: "bb2d193c5159"
 implements: audit-logging-lite-schema
 requires_tables:
   - tblAuditLog
@@ -45,6 +45,7 @@ new_procedures:
   - AuditKeyExpression
   - AuditValueExpression
   - AuditKeyLocalVar
+  - AuditRefusalBlock
   - GetComparisonExpression
   - AuditUser (not built when the host's own identity function is used)
   - BackupLongTextFieldsDM
@@ -57,7 +58,7 @@ build_paths:
   - "Path B — Add it to a real database you already have: skip Zero_CreateSampleTables and point
     the generator at your own existing tables instead. Back up the file first (see warnings)."
 house_assumptions:
-  - "Audit scope (AUDIT_SCOPE_MODE) — chosen by the developer at wizard Step 4, by what each table
+  - "Audit scope (AuditScopeMode) — chosen by the developer at wizard Step 4, by what each table
     holds, never by what it is called. The preferred answer is a list the assistant proposes from
     each table's fields and use and the developer confirms; a name's prefix or suffix is a clue,
     never the test."
@@ -112,7 +113,7 @@ warnings:
     Long Integer), stop and tell the developer this template will not work for that table out of
     the box — they are free to adapt it, but the adaptation is theirs. One_CheckAuditReadiness checks
     for this automatically. A Replication ID key is the one exception and is the developer's
-    choice rather than a flat exclusion — AUDIT_GUID_KEYS_AUDITED carries the answer, and it
+    choice rather than a flat exclusion — AuditGuidKeysAudited carries the answer, and it
     must be settled before Two_CreateAuditTables runs, since that builds the log's key column.
   - Never name a Replication ID field inside a Data Macro LookUpRecord WhereCondition. Doing so
     was measured to stop the whole condition filtering — every clause, not just that one — so
@@ -134,7 +135,7 @@ warnings:
     rather than silent.
   - Application.LoadFromText replaces a table's ENTIRE macro set — it never merges. This generator
     therefore emits the house audit-column stamping (standards/audit-columns.md), on the tables
-    in AUDIT_STAMP_LIST, and the change auditing TOGETHER, in one Before Change macro, so that one
+    in AuditStampList, and the change auditing TOGETHER, in one Before Change macro, so that one
     macro carries both and neither can replace the other. A table whose columns a default or the
     database's own code fills is not listed - the generator adds to what a table does, and never
     takes over what already fills those columns. Any
@@ -247,7 +248,7 @@ Three layers, kept distinct throughout:
   `query-style.md`, `naming-conventions.md`). The error blocks below use the dependency-free
   `MsgBox` default; substitute your house logger per `error-handling.md`.
 - **`[BUSINESS LOGIC]`** — the audit-scope decisions you must make: the scan boundary, set in
-  `AUDIT_SCOPE_MODE` and read by `IsAuditCandidateTable`, and the `IsAuditable` flag review in
+  `AuditScopeMode` and read by `IsAuditCandidateTable`, and the `IsAuditable` flag review in
   `tblAuditLogConfig` after the scan.
 
 ## Prerequisites
@@ -328,8 +329,8 @@ and no other template runs it.
   `query-style.md` if your house centralizes SQL differently.
 - **Naming conventions** — no scope test reads a table's name, apart from Access's own `MSys`
   tables and the developer's `USys` tables. Which tables hold the application's data is decided at
-  Step 4 by what each holds, so any naming convention, or none, works the same. `AUDIT_SCOPE_MODE`
-  and `AUDIT_SCOPE_LIST` hold the answer, `IsAuditCandidateTable` reads them, and both the config
+  Step 4 by what each holds, so any naming convention, or none, works the same. `AuditScopeMode`
+  and `AuditScopeList` hold the answer, `IsAuditCandidateTable` reads them, and both the config
   scan and `One_CheckAuditReadiness` call that — so scope is one setting in one place.
 - **Design principles** — one job per procedure throughout: one sample-data setup (Path A only),
   three numbered entry points, one safety check, five single-macro builders, one comparison

@@ -65,9 +65,9 @@ Public Function Two_CreateAuditTables(Optional booSilent As Boolean = False) As 
 
     ' [BUSINESS LOGIC - schema Business Rule 4] Long Integer unless the developer chose to
     '                 audit tables keyed by a Replication ID. Text holds the key's printed
-    '                 form; AUDIT_KEY_TEXT_SIZE carries the width and why.
-    If AUDIT_GUID_KEYS_AUDITED Then
-        Set fld = tdf.CreateField("PrimaryKey", dbText, AUDIT_KEY_TEXT_SIZE)
+    '                 form; AuditKeyTextSize carries the width and why.
+    If AuditGuidKeysAudited Then
+        Set fld = tdf.CreateField("PrimaryKey", dbText, AuditKeyTextSize)
     Else
         Set fld = tdf.CreateField("PrimaryKey", dbLong)
     End If
@@ -156,9 +156,9 @@ CreateLongTextBackup:
 
     ' [BUSINESS LOGIC - schema Business Rule 4] Long Integer unless the developer chose to
     '                 audit tables keyed by a Replication ID. Text holds the key's printed
-    '                 form; AUDIT_KEY_TEXT_SIZE carries the width and why.
-    If AUDIT_GUID_KEYS_AUDITED Then
-        Set fld = tdf.CreateField("PrimaryKey", dbText, AUDIT_KEY_TEXT_SIZE)
+    '                 form; AuditKeyTextSize carries the width and why.
+    If AuditGuidKeysAudited Then
+        Set fld = tdf.CreateField("PrimaryKey", dbText, AuditKeyTextSize)
     Else
         Set fld = tdf.CreateField("PrimaryKey", dbLong)
     End If
@@ -285,7 +285,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] dependency-free default; substitute your house logger.
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     booFailed = True
     strReport = "ERROR creating tables: " & Err.Number & " - " & Err.Description
     Resume Cleanup
@@ -370,7 +372,7 @@ Public Function Three_PopulateConfigTable(Optional booDefaultAuditable As Boolea
     For Each tdef In db.TableDefs
         ' [BUSINESS LOGIC — scan boundary] Which tables are candidates at all. The test lives
         ' in IsAuditCandidateTable, which One_CheckAuditReadiness calls as well, so the two cannot
-        ' disagree about what is in scope. It reads AUDIT_SCOPE_MODE; change that, not this.
+        ' disagree about what is in scope. It reads AuditScopeMode; change that, not this.
         ' A table the developer named that turns out to be linked is collected here and named
         ' in the report below, so a table asked for by name is never dropped in silence.
         If (tdef.Attributes And (dbAttachedTable Or dbAttachedODBC)) <> 0 Then
@@ -418,8 +420,8 @@ Public Function Three_PopulateConfigTable(Optional booDefaultAuditable As Boolea
                          tdef.Name = "tblLongTextBackup", _
                          tdef.Name = "tblAuditLogConfig"
                         booAuditable = False
-                    Case fld.Name = AUDIT_CREATED_DATE, fld.Name = AUDIT_CREATED_BY, _
-                         fld.Name = AUDIT_MODIFIED_DATE, fld.Name = AUDIT_MODIFIED_BY, _
+                    Case fld.Name = AuditCreatedDate, fld.Name = AuditCreatedBy, _
+                         fld.Name = AuditModifiedDate, fld.Name = AuditModifiedBy, _
                          fld.Name = "AccessTS", fld.Name = "SSMA_TimeStamp", _
                          fld.Name = "ValidFrom", fld.Name = "ValidTo"
                         booAuditable = False
@@ -463,8 +465,8 @@ Public Function Three_PopulateConfigTable(Optional booDefaultAuditable As Boolea
         booFailed = True
         strReport = "Stopped. No table in this file is in scope, so nothing was written to " & _
             "tblAuditLogConfig and nothing has been built." & vbCrLf & vbCrLf & _
-            "The scope setting at the top of this module is """ & AUDIT_SCOPE_MODE & """:" & vbCrLf & _
-            "  List - only the tables named in AUDIT_SCOPE_LIST." & vbCrLf & _
+            "The scope setting at the top of this module is """ & AuditScopeMode & """:" & vbCrLf & _
+            "  List - only the tables named in AuditScopeList." & vbCrLf & _
             "  All  - every table in this file." & vbCrLf & vbCrLf & _
             "Set it to match the tables in this file and run this again. System tables " & _
             "and linked tables are left out whichever one is set."
@@ -480,7 +482,7 @@ Public Function Three_PopulateConfigTable(Optional booDefaultAuditable As Boolea
     '            is that the developer decided which ones matter.
     If Len(strLinkedNamed) > 0 Then
         strReport = strReport & vbCrLf & vbCrLf & _
-            "These tables are named in AUDIT_SCOPE_LIST but are linked to another file, so " & _
+            "These tables are named in AuditScopeList but are linked to another file, so " & _
             "they were left out. Tracking attaches to the table itself and has to be built " & _
             "in the file where the table really lives:" & vbCrLf & strLinkedNamed
     End If
@@ -498,7 +500,9 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
+    ' [STANDARDS - error-handling.md] reporting shape: entry point that returns its report.
+    '            A caller reads the report and does not report again. Option 1 also calls
+    '            LogError here.
     booFailed = True
     strReport = "ERROR populating config: " & Err.Number & " - " & Err.Description
     Resume Cleanup

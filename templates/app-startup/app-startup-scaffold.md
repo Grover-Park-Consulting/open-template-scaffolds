@@ -3,9 +3,9 @@ template: app-startup-scaffold
 title: Application Startup and Back-End Relinking — VBA Scaffold
 domain: app-startup
 type: vba-scaffold
-version: 0.8.0
+version: 0.9.0
 status: review
-status_fingerprint: "c7d18b5f0662"
+status_fingerprint: "9c081bf67f45"
 requires_tables:
   - USysLocalSetting
 platform_facts: [target-file, app-startup-autoexec]

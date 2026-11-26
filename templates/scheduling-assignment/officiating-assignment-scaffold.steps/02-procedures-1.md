@@ -8,11 +8,21 @@ platform_facts: [mcp-module-import, mcp-line-numbers, recordset-append-crash, sq
 
 ## Procedures
 
-Each procedure shows its scope, signature, and an annotated skeleton. **Every procedure ends
-with the same `errHandler` block** — shown in full in `AssignOfficial` and referenced
-thereafter, because the errHandler block's form (`error-handling.md`) is *identical* in every
-procedure by design. Line numbers are deliberately absent (house-specific; see
-`error-handling.md`).
+Each procedure shows its scope, signature, and an annotated skeleton. **Each handler is the one
+`error-handling.md`'s table gives for the procedure's role**, and its first comment names it.
+`AssignOfficial`, `SetOfficialPhoto`, `EnsurePhotoFolder` and `EnsureGameValidationRule` are entry
+points; `ValidateAssignment`, `GetApplicablePayRate`, `GetAppSetting`, `GameLevelID`, `OfficialAge`
+and `ListOpenObjects` are steps, whose answers something else acts on. Line numbers are deliberately
+absent (house-specific; see `error-handling.md`); where they are used, the reporting handlers read
+`Erl` first.
+
+Put this at the top of `modOfficiatingAssignment`, below `Option Explicit`, then copy `IsRefusal`
+from `error-handling.md` (*Refusals: `IsRefusal`*) into the module, unchanged and `Private`:
+
+```vba
+' [STANDARDS - error-handling.md] This module's own name, for its handlers.
+Private Const ModuleName As String = "modOfficiatingAssignment"
+```
 
 ### AssignOfficial — `Public Function` → `Long` (entry point)
 
@@ -20,6 +30,7 @@ procedure by design. Line numbers are deliberately absent (house-specific; see
 Public Function AssignOfficial(ByVal lngGameID As Long, _
                                ByVal lngOfficialID As Long, _
                                ByVal lngOfficialPositionID As Long) As Long
+    Const ProcName As String = "AssignOfficial"
     ' [SCAFFOLD] Assign one official to one position on one game.
     '            Returns the new GameOfficialID, or 0 when the assignment is refused.
     Dim strRefusalReason As String
@@ -39,8 +50,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] error reporting comes from the standards layer.
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    ' [STANDARDS - error-handling.md] reporting shape: entry point; returns the new
+    '            GameOfficialID, or 0 when refused or failed.
+    If IsRefusal(Err.Number) Then
+        MsgBox Err.Description, vbInformation
+    Else
+        LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
+    End If
     Resume Cleanup
     Resume
 End Function
@@ -53,11 +69,16 @@ Public Function ValidateAssignment(ByVal lngGameID As Long, _
                                     ByVal lngOfficialID As Long, _
                                     ByVal lngOfficialPositionID As Long, _
                                     ByRef strRefusalReason As String) As Boolean
+    Const ProcName As String = "ValidateAssignment"
     ' [SCAFFOLD] All-or-nothing pre-checks for one assignment; on the first failure,
     '            set strRefusalReason and exit False. True = safe to insert.
     Dim db   As DAO.Database
     Dim rst   As DAO.Recordset
     Dim strSQL As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -82,8 +103,12 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step. AssignOfficial acts on its
+    '            answer, and a False with no reason would read as a refusal nobody can explain.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -93,6 +118,7 @@ End Function
 Public Function GetApplicablePayRate(ByVal lngPlayLevelID As Long, _
                                      ByVal lngOfficialPositionID As Long, _
                                      ByVal dtGameDate As Date) As Variant
+    Const ProcName As String = "GetApplicablePayRate"
     ' [SCAFFOLD] Resolve the effective-dated rate for (level, position) as of a game date.
     '            Returns Null when no rate row applies — caller surfaces a warning, never
     '            guesses a rate. The return type is Variant, not Currency, because VBA's own
@@ -104,6 +130,10 @@ Public Function GetApplicablePayRate(ByVal lngPlayLevelID As Long, _
     Dim db   As DAO.Database
     Dim rst   As DAO.Recordset
     Dim strSQL As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -127,8 +157,14 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its Null already means "no rate
+    '            applies" (Business Rule 6: never silently a missing rate), so a failure must not
+    '            return one. In a query it shows #Error instead.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -150,12 +186,17 @@ below, rather than read from anywhere stored.)*
 
 ```vba
 Public Function GetAppSetting(ByVal strSettingName As String) As String
+    Const ProcName As String = "GetAppSetting"
     ' [SCAFFOLD] Read one named setting from tblAppSetting; empty string when absent.
     '            Single purpose: settings live in data, never hardcoded (Business Rule 9's
     '            photo folder is the first consumer; every later setting reuses this).
     Dim db   As DAO.Database
     Dim rst   As DAO.Recordset
     Dim strSQL As String
+
+    Dim lngErrNumber      As Long
+    Dim strErrSource      As String
+    Dim strErrDescription As String
 
     On Error GoTo errHandler
     Set db = CurrentDb
@@ -174,8 +215,13 @@ Cleanup:
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block
-    Resume Cleanup
+    ' [STANDARDS - error-handling.md] propagating shape: a step. Its "" already means "no such
+    '            setting", so a failure must not return one.
+    lngErrNumber = Err.Number
+    strErrSource = Err.Source
+    strErrDescription = Err.Description
+    Set rst = Nothing: Set db = Nothing
+    Err.Raise lngErrNumber, ModuleName & "." & ProcName & "->" & strErrSource, strErrDescription
 End Function
 ```
 
@@ -183,6 +229,7 @@ End Function
 
 ```vba
 Public Sub EnsureGameValidationRule()
+    Const ProcName As String = "EnsureGameValidationRule"
     ' [SCAFFOLD] Attach the row-level Validation Rule enforcing Business Rules 4 and 7 to
     '            tblGame. Run once, after the schema's tables are built; safe to run again -
     '            it overwrites the same text rather than layering a second copy.
@@ -218,8 +265,9 @@ Cleanup:
     Exit Sub
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
-    MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
+    ' [STANDARDS - error-handling.md] reporting shape: entry point (a setup step run by hand); it
+    '            changes a table's design, which the engine does not refuse as data.
+    LogError ModuleName, ProcName, Erl          ' option 2 puts its message box here instead
     Resume Cleanup
     Resume
 End Sub
@@ -240,14 +288,13 @@ Public Function ListOpenObjects() As String
     '            Access's own tables are skipped: AllTables lists them, they are never this
     '            system's business, and an open one is not something a developer would be
     '            asked to close.
-    '            No errHandler and therefore no line numbers: an object that cannot be asked
-    '            is reported as not open, and the caller stops on whatever else it finds.
+    ' [STANDARDS - error-handling.md] a step with nothing to clean up, so no handler: nothing
+    '            here is expected to fail, and an error that does occur is a fault that
+    '            reaches the caller's handler.
     Dim obj   As Object
     Dim strList As String
 
     strList = ""
-
-    On Error Resume Next
 
     For Each obj In CurrentProject.AllForms
         If obj.IsLoaded Then strList = strList & "  Form: " & obj.Name & vbCrLf
@@ -270,8 +317,6 @@ Public Function ListOpenObjects() As String
             strList = strList & "  Query: " & obj.Name & vbCrLf
         End If
     Next obj
-
-    On Error GoTo 0
 
     ListOpenObjects = strList
 End Function
