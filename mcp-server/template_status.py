@@ -149,7 +149,7 @@ def main(argv: list[str]) -> int:
 
     if mode == "typo":
         now = fingerprint()
-        write(lambda t: set_front_line(t, "status_fingerprint", now))
+        write(lambda t: set_front_line(t, "status_fingerprint", f'"{now}"'))
         print(f"{slug}: fingerprint {now} written.")
         return 0
 
@@ -184,7 +184,7 @@ def main(argv: list[str]) -> int:
 
     write(apply)
     now = fingerprint()
-    write(lambda t: set_front_line(t, "status_fingerprint", now))
+    write(lambda t: set_front_line(t, "status_fingerprint", f'"{now}"'))
     print(f"{slug}: v{new_version}, status {status}, fingerprint {now}"
           + (f", dated {today}." if dated[0] else ". No 'Status last determined' line to date."))
     return 0

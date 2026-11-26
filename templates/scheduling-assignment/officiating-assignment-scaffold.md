@@ -3,9 +3,9 @@ template: officiating-assignment-scaffold
 title: Officiating Assignment — Assignment & Pay VBA Scaffold
 domain: scheduling-assignment
 type: vba-scaffold
-version: 0.11.0
+version: 0.11.1
 status: review
-status_fingerprint: 393acb35cf35
+status_fingerprint: "54dafaffc97b"
 implements: officiating-assignment-schema
 requires_tables:
   - tblGame

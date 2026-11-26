@@ -3,9 +3,9 @@ template: stocktake-schema
 title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.10.0
+version: 0.11.0
 status: review
-status_fingerprint: 586e30eca033
+status_fingerprint: "4d1bad696c0f"
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
@@ -183,13 +183,14 @@ Grain: one row per physical scan. Present only for scanned counts (Level 2).
 | Field | Type | Key / Req | Purpose & rules |
 |---|---|---|---|
 | `StockTakeScanID` | AutoNumber | PK | Surrogate key (replaces the Dataverse GUID key entirely) |
+| `StockTakeSessionID` | Long | FK → StockTakeSession, Required | The session the scan was made in, recorded when the scan is processed. The only link an Unmatched scan has to its session. For a matched scan it repeats its count line's session on purpose: a fact about the scan, kept as it was at that moment. |
 | `StockTakeCountID` | Long | FK → StockTakeCount, Nullable | The count line this scan contributes to — the structural rollup link. Null for an Unmatched scan (Business Rule 2), which never resolves to a count line. |
 | `ScanCode` | Text(255) | Required | Raw barcode string as scanned; resolved against `Products.SKUBarCode` |
 | `ScanQuantity` | Long | Required | Units this scan adds to the count line (see package rule) |
 | `ScanStatusID` | Long | FK → ScanStatus, Required | Valid / Unmatched / Duplicate |
 | `ScannedOn` | Date/Time | Required | Timestamp of the scan |
 
-Indexes: PK on `StockTakeScanID`; non-unique index on `StockTakeCountID` (FK).
+Indexes: PK on `StockTakeScanID`; non-unique indexes on `StockTakeSessionID` and `StockTakeCountID` (FKs).
 
 ### ProductVarianceAllowance — per-product variance tolerance (admin-managed)
 
@@ -221,6 +222,9 @@ Indexes: PK on `ProductID` (also the FK to `Products`).
 New (within this template):
 - `StockTakeSession (1) → (∞) StockTakeCount` on `StockTakeSessionID` — cascade delete
 - `StockTakeCount (1) → (∞) StockTakeScan` on `StockTakeCountID` — cascade delete
+- `StockTakeSession (1) → (∞) StockTakeScan` on `StockTakeSessionID` — **no cascade**: a session
+  still holding Unmatched scans is refused deletion until they are dealt with. (A cascade here would
+  also give the scan table two cascade paths, which SQL Server refuses.)
 - `StockTakeStatus (1) → (∞) StockTakeSession` on `StockTakeStatusID` — no cascade
 - `StockTakeCountMethod (1) → (∞) StockTakeCount` on `StockTakeCountMethodID` — no cascade
 - `ScanStatus (1) → (∞) StockTakeScan` on `ScanStatusID` — no cascade
@@ -243,9 +247,9 @@ Hooks into existing Northwind schema:
    `ScannedOn` within `SystemSettings.DuplicateScanWindowSeconds` of the new scan. If one is found,
    the new scan is inserted with `ScanStatusID = Duplicate`; otherwise `Valid`. A duplicate is still
    inserted and still resolves to the count line — it is excluded from the rollup (Business Rule 3),
-   not discarded. Unmatched codes are stored with `ScanStatusID = Unmatched` and no `StockTakeCountID`
-   resolution (held for review) — the duplicate check does not apply to them, since they never reach a
-   count line.
+   not discarded. Unmatched codes are stored with `ScanStatusID = Unmatched`, their session, and no
+   `StockTakeCountID` resolution (held for review with that session) — the duplicate check does not
+   apply to them, since they never reach a count line.
 
    **The window measures against the nearest existing scan, including one already marked
    `Duplicate`, not against the original `Valid` scan that started the chain.** A steady drip of

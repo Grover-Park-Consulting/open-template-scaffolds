@@ -55,12 +55,14 @@ End Function
 ### RecordScan — `Private Function` → `Long`
 
 ```vba
-Private Function RecordScan(ByVal lCountID As Long, _
+Private Function RecordScan(ByVal lSessionID As Long, _
+                            ByVal lCountID As Long, _
                             ByVal sScanCode As String, _
                             ByVal lScanQuantity As Long, _
                             ByVal db As DAO.Database) As Long
     ' [SCAFFOLD] Insert one StockTakeScan row; return the new StockTakeScanID.
-    '            lCountID = 0 for an unmatched scan (no count line).
+    '            lCountID = 0 for an unmatched scan (no count line). lSessionID is stored on
+    '            every scan, so an unmatched scan still belongs to its session.
     ' [SCAFFOLD] db is the same Database object ProcessScan opened its transaction on — passed on
     '            to DetectDuplicateScan below rather than let it open its own CurrentDb.
     Dim lScanStatusID As Long
@@ -85,7 +87,7 @@ Private Function RecordScan(ByVal lCountID As Long, _
     '            be a package vs. a unit is parked (see "Validating the build," check 5, and
     '            "Package-vs-unit disambiguation" below); settle it with the developer and extend
     '            this signature (or resolve it inside the function) before writing the insert.
-    '            ScannedOn = Now(); ScanStatusID = lScanStatusID.
+    '            StockTakeSessionID = lSessionID; ScannedOn = Now(); ScanStatusID = lScanStatusID.
     ' >>> insert the scan row, per query-style.md; set RecordScan = new StockTakeScanID <<<
 
 Cleanup:

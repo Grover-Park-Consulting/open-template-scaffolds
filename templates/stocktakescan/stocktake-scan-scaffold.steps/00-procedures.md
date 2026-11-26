@@ -65,13 +65,14 @@ True if an existing scan on lCountID matches this one closely enough to be the s
 ### RecordScan
 
 ```vba
-Private Function RecordScan(ByVal lCountID As Long, _
+Private Function RecordScan(ByVal lSessionID As Long, _
+                            ByVal lCountID As Long, _
                             ByVal sScanCode As String, _
                             ByVal lScanQuantity As Long, _
                             ByVal db As DAO.Database) As Long
 ```
 
-Insert one StockTakeScan row; return the new StockTakeScanID. lCountID = 0 for an unmatched scan (no count line).
+Insert one StockTakeScan row; return the new StockTakeScanID. lCountID = 0 for an unmatched scan (no count line). lSessionID is stored on every scan, so an unmatched scan still belongs to its session.
 
 ### RefreshCountRollup
 

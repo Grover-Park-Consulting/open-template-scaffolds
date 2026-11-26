@@ -3,11 +3,11 @@ template: officiating-assignment-outcome-first
 title: Officiating Assignment — outcome-first method
 domain: scheduling-assignment
 type: outcome-first
-version: 0.2.0
+version: 0.2.1
 status: stable
-status_fingerprint: 7c18ede190bf
+status_fingerprint: "9da388789c4c"
 implements: officiating-assignment-schema
-platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash, app-startup-autoexec.autoexec-build]
+platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash, app-startup-autoexec.file-assets]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
 standards_layer:
   - audit-columns
@@ -40,7 +40,7 @@ related:
 
 # Officiating Assignment — outcome-first method
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-26.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,

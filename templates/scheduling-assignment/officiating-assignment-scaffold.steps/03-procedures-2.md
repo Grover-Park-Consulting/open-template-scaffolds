@@ -131,22 +131,28 @@ Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As
     '            itself (schema Business Rule 9). The controlled name carries the picked
     '            file's own extension, which can change between picks for the same official
     '            (a .jpg replaced by a .png) - so the new name is not always the old name.
-    '            Before writing the new file, this reads the official's CURRENT
-    '            PhotoFileName - the full stored name, extension included - and deletes
-    '            exactly that file if it differs from the name about to be written. Deleting
-    '            by the recorded full name, not by guessing the old extension matches the
-    '            new one, is what keeps this accurate across an extension change.
-    Dim db       As DAO.Database
-    Dim rs       As DAO.Recordset
-    Dim sSql     As String
-    Dim sFolder  As String
-    Dim sExt     As String
-    Dim sName    As String
-    Dim sOldName As String
-    Dim lDot     As Long
+    '            The record change is held in a transaction until the new file is in place:
+    '            the file is copied beside the old one under a temporary name, swapped in,
+    '            and only then is the record committed. A failure before the commit rolls
+    '            the record back and leaves the old photo. After the commit, the official's
+    '            previous file is deleted by its recorded full name, when that name differs
+    '            from the new one; guessing the old extension would miss an extension change.
+    Dim ws         As DAO.Workspace
+    Dim db         As DAO.Database
+    Dim rs         As DAO.Recordset
+    Dim sSql       As String
+    Dim sFolder    As String
+    Dim sExt       As String
+    Dim sName      As String
+    Dim sOldName   As String
+    Dim lDot       As Long
+    Dim booInTrans As Boolean
 
     On Error GoTo errHandler
-    Set db = CurrentDb
+    ' [STANDARDS — error-handling.md, "Transaction guard"] db comes from the Workspace the
+    '            transaction is begun on.
+    Set ws = DBEngine.Workspaces(0)
+    Set db = ws.Databases(0)
 
     If Not EnsurePhotoFolder() Then GoTo Cleanup
 
@@ -164,28 +170,44 @@ Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As
     sExt = IIf(lDot > 0, Mid$(sSourcePath, lDot), vbNullString)
     sName = "Official_" & lOfficialID & sExt
 
-    ' Delete the superseded file, by its own recorded full name, before writing the new one.
-    ' Only when a prior file is on record and its name differs from the one about to be
-    ' written - never delete on a guess, and never delete when nothing changed.
+    ws.BeginTrans
+    booInTrans = True
+
+    ' [BUSINESS LOGIC #9] UPDATE tblOfficial SET PhotoFileName = sName WHERE OfficialID = lOfficialID
+    ' >>> update per query-style.md, on db <<<
+
+    ' Copy beside the old file, never over it, then swap the copy in.
+    FileCopy sSourcePath, sFolder & sName & ".tmp"
+    If Len(Dir$(sFolder & sName)) > 0 Then Kill sFolder & sName
+    Name sFolder & sName & ".tmp" As sFolder & sName
+
+    ws.CommitTrans
+    booInTrans = False
+
+    ' Delete the superseded file, by its own recorded full name, now that nothing points at it.
+    ' Only when a prior file is on record and its name differs from the new one - never delete
+    ' on a guess, and never delete when nothing changed.
     If Len(sOldName) > 0 And sOldName <> sName Then
         If Len(Dir$(sFolder & sOldName)) > 0 Then Kill sFolder & sOldName
     End If
-
-    FileCopy sSourcePath, sFolder & sName
-
-    ' [BUSINESS LOGIC #9] UPDATE tblOfficial SET PhotoFileName = sName WHERE OfficialID = lOfficialID
-    ' >>> update per query-style.md <<<
 
     SetOfficialPhoto = True
 
 Cleanup:
     On Error Resume Next
+    ' A temporary copy left by a failure is removed; after a success there is none.
+    If Len(sName) > 0 Then
+        If Len(Dir$(sFolder & sName & ".tmp")) > 0 Then Kill sFolder & sName & ".tmp"
+    End If
     If Not rs Is Nothing Then rs.Close
-    Set rs = Nothing: Set db = Nothing
+    Set rs = Nothing: Set db = Nothing: Set ws = Nothing
     Exit Function
 
 errHandler:
-    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial)
+    ' [STANDARDS — error-handling.md] standard errHandler block (see AssignOfficial), plus the
+    '            transaction guard's rollback: a failure before the commit leaves the record and
+    '            the old photo as they were.
+    If booInTrans Then ws.Rollback: booInTrans = False
     MsgBox "Error " & Err.Number & ": " & Err.Description, vbExclamation
     Resume Cleanup
     Resume

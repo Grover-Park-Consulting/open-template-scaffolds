@@ -123,13 +123,13 @@ Public Sub ProcessScan(ByVal lSessionID As Long, _
     lProductID = ResolveScanCode(sScanCode)
     If lProductID = 0 Then
         ' [BUSINESS LOGIC #2] unmatched code: record for review, no count line
-        RecordScan 0, sScanCode, lScanQuantity, db
+        RecordScan lSessionID, 0, sScanCode, lScanQuantity, db
         GoTo Commit
     End If
 
     lCountID = EnsureCountLine(lSessionID, lProductID, db)
     ' [BUSINESS LOGIC #2] RecordScan resolves Valid vs. Duplicate itself, via DetectDuplicateScan
-    RecordScan lCountID, sScanCode, lScanQuantity, db
+    RecordScan lSessionID, lCountID, sScanCode, lScanQuantity, db
     ' [SCAFFOLD] RefreshCountRollup and EvaluateVariance both take db, not CurrentDb, and neither
     '            reads its numbers with a domain function (DSum/DLookup/DMax). A domain function
     '            runs on Access's own separate connection, outside the transaction this procedure

@@ -1,7 +1,7 @@
 ---
 step: 04-code
 title: "Write and import the code"
-platform_facts: [mcp-module-import, mcp-line-numbers, vba-import-xml-entities, recordset-append-crash, app-startup-autoexec.autoexec-build]
+platform_facts: [mcp-module-import, mcp-line-numbers, vba-import-xml-entities, recordset-append-crash, app-startup-autoexec.file-assets]
 ---
 
 **Who reads this:** the AI assistant, carrying out this step of the build.

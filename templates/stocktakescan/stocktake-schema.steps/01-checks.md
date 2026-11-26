@@ -27,6 +27,7 @@ new tables, plus the two fields it grafts onto the existing `Products` table (ch
 | 9 | An insert with `ScanCode` or another `Text(n)` field longer than its declared width is refused, not silently truncated. Test it on the route this build actually inserts by: a bound form or recordset refuses an over-long value, while a SQL `INSERT` stores the first n characters without raising an error, so where the build inserts by SQL the build itself must refuse the value, or the entry records that it does not. |
 | 10 | `Description` is present on every field of every new table, matching this template's own Purpose & rules text — and on `Products.SKUBarCode`/`QuantityInPackage`, where the two grafted fields carry their own descriptions. |
 | 11 | Running the table-build `Sub` a second time either re-runs cleanly or fails naming what already exists — never a bare "duplicate object" error, and never a second attempt to add `SKUBarCode`/`QuantityInPackage` to `Products` if they're already there. |
+| 12 | Every `StockTakeScan` row carries a `StockTakeSessionID`; an insert without one, or citing a session that doesn't exist, is refused. For each scan with a count line, its session matches the count line's session. Deleting a session that still holds an Unmatched scan is refused. |
 
 Report against this list exactly as `_template-schema.md` §12.2 states for every checklist in the
 library: one entry per check, a literal `Result: PASSED` or `Result: NOT PASSED`.

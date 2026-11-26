@@ -90,7 +90,7 @@ Confirm the shared folder named in tblAppSetting.OfficialPhotoFolder exists - ne
 Public Function SetOfficialPhoto(ByVal lOfficialID As Long, ByVal sSourcePath As String) As Boolean
 ```
 
-Copy a picked photo into the shared folder under a controlled name, and record that name on the official - never the source path, never the file itself (schema Business Rule 9). The controlled name carries the picked file's own extension, which can change between picks for the same official (a .jpg replaced by a .png) - so the new name is not always the old name. Before writing the new file, this reads the official's CURRENT PhotoFileName - the full stored name, extension included - and deletes exactly that file if it differs from the name about to be written. Deleting by the recorded full name, not by guessing the old extension matches the new one, is what keeps this accurate across an extension change.
+Copy a picked photo into the shared folder under a controlled name, and record that name on the official - never the source path, never the file itself (schema Business Rule 9). The controlled name carries the picked file's own extension, which can change between picks for the same official (a .jpg replaced by a .png) - so the new name is not always the old name. The record change is held in a transaction until the new file is in place: the file is copied beside the old one under a temporary name, swapped in, and only then is the record committed. A failure before the commit rolls the record back and leaves the old photo. After the commit, the official's previous file is deleted by its recorded full name, when that name differs from the new one; guessing the old extension would miss an extension change.
 
 ### ListOpenObjects
 
