@@ -88,7 +88,7 @@ written against.
 <summary>Tell me more about these rules</summary>
 
 The rules live in seven short files that came with the library. They are the reason a table comes
-out named one way rather than another, and the reason every table holding your data gets the same five columns
+out named one way rather than another, and the reason every table holding your data gets the same columns
 recording who changed a record and when. The templates were written against them, so changing a rule
 changes what every template builds — not just this one.
 

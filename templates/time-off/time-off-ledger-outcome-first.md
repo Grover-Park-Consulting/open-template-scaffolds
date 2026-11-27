@@ -3,9 +3,9 @@ template: time-off-ledger-outcome-first
 title: Time Off Ledger — outcome-first method
 domain: time-off
 type: outcome-first
-version: 0.5.0
+version: 0.5.1
 status: stable
-status_fingerprint: "59c5b3fcf755"
+status_fingerprint: "6ca3676289a3"
 implements: time-off-ledger-schema
 standards_layer:
   - audit-columns
@@ -32,7 +32,7 @@ related:
 
 # Time Off Ledger — outcome-first method
 
-**Status last determined:** 2026-11-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this.** *Intent* down to *Standards Layer* is for the developer whose database this is;
 the last section is addressed to the AI assistant building it.
@@ -370,8 +370,8 @@ right there. Trust is a setting on each machine, not of the file.
 
 **Your standards layer decides how this is built. This template decides only what it has to do.**
 
-- **`audit-columns`**: every table this template touches already carries the standard columns per
-  the schema's own standards layer. This template adds nothing to that set. It does attach logic to
+- **`audit-columns`**: the schema's tables already carry them. A table this template creates gets
+  them when it holds the application's data, by the standard's own test. This template attaches logic to
   the same event that stamps them, which is why the build merges rather than replaces.
 - **`naming-conventions`**: what any function, module or setting is called, within whatever this
   layer already requires.

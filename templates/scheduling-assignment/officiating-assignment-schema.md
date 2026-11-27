@@ -3,9 +3,9 @@ template: officiating-assignment-schema
 title: Officiating Assignment — Table Schema
 domain: scheduling-assignment
 type: table-schema
-version: 0.5.0
+version: 0.5.1
 status: stable
-status_fingerprint: 854fbbf8d634
+status_fingerprint: "1029ab5f7d81"
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling]
@@ -33,7 +33,7 @@ house_assumptions:
 
 # Officiating Assignment — Table Schema
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -302,8 +302,8 @@ code.
 
 ## Standards Layer
 
-- **Audit columns** — every table above additionally carries the audit set supplied by the
-  active `audit-columns.md`; audit fields never appear in this template's field tables. (The
+- **Audit columns** — every table above that holds the application's data additionally carries
+  the audit set supplied by the active `audit-columns.md`; audit fields never appear in this template's field tables. (The
   source's per-table timestamp columns are retired in the audit set's favor.)
 - **Naming conventions** — this template is written in the OTS default style (`tbl`/`tlkp`
   prefixes, `[Entity]ID` keys, qualified field names). A practice with different conventions

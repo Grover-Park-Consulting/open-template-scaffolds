@@ -3,9 +3,9 @@ template: time-off-ledger-schema
 title: Time Off Ledger — Table Schema
 domain: time-off
 type: table-schema
-version: 0.4.0
+version: 0.4.1
 status: draft
-status_fingerprint: 959805bacea1
+status_fingerprint: "82cdb86e0f9e"
 standards_layer: [audit-columns, naming-conventions, error-handling]
 new_tables:
   - tlkpTimeOffCategory
@@ -31,7 +31,7 @@ house_assumptions:
 
 # Time Off Ledger — Table Schema
 
-**Status last determined:** 2026-10-05.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -266,8 +266,8 @@ cancels it.
 
 ## Standards Layer
 
-- **Audit columns:** every table above additionally carries the audit set supplied by the active
-  `audit-columns.md`; audit fields never appear in this template's field tables. These columns
+- **Audit columns:** every table above that holds the application's data additionally carries the
+  audit set supplied by the active `audit-columns.md`; audit fields never appear in this template's field tables. These columns
   record who created or changed a row and when. They are separate from the ledger, which records
   what happened to time off.
   On `tblTimeOffEntry`, `ModifiedDate` and `ModifiedBy` stay empty for good: no entry is ever

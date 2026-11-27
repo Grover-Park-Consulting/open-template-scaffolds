@@ -6,7 +6,7 @@ what to replace with their own.
 If you are building something from a template, you don't need to read this file unless you are curious.
 However, we have included clarifying comments to help you interpret what it says, just in case.
 
-**Building from a template?** This file decides the five extra columns every table holding your data gets,
+**Building from a template?** This file decides the extra columns every table holding your data gets,
 recording who created each record and when, and who changed it last.
 
 You do not have to do anything with this information to use the templates. The rules apply to the code you receive
@@ -31,17 +31,16 @@ From here on, this file contains instructions for the AI.
 
 ## The OTS audit set
 
-**Decide by what a table holds, never by its name.** A table a build creates or changes carries these
-five columns, **always last** in column order (see `naming-conventions.md` §6.4), when it holds the
+**Decide by what a table holds, never by its name.** A table a build creates carries these
+columns, **always last** in column order (see `naming-conventions.md` §6.4), when it holds the
 application's own data: records that are added, changed or deleted as part of the work the
 application does. A table that supports the application's own administration (settings,
 configuration, staging, and a log such as the audit log) does not. A name's prefix or suffix is a
 clue, never the test.
 
-**Changing a table means changing its fields.** Attaching Data Macros to it, including audit
-logging's, is not a change: it brings none of these columns with it, and removes none the table
-already carries. Where a build works with an existing data table it does not otherwise change, it does
-not add these columns; offer adding them as a choice, in a question to the developer.
+**A table a build creates gets these columns; a table it only adds fields to, or attaches Data
+Macros to, does not, unless the developer chooses them.** Where a build works with an existing
+data table, ask whether to add them; on a yes, add them and their stamping as part of the build.
 
 | Column | Type (SQL Server) | Type (Access local) | Rule |
 |---|---|---|---|

@@ -3,9 +3,9 @@ template: catalog-schema
 title: Library Publication Catalog — Table Schema
 domain: library
 type: table-schema
-version: 0.5.0
+version: 0.5.1
 status: review
-status_fingerprint: "417083173913"
+status_fingerprint: "5df658e08e71"
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer:
@@ -28,7 +28,7 @@ house_assumptions:
 
 # Library Publication Catalog — Table Schema
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -281,8 +281,8 @@ Indexes: PK on `ShelfID`; non-unique index on `BookcaseID` (FK).
 
 ## Standards Layer (supplied externally, not in this template body)
 
-- **Audit columns** — `CreatedDate`, `CreatedBy`, `ModifiedDate`, `ModifiedBy`, `AccessTS` on every
-  table, supplied by the standards layer (see `standards/audit-columns.md`). *The source collection
+- **Audit columns** — the audit set the active standards layer supplies, on every table the build
+  creates that holds the application's data (see `standards/audit-columns.md`). *The source collection
   had no audit columns; the standards layer supplies them — a clean demonstration of the split.*
 - **Naming conventions** — this template follows the OTS `tbl`/`tlkp` style and the
   qualified-field rules (see `standards/naming-conventions.md`). A different practice builds the

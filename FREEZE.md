@@ -295,6 +295,11 @@ so an assistant doesn't mistake old grounds for new permission:
 - 2026-11-26, approved by George (scaffold code to the standards): `templates/errors/error-logging-scaffold.md`,
   only the version, date and fingerprint lines `template_status.py` writes; its step files carry the
   code changes.
+- 2026-11-27, approved by George: `standards/audit-columns.md`, the opening line ("the five extra
+  columns" becomes "the extra columns") and the audit-set paragraphs: a table a build creates gets the
+  columns; one it only adds fields or Data Macros to does not, unless the developer chooses them when
+  asked. Removes "Changing a table means changing its fields." Grounds: three 2026-11-24 runs read
+  the old text two ways on stocktake's `Products`.
 
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.

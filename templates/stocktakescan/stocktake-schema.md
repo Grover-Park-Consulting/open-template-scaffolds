@@ -3,9 +3,9 @@ template: stocktake-schema
 title: Scanned Stocktake — Table Schema
 domain: stocktakescan
 type: table-schema
-version: 0.11.0
+version: 0.11.1
 status: review
-status_fingerprint: "4d1bad696c0f"
+status_fingerprint: "ce1dfb860c84"
 extends: Northwind (Access Developer Edition)
 requires_tables:
   - Products
@@ -43,7 +43,7 @@ house_assumptions:
 
 # Scanned Stocktake — Table Schema
 
-**Status last determined:** 2026-11-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -94,7 +94,8 @@ This template does not stand alone; it extends an existing Northwind database. T
 must confirm these exist and wire the new tables to them:
 
 > **This template adds two fields to `Products`, and that is the only change it makes to a table
-> you already have.** A scanned stocktake needs somewhere to hold the code that is scanned and, for
+> you already have.** It adds no audit columns to `Products` unless you choose them; the
+> design asks. A scanned stocktake needs somewhere to hold the code that is scanned and, for
 > products that ship in packages, how many units a package holds. Northwind Dev has neither out of
 > the box, so **building this template creates them:**
 >

@@ -3,9 +3,9 @@ template: capital-asset-tracking-outcome-first
 title: Capital Asset Tracking — outcome-first method
 domain: asset-tracking
 type: outcome-first
-version: 0.4.0
+version: 0.4.1
 status: stable
-status_fingerprint: "57633630128b"
+status_fingerprint: "93e26e7f47be"
 implements: capital-asset-tracking-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing, recordset-append-crash]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
@@ -44,7 +44,7 @@ related:
 
 # Capital Asset Tracking — outcome-first method
 
-**Status last determined:** 2026-11-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -307,9 +307,8 @@ file.
 
 **Your standards layer decides how this is built. This template decides only what it has to do.**
 
-- **`audit-columns`** — the four columns recording who created and last changed each row. Every table
-  this template touches already carries them per the schema's own standards layer; this template adds
-  nothing new to that set. The history table's own change-type, prior-value, and new-value columns are
+- **`audit-columns`** — the schema's tables already carry them. A table this template creates gets
+  them when it holds the application's data, by the standard's own test. The history table's own change-type, prior-value, and new-value columns are
   not audit columns and are not covered by this file.
 - **`naming-conventions`** — what any settings table, its columns, and any new module are called,
   within whatever this layer already requires.

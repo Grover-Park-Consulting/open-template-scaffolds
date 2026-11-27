@@ -3,9 +3,9 @@ template: catalog-outcome-first
 title: Library Publication Catalog — outcome-first method
 domain: library
 type: outcome-first
-version: 0.3.0
+version: 0.3.1
 status: stable
-status_fingerprint: "dcb0706e436e"
+status_fingerprint: "9272873443fc"
 implements: catalog-schema
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-code, 05-run-the-checks]
@@ -32,7 +32,7 @@ related:
 
 # Library Publication Catalog — outcome-first method
 
-**Status last determined:** 2026-11-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this.** Everything from *Intent* down to *Standards Layer* is written for the developer
 whose database this is. The two sections after that are addressed to the AI assistant building it,
@@ -205,8 +205,8 @@ file.
 
 **Your standards layer decides how this is built. This template decides only what it has to do.**
 
-- **`audit-columns`** — every table this template touches already carries the four standard columns
-  per the schema's own standards layer; this template adds nothing new to that set.
+- **`audit-columns`** — the schema's tables already carry them. A table this template creates gets
+  them when it holds the application's data, by the standard's own test.
 - **`naming-conventions`** — what any settings object or new module is called, within whatever this
   layer already requires.
 - **`error-handling`** — applies to every procedure the build writes, and decides what the person
