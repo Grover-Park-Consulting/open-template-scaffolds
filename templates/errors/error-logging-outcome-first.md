@@ -5,7 +5,7 @@ domain: errors
 type: outcome-first
 version: 0.4.0
 status: stable
-status_fingerprint: "3934f28685f1"
+status_fingerprint: "17c8e8ed23bc"
 implements: error-logging-schema
 platform_facts: [target-file, sql-insert-truncation, host-helper-reuse, recordset-append-crash]
 steps: [01-checks, 02-tables, 03-code, 04-run-the-checks]
@@ -276,7 +276,7 @@ named above.
 - **Never infer an answer that belongs to the developer** — not from what the database looks like, not
   from reasoning that makes an answer seem obvious. Where a check exists to answer a question, run the
   check at the point the sequence calls for it rather than working the answer out yourself.
-- **Surface both house assumptions and every warning in the front matter** and get the developer's
+- **Surface the house assumption and every warning in the front matter** and get the developer's
   answer on each before building.
 
 ## Extra Options
