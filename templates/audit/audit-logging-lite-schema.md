@@ -3,9 +3,9 @@ template: audit-logging-lite-schema
 title: Access Audit Logging (Lite) — Table Schema
 domain: audit
 type: table-schema
-version: 0.7.1
+version: 0.7.2
 status: review
-status_fingerprint: d0a0e6f1972a
+status_fingerprint: "655cca5c1461"
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling]
@@ -72,7 +72,7 @@ house_assumptions:
 
 # Access Audit Logging (Lite) — Table Schema
 
-**Status last determined:** 2026-11-23.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -153,8 +153,8 @@ Grain: one row per **field affected** by one insert, update, or delete on an aud
 | `PrimaryKey` | Long | Required | Key value of the changed row in that table (Business Rule 4). `Text(50)` in the one case Business Rule 4 names, and only there |
 | `FieldName` | Text(50) | Required | The field this row records |
 | `OperationType` | Text(25) | Required | `Insert`, `Update`, or `Delete` — stamped by the macro |
-| `OldValue` | Memo | Nullable | Value before the change; Null on insert |
-| `NewValue` | Memo | Nullable | Value after the change; Null on delete |
+| `OldValue` | Memo | Nullable, `AllowZeroLength = True` | Value before the change; Null on insert |
+| `NewValue` | Memo | Nullable, `AllowZeroLength = True` | Value after the change; Null on delete |
 | `DateChanged` | Date/Time | Required | Stamped `Now()` by the macro |
 | `ChangedBy` | Text(50) | Required | Stamped by the macro (Business Rule 9) |
 
@@ -172,7 +172,7 @@ transient staging, not history (Business Rule 8).
 | `TableName` | Text(50) | Required | Source table |
 | `PrimaryKey` | Long | Required | Key value of the row being changed. `Text(50)` in the one case Business Rule 4 names, and only there |
 | `FieldName` | Text(50) | Required | The Long Text field backed up |
-| `OldValue` | Memo | Nullable | The pre-change Long Text content |
+| `OldValue` | Memo | Nullable, `AllowZeroLength = True` | The pre-change Long Text content |
 | `DateChanged` | Date/Time | Required | When the backup was taken |
 | `ChangedBy` | Text(50) | Required | Who triggered it |
 

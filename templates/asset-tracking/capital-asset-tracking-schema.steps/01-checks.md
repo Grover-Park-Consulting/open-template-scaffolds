@@ -17,7 +17,7 @@ fourteen tables.
 | # | Check |
 |---|---|
 | 1 | An ordinary insert succeeds on each of the fourteen tables (the eight entities and the six lookups), supplying every `Required` field. |
-| 2 | Every `Required` field on every table refuses a missing value; no `AllowZeroLength` fields are declared in this schema, so that half of the check doesn't apply here. |
+| 2 | Every `Required` field on every table refuses a missing value, and `tblAssetHistory.PreviousValue` and `NewValue` accept an empty string (zero-length, not Null), as the sink-field rule requires. |
 | 3 | Each declared unique index refuses its duplicate: `tblAsset.AssetBarcode`; `tblSite.SiteCode`; `tblRoom` on (`SiteID`, `RoomNumber`); `tblDepartment.DepartmentName`. |
 | 4 | Sample the seventeen relationships in `## Relationships` by their two declared behaviors, not one at a time: a **restrict** relationship (e.g. `tblRoom → tblAsset`) refuses deleting the parent while a child row exists; a **cascade** relationship (`tblAsset → tblAssetHistory`, `tblInventoryAuditSession → tblInventoryAuditScan`) deletes the children when the parent goes. Confirm at least one of each kind actually behaves as declared, not only that `validate` resolved the table names. |
 | 5 | Every seed row in the six lookup tables (`## Entities → Lookup tables`) is present exactly as listed — all seven `tlkpAssetCategory` rows, all five `tlkpAssetStatus` rows, and so on. Confirm `tlkpAssetCategory.IsDepreciable` specifically: `Land` is `False`, every other seeded row is `True`. |

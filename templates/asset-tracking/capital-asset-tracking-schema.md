@@ -3,9 +3,9 @@ template: capital-asset-tracking-schema
 title: Capital Asset Tracking — Table Schema
 domain: asset-tracking
 type: table-schema
-version: 0.6.0
+version: 0.6.1
 status: stable
-status_fingerprint: d183825992f4
+status_fingerprint: "8b19c886990a"
 platform_facts: [target-file, sql-insert-truncation, data-macro-rules.rules, data-macro-rules.existing]
 steps: [01-checks, 02-tables, 03-data-macros, 04-run-the-checks]
 standards_layer: [audit-columns, naming-conventions, error-handling, query-style]
@@ -18,7 +18,7 @@ house_assumptions:
 
 # Capital Asset Tracking — Table Schema
 
-**Status last determined:** 2026-09-26.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 
@@ -108,8 +108,8 @@ to the standards layer.
 | `AssetID` | Long | FK → tblAsset, Required | The asset that changed |
 | `HistoryChangeTypeID` | Long | FK → tlkpHistoryChangeType, Required | Location / custodian / department / funding source / status |
 | `ChangeDate` | Date/Time | Required | When the change took effect |
-| `PreviousValue` | Text(255) | Nullable | Prior value (room name, custodian name, status, etc.) |
-| `NewValue` | Text(255) | Required | New value |
+| `PreviousValue` | Text(255) | Nullable, `AllowZeroLength = True` | Prior value (room name, custodian name, status, etc.); a sink field (`_materialization.md` rule 6): it records an empty value as one |
+| `NewValue` | Text(255) | Required, `AllowZeroLength = True` | New value; a sink field (`_materialization.md` rule 6): it records an empty value as one |
 | `ChangeReason` | Text(255) | Nullable | Free text — e.g. "room reassignment," "staff turnover" |
 
 Indexes: PK on `AssetHistoryID`; FK index on `AssetID`.

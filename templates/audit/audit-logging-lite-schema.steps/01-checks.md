@@ -19,7 +19,7 @@ tables wherever a sample-table row is marked Path A only.
 | # | Check |
 |---|---|
 | 1 | An ordinary insert succeeds on each of `tblAuditLog`, `tblLongTextBackup`, `tblAuditLogConfig`, and — Path A only — `tblClient`, `tblSupportTicket`, `tlkpTicketPriority`. |
-| 2 | Every `Required` field on each table refuses a missing value; no `AllowZeroLength` fields are declared in this schema, so that half of the check doesn't apply here. |
+| 2 | Every `Required` field on each table refuses a missing value, and `tblAuditLog.OldValue` and `NewValue` and `tblLongTextBackup.OldValue` accept an empty string (zero-length, not Null), as the sink-field rule requires. |
 | 3 | Each declared unique index refuses its duplicate: `tblClient.ClientName`; `tlkpTicketPriority.TicketPriorityName`; `tblAuditLogConfig` on (`TableName`, `FieldName`); `tblLongTextBackup` on (`TableName`, `PrimaryKey`, `FieldName`). |
 | 4 | `tblClient → tblSupportTicket` and `tlkpTicketPriority → tblSupportTicket` are enforced with no cascade delete, exactly as declared — a delete attempt on a referenced `tblClient`/`tlkpTicketPriority` row with dependent tickets is refused. **And the negative case**: the three system tables have no enforced relationship to each other, to the sample tables, or to whatever real tables Path B audits — deleting an audited row must never be blocked by, or cascade into, `tblAuditLog`. |
 | 5 | `tlkpTicketPriority`'s four seed rows are present with the exact `SortOrder` values specified (Low 10, Normal 20, High 30, Urgent 40). |
