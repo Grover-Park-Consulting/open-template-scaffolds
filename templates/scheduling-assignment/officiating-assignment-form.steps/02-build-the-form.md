@@ -12,8 +12,7 @@ permission.
 
 ## Materialization
 
-The form-spec materializes by building the form live through an Access MCP server's form-creation and
-control-creation tools, with a default stacked layout and the code-behind wired to the paired
-`vba-scaffold` procedures. Where no Access MCP server is connected the run ends at the approved
-design. The markdown is the source of truth; see `_materialization.md` for the mapping rules and for
-what is and is not handed over.
+On the build route, build the forms live through an Access MCP server's form-creation and
+control-creation tools: a default stacked layout, code-behind wired to the paired scaffold's
+procedures. On the handover route, write them as importable form text by the mapping rules, marked
+as proposed code (method `handover-code`). The markdown is the source of truth.

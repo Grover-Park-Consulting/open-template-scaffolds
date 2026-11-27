@@ -3,13 +3,13 @@ template: officiating-assignment-form
 title: Officiating Assignment — Game Assignment Form
 domain: scheduling-assignment
 type: form-spec
-version: 0.5.1
+version: 0.6.0
 status: review
-status_fingerprint: 112ee2bbe192
+status_fingerprint: "6decdd19e23f"
 implements: officiating-assignment-schema
 record_source: qryGame_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]
-steps: [01-open-and-confirm-tables, 02-build-the-form]
+steps: [00-checks, 01-open-and-confirm-tables, 02-build-the-form]
 standards_layer: [form-conventions, naming-conventions, startup-conventions, error-handling]
 new_forms: [frmGame_Assignment, sfrmGame_Crew]
 warnings:
@@ -21,7 +21,7 @@ warnings:
 
 # Officiating Assignment — Game Assignment Form
 
-**Status last determined:** 2026-11-02.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

@@ -3,13 +3,13 @@ template: publication-form
 title: Library Catalog — Publication Entry Form
 domain: library
 type: form-spec
-version: 0.5.1
+version: 0.6.0
 status: review
-status_fingerprint: 47e618843df5
+status_fingerprint: "62f0d75e758a"
 implements: catalog-schema
 record_source: qryPublication_frm
 platform_facts: [form-mapping-rules, form-layout-fidelity]
-steps: [01-open-and-confirm-tables, 02-build-the-form]
+steps: [00-checks, 01-open-and-confirm-tables, 02-build-the-form]
 standards_layer: [form-conventions, naming-conventions, query-style]
 new_forms: [frmPublication_Edit, sfrmPublication_Creator, sfrmPublication_Genre]
 warnings:
@@ -21,7 +21,7 @@ warnings:
 
 # Library Catalog — Publication Entry Form
 
-**Status last determined:** 2026-11-02.
+**Status last determined:** 2026-11-27.
 
 **Who reads this:** the AI assistant, building this alongside the developer who asked for it.
 

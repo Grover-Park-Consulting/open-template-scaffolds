@@ -300,6 +300,10 @@ so an assistant doesn't mistake old grounds for new permission:
   columns; one it only adds fields or Data Macros to does not, unless the developer chooses them when
   asked. Removes "Changing a table means changing its fields." Grounds: three 2026-11-24 runs read
   the old text two ways on stocktake's `Products`.
+- 2026-11-27, approved by George: `templates/_template-schema.md` §4.2's opening (removes the claim
+  that a `vba-scaffold` or `form-spec` defers its checklist to an outcome-first template), §9.5 rule 6
+  and new §9.6, the `form-spec` checklist in a `route: both` step. Grounds: the 2026-11-24 form runs
+  had no checks to hand over, and step 2 of both form templates contradicted the method.
 
 **None of these lifts generalize.** A lift granted for one file, one row, or one addition is not
 evidence the freeze is loosening generally — get a fresh ruling for the next edit, every time.

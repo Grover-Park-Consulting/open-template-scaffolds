@@ -144,6 +144,21 @@ class TestHandlerShapes(unittest.TestCase):
         self.assertEqual(errors, ["VS7: 'Probe' handler does not name its shape from error-handling.md's table in its first comment"])
 
 
+class TestFormChecks(unittest.TestCase):
+    """FS6: a form-spec's checklist is a design step."""
+    FRONT = {"type": "form-spec"}
+    BODY = "## Validating the build\n\n| # | Check |\n"
+
+    def test_checks_in_design_step_pass(self):
+        steps = [{"front": {"route": "both"}, "body": self.BODY}, {"front": {}, "body": "x"}]
+        self.assertEqual(library._form_checks_errors(self.FRONT, steps), [])
+
+    def test_checks_missing_or_in_build_step_fail(self):
+        for steps in ([{"front": {}, "body": "x"}], [{"front": {}, "body": self.BODY}]):
+            self.assertEqual(library._form_checks_errors(self.FRONT, steps),
+                             ["FS6: no 'route: both' step holds '## Validating the build'"])
+
+
 class TestValidateLibrary(unittest.TestCase):
     def test_live_corpus_all_pass(self):
         result = validate_library()

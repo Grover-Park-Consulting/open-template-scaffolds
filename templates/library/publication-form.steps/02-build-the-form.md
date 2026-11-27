@@ -12,10 +12,7 @@ permission.
 
 ## Materialization
 
-The form-spec materializes by building the form live through an Access MCP server's form-creation and
-control-creation tools, with a default stacked layout and the code-behind wired in — event handlers
-calling the framework helpers (and any paired `vba-scaffold` procedures). The markdown → Access-text
-mapping is **defined and hand-validated** as part of this template type's proof; the actual generator
-is built in the template library MCP server phase (B3). Where no Access MCP server is connected the
-run ends at the approved design, and no importable form text is generated for the developer to import
-as though it were a finished form — see `_materialization.md`.
+On the build route, build the forms live through an Access MCP server's form-creation and
+control-creation tools: a default stacked layout, code-behind wired to the framework helpers and the
+companion `record-finder-scaffold`. On the handover route, write them as importable form text by the
+mapping rules, marked as proposed code (method `handover-code`). The markdown is the source of truth.

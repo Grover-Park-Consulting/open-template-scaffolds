@@ -267,11 +267,8 @@ rather than assuming it travels.
 
 ### 4.2 The `table-schema` checklist — structural, not business logic
 
-**Why `table-schema` needs its own checklist rather than deferring to its paired template's.** A
-`vba-scaffold` or `form-spec` defers its own checklist to the paired `outcome-first` template's —
-they promise the same result by a different route, so one checklist serves both. A `table-schema`
-has no such sibling to defer to: it is usually built *before* its pair exists, and what it promises
-is different in kind — not a business outcome, but that the tables, keys, indexes, relationships,
+**A `table-schema`'s checklist is structural, not business logic.** A `table-schema` is usually
+built *before* its pair exists, and what it promises is different in kind — not a business outcome, but that the tables, keys, indexes, relationships,
 and seed rows exist and behave the way this template specifies. **Confirmed necessary, not merely
 tidy:** a `table-schema` build once shipped with a leftover `DefaultValue` blocking every insert into
 a new table — reported passing, because nothing in the template asked anyone to try one. The
@@ -585,6 +582,25 @@ fragment.
 4. `standards_layer` includes `form-conventions`, and every value is recognized (§6).
 5. If `implements` is set, it is a well-formed template slug. *(Format only — `validate` does not open
    the named schema or confirm cited Business Rule numbers.)*
+6. A `route: both` step holds `## Validating the build` (§9.6).
+
+### 9.6 The `form-spec` checklist
+
+Every `form-spec` states its own checks in a `route: both` step named `00-checks`, listed before every
+build step, so the design is drafted against them. Checks 1–8 are the baseline:
+
+| # | Check |
+|---|---|
+| 1 | Each form in `new_forms`, and the record-source query, exists and opens in Form view with no error and no parameter prompt. |
+| 2 | Every control in Layout exists with the name, type and binding listed; each data control has its label. |
+| 3 | Each subform shows only the rows of the main form's current record, and a row added there is saved against that record. |
+| 4 | A new record entered through the form, supplying every Required field, saves. Leaving one empty is refused, and the record stays on screen unsaved. |
+| 5 | Each combo bound to a foreign key lists its lookup's rows and stores the key, not the text shown. |
+| 6 | New, save, delete (which asks first), clear, and record navigation work as `form-conventions` describes. |
+| 7 | Tab order follows the Layout order. |
+| 8 | The code-behind compiles, and every handler names its error-handling shape. |
+
+Then one check per numbered Feature and per optional feature. Report as §12.2 states.
 
 ---
 

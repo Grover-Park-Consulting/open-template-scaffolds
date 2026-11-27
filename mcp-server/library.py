@@ -1163,6 +1163,16 @@ def _design_declaration_errors(front: dict, steps: list[dict]) -> list[str]:
     return errors
 
 
+def _form_checks_errors(front: dict, steps: list[dict]) -> list[str]:
+    """FS6: a form-spec's checks arrive with the design, in a `route: both` step (schema §9.6)."""
+    if str(front.get("type", "")) != "form-spec":
+        return []
+    if any(str(s["front"].get("route", "")) == "both"
+           and re.search(r"^## Validating the build\s*$", s.get("body") or "", re.M) for s in steps):
+        return []
+    return ["FS6: no 'route: both' step holds '## Validating the build'"]
+
+
 def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> list[str]:
     """The master/steps rules (ST) and the answer-size rule (SZ1)."""
     errors = []
@@ -1204,6 +1214,7 @@ def validate_steps(path: Path, front: dict, body: str, steps: list[dict]) -> lis
     if str(front.get("type", "")) == "vba-scaffold":
         errors += _design_declaration_errors(front, steps)
         errors += _handler_shape_errors("\n".join(s["body"] for s in steps if s["path"]))
+    errors += _form_checks_errors(front, steps)
     facts, _ = read_platform_facts()
     for fid in front.get("platform_facts") or []:
         if facts.get(str(fid), {}).get("route") == "build":
